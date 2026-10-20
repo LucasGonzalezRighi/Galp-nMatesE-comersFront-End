@@ -58,7 +58,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 | D8 | **Sin analítica ni cookies de terceros** en la fase 1 | Se evalúa con el deploy |
 | D9 | **Botón de arrepentimiento visible desde el primer acceso** en una barra superior fina, además del pie | Lo exige la Disposición 954/2025; el diseño solo lo tiene en el pie |
 | D10 | Plan de implementación partido en **5 planes** (sección 21) | El alcance completo no entra en un solo plan verificable |
-| D11 | **Un repo de GitHub por carpeta** (frontend, backend, database). Lucas crea los repos y hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
+| D11 | **Repos de GitHub separados**: `LucasGonzalezRighi/Galp-nMatesE-comersFront-End` (carpeta `frontend/`) y `LucasGonzalezRighi/Galp-nMatesE-comersBack-end` (carpeta `backend/`; dónde vive la base de datos se define en la fase 2). Lucas hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
 
 ## 3. Alcance
 
@@ -68,7 +68,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 
 ## 4. Estructura del repositorio
 
-**Un repositorio por carpeta** (D11): `frontend/`, `backend/` y `database/` son tres repos de GitHub independientes que crea y sube Lucas. Este documento cubre solo el repo `frontend/`.
+**Repos separados** (D11): `frontend/` es el repo `Galp-nMatesE-comersFront-End` y `backend/` el repo `Galp-nMatesE-comersBack-end`, los dos en GitHub y subidos por Lucas. Este documento cubre solo el repo `frontend/`.
 
 ```
 E-comers Marcos/
