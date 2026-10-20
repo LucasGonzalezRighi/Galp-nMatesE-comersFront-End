@@ -6,7 +6,8 @@ describe('money', () => {
     expect(formatPesos(pesos(39999))).toBe('$39.999')
     expect(formatPesos(pesos(0))).toBe('$0')
     expect(formatPesos(pesos(1234567))).toBe('$1.234.567')
-    expect(formatPesos(pesos(39999))).not.toMatch(/ /)
+    // \s incluye el espacio no separable (U+00A0) que Intl pone en es-AR con style 'currency'.
+    expect(formatPesos(pesos(39999))).not.toMatch(/\s/)
   })
   it('usa el signo menos U+2212 en descuentos', () => {
     expect(formatDiscountPesos(pesos(3600))).toBe('−$3.600')

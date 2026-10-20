@@ -4,13 +4,13 @@
  * `scripts/dependency-versions.json`, la fuente única de versiones del front.
  *
  * Ejecutado directo (`npm run lint` lo corre) revisa la raíz, `apps/*` y `packages/*`,
- * imprime los problemas y sale con 1 si encuentra alguno.
+ * imprime los problemas y sale con 1 si encuentra alguno; si no, dice cuántos `package.json` revisó.
  *
  * @module
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 /** Secciones de un `package.json` que se revisan. */
 const SECTIONS = /** @type {const} */ (['dependencies', 'devDependencies', 'peerDependencies'])
@@ -84,18 +84,39 @@ function readWorkspaceManifests(root) {
   }))
 }
 
-if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+/**
+ * Indica si este archivo es el punto de entrada de `node` (y no un import, como en los tests).
+ *
+ * Compara las rutas reales de los dos lados: Node resuelve los enlaces del punto de entrada y
+ * `process.argv[1]` llega sin resolver, así que invocado por una junction o un symlink el
+ * chequeo no correría y el proceso saldría con 0 sin revisar nada.
+ *
+ * @returns {boolean} `true` si se ejecutó con `node scripts/check-dependency-versions.mjs`.
+ */
+function isEntryPoint() {
+  const entry = process.argv[1]
+  if (entry === undefined || !existsSync(entry)) return false
+  return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url))
+}
+
+if (isEntryPoint()) {
   const root = fileURLToPath(new URL('..', import.meta.url))
   const versions = /** @type {Record<string, string>} */ (
     JSON.parse(readFileSync(join(root, 'scripts', 'dependency-versions.json'), 'utf8'))
   )
-  const problems = findVersionProblems(readWorkspaceManifests(root), versions)
+  const manifests = readWorkspaceManifests(root)
+  const problems = findVersionProblems(manifests, versions)
   if (problems.length > 0) {
+    const list = problems.map((problem) => `  - ${problem}\n`).join('')
     process.stderr.write(
-      `Versiones de dependencias que no coinciden con scripts/dependency-versions.json:\n${problems
-        .map((problem) => `  - ${problem}\n`)
-        .join('')}`,
+      `Versiones de dependencias que no coinciden con scripts/dependency-versions.json:\n${list}`,
     )
     process.exitCode = 1
+  } else {
+    // Confirma que el chequeo corrió: un guard que no corre también saldría con 0.
+    const count = String(manifests.length)
+    process.stdout.write(
+      `Las versiones coinciden con scripts/dependency-versions.json (package.json revisados: ${count}).\n`,
+    )
   }
 }

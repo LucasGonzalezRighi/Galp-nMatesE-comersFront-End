@@ -1,5 +1,14 @@
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -81,22 +90,37 @@ describe('findVersionProblems', () => {
 
 describe('check-dependency-versions ejecutado directo', () => {
   const script = join(dirname(fileURLToPath(import.meta.url)), 'check-dependency-versions.mjs')
-  /** @type {string[]} */
-  const workspaces = []
+  /** @type {(() => void)[]} */
+  const cleanups = []
 
   afterEach(() => {
-    for (const dir of workspaces.splice(0)) rmSync(dir, { recursive: true, force: true })
+    // Al revés: primero se borra el enlace y después la carpeta a la que apunta.
+    for (const cleanup of cleanups.splice(0).reverse()) cleanup()
   })
+
+  /**
+   * Crea una carpeta temporal y devuelve su ruta real: en macOS `tmpdir()` pasa por un
+   * symlink (/var -> /private/var) y en Windows puede venir con nombres cortos 8.3.
+   *
+   * @param {string} prefix - Prefijo del nombre de la carpeta.
+   * @returns {string} Ruta real de la carpeta creada.
+   */
+  function createTempDir(prefix) {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+    cleanups.push(() => {
+      rmSync(dir, { recursive: true, force: true })
+    })
+    return dir
+  }
 
   /**
    * Arma un workspace temporal con una copia del script y los package.json dados.
    *
    * @param {Record<string, object>} manifests - package.json por ruta relativa.
-   * @returns {import('node:child_process').SpawnSyncReturns<string>} Resultado de correr el script.
+   * @returns {string} Raíz del workspace.
    */
-  function runInWorkspace(manifests) {
-    const root = mkdtempSync(join(tmpdir(), 'galpon-versions-'))
-    workspaces.push(root)
+  function createWorkspace(manifests) {
+    const root = createTempDir('galpon-versions-')
     mkdirSync(join(root, 'scripts'))
     copyFileSync(script, join(root, 'scripts', 'check-dependency-versions.mjs'))
     writeFileSync(join(root, 'scripts', 'dependency-versions.json'), JSON.stringify(VERSIONS))
@@ -105,27 +129,59 @@ describe('check-dependency-versions ejecutado directo', () => {
       writeFileSync(join(root, path), JSON.stringify(json))
     }
     mkdirSync(join(root, 'packages', 'sin-manifiesto'), { recursive: true })
+    return root
+  }
+
+  /**
+   * Crea un enlace a la carpeta dada: junction en Windows (no pide permisos de
+   * administrador) y symlink de carpeta en el resto de los sistemas.
+   *
+   * @param {string} target - Carpeta a la que apunta el enlace.
+   * @returns {string} Ruta del enlace.
+   */
+  function createLink(target) {
+    const link = join(createTempDir('galpon-versions-enlace-'), 'workspace')
+    symlinkSync(target, link, 'junction')
+    cleanups.push(() => {
+      unlinkSync(link)
+    })
+    return link
+  }
+
+  /**
+   * Corre con node la copia del script que está en el workspace.
+   *
+   * @param {string} root - Raíz del workspace, o un enlace a ella.
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} Resultado de correr el script.
+   */
+  function runScript(root) {
     return spawnSync(process.execPath, [join(root, 'scripts', 'check-dependency-versions.mjs')], {
       encoding: 'utf8',
     })
   }
 
-  it('sale con 0 cuando la raíz, apps/* y packages/* respetan las versiones', () => {
-    const result = runInWorkspace({
+  it('sale con 0 y dice cuántos package.json revisó cuando todos respetan las versiones', () => {
+    const root = createWorkspace({
       'package.json': { devDependencies: { typescript: '6.0.3', '@galpon/config': '*' } },
       'apps/store/package.json': { dependencies: { next: '16.4.2' } },
       'packages/domain/package.json': { name: '@galpon/domain' },
     })
-    expect(result.status).toBe(0)
+    const result = runScript(root)
     expect(result.stderr).toBe('')
+    expect(result.status).toBe(0)
+    // Solo existe si el script corrió: la raíz, apps/store y packages/domain (sin-manifiesto no cuenta).
+    expect(result.stdout).toBe(
+      'Las versiones coinciden con scripts/dependency-versions.json (package.json revisados: 3).\n',
+    )
   })
 
   it('imprime los problemas de cada package.json y sale con 1', () => {
-    const result = runInWorkspace({
+    const root = createWorkspace({
       'package.json': { devDependencies: { typescript: '^6.0.3' } },
       'apps/store/package.json': { dependencies: { next: '^16.4.2' } },
       'packages/domain/package.json': { dependencies: { lodash: '4.17.21' } },
     })
+    const result = runScript(root)
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
       'package.json: "typescript" declara "^6.0.3" y la versión fijada es "6.0.3"',
@@ -135,6 +191,17 @@ describe('check-dependency-versions ejecutado directo', () => {
     )
     expect(result.stderr).toContain(
       'packages/domain/package.json: "lodash" no está en scripts/dependency-versions.json',
+    )
+  })
+
+  it('también revisa cuando se lo invoca por un enlace (junction o symlink)', () => {
+    const root = createWorkspace({
+      'package.json': { devDependencies: { typescript: '^6.0.3' } },
+    })
+    const result = runScript(createLink(root))
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'package.json: "typescript" declara "^6.0.3" y la versión fijada es "6.0.3"',
     )
   })
 })
