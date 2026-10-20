@@ -42,3 +42,9 @@ desktop.ini
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Generados y locales
+next-env.d.ts
+.vitest/
+*.local
+.env.local

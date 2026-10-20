@@ -1,0 +1,4 @@
+{
+  "extends": "@galpon/config/tsconfig.base.json",
+  "include": ["src"]
+}

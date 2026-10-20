@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: prettier
+      glob: '*.{ts,tsx,js,mjs,json,css,md,yaml,yml}'
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+    - name: eslint
+      glob: '*.{ts,tsx,mjs}'
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+pre-push:
+  jobs:
+    - name: typecheck
+      run: npm run typecheck

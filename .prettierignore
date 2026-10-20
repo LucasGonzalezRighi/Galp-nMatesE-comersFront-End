@@ -1,0 +1,12 @@
+package-lock.json
+**/generated/**
+**/routeTree.gen.ts
+docs/design/**
+coverage
+.next
+dist
+playwright-report
+test-results
+# Spec, plan y notas de trabajo del flujo de desarrollo: se editan como texto y no se reformatean
+docs/superpowers/**
+.superpowers
