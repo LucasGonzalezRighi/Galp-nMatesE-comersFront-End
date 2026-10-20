@@ -1,21 +1,31 @@
 import type { Ferrule, Leather } from './options'
-import { maxQuantity } from './catalog'
+import { assertValidQuantity, maxQuantity } from './catalog'
 
 /** Línea del carrito de un producto suelto. Solo los mates llevan `options`. */
 export interface ProductCartLine {
+  /** Distingue la línea de un producto suelto de la de un kit. */
   type: 'product'
+  /** Id del producto. */
   productId: string
+  /** Unidades del producto en esta línea. */
   quantity: number
+  /** Cuero y virola elegidos; existe solo para los mates (las bombillas y las yerbas no llevan). */
   options?: { leather: Leather; ferrule: Ferrule }
 }
 
 /** Línea del carrito de un kit: un mate, una bombilla y una yerba con un cuero. */
 export interface KitCartLine {
+  /** Distingue la línea de un kit de la de un producto suelto. */
   type: 'kit'
+  /** Id del mate del kit. */
   mateId: string
+  /** Id de la bombilla del kit. */
   bombillaId: string
+  /** Id de la yerba del kit. */
   yerbaId: string
+  /** Cuero del mate del kit. */
   leather: Leather
+  /** Cantidad de kits (no de piezas): cada kit trae un mate, una bombilla y una yerba. */
   quantity: number
 }
 
@@ -43,10 +53,12 @@ export function cartLineKey(line: CartLine): string {
  * Agrega una línea al carrito; si ya hay una con la misma clave, suma las cantidades.
  *
  * @param lines - Líneas actuales (no se modifican).
- * @param line - Línea a agregar.
+ * @param line - Línea a agregar; su cantidad tiene que ser un entero mayor o igual a 1.
  * @returns Una lista nueva: la línea existente conserva su lugar y la nueva va al final.
+ * @throws {RangeError} Si la cantidad de `line` no es un entero mayor o igual a 1.
  */
 export function addCartLine(lines: readonly CartLine[], line: CartLine): CartLine[] {
+  assertValidQuantity(line.quantity)
   const key = cartLineKey(line)
   if (!lines.some((existing) => cartLineKey(existing) === key)) {
     return [...lines, line]
@@ -63,8 +75,9 @@ export function addCartLine(lines: readonly CartLine[], line: CartLine): CartLin
  *
  * @param lines - Líneas actuales (no se modifican).
  * @param key - Clave de la línea, según {@link cartLineKey}.
- * @param quantity - Cantidad nueva.
+ * @param quantity - Cantidad nueva: un entero, o 0 o menos para quitar la línea.
  * @returns Una lista nueva; si no hay una línea con esa clave, queda igual.
+ * @throws {RangeError} Si la cantidad es mayor que 0 y no es un entero (por ejemplo, 1.5 o `NaN`).
  */
 export function setCartLineQuantity(
   lines: readonly CartLine[],
@@ -74,6 +87,7 @@ export function setCartLineQuantity(
   if (quantity <= 0) {
     return removeCartLine(lines, key)
   }
+  assertValidQuantity(quantity)
   return lines.map((line) => (cartLineKey(line) === key ? { ...line, quantity } : line))
 }
 

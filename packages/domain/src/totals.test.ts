@@ -13,12 +13,23 @@ describe('productLineAmounts', () => {
       totalArs: 79998,
     })
   })
-  it('con cantidad 0 todo es 0', () => {
-    expect(productLineAmounts(pesos(39999), 0)).toEqual({
-      grossArs: 0,
+  it('con una sola unidad el bruto es el precio de lista', () => {
+    expect(productLineAmounts(pesos(39999), 1)).toEqual({
+      grossArs: 39999,
       savingsArs: 0,
-      totalArs: 0,
+      totalArs: 39999,
     })
+  })
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una cantidad de %s, que no es un entero mayor o igual a 1',
+    (quantity) => {
+      expect(() => productLineAmounts(pesos(39999), quantity)).toThrow(RangeError)
+    },
+  )
+  it('el mensaje de error está en español', () => {
+    expect(() => productLineAmounts(pesos(39999), 0)).toThrow(
+      'La cantidad tiene que ser un entero mayor o igual a 1',
+    )
   })
 })
 
@@ -56,6 +67,14 @@ describe('kitLineAmounts', () => {
   it('rechaza un porcentaje fuera de rango', () => {
     expect(() => kitLineAmounts(KIT_PIECES, 1, 31)).toThrow(RangeError)
   })
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una cantidad de %s kits, que no es un entero mayor o igual a 1',
+    (quantity) => {
+      expect(() => kitLineAmounts(KIT_PIECES, quantity, 10)).toThrow(
+        'La cantidad tiene que ser un entero mayor o igual a 1',
+      )
+    },
+  )
 })
 
 describe('cartTotals', () => {

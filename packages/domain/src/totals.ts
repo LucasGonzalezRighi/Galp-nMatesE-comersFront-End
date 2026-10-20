@@ -1,4 +1,5 @@
 import type { Pesos } from './money'
+import { assertValidQuantity } from './catalog'
 import { kitSavings } from './kit'
 import { pesos, sumPesos } from './money'
 
@@ -30,10 +31,12 @@ export interface CartTotals {
  * Calcula los importes de una línea de producto suelto.
  *
  * @param unitPriceArs - Precio de lista por unidad.
- * @param quantity - Unidades.
+ * @param quantity - Unidades, un entero mayor o igual a 1.
  * @returns Bruto y total iguales, sin ahorro.
+ * @throws {RangeError} Si la cantidad no es un entero mayor o igual a 1.
  */
 export function productLineAmounts(unitPriceArs: Pesos, quantity: number): LineAmounts {
+  assertValidQuantity(quantity)
   const grossArs = pesos(unitPriceArs * quantity)
   return { grossArs, savingsArs: pesos(0), totalArs: grossArs }
 }
@@ -45,10 +48,11 @@ export function productLineAmounts(unitPriceArs: Pesos, quantity: number): LineA
  * por la cantidad, así el redondeo es el mismo que ve el cliente en un solo kit.
  *
  * @param pieceListPrices - Precios de lista del mate, la bombilla y la yerba del kit.
- * @param quantity - Cantidad de kits.
- * @param discountPercent - Porcentaje de descuento del kit, entero entre 0 y 30.
+ * @param quantity - Cantidad de kits, un entero mayor o igual a 1.
+ * @param discountPercent - Porcentaje de descuento del kit, entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
  * @returns Bruto, ahorro y total de la línea.
- * @throws {RangeError} Si el porcentaje no es un entero entre 0 y 30.
+ * @throws {RangeError} Si la cantidad no es un entero mayor o igual a 1, o si el porcentaje no es
+ *   un entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
  * @example
  * kitLineAmounts([pesos(39999), pesos(25999), pesos(9999)], 1, 10)
  * // { grossArs: 75997, savingsArs: 7600, totalArs: 68397 }
@@ -58,6 +62,7 @@ export function kitLineAmounts(
   quantity: number,
   discountPercent: number,
 ): LineAmounts {
+  assertValidQuantity(quantity)
   const kitGrossArs = sumPesos(pieceListPrices)
   const grossArs = pesos(kitGrossArs * quantity)
   const savingsArs = pesos(kitSavings(kitGrossArs, discountPercent) * quantity)

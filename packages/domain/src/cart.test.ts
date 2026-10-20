@@ -73,6 +73,18 @@ describe('addCartLine', () => {
     expect(original).toEqual([mateLine(1)])
     expect(result).not.toBe(original)
   })
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una cantidad de %s, que no es un entero mayor o igual a 1',
+    (quantity) => {
+      expect(() => addCartLine([], mateLine(quantity))).toThrow(RangeError)
+      expect(() => addCartLine([kitLine()], kitLine(quantity))).toThrow(RangeError)
+    },
+  )
+  it('el mensaje de error está en español', () => {
+    expect(() => addCartLine([], bombillaLine(0))).toThrow(
+      'La cantidad tiene que ser un entero mayor o igual a 1',
+    )
+  })
 })
 
 describe('setCartLineQuantity', () => {
@@ -98,6 +110,18 @@ describe('setCartLineQuantity', () => {
     const original = [mateLine(1)]
     setCartLineQuantity(original, cartLineKey(mateLine()), 9)
     expect(original).toEqual([mateLine(1)])
+  })
+  it('rechaza una cantidad fraccionaria o que no es un número', () => {
+    const lines = [mateLine(2)]
+    const key = cartLineKey(mateLine())
+    expect(() => setCartLineQuantity(lines, key, 1.5)).toThrow(RangeError)
+    expect(() => setCartLineQuantity(lines, key, Number.NaN)).toThrow(RangeError)
+    expect(() => setCartLineQuantity(lines, key, 2.5)).toThrow(
+      'La cantidad tiene que ser un entero mayor o igual a 1',
+    )
+  })
+  it('también rechaza la cantidad fraccionaria si no hay una línea con esa clave', () => {
+    expect(() => setCartLineQuantity([], 'product:zzz:-:-', 1.5)).toThrow(RangeError)
   })
 })
 
@@ -149,5 +173,9 @@ describe('remainingQuantityFor', () => {
   })
   it('da 0 si no hay stock', () => {
     expect(remainingQuantityFor('m', 0, [])).toBe(0)
+  })
+  it('con el tope de 20 activo, descuenta lo que hay en el carrito del tope y no del stock', () => {
+    // Stock 25 → el tope es 20; con 10 en el carrito quedan 10 (y no 25 - 10 = 15).
+    expect(remainingQuantityFor('m', 25, [mateLine(6), kitLine(4)])).toBe(10)
   })
 })

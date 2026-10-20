@@ -21,7 +21,7 @@ export const KIT_GROUP_ORDER: readonly ProductGroup[] = ['mate', 'bombilla', 'ye
  * @param piecesListTotal - Suma de los precios de lista de las tres piezas.
  * @param discountPercent - Porcentaje de descuento, entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
  * @returns El ahorro en pesos.
- * @throws {RangeError} Si el porcentaje no es un entero entre 0 y 30.
+ * @throws {RangeError} Si el porcentaje no es un entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
  * @example
  * kitSavings(pesos(75997), 10) // 7600
  */

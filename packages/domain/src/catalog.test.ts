@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { ProductGroup, ProductStatus } from './catalog'
+import type { ProductGroup, ProductSortOrder, ProductStatus } from './catalog'
 import type { Pesos } from './money'
 import {
   MAX_QUANTITY_PER_PRODUCT,
   PRODUCT_GROUPS,
   PRODUCT_SORT_ORDERS,
   PRODUCT_STATUSES,
+  assertValidQuantity,
   formatProductCode,
   isProductSortOrder,
   isPurchasable,
@@ -55,6 +56,30 @@ describe('maxQuantity', () => {
     expect(maxQuantity(0)).toBe(0)
     expect(maxQuantity(-2)).toBe(0)
   })
+  it('da 0 si el stock no es un número finito', () => {
+    expect(maxQuantity(Number.NaN)).toBe(0)
+    expect(maxQuantity(Number.POSITIVE_INFINITY)).toBe(0)
+    expect(maxQuantity(Number.NEGATIVE_INFINITY)).toBe(0)
+  })
+  it('redondea hacia abajo un stock fraccionario: no se vende media unidad', () => {
+    expect(maxQuantity(2.5)).toBe(2)
+    expect(maxQuantity(0.9)).toBe(0)
+    expect(maxQuantity(20.5)).toBe(20)
+  })
+})
+
+describe('assertValidQuantity', () => {
+  it('acepta cualquier entero desde 1: el tope de compra lo aplica quien arma el carrito', () => {
+    expect(() => {
+      assertValidQuantity(1)
+      assertValidQuantity(MAX_QUANTITY_PER_PRODUCT + 1)
+    }).not.toThrow()
+  })
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])('rechaza %s', (quantity) => {
+    expect(() => {
+      assertValidQuantity(quantity)
+    }).toThrow(new RangeError('La cantidad tiene que ser un entero mayor o igual a 1'))
+  })
 })
 
 describe('formatProductCode', () => {
@@ -64,6 +89,18 @@ describe('formatProductCode', () => {
   it('no recorta los códigos de dos o más dígitos', () => {
     expect(formatProductCode(27)).toBe('N°27')
     expect(formatProductCode(100)).toBe('N°100')
+  })
+  it('acepta el primer correlativo', () => {
+    expect(formatProductCode(1)).toBe('N°01')
+  })
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza %s, que no es un entero mayor o igual a 1',
+    (sequence) => {
+      expect(() => formatProductCode(sequence)).toThrow(RangeError)
+    },
+  )
+  it('el mensaje de error está en español y dice qué se recibió', () => {
+    expect(() => formatProductCode(0)).toThrow(/entero mayor o igual a 1.*0/)
   })
 })
 
@@ -142,6 +179,11 @@ describe('sortProducts', () => {
     expect(input).toEqual(snapshot)
     expect(sorted).not.toBe(input)
   })
+  it('lanza un error claro con un orden desconocido (por ejemplo, un ?orden= sin validar)', () => {
+    expect(() => sortProducts(catalog, 'za' as ProductSortOrder)).toThrow(
+      /Orden del catálogo desconocido: "za"/,
+    )
+  })
 })
 
 describe('selectRelated', () => {
@@ -184,6 +226,14 @@ describe('selectRelated', () => {
     const related = selectRelated(bombilla, [...catalog, bombilla])
     expect(ids(related)).toEqual(['b1'])
     expect(related.every((r) => r.group === 'bombilla')).toBe(true)
+  })
+  it('un límite negativo o 0 no devuelve ninguno', () => {
+    expect(selectRelated(m1, catalog, -1)).toEqual([])
+    expect(selectRelated(m1, catalog, 0)).toEqual([])
+  })
+  it('un límite fraccionario se redondea hacia abajo', () => {
+    expect(ids(selectRelated(m1, catalog, 2.9))).toEqual(['m3', 'm5'])
+    expect(selectRelated(m1, catalog, -0.5)).toEqual([])
   })
   it('devuelve los que hay si hay menos que el límite', () => {
     expect(ids(selectRelated(m1, [m1, item('m3', 'imperial')]))).toEqual(['m3'])

@@ -16,8 +16,8 @@ const MINUS_SIGN = '−'
  * Convierte un número en un monto en pesos.
  *
  * @param value - Monto en pesos enteros.
- * @returns El mismo valor con el tipo {@link Pesos}.
- * @throws {RangeError} Si el valor no es un entero seguro mayor o igual a 0.
+ * @returns El mismo valor con el tipo {@link Pesos}; el cero negativo (`-0`) se normaliza a `0`.
+ * @throws {RangeError} Si el valor no es un entero seguro mayor o igual a 0 (tampoco `NaN` ni infinito).
  * @example
  * pesos(39999) // 39999 como Pesos
  * pesos(1.5) // lanza RangeError
@@ -28,7 +28,8 @@ export function pesos(value: number): Pesos {
       `El monto tiene que ser un entero de pesos mayor o igual a 0; se recibió ${String(value)}.`,
     )
   }
-  return value as Pesos
+  // `-0` pasa la validación pero Intl lo mostraría como "-0": se normaliza a `0`.
+  return (value === 0 ? 0 : value) as Pesos
 }
 
 /**
@@ -58,12 +59,18 @@ export function formatDiscountPesos(value: Pesos): string {
 /**
  * Formatea un porcentaje de descuento con el signo menos U+2212 adelante.
  *
- * @param percent - Porcentaje entero, en positivo (por ejemplo, el descuento del kit).
+ * @param percent - Porcentaje entero de 0 a 100, en positivo (por ejemplo, el descuento del kit).
  * @returns El porcentaje formateado.
+ * @throws {RangeError} Si el porcentaje no es un entero entre 0 y 100.
  * @example
  * formatDiscountPercent(10) // "−10%"
  */
 export function formatDiscountPercent(percent: number): string {
+  if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
+    throw new RangeError(
+      `El porcentaje tiene que ser un entero entre 0 y 100; se recibió ${String(percent)}.`,
+    )
+  }
   return `${MINUS_SIGN}${String(percent)}%`
 }
 

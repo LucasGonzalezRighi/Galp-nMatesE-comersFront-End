@@ -194,6 +194,26 @@ describe('check-dependency-versions ejecutado directo', () => {
     )
   })
 
+  it('informa la ruta y el motivo cuando un package.json no es JSON válido, y sale con 1', () => {
+    const root = createWorkspace({ 'package.json': { name: 'raiz' } })
+    mkdirSync(join(root, 'apps', 'store'), { recursive: true })
+    writeFileSync(join(root, 'apps', 'store', 'package.json'), '{ "dependencies": ')
+    const result = runScript(root)
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    // Un solo renglón en español con la ruta relativa; sin la traza de un SyntaxError sin atrapar.
+    expect(result.stderr).toMatch(/^apps\/store\/package\.json: JSON inválido \(.+\)\n$/)
+  })
+
+  it('informa la ruta y el motivo cuando scripts/dependency-versions.json no es JSON válido', () => {
+    const root = createWorkspace({ 'package.json': { name: 'raiz' } })
+    writeFileSync(join(root, 'scripts', 'dependency-versions.json'), '{ "next": 16.4.2 }')
+    const result = runScript(root)
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toMatch(/^scripts\/dependency-versions\.json: JSON inválido \(.+\)\n$/)
+  })
+
   it('también revisa cuando se lo invoca por un enlace (junction o symlink)', () => {
     const root = createWorkspace({
       'package.json': { devDependencies: { typescript: '^6.0.3' } },

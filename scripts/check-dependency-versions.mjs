@@ -63,11 +63,34 @@ export function findVersionProblems(manifests, versions) {
   return problems
 }
 
+/** Error de un archivo que no es JSON válido; su mensaje ya está listo para mostrarse. */
+class InvalidJsonError extends Error {}
+
+/**
+ * Lee y parsea un archivo JSON del workspace.
+ *
+ * @param {string} root - Carpeta raíz del workspace.
+ * @param {string} path - Ruta del archivo relativa a la raíz, con `/` (es la que se muestra).
+ * @returns {unknown} El contenido ya parseado.
+ * @throws {InvalidJsonError} Si el archivo no es JSON válido: `<ruta>: JSON inválido (<motivo>)`.
+ */
+function readJson(root, path) {
+  try {
+    return JSON.parse(readFileSync(join(root, path), 'utf8'))
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new InvalidJsonError(`${path}: JSON inválido (${error.message})`, { cause: error })
+    }
+    throw error
+  }
+}
+
 /**
  * Lee los `package.json` de la raíz, `apps/*` y `packages/*`.
  *
  * @param {string} root - Carpeta raíz del workspace.
  * @returns {{ path: string, json: object }[]} Los manifiestos encontrados, con ruta relativa.
+ * @throws {InvalidJsonError} Si algún `package.json` no es JSON válido.
  */
 function readWorkspaceManifests(root) {
   const paths = ['package.json']
@@ -78,10 +101,7 @@ function readWorkspaceManifests(root) {
       if (entry.isDirectory() && existsSync(join(root, path))) paths.push(path)
     }
   }
-  return paths.map((path) => ({
-    path,
-    json: /** @type {object} */ (JSON.parse(readFileSync(join(root, path), 'utf8'))),
-  }))
+  return paths.map((path) => ({ path, json: /** @type {object} */ (readJson(root, path)) }))
 }
 
 /**
@@ -100,23 +120,30 @@ function isEntryPoint() {
 }
 
 if (isEntryPoint()) {
-  const root = fileURLToPath(new URL('..', import.meta.url))
-  const versions = /** @type {Record<string, string>} */ (
-    JSON.parse(readFileSync(join(root, 'scripts', 'dependency-versions.json'), 'utf8'))
-  )
-  const manifests = readWorkspaceManifests(root)
-  const problems = findVersionProblems(manifests, versions)
-  if (problems.length > 0) {
-    const list = problems.map((problem) => `  - ${problem}\n`).join('')
-    process.stderr.write(
-      `Versiones de dependencias que no coinciden con scripts/dependency-versions.json:\n${list}`,
+  try {
+    const root = fileURLToPath(new URL('..', import.meta.url))
+    const versions = /** @type {Record<string, string>} */ (
+      readJson(root, 'scripts/dependency-versions.json')
     )
+    const manifests = readWorkspaceManifests(root)
+    const problems = findVersionProblems(manifests, versions)
+    if (problems.length > 0) {
+      const list = problems.map((problem) => `  - ${problem}\n`).join('')
+      process.stderr.write(
+        `Versiones de dependencias que no coinciden con scripts/dependency-versions.json:\n${list}`,
+      )
+      process.exitCode = 1
+    } else {
+      // Confirma que el chequeo corrió: un guard que no corre también saldría con 0.
+      const count = String(manifests.length)
+      process.stdout.write(
+        `Las versiones coinciden con scripts/dependency-versions.json (package.json revisados: ${count}).\n`,
+      )
+    }
+  } catch (error) {
+    // Un JSON roto es un problema del repo, no un fallo del script: se informa sin traza.
+    if (!(error instanceof InvalidJsonError)) throw error
+    process.stderr.write(`${error.message}\n`)
     process.exitCode = 1
-  } else {
-    // Confirma que el chequeo corrió: un guard que no corre también saldría con 0.
-    const count = String(manifests.length)
-    process.stdout.write(
-      `Las versiones coinciden con scripts/dependency-versions.json (package.json revisados: ${count}).\n`,
-    )
   }
 }

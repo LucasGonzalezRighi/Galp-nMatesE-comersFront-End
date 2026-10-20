@@ -63,6 +63,9 @@ describe('missingKitGroups', () => {
   it('no importa el orden en que se eligieron las piezas', () => {
     expect(missingKitGroups({ yerba: 'c' })).toEqual(['mate', 'bombilla'])
   })
+  it('un grupo con undefined explícito cuenta como faltante', () => {
+    expect(missingKitGroups({ mate: undefined, bombilla: 'b' })).toEqual(['mate', 'yerba'])
+  })
 })
 
 describe('isKitComplete', () => {
