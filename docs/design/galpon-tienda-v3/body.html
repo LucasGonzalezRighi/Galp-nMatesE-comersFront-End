@@ -1,0 +1,815 @@
+
+</helmet>
+<div style="position:relative; min-height:100vh; overflow-x:clip; background:radial-gradient(1200px 720px at 82% -160px, color-mix(in srgb, var(--color-accent-900) 75%, transparent), transparent 60%), var(--color-bg); text-wrap:pretty">
+
+
+<div style="position:fixed; top:0; left:0; right:0; height:2px; z-index:60; pointer-events:none"><div ref="{{ progRef }}" style="height:100%; transform-origin:0 50%; transform:scaleX(0); background:linear-gradient(90deg, transparent, var(--color-accent) 70%, var(--color-accent-200))"></div></div>
+
+<header style="position:sticky; top:0; z-index:50">
+  <div ref="{{ glassRef }}" style="position:absolute; inset:0; opacity:0; transition:opacity .4s; background:color-mix(in srgb, var(--color-bg) 74%, transparent); backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2)"><div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div></div>
+  <nav style="position:relative; max-width:1280px; height:64px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:grid; grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr); align-items:center; gap:20px">
+    <a href="#/inicio" sc-camel-on-click="{{ nav.inicio }}" aria-label="Galpón — inicio" style="display:block; flex:none; width:116px; aspect-ratio:1447/279; background:var(--color-text); -webkit-mask:url(&quot;assets/galpon-wordmark.png&quot;) center/contain no-repeat; mask:url(&quot;assets/galpon-wordmark.png&quot;) center/contain no-repeat"></a>
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; gap:4px; justify-self:center">
+        <a href="#/inicio" sc-camel-on-click="{{ nav.inicio }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.inicio }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Inicio<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.inicio }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+        <a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.tienda }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Tienda<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.tienda }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+        <a href="#/kit" sc-camel-on-click="{{ nav.kit }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.kit }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Armá tu kit<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.kit }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+        <a href="#/nosotros" sc-camel-on-click="{{ nav.nosotros }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.nosotros }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Nosotros<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.nosotros }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+        <a href="#/faq" sc-camel-on-click="{{ nav.faq }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.faq }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Preguntas<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.faq }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+        <a href="#/contacto" sc-camel-on-click="{{ nav.contacto }}" style="position:relative; padding:8px 14px; border-radius:999px; font-size:14px; white-space:nowrap; text-decoration:none; color:{{ navC.contacto }}; transition:color .3s, background .4s, transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="color:var(--color-text); background:color-mix(in srgb, var(--color-accent) 16%, transparent); transform:translateY(-2px)">Contacto<span style="position:absolute; left:12px; right:12px; bottom:2px; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ navOn.contacto }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></a>
+      </div>
+    </sc-if>
+    <div style="justify-self:end; grid-column:3; display:flex; gap:6px; align-items:center">
+      <button class="btn btn-icon" sc-camel-on-click="{{ openSearch }}" aria-label="Buscar"><svg width="19" height="19" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg></button>
+      <span data-magnetic="0.3" style="display:inline-flex; padding:8px; margin:-8px"><button ref="{{ cartBtnRef }}" class="btn btn-secondary" sc-camel-on-click="{{ openCart }}" aria-label="Abrir carrito" style="position:relative; gap:8px; min-height:38px; padding:0 14px"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M239.89,198.12l-14.26-120a16,16,0,0,0-16-14.12H176a48,48,0,0,0-96,0H46.33a16,16,0,0,0-16,14.12l-14.26,120A16,16,0,0,0,20,210.6a16.13,16.13,0,0,0,12,5.4H223.92A16.13,16.13,0,0,0,236,210.6,16,16,0,0,0,239.89,198.12ZM128,32a32,32,0,0,1,32,32H96A32,32,0,0,1,128,32ZM32,200,46.33,80H80v24a8,8,0,0,0,16,0V80h64v24a8,8,0,0,0,16,0V80h33.75l14.17,120Z"></path></svg><span>Carrito</span><span ref="{{ badgeRef }}" style="min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-grid; place-items:center; font-size:11px; font-feature-settings:'tnum' 1; background:var(--color-accent-800); color:var(--color-accent-100)">{{ cartCount }}</span></button></span>
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}"><button class="btn btn-icon" sc-camel-on-click="{{ toggleMenu }}" aria-label="Menú"><svg width="20" height="20" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"></path></svg></button></sc-if>
+    </div>
+  </nav>
+</header>
+
+<main ref="{{ mainRef }}">
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div data-screen-label="Inicio">
+
+<div data-story="">
+<section data-sc="0" style="position:relative; min-height:calc(100vh - 64px); display:flex; align-items:center; overflow:hidden; "><div style="position:absolute; inset:0; pointer-events:none; background:radial-gradient(900px 640px at 70% 50%, color-mix(in srgb, var(--color-accent-800) 55%, transparent), transparent 70%), radial-gradient(700px 500px at 0% 100%, color-mix(in srgb, var(--color-accent-2-900) 70%, transparent), transparent 70%)"></div>
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px) calc(clamp(24px,6vh,64px) + 120px); box-sizing:border-box; display:flex; justify-content:flex-start">
+    <div style="width:min(100%, 700px); display:flex; flex-direction:column; gap:24px"><span data-reveal="up" style="align-self:flex-start; display:inline-flex; align-items:center; gap:10px; padding:6px 16px 6px 8px; border-radius:999px; font-size:13px; background:color-mix(in srgb, var(--color-bg) 55%, transparent); box-shadow:inset 0 0 0 1px var(--color-neutral-700)"><span style="width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:var(--color-accent-800)"><img src="assets/galpon-mark.png" alt="" style="width:13px"></span><span style="color:var(--color-text)">Galpón Mates</span><span style="width:4px; height:4px; border-radius:50%; background:var(--color-accent-2-400)"></span><span style="color:var(--color-neutral-400)">Hechos para compartir</span></span>
+      <h1 style="margin:0; white-space:nowrap; font-size:clamp(54px,7.4vw,118px); line-height:.9; letter-spacing:-.05em"><span style="display:block; overflow:hidden; padding-bottom:.1em"><span data-reveal="rise" data-delay="60" style="display:block">Encontrá</span></span><span style="display:block; overflow:hidden; padding-bottom:.1em"><span data-reveal="rise" data-delay="180" style="display:block; background:linear-gradient(90deg, var(--color-accent-300), var(--color-accent-2-300)); -webkit-background-clip:text; background-clip:text; color:transparent">tu mate.</span></span></h1>
+      <p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:var(--color-neutral-300)">Calabaza curada, virola de alpaca cincelada y bombillones de bronce. Bajá: te mostramos cada pieza de cerca.</p>
+      <div data-reveal="up" data-delay="320" style="position:absolute; left:0; right:0; bottom:clamp(24px,6vh,64px); display:flex; flex-wrap:wrap; justify-content:center; gap:14px"><span data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" class="btn btn-primary" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px; text-decoration:none; border-radius:999px; box-shadow:0 0 40px -12px var(--color-accent); background:linear-gradient(var(--color-accent-2-500), var(--color-accent-2-500)) no-repeat left center / 0% 100%; transition:background-size 2.5s cubic-bezier(.22,.7,.2,1), color 1.2s ease 0.6s, border-color 2.5s, box-shadow 2.5s, transform .3s;" style-hover="background-size:100% 100%; color:var(--color-bg); border-color:var(--color-accent-2-500); box-shadow:0 0 40px -10px var(--color-accent-2-500)">Ver la tienda <svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span><span data-magnetic="0.3" style="display:inline-flex; padding:12px; margin:-12px"><a href="#/kit" class="btn btn-secondary" sc-camel-on-click="{{ nav.kit }}" style="min-height:48px; padding:0 20px; font-size:15px; gap:10px; text-decoration:none; border-radius:999px; background:linear-gradient(var(--color-accent-2-500), var(--color-accent-2-500)) no-repeat left center / 0% 100%; transition:background-size 2.5s cubic-bezier(.22,.7,.2,1), color 1.2s ease 0.6s, border-color 2.5s, box-shadow 2.5s, transform .3s;" style-hover="background-size:100% 100%; color:var(--color-bg); border-color:var(--color-accent-2-500); box-shadow:0 0 40px -10px var(--color-accent-2-500)">Armá tu kit <span class="tag tag-accent-2">{{ kitOff }}</span></a></span></div></div>
+  </div>
+</section>
+<section data-sc="1" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; background:radial-gradient(900px 600px at 75% 50%, #fffaf3, var(--color-neutral-100) 60%, var(--color-neutral-200)); color:var(--color-bg);">
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-start">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent-2-700)"><span style="width:28px; height:1px; background:currentColor"></span>La ronda completa</span><h2 style="margin:0; font-size:clamp(44px,6.4vw,104px); line-height:.92; letter-spacing:-.05em; color:var(--color-bg)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Tres piezas.</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-600)">Una ronda.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:rgba(26,18,16,.72)">Mate, bombilla y yerba. Cada una se elige por separado, o las tres juntas con {{ kitOff }} armando el kit.</p>
+      <div data-reveal="up" data-delay="280" style="display:flex; flex-direction:column"><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ heroP.href }}" sc-camel-on-click="{{ heroP.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ heroP.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ heroP.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ heroP.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyBomb.href }}" sc-camel-on-click="{{ storyBomb.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyBomb.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyBomb.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyBomb.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyYerba.href }}" sc-camel-on-click="{{ storyYerba.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyYerba.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyYerba.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyYerba.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div></div></div>
+  </div>
+</section>
+<section data-sc="2" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; "><div style="position:absolute; inset:0; pointer-events:none; background:radial-gradient(800px 600px at 22% 50%, color-mix(in srgb, var(--color-accent-800) 45%, transparent), transparent 70%)"></div>
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-end">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><h2 style="margin:0; font-size:clamp(30px,3.6vw,54px); line-height:1.02; letter-spacing:-.04em; white-space:nowrap; color:var(--color-text)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Calabaza curada.</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-300)">Virola de alpaca.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:var(--color-neutral-300)">Cada calabaza se elige por su forma y sus paredes. La virola se cincela a mano y la base de bronce lo mantiene firme sobre la mesa.</p>
+      <div data-reveal="up" data-delay="280" style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px"><div style="display:flex; flex-direction:column; gap:4px"><span style="font-size:30px; letter-spacing:-.03em"><span data-count="16">16</span></span><span style="font-size:12px; color:var(--color-neutral-400)">modelos de mate</span></div><div style="display:flex; flex-direction:column; gap:4px"><span style="font-size:30px; letter-spacing:-.03em"><span data-count="4">4</span></span><span style="font-size:12px; color:var(--color-neutral-400)">líneas</span></div><div style="display:flex; flex-direction:column; gap:4px"><span style="font-size:30px; letter-spacing:-.03em"><span data-count="4">4</span></span><span style="font-size:12px; color:var(--color-neutral-400)">cueros a elección</span></div></div>
+      <span data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/tienda" sc-camel-on-click="{{ lineGo.imperiales }}" class="btn btn-primary" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px; text-decoration:none; border-radius:999px; box-shadow:0 0 40px -12px var(--color-accent)">Ver mates <svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span></div>
+  </div>
+</section>
+<section data-sc="3" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; "><div style="position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-section) 70%, transparent))"></div><span data-parallax="0.25" style="position:absolute; left:-2vw; top:50%; margin-top:-12vw; font-size:24vw; line-height:1; letter-spacing:-.06em; font-weight:600; color:transparent; -webkit-text-stroke:1px color-mix(in srgb, var(--color-accent-300) 18%, transparent); white-space:nowrap; pointer-events:none">Bombilla</span>
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-end">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent-2-300)"><span style="width:28px; height:1px; background:currentColor"></span>El bombillón</span><h2 style="margin:0; font-size:clamp(44px,6.4vw,104px); line-height:.92; letter-spacing:-.05em; color:var(--color-text)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Alpaca</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-300)">y bronce.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:var(--color-neutral-300)">Caño cincelado, pico de bronce y filtro tipo pala que no se tapa. En 15 y 18 cm.</p>
+      <div data-reveal="up" data-delay="280" style="display:flex; flex-direction:column"><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyBomb.href }}" sc-camel-on-click="{{ storyBomb.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyBomb.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyBomb.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyBomb.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyBomb2.href }}" sc-camel-on-click="{{ storyBomb2.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyBomb2.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyBomb2.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyBomb2.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div></div>
+      <span data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/tienda/bombillones" sc-camel-on-click="{{ lineGo.bombillones }}" class="btn btn-primary" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px; text-decoration:none; border-radius:999px; box-shadow:0 0 40px -12px var(--color-accent)">Ver bombillones <svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span></div>
+  </div>
+</section>
+<section data-sc="4" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; background:radial-gradient(900px 600px at 75% 50%, #fffaf3, var(--color-neutral-100) 60%, var(--color-neutral-200)); color:var(--color-bg);">
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-start">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent-2-700)"><span style="width:28px; height:1px; background:currentColor"></span>La yerba</span><h2 style="margin:0; font-size:clamp(44px,6.4vw,104px); line-height:.92; letter-spacing:-.05em; color:var(--color-bg)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Para cada</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-600)">cebada.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:rgba(26,18,16,.72)">Llenala hasta tres cuartos, tapá, agitá y armá la montañita. Canarias en tres versiones, paquete de 1 kg.</p>
+      <div data-reveal="up" data-delay="280" style="display:flex; flex-direction:column"><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyYerba.href }}" sc-camel-on-click="{{ storyYerba.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyYerba.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyYerba.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyYerba.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyYerba2.href }}" sc-camel-on-click="{{ storyYerba2.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyYerba2.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyYerba2.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyYerba2.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div><div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, rgba(26,18,16,.16) 48px, rgba(26,18,16,.16) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><a href="{{ storyYerba3.href }}" sc-camel-on-click="{{ storyYerba3.open }}" style="display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit"><span style="font-size:16px">{{ storyYerba3.name }}</span><span style="font-size:13px; opacity:.7; font-feature-settings:'tnum' 1">{{ storyYerba3.priceLabel }}</span></a><button class="btn btn-icon" sc-camel-on-click="{{ storyYerba3.add }}" aria-label="Agregar" style="border-radius:999px; box-shadow:inset 0 0 0 1px currentColor; color:inherit; flex:none"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></button></div></div></div>
+  </div>
+</section>
+<section data-sc="5" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; "><div style="position:absolute; inset:0; pointer-events:none; background:radial-gradient(900px 640px at 70% 50%, color-mix(in srgb, var(--color-accent-800) 55%, transparent), transparent 70%), radial-gradient(700px 500px at 0% 100%, color-mix(in srgb, var(--color-accent-2-900) 70%, transparent), transparent 70%)"></div>
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-start">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent-2-300)"><span style="width:28px; height:1px; background:currentColor"></span>El ritual</span><h2 style="margin:0; font-size:clamp(44px,6.4vw,104px); line-height:.92; letter-spacing:-.05em; color:var(--color-text)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Agua a 75 °C.</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-300)">Nunca hervida.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:var(--color-neutral-300)">Siempre sobre el costado de la bombilla, para no lavar la montañita. El primero es del cebador; después, arranca la ronda.</p>
+      <div data-reveal="up" data-delay="280" style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; font-size:12px; color:var(--color-neutral-400)"><span style="display:flex; flex-direction:column; gap:6px"><span style="color:var(--color-accent-2-300)">01</span>Yerba</span><span style="display:flex; flex-direction:column; gap:6px"><span style="color:var(--color-accent-2-300)">02</span>Montañita</span><span style="display:flex; flex-direction:column; gap:6px"><span style="color:var(--color-accent-2-300)">03</span>Bombilla</span><span style="display:flex; flex-direction:column; gap:6px"><span style="color:var(--color-accent-2-300)">04</span>Agua</span></div></div>
+  </div>
+</section>
+<section data-sc="6" style="position:relative; min-height:115vh; display:flex; align-items:center; overflow:hidden; background:radial-gradient(900px 600px at 75% 50%, #fffaf3, var(--color-neutral-100) 60%, var(--color-neutral-200)); color:var(--color-bg);">
+  <div style="position:relative; z-index:31; width:100%; max-width:1280px; margin:0 auto; padding:72px clamp(20px,5vw,64px); box-sizing:border-box; display:flex; justify-content:flex-start">
+    <div style="width:min(100%, 520px); display:flex; flex-direction:column; gap:24px"><span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent-2-700)"><span style="width:28px; height:1px; background:currentColor"></span>Hacelo tuyo</span><h2 style="margin:0; font-size:clamp(44px,6.4vw,104px); line-height:.92; letter-spacing:-.05em; color:var(--color-bg)"><span style="display:block; overflow:hidden; padding-bottom:.06em"><span data-reveal="rise" style="display:block">Elegí</span></span><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-600)">el cuero.</span></span></h2><p data-reveal="up" data-delay="200" style="margin:0; font-size:clamp(16px,1.3vw,19px); line-height:1.6; max-width:40ch; color:rgba(26,18,16,.72)">Negro, marrón, crudo o borravino. Elegís el cuero y la virola en la página de cada mate.</p>
+      <div data-reveal="up" data-delay="260" style="display:flex; gap:14px; align-items:center"><span data-swatch="0" style="width:34px; height:34px; border-radius:50%; background:#3a2016; transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s"></span><span data-swatch="1" style="width:34px; height:34px; border-radius:50%; background:#6b3c22; transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s"></span><span data-swatch="2" style="width:34px; height:34px; border-radius:50%; background:#b88d5c; transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s"></span><span data-swatch="3" style="width:34px; height:34px; border-radius:50%; background:#5a1c26; transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s"></span><span data-swname="" style="margin-left:6px; font-size:14px; color:rgba(26,18,16,.7)">Negro</span></div>
+      <div data-reveal="up" data-delay="340" style="display:flex; flex-wrap:wrap; gap:14px"><span data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/kit" sc-camel-on-click="{{ nav.kit }}" class="btn" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px; text-decoration:none; color:var(--color-bg); border-color:var(--color-bg); border-radius:999px">Armá tu kit <svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span><span data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" class="btn" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px; text-decoration:none; color:var(--color-bg); border-color:var(--color-bg); border-radius:999px">Ver todos los mates <svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span></div></div>
+  </div>
+</section>
+</div>
+<section data-hscroll="" style="position:relative; min-height:100vh">
+  <div data-hsticky="" style="position:sticky; top:0; height:100vh; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:36px">
+    <div style="width:100%; max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; box-sizing:border-box">
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Colección</span>
+        <h2 data-reveal="up" style="margin:0; font-size:clamp(32px,4.4vw,58px); line-height:1.04; letter-spacing:-.03em">Seis líneas para cada ronda</h2>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px; font-size:12px; color:var(--color-neutral-400); width:240px; font-feature-settings:'tnum' 1"><span>01</span><span style="position:relative; flex:1; height:1px; background:var(--color-neutral-800)"><span data-hprog="" style="position:absolute; inset:0; background:var(--color-accent); transform-origin:left; transform:scaleX(0); box-shadow:0 0 10px var(--color-accent)"></span></span><span>06</span></div>
+    </div>
+    <div data-track="" style="display:flex; gap:20px; padding:0 clamp(20px,5vw,64px); width:max-content; will-change:transform">
+      <sc-for list="{{ lines }}" as="c" hint-placeholder-count="6">
+        <article data-tilt="1" sc-camel-on-click="{{ c.go }}" style="position:relative; width:min(78vw, 440px); height:min(56vh, 500px); flex:none; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); cursor:pointer; transform:perspective(1000px); transition:transform .6s">
+          <div sc-camel-on-click-capture="{{ c.goCap }}" style="position:absolute; inset:-5%; transform:translate3d(calc(var(--px,0) * -18px), calc(var(--py,0) * -18px), 0); transition:transform .5s cubic-bezier(.2,.8,.2,1)">
+            <sc-if value="{{ c.hasImg }}" hint-placeholder-val="{{ false }}"><img src="assets/mate-imperial-premium.jpg" alt="{{ c.name }}" style="width:100%; height:100%; object-fit:cover; object-position:50% 78%"></sc-if>
+            <sc-if value="{{ c.noImg }}"><image-slot id="{{ c.slotId }}" shape="rect" placeholder="{{ c.placeholder }}" style="color:var(--color-neutral-500)"></image-slot></sc-if>
+          </div>
+          <div style="position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg, color-mix(in srgb, var(--color-bg) 40%, transparent), transparent 28%, transparent 42%, color-mix(in srgb, var(--color-bg) 95%, transparent) 90%)"></div>
+          <div style="position:absolute; inset:0; pointer-events:none; background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%), color-mix(in srgb, var(--color-accent-300) 18%, transparent), transparent 55%); opacity:var(--hov,0); mix-blend-mode:screen; transition:opacity .4s"></div>
+          <div style="position:absolute; top:18px; left:20px; right:20px; display:flex; justify-content:space-between; pointer-events:none; font-feature-settings:'tnum' 1"><span style="font-size:13px; color:var(--color-accent-300)">{{ c.n }}</span><span style="font-size:12px; color:var(--color-neutral-300)">{{ c.countLabel }}</span></div>
+          <div style="position:absolute; left:20px; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; pointer-events:none">
+            <h3 style="margin:0; font-size:clamp(26px,3vw,36px); letter-spacing:-.02em">{{ c.name }}</h3>
+            <p style="margin:0; font-size:14px; line-height:1.55; color:var(--color-neutral-300); max-width:36ch">{{ c.blurb }}</p>
+            <span style="display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--color-accent-300)">Ver línea <svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></span>
+          </div>
+        </article>
+      </sc-for>
+      <a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" style="width:min(60vw, 300px); height:min(56vh, 500px); flex:none; border-radius:14px; display:flex; flex-direction:column; justify-content:flex-end; gap:12px; padding:24px; box-sizing:border-box; text-decoration:none; color:var(--color-text); box-shadow:inset 0 0 0 1px var(--color-neutral-800); background:radial-gradient(320px 260px at 30% 20%, color-mix(in srgb, var(--color-accent-800) 70%, transparent), transparent 70%)">
+        <img data-float="" src="assets/galpon-mark.png" alt="" style="width:58px; margin-bottom:auto">
+        <span style="font-size:28px; letter-spacing:-.02em; line-height:1.1">Ver todo el catálogo</span>
+        <span style="display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--color-accent-300)">27 piezas <svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section style="padding:clamp(80px,10vw,140px) 0 clamp(40px,6vw,80px)">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px)">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; margin-bottom:40px">
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Destacados</span>
+        <h2 data-reveal="up" style="margin:0; font-size:clamp(32px,4.4vw,58px); line-height:1.04; letter-spacing:-.03em">Los más elegidos de la ronda</h2>
+      </div>
+      <a href="#/tienda" class="btn btn-ghost" sc-camel-on-click="{{ nav.tienda }}" style="gap:8px; text-decoration:none">Ver toda la tienda <svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap:20px">
+      <sc-for list="{{ featured }}" as="p" hint-placeholder-count="8"><dc-import name="ProductCard" product="{{ p }}" variant="{{ cardVariant }}" index="{{ $index }}" hint-size="100%,460px"></dc-import></sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="padding:clamp(80px,12vw,180px) 0">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; flex-direction:column; gap:36px">
+    <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Manifiesto</span>
+    <p data-scrub="" style="margin:0; max-width:23ch; font-size:clamp(30px,4.6vw,64px); line-height:1.12; letter-spacing:-.028em; font-weight:500"><span data-w="" style="opacity:.14">Un </span><span data-w="" style="opacity:.14">mate </span><span data-w="" style="opacity:.14">no </span><span data-w="" style="opacity:.14">se </span><span data-w="" style="opacity:.14">compra: </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">se </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">elige. </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">Calabaza </span><span data-w="" style="opacity:.14">curada, </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">alpaca </span><span data-w="" style="opacity:.14">cincelada </span><span data-w="" style="opacity:.14">a </span><span data-w="" style="opacity:.14">mano </span><span data-w="" style="opacity:.14">y </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">cuero </span><span data-w="" style="opacity:.14">cosido </span><span data-w="" style="opacity:.14">punto </span><span data-w="" style="opacity:.14">por </span><span data-w="" style="opacity:.14">punto. </span><span data-w="" style="opacity:.14">Piezas </span><span data-w="" style="opacity:.14">hechas </span><span data-w="" style="opacity:.14">para </span><span data-w="" style="opacity:.14">durar </span><span data-w="" style="opacity:.14">muchas </span><span data-w="" style="opacity:.14">rondas.</span></p>
+    <a href="#/nosotros" class="btn btn-ghost" sc-camel-on-click="{{ nav.nosotros }}" style="align-self:flex-start; gap:8px; text-decoration:none">Conocé la historia del galpón <svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a>
+  </div>
+</section>
+
+<section style="position:relative; overflow:hidden; padding:clamp(56px,7vw,96px) 0; background:radial-gradient(900px 420px at 85% -40%, color-mix(in srgb, var(--color-section-glow) 70%, transparent), transparent 64%), var(--color-section)">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:40px 32px">
+    <div data-reveal="up"><p style="margin:0; font-size:clamp(52px,6vw,84px); line-height:1; letter-spacing:-.03em; font-weight:500; font-feature-settings:'tnum' 1"><span data-count="27">27</span></p><p style="margin:14px 0 0; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 66%, transparent)">Piezas en catálogo</p></div>
+    <div data-reveal="up" data-delay="100"><p style="margin:0; font-size:clamp(52px,6vw,84px); line-height:1; letter-spacing:-.03em; font-weight:500; font-feature-settings:'tnum' 1"><span data-count="6">6</span></p><p style="margin:14px 0 0; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 66%, transparent)">Líneas de producto</p></div>
+    <div data-reveal="up" data-delay="200"><p style="margin:0; font-size:clamp(52px,6vw,84px); line-height:1; letter-spacing:-.03em; font-weight:500; font-feature-settings:'tnum' 1"><span data-count="24">24</span></p><p style="margin:14px 0 0; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 66%, transparent)">Provincias con envío</p></div>
+    <div data-reveal="up" data-delay="300"><p style="margin:0; font-size:clamp(52px,6vw,84px); line-height:1; letter-spacing:-.03em; font-weight:500; font-feature-settings:'tnum' 1"><span data-count="2">2</span></p><p style="margin:14px 0 0; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 66%, transparent)">Socios detrás de cada pedido</p></div>
+  </div>
+</section>
+
+<section style="padding:clamp(80px,10vw,150px) 0">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; flex-wrap:wrap; gap:56px; align-items:center">
+    <div style="flex:1 1 360px; min-width:0; display:flex; flex-direction:column; gap:22px">
+      <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Armá tu kit</span>
+      <h2 data-reveal="up" style="margin:0; font-size:clamp(32px,4.4vw,58px); line-height:1.04; letter-spacing:-.03em">Mate, bombilla y yerba. <span style="color:var(--color-accent-300)">{{ kitOff }} en el kit.</span></h2>
+      <p data-reveal="up" data-delay="100" style="margin:0; max-width:44ch; font-size:16px; line-height:1.65; color:var(--color-neutral-300)">Elegí las tres piezas en tres pasos. El descuento se aplica solo sobre el total del kit.</p>
+      <span data-reveal="up" data-delay="200" data-magnetic="0.3" style="display:inline-flex; align-self:flex-start; padding:12px; margin:-12px"><a href="#/kit" class="btn btn-primary" sc-camel-on-click="{{ nav.kit }}" style="min-height:48px; padding:0 24px; font-size:15px; gap:10px; text-decoration:none">Armar mi kit <svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></a></span>
+    </div>
+    <div style="flex:1.3 1 460px; min-width:0; display:flex; flex-direction:column; gap:18px">
+      <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:10px">
+        <div data-reveal="up" data-delay="0"><div data-float="" data-tilt="1" style="position:relative; aspect-ratio:3/4; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s"><img src="assets/mate-imperial-premium.jpg" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 80%"><div style="position:absolute; inset:0; background:linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--color-bg) 92%, transparent))"></div><div style="position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:2px"><span style="font-size:11px; color:var(--color-accent-300)">01</span><span style="font-size:17px">Mate</span><span style="font-size:11.5px; color:var(--color-neutral-400)">{{ kitCounts.mate }}</span></div></div></div>
+        <span style="font-size:24px; color:var(--color-accent)">+</span>
+        <div data-reveal="up" data-delay="150"><div data-float="" data-tilt="1" style="position:relative; aspect-ratio:3/4; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s"><image-slot id="kit-bombilla" shape="rect" placeholder="Bombilla" style="color:var(--color-neutral-500)"></image-slot><div style="position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--color-bg) 92%, transparent))"></div><div style="position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:2px; pointer-events:none"><span style="font-size:11px; color:var(--color-accent-300)">02</span><span style="font-size:17px">Bombilla</span><span style="font-size:11.5px; color:var(--color-neutral-400)">{{ kitCounts.bombilla }}</span></div></div></div>
+        <span style="font-size:24px; color:var(--color-accent)">+</span>
+        <div data-reveal="up" data-delay="300"><div data-float="" data-tilt="1" style="position:relative; aspect-ratio:3/4; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s"><image-slot id="kit-yerba" shape="rect" placeholder="Yerba" style="color:var(--color-neutral-500)"></image-slot><div style="position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--color-bg) 92%, transparent))"></div><div style="position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:2px; pointer-events:none"><span style="font-size:11px; color:var(--color-accent-300)">03</span><span style="font-size:17px">Yerba</span><span style="font-size:11.5px; color:var(--color-neutral-400)">{{ kitCounts.yerba }}</span></div></div></div>
+      </div>
+      <div data-reveal="up" data-delay="450" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-radius:8px; box-shadow:inset 0 0 0 1px var(--color-accent-700); background:color-mix(in srgb, var(--color-accent-900) 60%, transparent)"><span style="font-size:15px">= Kit ronda completa</span><span class="tag tag-accent-2">{{ kitOff }}</span></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:0 0 clamp(80px,10vw,140px)">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px)">
+    <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:40px">
+      <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Reseñas</span>
+      <h2 data-reveal="up" style="margin:0; font-size:clamp(32px,4.4vw,58px); line-height:1.04; letter-spacing:-.03em">Lo que dice la ronda</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap:20px">
+      <sc-for list="{{ homeReviews }}" as="r" hint-placeholder-count="3">
+        <div data-reveal="up" data-delay="{{ r.delay }}"><div data-tilt="1" style="position:relative; height:100%; display:flex; flex-direction:column; gap:16px; padding:24px; box-sizing:border-box; border-radius:14px; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s">
+          <div style="position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:radial-gradient(300px circle at var(--mx,50%) var(--my,50%), color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 70%); opacity:var(--hov,0); transition:opacity .4s"></div>
+          <div style="display:flex; gap:3px; color:var(--color-accent)"><sc-for list="{{ r.stars }}" as="s"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor" style="opacity:{{ s.o }}"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></sc-for></div>
+          <p style="margin:0; font-size:17px; line-height:1.55; letter-spacing:-.005em">“{{ r.text }}”</p>
+          <div style="margin-top:auto; display:flex; justify-content:space-between; gap:12px; font-size:13px"><span>{{ r.name }}</span><a href="{{ r.href }}" sc-camel-on-click="{{ r.open }}" style="text-decoration:none">{{ r.product }}</a></div>
+        </div></div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+</div>
+</sc-if>
+<sc-if value="{{ isShop }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Tienda" style="padding-bottom:40px">
+  <section style="position:relative; overflow:hidden; padding:clamp(48px,7vw,96px) 0 28px">
+    <div style="position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px); background-size:64px 64px; -webkit-mask-image:radial-gradient(ellipse 50% 80% at 85% 0%, #000, transparent 70%); mask-image:radial-gradient(ellipse 50% 80% at 85% 0%, #000, transparent 70%)"></div>
+    <div style="position:relative; max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:24px">
+      <div style="display:flex; flex-direction:column; gap:16px; max-width:720px">
+        <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Tienda</span>
+        <h1 style="margin:0; font-size:clamp(42px,6vw,84px); line-height:1; letter-spacing:-.035em"><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" style="display:block">{{ shopTitle }}</span></span></h1>
+        <p data-reveal="up" data-delay="120" style="margin:0; font-size:16px; line-height:1.65; color:var(--color-neutral-300); max-width:52ch">{{ shopBlurb }}</p>
+      </div>
+      <span style="font-size:13px; color:var(--color-neutral-400); font-feature-settings:'tnum' 1">{{ shopCountLabel }}</span>
+    </div>
+  </section>
+  <div style="position:sticky; top:64px; z-index:20; padding:12px 0; background:color-mix(in srgb, var(--color-bg) 82%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px)">
+    <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between">
+      <div style="display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:2px; max-width:100%">
+        <sc-for list="{{ shopCats }}" as="c" hint-placeholder-count="7">
+          <button sc-camel-on-click="{{ c.go }}" style="flex:none; display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:999px; font:inherit; font-size:13px; cursor:pointer; color:{{ c.color }}; background:{{ c.bg }}; border:1px solid {{ c.border }}; box-shadow:{{ c.glow }}; transition:all .35s">{{ c.name }}<span style="font-size:11px; color:var(--color-neutral-500); font-feature-settings:'tnum' 1">{{ c.count }}</span></button>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; flex:1 1 300px; max-width:440px">
+        <label style="position:relative; flex:1; display:block"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="var(--color-neutral-400)" style="position:absolute; left:11px; top:50%; margin-top:-7.5px"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg><input class="input" value="{{ shopQ }}" sc-camel-on-change="{{ setShopQ }}" placeholder="Buscar en la tienda…" aria-label="Buscar en la tienda" style="padding-left:34px; min-height:38px"></label>
+        <sc-raw-select class="input" value="{{ shopSort }}" sc-camel-on-change="{{ setShopSort }}" aria-label="Ordenar" style="width:auto; min-height:38px">
+          <option value="destacados">Destacados</option>
+          <option value="menor">Menor precio</option>
+          <option value="mayor">Mayor precio</option>
+          <option value="az">A – Z</option>
+        </sc-raw-select>
+      </div>
+    </div>
+  </div>
+  <div style="max-width:1280px; margin:0 auto; padding:28px clamp(20px,5vw,64px) 0">
+    <sc-if value="{{ shopHas }}" hint-placeholder-val="{{ true }}">
+      <div data-grid="" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap:20px">
+        <sc-for list="{{ shopList }}" as="p" hint-placeholder-count="8"><dc-import name="ProductCard" product="{{ p }}" variant="{{ cardVariant }}" index="{{ $index }}" hint-size="100%,460px"></dc-import></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ shopEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; align-items:flex-start; gap:16px; padding:72px 0">
+        <img data-float="" src="assets/galpon-mark.png" alt="" style="width:56px; opacity:.8">
+        <p style="margin:0; font-size:22px; letter-spacing:-.01em">No encontramos resultados para “{{ shopQ }}”.</p>
+        <button class="btn btn-primary" sc-camel-on-click="{{ clearShop }}">Limpiar búsqueda</button>
+      </div>
+    </sc-if>
+    <div data-reveal="up" style="margin-top:72px; display:flex; flex-wrap:wrap; gap:20px; align-items:center; justify-content:space-between; padding:clamp(22px,3vw,36px); border-radius:14px; background:radial-gradient(600px 260px at 90% 0%, color-mix(in srgb, var(--color-accent-800) 70%, transparent), transparent 70%), var(--color-surface); box-shadow:var(--shadow-sm)">
+      <div style="display:flex; flex-direction:column; gap:6px; max-width:560px"><span style="font-size:22px; letter-spacing:-.015em">¿Ya elegiste el mate? Sumale bombilla y yerba.</span><span style="font-size:14px; color:var(--color-neutral-400)">Armando el kit tenés {{ kitOff }} sobre el total.</span></div>
+      <span data-magnetic="0.3" style="display:inline-flex; padding:10px; margin:-10px"><a href="#/kit" class="btn btn-primary" sc-camel-on-click="{{ nav.kit }}" style="min-height:44px; padding:0 20px; text-decoration:none">Armar mi kit</a></span>
+    </div>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Producto" style="padding-bottom:40px">
+<sc-if value="{{ pdMissing }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1280px; margin:0 auto; padding:120px clamp(20px,5vw,64px); display:flex; flex-direction:column; gap:18px; align-items:flex-start">
+    <h1 style="margin:0; font-size:48px; letter-spacing:-.03em">No encontramos ese producto.</h1>
+    <a href="#/tienda" class="btn btn-primary" sc-camel-on-click="{{ nav.tienda }}" style="text-decoration:none">Volver a la tienda</a>
+  </div>
+</sc-if>
+<sc-if value="{{ pdOk }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:1280px; margin:0 auto; padding:24px clamp(20px,5vw,64px) 0; display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; color:var(--color-neutral-500)">
+    <a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" style="color:var(--color-neutral-400); text-decoration:none">Tienda</a><span>/</span>
+    <button sc-camel-on-click="{{ goCat }}" style="background:none; border:0; padding:0; font:inherit; color:var(--color-neutral-400); cursor:pointer">{{ pd.catName }}</button><span>/</span>
+    <span style="color:var(--color-neutral-200)">{{ pd.name }}</span>
+  </div>
+  <section style="max-width:1280px; margin:0 auto; padding:24px clamp(20px,5vw,64px) 0; display:flex; flex-wrap:wrap; gap:40px 56px; align-items:flex-start">
+    <div style="flex:1.1 1 440px; min-width:0; display:flex; flex-direction:column; gap:12px; position:sticky; top:88px">
+      <div data-tilt="0" data-reveal="clip" data-dur="1200" style="position:relative; aspect-ratio:4/5; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm)">
+        <sc-if value="{{ pdShowImg }}" hint-placeholder-val="{{ false }}"><img src="assets/mate-imperial-premium.jpg" alt="{{ pd.name }}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 70%; cursor:zoom-in; transform-origin:var(--mx,50%) var(--my,50%); transform:scale(calc(1 + var(--hov,0) * .9)); transition:transform .5s cubic-bezier(.2,.8,.2,1)"></sc-if>
+        <sc-if value="{{ pdShowSlot }}"><image-slot id="{{ pdSlotId }}" shape="rect" placeholder="{{ pdSlotLabel }}" style="color:var(--color-neutral-500)"></image-slot></sc-if>
+        <div style="position:absolute; top:14px; left:16px; right:16px; display:flex; justify-content:space-between; pointer-events:none; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-neutral-300); font-feature-settings:'tnum' 1"><span>{{ pd.code }}</span><span>{{ pdImgLabel }}</span></div>
+        <sc-if value="{{ pdMulti }}">
+          <button class="btn btn-icon" sc-camel-on-click="{{ pdPrev }}" aria-label="Foto anterior" style="position:absolute; left:12px; bottom:12px; border-radius:999px; background:color-mix(in srgb, var(--color-bg) 70%, transparent); backdrop-filter:blur(8px)"><svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path></svg></button>
+          <button class="btn btn-icon" sc-camel-on-click="{{ pdNext }}" aria-label="Foto siguiente" style="position:absolute; left:56px; bottom:12px; border-radius:999px; background:color-mix(in srgb, var(--color-bg) 70%, transparent); backdrop-filter:blur(8px)"><svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path></svg></button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ pdMulti }}">
+        <div style="display:flex; gap:8px">
+          <sc-for list="{{ pdThumbs }}" as="t"><button sc-camel-on-click="{{ t.go }}" style="flex:1; display:flex; flex-direction:column; gap:8px; padding:6px 0; background:none; border:0; cursor:pointer; font:inherit; font-size:11px; text-align:left; color:{{ t.color }}; font-feature-settings:'tnum' 1"><span style="height:2px; width:100%; background:{{ t.line }}; transition:background .4s"></span>{{ t.label }}</button></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="flex:1 1 380px; min-width:0; max-width:560px; display:flex; flex-direction:column; gap:22px">
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <button sc-camel-on-click="{{ goCat }}" style="align-self:flex-start; background:none; border:0; padding:0; cursor:pointer; font:inherit; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)">{{ pd.catName }}</button>
+        <h1 data-reveal="up" style="margin:0; font-size:clamp(32px,4vw,52px); line-height:1.04; letter-spacing:-.03em">{{ pd.name }}</h1>
+        <button sc-camel-on-click="{{ toReviews }}" style="align-self:flex-start; display:flex; align-items:center; gap:10px; background:none; border:0; padding:0; cursor:pointer; font:inherit; font-size:13px; color:var(--color-neutral-400)">
+          <span style="display:flex; gap:2px; color:var(--color-accent)"><sc-for list="{{ rvAvgStars }}" as="st"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor" style="opacity:{{ st.o }}"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></sc-for></span>{{ rvCountLabel }}
+        </button>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-size:38px; letter-spacing:-.025em; font-feature-settings:'tnum' 1">{{ pd.priceLabel }}</span>
+        <span style="font-size:13px; color:var(--color-neutral-400)">{{ pdCuotas }}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--color-neutral-300)"><span data-ping="" style="width:8px; height:8px; border-radius:50%; background:{{ pdStockColor }}"></span>{{ pdStock }}</div>
+      <p style="margin:0; font-size:15.5px; line-height:1.7; color:var(--color-neutral-300)">{{ pd.desc }}</p>
+      <div style="height:1px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div>
+      <sc-if value="{{ pdIsMate }}">
+        <div style="display:flex; flex-direction:column; gap:20px">
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--color-neutral-400)">Cuero</span><span>{{ cuero }}</span></div>
+            <div style="display:flex; gap:12px"><sc-for list="{{ cueros }}" as="c"><button sc-camel-on-click="{{ c.pick }}" aria-label="{{ c.id }}" title="{{ c.id }}" style="width:34px; height:34px; border-radius:50%; border:0; cursor:pointer; background:{{ c.hex }}; box-shadow:{{ c.ring }}; transform:{{ c.scale }}; transition:box-shadow .35s, transform .35s cubic-bezier(.34,1.56,.64,1)"></button></sc-for></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--color-neutral-400)">Virola</span><span>{{ virola }}</span></div>
+            <div class="seg" style="align-self:flex-start"><sc-for list="{{ virolas }}" as="v"><label class="seg-opt"><input type="radio" name="virola" checked="{{ v.on }}" sc-camel-on-change="{{ v.pick }}"><span>{{ v.id }}</span></label></sc-for></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ pd.canBuy }}">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+          <div style="display:inline-flex; align-items:center; height:48px; border-radius:8px; box-shadow:inset 0 0 0 1px var(--color-divider)"><button class="btn btn-icon" sc-camel-on-click="{{ decQty }}" aria-label="Restar">−</button><span style="min-width:30px; text-align:center; font-feature-settings:'tnum' 1">{{ qty }}</span><button class="btn btn-icon" sc-camel-on-click="{{ incQty }}" aria-label="Sumar">+</button></div>
+          <span data-magnetic="0.22" style="display:flex; flex:1 1 220px; padding:10px; margin:-10px"><button class="btn btn-primary" sc-camel-on-click="{{ addDetail }}" style="width:100%; min-height:48px; font-size:15px; gap:10px; box-shadow:0 0 32px -10px var(--color-accent)"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M239.89,198.12l-14.26-120a16,16,0,0,0-16-14.12H176a48,48,0,0,0-96,0H46.33a16,16,0,0,0-16,14.12l-14.26,120A16,16,0,0,0,20,210.6a16.13,16.13,0,0,0,12,5.4H223.92A16.13,16.13,0,0,0,236,210.6,16,16,0,0,0,239.89,198.12ZM128,32a32,32,0,0,1,32,32H96A32,32,0,0,1,128,32ZM32,200,46.33,80H80v24a8,8,0,0,0,16,0V80h64v24a8,8,0,0,0,16,0V80h33.75l14.17,120Z"></path></svg>Agregar al carrito</button></span>
+        </div>
+        <button class="btn btn-secondary" sc-camel-on-click="{{ buyNow }}" style="min-height:48px; font-size:15px">Comprar ahora</button>
+      </sc-if>
+      <sc-if value="{{ pd.cantBuy }}">
+        <a href="{{ mailConsulta }}" class="btn btn-primary" style="min-height:48px; font-size:15px; text-decoration:none">Consultar por mail</a>
+      </sc-if>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; font-size:12.5px; color:var(--color-neutral-400)">
+        <div style="display:flex; gap:10px; align-items:flex-start"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="var(--color-accent)" style="flex:none"><path d="M255.42,117l-14-35A15.93,15.93,0,0,0,226.58,72H192V64a8,8,0,0,0-8-8H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V120A7.94,7.94,0,0,0,255.42,117ZM192,88h34.58l9.6,24H192ZM32,72H176v64H32ZM80,208a16,16,0,1,1,16-16A16,16,0,0,1,80,208Zm81-24H111a32,32,0,0,0-62,0H32V152H176v12.31A32.11,32.11,0,0,0,161,184Zm31,24a16,16,0,1,1,16-16A16,16,0,0,1,192,208Zm48-24H223a32.06,32.06,0,0,0-31-24V128h48Z"></path></svg><span><span style="display:block; color:var(--color-text)">Envío a todo el país</span>Calculalo en el checkout</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="var(--color-accent)" style="flex:none"><path d="M208,40H48A16,16,0,0,0,32,56v58.78c0,89.61,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.78,91-124.39V56A16,16,0,0,0,208,40Zm0,74.79c0,78.42-66.35,104.62-80,109.18-13.53-4.51-80-30.69-80-109.18V56l160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"></path></svg><span><span style="display:block; color:var(--color-text)">Pago seguro</span>Con Mercado Pago</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="var(--color-accent)" style="flex:none"><path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z"></path></svg><span><span style="display:block; color:var(--color-text)">10 días</span>Para cambios</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; margin-top:6px">
+        <div role="tablist" style="display:flex; gap:4px; flex-wrap:wrap; background:linear-gradient(to right, var(--color-neutral-800), transparent) no-repeat bottom / 100% 1px">
+          <sc-for list="{{ pdTabs }}" as="t"><button role="tab" sc-camel-on-click="{{ t.go }}" style="position:relative; padding:10px 12px; background:none; border:0; cursor:pointer; font:inherit; font-size:13.5px; color:{{ t.color }}; transition:color .3s">{{ t.label }}<span style="position:absolute; left:12px; right:12px; bottom:0; height:1px; background:var(--color-accent); transform-origin:left; transform:scaleX({{ t.line }}); transition:transform .5s cubic-bezier(.16,1,.3,1)"></span></button></sc-for>
+        </div>
+        <p ref="{{ tabRef }}" style="margin:0; font-size:14.5px; line-height:1.75; color:var(--color-neutral-300)">{{ pdTabText }}</p>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ pdIsMate }}">
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(64px,8vw,104px) clamp(20px,5vw,64px) 0">
+    <div data-reveal="up" style="display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between; padding:clamp(24px,4vw,44px); border-radius:14px; background:radial-gradient(600px 300px at 90% 0%, color-mix(in srgb, var(--color-accent-800) 70%, transparent), transparent 70%), var(--color-surface); box-shadow:var(--shadow-sm)">
+      <div style="display:flex; flex-direction:column; gap:10px; max-width:540px">
+        <span style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)">Completá la ronda</span>
+        <span style="font-size:clamp(22px,2.6vw,32px); line-height:1.15; letter-spacing:-.02em">Sumale bombilla y yerba a este mate y llevate {{ kitOff }}.</span>
+      </div>
+      <span data-magnetic="0.3" style="display:inline-flex; padding:10px; margin:-10px"><button class="btn btn-primary" sc-camel-on-click="{{ kitWith }}" style="min-height:48px; padding:0 22px; font-size:15px; gap:10px">Armar kit con este mate <svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path></svg></button></span>
+    </div>
+  </section>
+  </sc-if>
+
+  <section ref="{{ reviewsRef }}" style="max-width:1280px; margin:0 auto; padding:clamp(72px,9vw,120px) clamp(20px,5vw,64px) 0">
+    <div style="display:flex; flex-wrap:wrap; gap:40px 72px; align-items:flex-start">
+      <div style="flex:0 1 300px; display:flex; flex-direction:column; gap:16px">
+        <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Reseñas</span>
+        <div style="display:flex; align-items:baseline; gap:10px"><span style="font-size:72px; line-height:1; letter-spacing:-.04em; font-feature-settings:'tnum' 1"><span data-count="{{ rvAvgNum }}" data-dec="1">{{ rvAvgLabel }}</span></span><span style="color:var(--color-neutral-400)">/ 5</span></div>
+        <div style="display:flex; gap:3px; color:var(--color-accent)"><sc-for list="{{ rvAvgStars }}" as="st"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="currentColor" style="opacity:{{ st.o }}"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></sc-for></div>
+        <span style="font-size:13px; color:var(--color-neutral-400)">{{ rvCountLabel }}</span>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <sc-for list="{{ rvDist }}" as="d"><div style="display:grid; grid-template-columns:14px 1fr 22px; align-items:center; gap:10px; font-size:12px; color:var(--color-neutral-400); font-feature-settings:'tnum' 1"><span>{{ d.k }}</span><span style="position:relative; height:4px; border-radius:2px; background:var(--color-neutral-800); overflow:hidden"><span data-reveal="bar" style="position:absolute; left:0; top:0; bottom:0; width:{{ d.pct }}; border-radius:2px; transform-origin:left; background:var(--color-accent); box-shadow:0 0 10px var(--color-accent); transition:width .6s"></span></span><span style="text-align:right">{{ d.n }}</span></div></sc-for>
+        </div>
+        <button class="btn btn-primary" sc-camel-on-click="{{ rvToggle }}" style="align-self:flex-start; margin-top:6px; min-height:42px; padding:0 18px">Escribir una reseña</button>
+      </div>
+      <div style="flex:1 1 420px; min-width:0; display:flex; flex-direction:column">
+        <sc-if value="{{ rvOpen }}">
+          <div data-reveal="up" data-dur="700" style="display:flex; flex-direction:column; gap:14px; padding:22px; margin-bottom:24px; border-radius:14px; background:var(--color-surface); box-shadow:0 0 0 1px var(--color-accent-700), 0 0 40px -16px var(--color-accent)">
+            <span style="font-size:17px">Tu reseña de {{ pd.name }}</span>
+            <div sc-camel-on-mouse-leave="{{ rvLeave }}" style="display:flex; align-items:center; gap:2px">
+              <sc-for list="{{ rvStars }}" as="st"><button sc-camel-on-click="{{ st.set }}" sc-camel-on-mouse-enter="{{ st.hover }}" aria-label="{{ st.label }}" style="background:none; border:0; padding:4px; cursor:pointer; color:{{ st.color }}; transform:{{ st.scale }}; transition:transform .25s cubic-bezier(.34,1.56,.64,1), color .2s"><svg width="26" height="26" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></button></sc-for>
+              <span style="margin-left:10px; font-size:13px; color:var(--color-neutral-400)">{{ rvStarLabel }}</span>
+            </div>
+            <div class="field"><label>Nombre</label><input class="input" value="{{ rvName }}" sc-camel-on-change="{{ setRvName }}" placeholder="Cómo querés que aparezca"></div>
+            <div class="field"><label>Reseña</label><textarea class="input" value="{{ rvText }}" sc-camel-on-change="{{ setRvText }}" placeholder="Calidad, terminaciones, envío…"></textarea></div>
+            <sc-if value="{{ rvHasErr }}"><p style="margin:0; font-size:13px; color:oklch(0.76 0.12 25)">{{ rvErr }}</p></sc-if>
+            <div style="display:flex; gap:10px; justify-content:flex-end"><button class="btn btn-secondary" sc-camel-on-click="{{ rvToggle }}">Cancelar</button><button class="btn btn-primary" sc-camel-on-click="{{ rvSubmit }}">Publicar reseña</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ rvNone }}"><p style="margin:0; padding:20px 0; font-size:16px; color:var(--color-neutral-400)">Todavía no hay reseñas de este producto. Sé el primero en contar cómo te fue.</p></sc-if>
+        <sc-for list="{{ rvList }}" as="x">
+          <div data-reveal="up" style="display:flex; flex-direction:column; gap:10px; padding:22px 0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center">
+              <span style="display:flex; gap:2px; color:var(--color-accent)"><sc-for list="{{ x.stars }}" as="st"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor" style="opacity:{{ st.o }}"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></sc-for></span>
+              <span style="font-size:12px; color:var(--color-neutral-500)">{{ x.date }}</span>
+            </div>
+            <p style="margin:0; font-size:16px; line-height:1.6">{{ x.text }}</p>
+            <span style="font-size:13px; color:var(--color-neutral-400)">{{ x.name }} · {{ x.mineLabel }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(72px,9vw,120px) clamp(20px,5vw,64px) 0">
+    <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:32px">
+      <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>También te puede gustar</span>
+      <h2 data-reveal="up" style="margin:0; font-size:clamp(28px,3.4vw,44px); line-height:1.06; letter-spacing:-.025em">Más para la ronda</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap:20px">
+      <sc-for list="{{ related }}" as="p" hint-placeholder-count="4"><dc-import name="ProductCard" product="{{ p }}" variant="{{ cardVariant }}" index="{{ $index }}" hint-size="100%,460px"></dc-import></sc-for>
+    </div>
+  </section>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ isKit }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Armá tu kit" style="padding-bottom:40px">
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,5vw,64px) 32px; display:flex; flex-direction:column; gap:18px">
+    <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Armá tu kit</span>
+    <h1 style="margin:0; font-size:clamp(42px,6vw,84px); line-height:1; letter-spacing:-.035em">
+      <span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" style="display:block">Tres pasos.</span></span>
+      <span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block; color:var(--color-accent-300)">Una ronda completa.</span></span>
+    </h1>
+    <p data-reveal="up" data-delay="240" style="margin:0; max-width:52ch; font-size:16px; line-height:1.65; color:var(--color-neutral-300)">Elegí mate, bombilla y yerba. Con las tres piezas, el kit tiene {{ kitOff }} sobre el total.</p>
+  </section>
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px)">
+    <div style="position:relative; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px">
+      <div style="position:absolute; left:0; right:0; top:15px; height:1px; background:var(--color-neutral-800)"></div>
+      <div style="position:absolute; left:0; right:0; top:15px; height:1px; background:var(--color-accent); box-shadow:0 0 12px var(--color-accent); transform-origin:left; transform:scaleX({{ kitProg }}); transition:transform .8s cubic-bezier(.16,1,.3,1)"></div>
+      <sc-for list="{{ kitSteps }}" as="st" hint-placeholder-count="4">
+        <button sc-camel-on-click="{{ st.go }}" style="position:relative; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:10px; background:none; border:0; padding:0; color:inherit; font:inherit; cursor:pointer; text-align:left">
+          <span style="width:31px; height:31px; border-radius:50%; display:grid; place-items:center; font-size:11px; font-feature-settings:'tnum' 1; background:{{ st.bg }}; color:{{ st.color }}; box-shadow:{{ st.ring }}; transition:all .45s">{{ st.mark }}</span>
+          <span style="font-size:14px; color:{{ st.labelColor }}">{{ st.label }}</span>
+          <span style="font-size:12px; color:var(--color-neutral-500); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ st.pick }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <section style="max-width:1280px; margin:0 auto; padding:40px clamp(20px,5vw,64px) 0; display:flex; flex-wrap:wrap; gap:32px; align-items:flex-start">
+    <div style="flex:2 1 520px; min-width:0">
+      <sc-if value="{{ kitPicking }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:20px"><h2 style="margin:0; font-size:28px; letter-spacing:-.02em">{{ kitTitle }}</h2><span style="font-size:14px; color:var(--color-neutral-400)">{{ kitHint }}</span></div>
+        <div data-grid="" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap:14px">
+          <sc-for list="{{ kitOptions }}" as="o" hint-placeholder-count="8">
+            <div data-reveal="up" data-delay="{{ $index }}0"><button data-tilt="1" sc-camel-on-click="{{ o.pick }}" style="position:relative; width:100%; display:flex; flex-direction:column; gap:10px; padding:8px 8px 12px; border:0; border-radius:12px; background:var(--color-surface); box-shadow:{{ o.ring }}; color:inherit; font:inherit; text-align:left; cursor:pointer; transform:perspective(1000px); transition:transform .6s, box-shadow .4s">
+              <span style="position:relative; display:block; aspect-ratio:1/1; border-radius:8px; overflow:hidden; background:var(--color-bg); pointer-events:none">
+                <sc-if value="{{ o.hasImg }}" hint-placeholder-val="{{ false }}"><img src="assets/mate-imperial-premium.jpg" alt="" style="width:100%; height:100%; object-fit:cover; object-position:50% 75%"></sc-if>
+                <sc-if value="{{ o.noImg }}"><image-slot id="{{ o.slotId }}" shape="rect" placeholder="{{ o.name }}" style="color:var(--color-neutral-600)"></image-slot></sc-if>
+                <span style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:var(--color-accent); color:var(--color-bg); opacity:{{ o.checkO }}; transform:{{ o.checkS }}; transition:all .4s cubic-bezier(.34,1.56,.64,1)"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg></span>
+              </span>
+              <span style="padding:0 4px; display:flex; flex-direction:column; gap:4px"><span style="font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--color-accent)">{{ o.catName }}</span><span style="font-size:14px; line-height:1.3">{{ o.name }}</span><span style="font-size:15px; font-feature-settings:'tnum' 1">{{ o.priceLabel }}</span></span>
+            </button></div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ kitReview }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:20px"><h2 style="margin:0; font-size:28px; letter-spacing:-.02em">Tu kit</h2><span style="font-size:14px; color:var(--color-neutral-400)">Revisá las piezas. Tocá cualquiera para cambiarla.</span></div>
+        <div style="display:flex; flex-direction:column">
+          <sc-for list="{{ kitSlots }}" as="k"><button data-reveal="left" data-delay="{{ $index }}00" sc-camel-on-click="{{ k.go }}" style="display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 4px; border:0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px; color:inherit; font:inherit; cursor:pointer; text-align:left"><span style="display:flex; flex-direction:column; gap:3px"><span style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-accent)">{{ k.label }}</span><span style="font-size:18px">{{ k.name }}</span></span><span style="font-size:16px; font-feature-settings:'tnum' 1">{{ k.price }}</span></button></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <aside style="flex:1 1 300px; max-width:420px; position:sticky; top:88px; display:flex; flex-direction:column; gap:14px; padding:22px; border-radius:14px; background:radial-gradient(400px 220px at 100% 0%, color-mix(in srgb, var(--color-accent-800) 60%, transparent), transparent 70%), var(--color-surface); box-shadow:var(--shadow-sm)">
+      <span style="font-size:17px">Resumen del kit</span>
+      <sc-for list="{{ kitSlots }}" as="k"><div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px"><span style="color:var(--color-neutral-400)">{{ k.label }}</span><span style="text-align:right; max-width:65%">{{ k.name }}</span></div></sc-for>
+      <sc-if value="{{ kitHasMate }}">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:13.5px"><span style="color:var(--color-neutral-400)">Cuero · {{ kitCuero }}</span><span style="display:flex; gap:8px"><sc-for list="{{ kitCueros }}" as="c"><button sc-camel-on-click="{{ c.pick }}" aria-label="{{ c.id }}" style="width:22px; height:22px; border-radius:50%; border:0; cursor:pointer; background:{{ c.hex }}; box-shadow:{{ c.ring }}; transition:box-shadow .3s"></button></sc-for></span></div>
+      </sc-if>
+      <div style="height:1px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div>
+      <div style="display:flex; justify-content:space-between; font-size:14px"><span style="color:var(--color-neutral-400)">Subtotal</span><span style="font-feature-settings:'tnum' 1">{{ kitBaseLabel }}</span></div>
+      <div style="display:flex; justify-content:space-between; font-size:14px; color:var(--color-accent-300)"><span>Descuento kit {{ kitOff }}</span><span style="font-feature-settings:'tnum' 1">{{ kitSaveLabel }}</span></div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:22px"><span>Total</span><span style="font-feature-settings:'tnum' 1">{{ kitTotalLabel }}</span></div>
+      <sc-if value="{{ kitNotReady }}"><span style="font-size:12.5px; color:var(--color-neutral-500)">{{ kitMissing }}.</span></sc-if>
+      <span data-magnetic="0.15" style="display:flex; padding:8px; margin:-8px"><button class="btn btn-primary" sc-camel-on-click="{{ addKit }}" disabled="{{ kitNotReady }}" style="width:100%; min-height:48px; font-size:15px; box-shadow:0 0 30px -10px var(--color-accent)">Agregar kit al carrito</button></span>
+      <button class="btn btn-ghost" sc-camel-on-click="{{ kitReset }}" style="align-self:center">Empezar de nuevo</button>
+    </aside>
+  </section>
+</div>
+</sc-if>
+<sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Checkout" style="padding-bottom:40px">
+<sc-if value="{{ coEmpty }}">
+  <div style="max-width:1280px; margin:0 auto; padding:120px clamp(20px,5vw,64px); display:flex; flex-direction:column; gap:18px; align-items:flex-start">
+    <img data-float="" src="assets/galpon-mark.png" alt="" style="width:60px">
+    <h1 style="margin:0; font-size:44px; letter-spacing:-.03em">Tu carrito está vacío.</h1>
+    <a href="#/tienda" class="btn btn-primary" sc-camel-on-click="{{ nav.tienda }}" style="text-decoration:none; min-height:44px; padding:0 20px">Ir a la tienda</a>
+  </div>
+</sc-if>
+<sc-if value="{{ coReady }}" hint-placeholder-val="{{ true }}">
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(40px,6vw,72px) clamp(20px,5vw,64px) 0; display:flex; flex-wrap:wrap; gap:40px 56px; align-items:flex-start">
+    <div style="flex:1.5 1 480px; min-width:0; display:flex; flex-direction:column; gap:28px">
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Checkout</span>
+        <h1 data-reveal="up" style="margin:0; font-size:clamp(36px,4.6vw,60px); line-height:1; letter-spacing:-.035em">Finalizá tu compra</h1>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px">
+        <sc-for list="{{ coSteps }}" as="st"><button sc-camel-on-click="{{ st.go }}" style="display:flex; flex-direction:column; gap:8px; padding:0; background:none; border:0; cursor:pointer; font:inherit; text-align:left; color:{{ st.color }}; transition:color .3s"><span style="position:relative; height:2px; background:var(--color-neutral-800); overflow:hidden"><span style="position:absolute; inset:0; background:var(--color-accent); transform-origin:left; transform:scaleX({{ st.line }}); transition:transform .7s cubic-bezier(.16,1,.3,1)"></span></span><span style="font-size:13px"><span style="font-feature-settings:'tnum' 1; color:var(--color-neutral-500)">{{ st.n }}</span> {{ st.label }}</span></button></sc-for>
+      </div>
+
+      <sc-if value="{{ co0 }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="up" data-dur="700" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap:16px">
+          <div class="field" data-bad="{{ coBad.email }}" style="grid-column:1 / -1"><label>Email</label><input class="input" type="email" value="{{ co.email }}" sc-camel-on-change="{{ coOn.email }}" placeholder="vos@ejemplo.com" style="border-color:{{ coBd.email }}"><sc-if value="{{ coHas.email }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.email }}</span></sc-if></div>
+          <div class="field" data-bad="{{ coBad.name }}"><label>Nombre</label><input class="input" value="{{ co.name }}" sc-camel-on-change="{{ coOn.name }}" style="border-color:{{ coBd.name }}"><sc-if value="{{ coHas.name }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.name }}</span></sc-if></div>
+          <div class="field" data-bad="{{ coBad.last }}"><label>Apellido</label><input class="input" value="{{ co.last }}" sc-camel-on-change="{{ coOn.last }}" style="border-color:{{ coBd.last }}"><sc-if value="{{ coHas.last }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.last }}</span></sc-if></div>
+          <div class="field" style="grid-column:1 / -1"><label>Teléfono (opcional, para el correo)</label><input class="input" type="tel" value="{{ co.phone }}" sc-camel-on-change="{{ coOn.phone }}" placeholder="11 2345 6789"></div>
+          <span style="grid-column:1 / -1; font-size:12.5px; color:var(--color-neutral-500)">Te enviamos la confirmación y el seguimiento a este email.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ co1 }}" hint-placeholder-val="{{ false }}">
+        <div data-reveal="up" data-dur="700" style="display:flex; flex-direction:column; gap:20px">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <sc-for list="{{ shipOpts }}" as="o"><button sc-camel-on-click="{{ o.pick }}" style="display:flex; align-items:center; gap:14px; padding:16px 18px; border:0; border-radius:10px; background:var(--color-surface); box-shadow:{{ o.ring }}; color:inherit; font:inherit; text-align:left; cursor:pointer; transition:box-shadow .4s"><span style="width:16px; height:16px; flex:none; border-radius:50%; border:1.5px solid var(--color-accent); background:{{ o.dotBg }}; box-shadow:{{ o.dot }}; transition:all .3s"></span><span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:15px">{{ o.label }}</span><span style="font-size:12.5px; color:var(--color-neutral-400)">{{ o.eta }}</span></span><span style="font-size:15px; font-feature-settings:'tnum' 1">{{ o.costLabel }}</span></button></sc-for>
+            <span style="font-size:12px; color:var(--color-neutral-500)">Costos estimados. El valor final se calcula con tu código postal.</span>
+          </div>
+          <sc-if value="{{ shipNeedsAddr }}">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:16px">
+              <sc-if value="{{ shipHome }}">
+                <div class="field" data-bad="{{ coBad.street }}"><label>Calle</label><input class="input" value="{{ co.street }}" sc-camel-on-change="{{ coOn.street }}" style="border-color:{{ coBd.street }}"><sc-if value="{{ coHas.street }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.street }}</span></sc-if></div>
+                <div class="field" data-bad="{{ coBad.num }}"><label>Número</label><input class="input" value="{{ co.num }}" sc-camel-on-change="{{ coOn.num }}" style="border-color:{{ coBd.num }}"><sc-if value="{{ coHas.num }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.num }}</span></sc-if></div>
+                <div class="field"><label>Piso / Depto (opcional)</label><input class="input" value="{{ co.apt }}" sc-camel-on-change="{{ coOn.apt }}"></div>
+              </sc-if>
+              <div class="field" data-bad="{{ coBad.zip }}"><label>Código postal</label><input class="input" value="{{ co.zip }}" sc-camel-on-change="{{ coOn.zip }}" placeholder="1414" style="border-color:{{ coBd.zip }}"><sc-if value="{{ coHas.zip }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.zip }}</span></sc-if></div>
+              <div class="field" data-bad="{{ coBad.city }}"><label>Ciudad</label><input class="input" value="{{ co.city }}" sc-camel-on-change="{{ coOn.city }}" style="border-color:{{ coBd.city }}"><sc-if value="{{ coHas.city }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.city }}</span></sc-if></div>
+              <div class="field" data-bad="{{ coBad.prov }}"><label>Provincia</label><sc-raw-select class="input" value="{{ co.prov }}" sc-camel-on-change="{{ coOn.prov }}" style="border-color:{{ coBd.prov }}"><option value="">Elegí…</option><sc-for list="{{ provs }}" as="pv"><option value="{{ pv }}">{{ pv }}</option></sc-for></sc-raw-select><sc-if value="{{ coHas.prov }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.prov }}</span></sc-if></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ shipPickup }}"><p style="margin:0; font-size:14px; line-height:1.6; color:var(--color-neutral-300)">Sin costo. Cuando confirmemos el pago te escribimos a {{ co.email }} para coordinar día, horario y lugar de retiro.</p></sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ co2 }}" hint-placeholder-val="{{ false }}">
+        <div data-reveal="up" data-dur="700" style="display:flex; flex-direction:column; gap:20px">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <sc-for list="{{ payOpts }}" as="o"><button sc-camel-on-click="{{ o.pick }}" style="display:flex; align-items:center; gap:14px; padding:16px 18px; border:0; border-radius:10px; background:var(--color-surface); box-shadow:{{ o.ring }}; color:inherit; font:inherit; text-align:left; cursor:pointer; transition:box-shadow .4s"><span style="width:16px; height:16px; flex:none; border-radius:50%; border:1.5px solid var(--color-accent); background:{{ o.dotBg }}; box-shadow:{{ o.dot }}; transition:all .3s"></span><span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:15px">{{ o.label }}</span><span style="font-size:12.5px; color:var(--color-neutral-400)">{{ o.sub }}</span></span></button></sc-for>
+          </div>
+          <sc-if value="{{ payMp }}"><p style="margin:0; font-size:14px; line-height:1.6; color:var(--color-neutral-300)">Te llevamos a Mercado Pago para completar el pago de forma segura y volvés acá con la confirmación.</p></sc-if>
+          <sc-if value="{{ payCard }}">
+            <div style="display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start">
+              <div style="flex:0 0 auto; width:min(100%, 320px); aspect-ratio:1.586; perspective:1200px">
+                <div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; transform:{{ cardRot }}; transition:transform .8s cubic-bezier(.16,1,.3,1)">
+                  <div style="position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:14px; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:radial-gradient(260px 180px at 100% 0%, color-mix(in srgb, var(--color-accent) 35%, transparent), transparent 70%), linear-gradient(135deg, var(--color-neutral-800), var(--color-bg)); box-shadow:0 0 0 1px var(--color-neutral-700), 0 24px 50px -20px rgba(0,0,0,.7)">
+                    <div style="display:flex; justify-content:space-between; align-items:center"><span style="width:38px; height:28px; border-radius:6px; background:linear-gradient(135deg, var(--color-neutral-300), var(--color-neutral-600))"></span><span style="font-size:12px; letter-spacing:.14em">{{ cardBrand }}</span></div>
+                    <span style="font-size:clamp(16px,2vw,20px); letter-spacing:.12em; font-feature-settings:'tnum' 1">{{ cardShown }}</span>
+                    <div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; letter-spacing:.1em"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ cardNameShown }}</span><span>{{ cardExpShown }}</span></div>
+                  </div>
+                  <div style="position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:14px; overflow:hidden; background:linear-gradient(135deg, var(--color-neutral-800), var(--color-bg)); box-shadow:0 0 0 1px var(--color-neutral-700)">
+                    <div style="margin-top:22px; height:40px; background:var(--color-neutral-900)"></div>
+                    <div style="margin:18px 20px 0; display:flex; justify-content:flex-end; align-items:center; height:34px; padding:0 12px; border-radius:4px; background:var(--color-neutral-200); color:var(--color-bg); font-size:14px; letter-spacing:.16em">{{ cardCvcShown }}</div>
+                  </div>
+                </div>
+              </div>
+              <div style="flex:1 1 260px; min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:14px">
+                <div class="field" data-bad="{{ coBad.cardNum }}" style="grid-column:1 / -1"><label>Número de tarjeta</label><input class="input" inputmode="numeric" value="{{ co.cardNum }}" sc-camel-on-change="{{ coOn.cardNum }}" placeholder="1234 5678 9012 3456" style="border-color:{{ coBd.cardNum }}"><sc-if value="{{ coHas.cardNum }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.cardNum }}</span></sc-if></div>
+                <div class="field" data-bad="{{ coBad.cardName }}" style="grid-column:1 / -1"><label>Nombre del titular</label><input class="input" value="{{ co.cardName }}" sc-camel-on-change="{{ coOn.cardName }}" style="border-color:{{ coBd.cardName }}"><sc-if value="{{ coHas.cardName }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.cardName }}</span></sc-if></div>
+                <div class="field" data-bad="{{ coBad.cardExp }}"><label>Vencimiento</label><input class="input" inputmode="numeric" value="{{ co.cardExp }}" sc-camel-on-change="{{ coOn.cardExp }}" placeholder="MM/AA" style="border-color:{{ coBd.cardExp }}"><sc-if value="{{ coHas.cardExp }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.cardExp }}</span></sc-if></div>
+                <div class="field" data-bad="{{ coBad.cardCvc }}"><label>CVC</label><input class="input" inputmode="numeric" value="{{ co.cardCvc }}" sc-camel-on-change="{{ coOn.cardCvc }}" sc-camel-on-focus="{{ flipOn }}" sc-camel-on-blur="{{ flipOff }}" placeholder="123" style="border-color:{{ coBd.cardCvc }}"><sc-if value="{{ coHas.cardCvc }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.cardCvc }}</span></sc-if></div>
+                <div class="field" data-bad="{{ coBad.dni }}"><label>DNI del titular</label><input class="input" inputmode="numeric" value="{{ co.dni }}" sc-camel-on-change="{{ coOn.dni }}" style="border-color:{{ coBd.dni }}"><sc-if value="{{ coHas.dni }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ coErr.dni }}</span></sc-if></div>
+                <div class="field"><label>Cuotas</label><sc-raw-select class="input" value="{{ co.cuotas }}" sc-camel-on-change="{{ coOn.cuotas }}"><sc-for list="{{ cuotasOpts }}" as="q"><option value="{{ q.v }}">{{ q.label }}</option></sc-for></sc-raw-select></div>
+              </div>
+            </div>
+          </sc-if>
+          <span style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--color-neutral-500)"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z"></path></svg>Pago procesado por Mercado Pago. No guardamos los datos de tu tarjeta.</span>
+        </div>
+      </sc-if>
+
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <sc-if value="{{ coHasBack }}"><button class="btn btn-secondary" sc-camel-on-click="{{ coBack }}" style="min-height:48px; padding:0 18px">Volver</button></sc-if>
+        <span data-magnetic="0.2" style="display:flex; flex:1 1 240px; padding:8px; margin:-8px"><button class="btn btn-primary" sc-camel-on-click="{{ coNext }}" disabled="{{ coBusy }}" style="width:100%; min-height:50px; font-size:15px; gap:10px; box-shadow:0 0 32px -10px var(--color-accent)">
+          <sc-if value="{{ coBusy }}"><svg data-spin="1" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>{{ coBusyLabel }}</sc-if>
+          <sc-if value="{{ coIdle }}">{{ coNextLabel }}</sc-if>
+        </button></span>
+      </div>
+    </div>
+
+    <aside style="flex:1 1 300px; max-width:420px; position:sticky; top:88px; display:flex; flex-direction:column; gap:12px; padding:22px; border-radius:14px; background:var(--color-surface); box-shadow:var(--shadow-sm)">
+      <span style="font-size:17px">Tu pedido</span>
+      <sc-for list="{{ sumLines }}" as="l"><div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px; padding:8px 0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px"><span style="display:flex; flex-direction:column; gap:2px"><span>{{ l.name }} <span style="color:var(--color-neutral-500)">× {{ l.qty }}</span></span><span style="font-size:12px; color:var(--color-neutral-500)">{{ l.detail }}</span></span><span style="font-feature-settings:'tnum' 1; flex:none">{{ l.totalLabel }}</span></div></sc-for>
+      <sc-if value="{{ sumHasSavings }}"><div style="display:flex; justify-content:space-between; font-size:13.5px; color:var(--color-accent-300)"><span>Ahorro por kit</span><span>{{ sumSavings }}</span></div></sc-if>
+      <div style="display:flex; justify-content:space-between; font-size:13.5px"><span style="color:var(--color-neutral-400)">Subtotal</span><span style="font-feature-settings:'tnum' 1">{{ sumSubtotal }}</span></div>
+      <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px"><span style="color:var(--color-neutral-400)">{{ sumShipLabel }}</span><span style="font-feature-settings:'tnum' 1; text-align:right">{{ sumShip }}</span></div>
+      <div style="height:1px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:22px"><span>Total</span><span style="font-feature-settings:'tnum' 1">{{ sumTotal }}</span></div>
+    </aside>
+  </section>
+</sc-if>
+<sc-if value="{{ coDone }}" hint-placeholder-val="{{ false }}">
+  <section style="max-width:760px; margin:0 auto; padding:clamp(64px,9vw,120px) clamp(20px,5vw,64px) 0; display:flex; flex-direction:column; gap:22px; align-items:flex-start">
+    <svg width="72" height="72" sc-camel-view-box="0 0 72 72" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle data-draw="" cx="36" cy="36" r="34"></circle><path data-draw="" d="M22 37l10 10 19-21"></path></svg>
+    <h1 data-reveal="up" style="margin:0; font-size:clamp(38px,5vw,64px); line-height:1; letter-spacing:-.035em">¡Gracias, {{ order.name }}!</h1>
+    <p data-reveal="up" data-delay="120" style="margin:0; font-size:16px; line-height:1.65; color:var(--color-neutral-300)">Tu pedido <span style="color:var(--color-text)">{{ order.id }}</span> está confirmado. Te enviamos el detalle a {{ order.email }}. Si hay algún problema, escribinos a galpon.mates@gmail.com.</p>
+    <div data-reveal="up" data-delay="220" style="width:100%; display:flex; flex-direction:column; gap:10px; padding:20px; box-sizing:border-box; border-radius:14px; background:var(--color-surface); box-shadow:var(--shadow-sm)">
+      <sc-for list="{{ orderLines }}" as="l"><div style="display:flex; justify-content:space-between; gap:12px; font-size:14px"><span>{{ l.name }} × {{ l.qty }}</span><span style="font-feature-settings:'tnum' 1">{{ l.totalLabel }}</span></div></sc-for>
+      <div style="display:flex; justify-content:space-between; font-size:14px; color:var(--color-neutral-400)"><span>{{ orderShip }}</span><span>{{ order.pay }}</span></div>
+      <div style="display:flex; justify-content:space-between; font-size:20px"><span>Total</span><span style="font-feature-settings:'tnum' 1">{{ orderTotal }}</span></div>
+    </div>
+    <button class="btn btn-primary" sc-camel-on-click="{{ orderAgain }}" style="min-height:46px; padding:0 22px">Seguir comprando</button>
+  </section>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Nosotros">
+  <section style="position:relative; overflow:hidden; padding:clamp(56px,8vw,120px) 0 clamp(40px,6vw,80px)">
+    <div data-mouse="-30" style="position:absolute; width:800px; height:800px; right:-200px; top:-300px; border-radius:50%; pointer-events:none; background:radial-gradient(circle, color-mix(in srgb, var(--color-accent-700) 45%, transparent), transparent 62%)"></div>
+    <div style="position:relative; max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px); display:flex; flex-direction:column; gap:22px">
+      <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Sobre nosotros</span>
+      <h1 style="margin:0; font-size:clamp(46px,7vw,100px); line-height:.98; letter-spacing:-.035em">
+        <span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" style="display:block">Dos socios.</span></span>
+        <span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="120" style="display:block">Un galpón.</span></span>
+        <span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" data-delay="240" style="display:block; color:var(--color-accent-300)">La ronda de siempre.</span></span>
+      </h1>
+      <p data-reveal="up" data-delay="380" style="margin:0; max-width:54ch; font-size:17px; line-height:1.65; color:var(--color-neutral-300)">Galpón nació entre dos socios que compartían la misma costumbre: un buen mate al lado. Hoy elegimos cada pieza, la revisamos a mano y la mandamos a todo el país.</p>
+    </div>
+  </section>
+  <section style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px) clamp(72px,9vw,120px)">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap:24px">
+      <div data-reveal="up" style="display:flex; flex-direction:column; gap:14px">
+        <div data-tilt="1" style="position:relative; aspect-ratio:4/5; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s"><image-slot id="socio-bruno" shape="rect" placeholder="Foto · Bruno Galimberti" style="color:var(--color-neutral-500)"></image-slot></div>
+        <div style="display:flex; flex-direction:column; gap:4px"><span style="font-size:22px; letter-spacing:-.015em">Bruno Galimberti</span><span style="font-size:13px; color:var(--color-accent-300)">Socio fundador</span></div>
+      </div>
+      <div data-reveal="up" data-delay="120" style="display:flex; flex-direction:column; gap:14px">
+        <div data-tilt="1" style="position:relative; aspect-ratio:4/5; border-radius:14px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm); transform:perspective(1000px); transition:transform .6s"><image-slot id="socio-2" shape="rect" placeholder="Foto · Socio" style="color:var(--color-neutral-500)"></image-slot></div>
+        <div style="display:flex; flex-direction:column; gap:4px"><span style="font-size:22px; letter-spacing:-.015em">Nombre del socio</span><span style="font-size:13px; color:var(--color-accent-300)">Socio</span></div>
+      </div>
+    </div>
+  </section>
+  <section style="padding:clamp(60px,9vw,140px) 0">
+    <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px)">
+      <p data-scrub="" style="margin:0; max-width:22ch; font-size:clamp(30px,4.4vw,60px); line-height:1.12; letter-spacing:-.028em; font-weight:500"><span data-w="" style="opacity:.14">No </span><span data-w="" style="opacity:.14">vendemos </span><span data-w="" style="opacity:.14">lo </span><span data-w="" style="opacity:.14">que </span><span data-w="" style="opacity:.14">no </span><span data-w="" style="opacity:.14">usaríamos. </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">Cada </span><span data-w="" style="opacity:.14; color:var(--color-accent-300)">mate </span><span data-w="" style="opacity:.14">pasa </span><span data-w="" style="opacity:.14">por </span><span data-w="" style="opacity:.14">nuestras </span><span data-w="" style="opacity:.14">manos </span><span data-w="" style="opacity:.14">antes </span><span data-w="" style="opacity:.14">de </span><span data-w="" style="opacity:.14">llegar </span><span data-w="" style="opacity:.14">a </span><span data-w="" style="opacity:.14">las </span><span data-w="" style="opacity:.14">tuyas.</span></p>
+    </div>
+  </section>
+  <section style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px) clamp(80px,10vw,140px)">
+    <span style="display:flex; align-items:center; gap:12px; margin-bottom:24px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Cómo trabajamos</span>
+    <div data-reveal="up" style="display:grid; grid-template-columns:minmax(48px,120px) minmax(0,360px) minmax(0,1fr); gap:12px clamp(20px,4vw,64px); align-items:baseline; padding:32px 0; background:linear-gradient(to right, transparent, var(--color-neutral-700) 48px, var(--color-neutral-700) calc(100% - 48px), transparent) no-repeat top / 100% 1px"><span style="color:var(--color-accent); font-feature-settings:'tnum' 1">01</span><h3 style="margin:0; font-size:24px; letter-spacing:-.01em">Elegimos cada calabaza</h3><p style="margin:0; font-size:15.5px; line-height:1.7; color:var(--color-neutral-300)">Buscamos formas parejas, paredes firmes y buena boca. Si no pasa la revisión, no sale.</p></div>
+    <div data-reveal="up" style="display:grid; grid-template-columns:minmax(48px,120px) minmax(0,360px) minmax(0,1fr); gap:12px clamp(20px,4vw,64px); align-items:baseline; padding:32px 0; background:linear-gradient(to right, transparent, var(--color-neutral-700) 48px, var(--color-neutral-700) calc(100% - 48px), transparent) no-repeat top / 100% 1px"><span style="color:var(--color-accent); font-feature-settings:'tnum' 1">02</span><h3 style="margin:0; font-size:24px; letter-spacing:-.01em">Alpaca y bronce</h3><p style="margin:0; font-size:15.5px; line-height:1.7; color:var(--color-neutral-300)">Virolas cinceladas, bases y bombillones con picos de bronce: los detalles que hacen que un mate dure.</p></div>
+    <div data-reveal="up" style="display:grid; grid-template-columns:minmax(48px,120px) minmax(0,360px) minmax(0,1fr); gap:12px clamp(20px,4vw,64px); align-items:baseline; padding:32px 0; background:linear-gradient(to right, transparent, var(--color-neutral-700) 48px, var(--color-neutral-700) calc(100% - 48px), transparent) no-repeat top / 100% 1px"><span style="color:var(--color-accent); font-feature-settings:'tnum' 1">03</span><h3 style="margin:0; font-size:24px; letter-spacing:-.01em">Embalado para viajar</h3><p style="margin:0; font-size:15.5px; line-height:1.7; color:var(--color-neutral-300)">Cada pedido sale protegido y con seguimiento, a cualquier provincia del país.</p></div>
+    <span data-magnetic="0.3" style="display:inline-flex; margin-top:40px; padding:12px; margin-left:-12px"><a href="#/tienda" class="btn btn-primary" sc-camel-on-click="{{ nav.tienda }}" style="min-height:48px; padding:0 24px; font-size:15px; text-decoration:none">Conocé la tienda</a></span>
+  </section>
+</div>
+</sc-if>
+<sc-if value="{{ isFaq }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Preguntas frecuentes">
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,5vw,64px) 32px; display:flex; flex-direction:column; gap:18px">
+    <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Ayuda</span>
+    <h1 style="margin:0; font-size:clamp(42px,6vw,84px); line-height:1; letter-spacing:-.035em"><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" style="display:block">Preguntas frecuentes</span></span></h1>
+  </section>
+  <section style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px) clamp(72px,9vw,120px); display:flex; flex-wrap:wrap; gap:32px 64px; align-items:flex-start">
+    <div style="flex:0 1 260px; display:flex; flex-wrap:wrap; gap:8px; position:sticky; top:88px">
+      <sc-for list="{{ faqCats }}" as="c" hint-placeholder-count="6"><button sc-camel-on-click="{{ c.go }}" style="display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:999px; font:inherit; font-size:13px; cursor:pointer; color:{{ c.color }}; background:{{ c.bg }}; border:1px solid {{ c.border }}; transition:all .35s">{{ c.label }}</button></sc-for>
+    </div>
+    <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column">
+      <h2 style="margin:0 0 12px; font-size:28px; letter-spacing:-.02em">{{ faqTitle }}</h2>
+      <sc-for list="{{ faqItems }}" as="f">
+        <div data-reveal="up" style="background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px">
+          <button sc-camel-on-click="{{ f.toggle }}" style="width:100%; display:flex; align-items:center; gap:18px; padding:22px 0; background:none; border:0; cursor:pointer; font:inherit; text-align:left; color:{{ f.qc }}; transition:color .3s"><span style="font-size:12px; color:var(--color-accent); font-feature-settings:'tnum' 1">{{ f.n }}</span><span style="flex:1; font-size:18px; letter-spacing:-.01em">{{ f.q }}</span><span style="width:32px; height:32px; flex:none; border-radius:50%; display:grid; place-items:center; box-shadow:inset 0 0 0 1px var(--color-neutral-700); transform:{{ f.rot }}; transition:transform .5s cubic-bezier(.34,1.56,.64,1)"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg></span></button>
+          <div style="display:grid; grid-template-rows:{{ f.rows }}; transition:grid-template-rows .55s cubic-bezier(.16,1,.3,1)"><div style="overflow:hidden"><p style="margin:0; padding:0 50px 24px 34px; font-size:15.5px; line-height:1.7; color:var(--color-neutral-300); opacity:{{ f.ao }}; transition:opacity .5s">{{ f.a }}</p></div></div>
+        </div>
+      </sc-for>
+      <div data-reveal="up" style="margin-top:48px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between"><span style="font-size:18px">¿No encontraste tu respuesta?</span><a href="#/contacto" class="btn btn-primary" sc-camel-on-click="{{ nav.contacto }}" style="text-decoration:none; min-height:44px; padding:0 20px">Escribinos</a></div>
+    </div>
+  </section>
+</div>
+</sc-if>
+<sc-if value="{{ isContact }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Contacto">
+  <section style="max-width:1280px; margin:0 auto; padding:clamp(48px,7vw,96px) clamp(20px,5vw,64px) clamp(72px,9vw,120px); display:flex; flex-wrap:wrap; gap:48px 72px; align-items:flex-start">
+    <div style="flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:22px">
+      <span style="display:flex; align-items:center; gap:12px; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent)"><span style="width:28px; height:1px; background:var(--color-accent)"></span>Contacto</span>
+      <h1 style="margin:0; font-size:clamp(46px,7vw,100px); line-height:.98; letter-spacing:-.035em"><span style="display:block; overflow:hidden; padding-bottom:.08em"><span data-reveal="rise" style="display:block">Escribinos.</span></span></h1>
+      <p data-reveal="up" data-delay="120" style="margin:0; max-width:44ch; font-size:16px; line-height:1.65; color:var(--color-neutral-300)">Toda la atención es por mail. Si tuviste un problema con tu pedido, contanos y lo resolvemos.</p>
+      <div data-reveal="up" data-delay="220" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center">
+        <span data-magnetic="0.25" style="display:inline-flex; padding:10px; margin:-10px"><a href="mailto:galpon.mates@gmail.com" style="font-size:clamp(20px,2.4vw,28px); letter-spacing:-.015em; text-decoration:none; background:linear-gradient(var(--color-accent), var(--color-accent)) no-repeat left bottom / 100% 1px; padding-bottom:4px">galpon.mates@gmail.com</a></span>
+        <button class="btn btn-secondary" sc-camel-on-click="{{ copyEmail }}" style="gap:8px"><sc-if value="{{ notCopied }}"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"></path></svg>Copiar</sc-if><sc-if value="{{ copied }}"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="var(--color-accent)"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>Copiado</sc-if></button>
+      </div>
+      <div data-reveal="up" data-delay="320" style="display:flex; flex-direction:column; gap:8px; margin-top:12px; font-size:14px">
+        <span style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-neutral-500)">Antes de escribir</span>
+        <a href="#/faq" sc-camel-on-click="{{ faqGo.envios }}" style="text-decoration:none">Envíos y seguimiento</a>
+        <a href="#/faq" sc-camel-on-click="{{ faqGo.cambios }}" style="text-decoration:none">Cambios y devoluciones</a>
+        <a href="#/faq" sc-camel-on-click="{{ faqGo.curado }}" style="text-decoration:none">Cómo curar tu mate</a>
+      </div>
+    </div>
+    <div style="flex:1 1 420px; min-width:0">
+      <sc-if value="{{ ctForm }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="up" data-delay="200" style="display:flex; flex-direction:column; gap:16px; padding:clamp(20px,3vw,32px); border-radius:14px; background:var(--color-surface); box-shadow:var(--shadow-sm)">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:16px">
+            <div class="field"><label>Nombre</label><input class="input" value="{{ ct.name }}" sc-camel-on-change="{{ ctOn.name }}" style="border-color:{{ ctBd.name }}"><sc-if value="{{ ctHas.name }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ ctErr.name }}</span></sc-if></div>
+            <div class="field"><label>Email</label><input class="input" type="email" value="{{ ct.email }}" sc-camel-on-change="{{ ctOn.email }}" style="border-color:{{ ctBd.email }}"><sc-if value="{{ ctHas.email }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ ctErr.email }}</span></sc-if></div>
+          </div>
+          <div class="field"><label>Número de pedido (opcional)</label><input class="input" value="{{ ct.order }}" sc-camel-on-change="{{ ctOn.order }}" placeholder="GLP-12345"></div>
+          <div class="field"><label>Motivo</label><div class="seg" style="flex-wrap:wrap"><sc-for list="{{ ctReasons }}" as="r"><label class="seg-opt"><input type="radio" name="motivo" checked="{{ r.on }}" sc-camel-on-change="{{ r.pick }}"><span>{{ r.v }}</span></label></sc-for></div></div>
+          <div class="field"><label>Mensaje</label><textarea class="input" value="{{ ct.msg }}" sc-camel-on-change="{{ ctOn.msg }}" placeholder="Contanos qué pasó o qué necesitás" style="min-height:130px; border-color:{{ ctBd.msg }}"></textarea><sc-if value="{{ ctHas.msg }}"><span style="display:block; margin-top:5px; font-size:12px; color:oklch(0.76 0.12 25)">{{ ctErr.msg }}</span></sc-if></div>
+          <span data-magnetic="0.2" style="display:flex; padding:8px; margin:-8px"><button class="btn btn-primary" sc-camel-on-click="{{ ctSend }}" disabled="{{ ctBusy }}" style="width:100%; min-height:48px; font-size:15px; gap:10px"><sc-if value="{{ ctBusy }}"><svg data-spin="1" width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Enviando…</sc-if><sc-if value="{{ ctIdle }}">Enviar mensaje</sc-if></button></span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ctSent }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:18px; align-items:flex-start; padding:clamp(24px,3vw,36px); border-radius:14px; background:var(--color-surface); box-shadow:0 0 0 1px var(--color-accent-700)">
+          <svg width="56" height="56" sc-camel-view-box="0 0 72 72" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle data-draw="" cx="36" cy="36" r="34"></circle><path data-draw="" d="M22 37l10 10 19-21"></path></svg>
+          <span data-reveal="up" style="font-size:26px; letter-spacing:-.02em">Mensaje enviado</span>
+          <p data-reveal="up" data-delay="100" style="margin:0; font-size:15px; line-height:1.65; color:var(--color-neutral-300)">Gracias, {{ ct.name }}. Te respondemos a {{ ct.email }}.</p>
+          <button class="btn btn-secondary" sc-camel-on-click="{{ ctReset }}">Escribir otro mensaje</button>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+</div>
+</sc-if>
+</main>
+
+<footer style="position:relative; overflow:hidden; padding:72px 0 0">
+  <div style="max-width:1280px; margin:0 auto; padding:0 clamp(20px,5vw,64px)">
+    <div style="height:1px; margin-bottom:56px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div>
+    <div style="display:flex; flex-wrap:wrap; gap:40px 64px; justify-content:space-between">
+      <div style="flex:1 1 260px; max-width:360px; display:flex; flex-direction:column; gap:14px">
+        <p style="margin:0; font-size:24px; letter-spacing:-.02em">Hechos para compartir.</p>
+        <p style="margin:0; font-size:14px; color:var(--color-neutral-400)">Mates, bombillones y yerba con envío a todo el país.</p>
+        <a href="mailto:galpon.mates@gmail.com" style="display:inline-flex; align-items:center; gap:8px; font-size:14px; text-decoration:none"><svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-96,85.15L52.57,64H203.43ZM98.71,128,40,181.81V74.19Zm11.84,10.85,12,11.05a8,8,0,0,0,10.82,0l12-11.05,58,53.15H52.57ZM157.29,128,216,74.18V181.82Z"></path></svg>galpon.mates@gmail.com</a>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:40px 64px; font-size:14px">
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <span style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-neutral-500)">Tienda</span>
+          <sc-for list="{{ lines }}" as="c" hint-placeholder-count="6"><a href="{{ c.href }}" sc-camel-on-click="{{ c.go }}" style="color:var(--color-neutral-300); text-decoration:none">{{ c.name }}</a></sc-for>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <span style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-neutral-500)">Ayuda</span>
+          <a href="#/faq" sc-camel-on-click="{{ nav.faq }}" style="color:var(--color-neutral-300); text-decoration:none">Preguntas frecuentes</a>
+          <a href="#/faq" sc-camel-on-click="{{ faqGo.envios }}" style="color:var(--color-neutral-300); text-decoration:none">Envíos</a>
+          <a href="#/faq" sc-camel-on-click="{{ faqGo.cambios }}" style="color:var(--color-neutral-300); text-decoration:none">Cambios y devoluciones</a>
+          <a href="#/contacto" sc-camel-on-click="{{ nav.contacto }}" style="color:var(--color-neutral-300); text-decoration:none">Contacto</a>
+          <a href="#/contacto" sc-camel-on-click="{{ arrepentimiento }}" style="text-decoration:none">Botón de arrepentimiento</a>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <span style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-neutral-500)">Galpón</span>
+          <a href="#/nosotros" sc-camel-on-click="{{ nav.nosotros }}" style="color:var(--color-neutral-300); text-decoration:none">Sobre nosotros</a>
+          <a href="#/kit" sc-camel-on-click="{{ nav.kit }}" style="color:var(--color-neutral-300); text-decoration:none">Armá tu kit</a>
+          <a href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" style="color:var(--color-neutral-300); text-decoration:none">Todo el catálogo</a>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:14px; margin-top:56px; font-size:12px; color:var(--color-neutral-500)">
+      <span>© 2026 Galpón Mates</span>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center"><span style="margin-right:4px">Pagás con</span><span class="tag tag-neutral">Mercado Pago</span><span class="tag tag-neutral">Visa</span><span class="tag tag-neutral">Mastercard</span><span class="tag tag-neutral">American Express</span></div>
+    </div>
+    <div data-reveal="clip" data-dur="1600" style="margin-top:40px; width:100%; aspect-ratio:1447/279; -webkit-mask:url(&quot;assets/galpon-wordmark.png&quot;) center bottom/contain no-repeat; mask:url(&quot;assets/galpon-wordmark.png&quot;) center bottom/contain no-repeat; background:linear-gradient(180deg, color-mix(in srgb, var(--color-text) 16%, transparent), transparent 90%)"></div>
+  </div>
+</footer>
+
+<div sc-camel-on-click="{{ closeCart }}" style="position:fixed; inset:0; z-index:70; background:color-mix(in srgb, var(--color-neutral-900) 60%, transparent); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); opacity:{{ cartO }}; pointer-events:{{ cartPE }}; transition:opacity .45s"></div>
+<aside role="dialog" aria-label="Carrito" style="position:fixed; top:0; right:0; bottom:0; z-index:71; width:min(440px, 100vw); display:flex; flex-direction:column; background:linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 94%, var(--color-accent-900)), var(--color-bg)); box-shadow:var(--shadow-lg); transform:{{ cartX }}; transition:transform .65s cubic-bezier(.16,1,.3,1)">
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px">
+    <span style="font-size:18px">Carrito <span style="color:var(--color-neutral-500); font-feature-settings:'tnum' 1">({{ cartCount }})</span></span>
+    <button class="btn btn-icon" sc-camel-on-click="{{ closeCart }}" aria-label="Cerrar carrito"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path></svg></button>
+  </div>
+  <div style="height:1px; background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent)"></div>
+  <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:32px; text-align:center">
+      <img data-float="" src="assets/galpon-mark.png" alt="" style="width:64px; opacity:.85">
+      <p style="margin:0; font-size:18px">Tu carrito está vacío</p>
+      <p style="margin:0; font-size:14px; color:var(--color-neutral-400)">Elegí tu próximo compañero de ronda.</p>
+      <a href="#/tienda" class="btn btn-primary" sc-camel-on-click="{{ nav.tienda }}" style="min-height:44px; padding:0 20px; text-decoration:none">Ir a la tienda</a>
+    </div>
+  </sc-if>
+  <sc-if value="{{ cartHas }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; overflow:auto; padding:8px 20px">
+      <sc-for list="{{ cartLines }}" as="l">
+        <div data-reveal="left" style="display:flex; gap:14px; padding:14px 0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px">
+          <div style="position:relative; width:72px; height:88px; flex:none; border-radius:8px; overflow:hidden; background:var(--color-surface); pointer-events:none">
+            <sc-if value="{{ l.hasImg }}" hint-placeholder-val="{{ false }}"><img src="assets/mate-imperial-premium.jpg" alt="" style="width:100%; height:100%; object-fit:cover; object-position:50% 75%"></sc-if>
+            <sc-if value="{{ l.isKit }}"><div style="position:absolute; inset:0; display:grid; place-items:center; background:radial-gradient(circle at 50% 30%, var(--color-accent-800), transparent 80%)"><img src="assets/galpon-mark.png" alt="" style="width:30px"></div></sc-if>
+            <sc-if value="{{ l.useSlot }}"><image-slot id="{{ l.slotId }}" shape="rect" placeholder=" " style="color:var(--color-neutral-600)"></image-slot></sc-if>
+          </div>
+          <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px">
+            <div style="display:flex; justify-content:space-between; gap:10px"><span style="font-size:14px; line-height:1.3">{{ l.name }}</span><button class="btn btn-icon" sc-camel-on-click="{{ l.remove }}" aria-label="Quitar" style="width:28px; height:28px; flex:none; color:var(--color-neutral-400)"><svg width="15" height="15" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg></button></div>
+            <span style="font-size:12px; color:var(--color-neutral-400)">{{ l.detail }}</span>
+            <sc-if value="{{ l.hasSaving }}"><span style="font-size:12px; color:var(--color-accent-300)">Ahorrás {{ l.savingLabel }}</span></sc-if>
+            <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:10px">
+              <div style="display:inline-flex; align-items:center; border-radius:8px; box-shadow:inset 0 0 0 1px var(--color-divider)"><button class="btn btn-icon" sc-camel-on-click="{{ l.dec }}" aria-label="Restar" style="width:30px; height:30px">−</button><span style="min-width:22px; text-align:center; font-size:13px; font-feature-settings:'tnum' 1">{{ l.qty }}</span><button class="btn btn-icon" sc-camel-on-click="{{ l.inc }}" aria-label="Sumar" style="width:30px; height:30px">+</button></div>
+              <span style="font-size:15px; font-feature-settings:'tnum' 1">{{ l.totalLabel }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:18px 20px 22px; display:flex; flex-direction:column; gap:10px; box-shadow:0 -1px 0 var(--color-neutral-800)">
+      <sc-if value="{{ hasSavings }}"><div style="display:flex; justify-content:space-between; font-size:13px; color:var(--color-accent-300)"><span>Ahorro por kit</span><span>−{{ savingsLabel }}</span></div></sc-if>
+      <div style="display:flex; justify-content:space-between; font-size:16px"><span>Subtotal</span><span style="font-feature-settings:'tnum' 1">{{ subtotalLabel }}</span></div>
+      <span style="font-size:12px; color:var(--color-neutral-500)">El envío se calcula en el checkout.</span>
+      <span data-magnetic="0.15" style="display:flex; padding:8px; margin:-8px"><button class="btn btn-primary" sc-camel-on-click="{{ goCheckout }}" style="width:100%; min-height:48px; font-size:15px; gap:10px; box-shadow:0 0 30px -10px var(--color-accent)"><svg width="16" height="16" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z"></path></svg>Finalizar compra</button></span>
+      <button class="btn btn-ghost" sc-camel-on-click="{{ closeCart }}" style="align-self:center">Seguir comprando</button>
+    </div>
+  </sc-if>
+</aside>
+
+<sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+<div sc-camel-on-click="{{ closeSearch }}" style="position:fixed; inset:0; z-index:80; display:flex; justify-content:center; padding:10vh 20px 20px; box-sizing:border-box; background:color-mix(in srgb, var(--color-bg) 84%, transparent); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px)">
+  <div data-reveal="up" data-dur="600" sc-camel-on-click="{{ stop }}" style="width:min(720px, 100%); display:flex; flex-direction:column; gap:20px">
+    <div style="display:flex; align-items:center; gap:14px; padding-bottom:14px; background:linear-gradient(90deg, var(--color-accent), transparent) no-repeat bottom / 100% 1px">
+      <svg width="24" height="24" sc-camel-view-box="0 0 256 256" fill="var(--color-accent)"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg>
+      <input ref="{{ searchRef }}" value="{{ q }}" sc-camel-on-change="{{ setQ }}" sc-camel-on-key-down="{{ searchKey }}" placeholder="Buscá un mate, bombilla o yerba…" style="flex:1; min-width:0; background:transparent; border:0; outline:none; color:var(--color-text); font:inherit; font-size:clamp(22px,3vw,32px); letter-spacing:-.02em">
+      <button class="btn btn-icon" sc-camel-on-click="{{ closeSearch }}" aria-label="Cerrar búsqueda"><svg width="18" height="18" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path></svg></button>
+    </div>
+    <sc-if value="{{ qEmpty }}"><div style="display:flex; flex-wrap:wrap; gap:8px"><sc-for list="{{ lines }}" as="c"><button class="btn btn-secondary" sc-camel-on-click="{{ c.go }}" style="border-radius:999px">{{ c.name }}</button></sc-for></div></sc-if>
+    <div style="display:flex; flex-direction:column">
+      <sc-for list="{{ qResults }}" as="p">
+        <button sc-camel-on-click="{{ p.open }}" data-reveal="up" style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 6px; border:0; background:linear-gradient(to right, transparent, var(--color-neutral-800) 48px, var(--color-neutral-800) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px; color:inherit; font:inherit; text-align:left; cursor:pointer"><span style="display:flex; flex-direction:column; gap:2px"><span style="font-size:16px">{{ p.name }}</span><span style="font-size:12px; color:var(--color-accent)">{{ p.catName }}</span></span><span style="font-size:15px; font-feature-settings:'tnum' 1">{{ p.priceLabel }}</span></button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ qNone }}"><p style="margin:0; color:var(--color-neutral-400)">Sin resultados para “{{ q }}”.</p></sc-if>
+    <sc-if value="{{ qHas }}"><button class="btn btn-ghost" sc-camel-on-click="{{ searchAll }}" style="align-self:flex-start; gap:8px">Ver todos los resultados en la tienda</button></sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed; inset:64px 0 0 0; z-index:45; display:flex; flex-direction:column; gap:6px; padding:32px clamp(20px,5vw,64px); background:color-mix(in srgb, var(--color-bg) 94%, transparent); backdrop-filter:blur(18px)">
+  <a data-reveal="up" href="#/inicio" sc-camel-on-click="{{ nav.inicio }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Inicio</a>
+  <a data-reveal="up" data-delay="50" href="#/tienda" sc-camel-on-click="{{ nav.tienda }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Tienda</a>
+  <a data-reveal="up" data-delay="100" href="#/kit" sc-camel-on-click="{{ nav.kit }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Armá tu kit</a>
+  <a data-reveal="up" data-delay="150" href="#/nosotros" sc-camel-on-click="{{ nav.nosotros }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Nosotros</a>
+  <a data-reveal="up" data-delay="200" href="#/faq" sc-camel-on-click="{{ nav.faq }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Preguntas frecuentes</a>
+  <a data-reveal="up" data-delay="250" href="#/contacto" sc-camel-on-click="{{ nav.contacto }}" style="font-size:34px; letter-spacing:-.02em; color:var(--color-text); text-decoration:none">Contacto</a>
+</div>
+</sc-if>
+
+<div ref="{{ curtainRef }}" style="position:fixed; inset:0; z-index:85; pointer-events:none; transform:translateY(100%); display:grid; place-items:center; background:radial-gradient(600px 400px at 50% 40%, var(--color-accent-800), transparent 70%), linear-gradient(180deg, var(--color-section), var(--color-bg))"><img src="assets/galpon-mark.png" alt="" style="width:64px; opacity:.9"></div>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<canvas data-3d="" style="position:fixed; inset:0; width:100vw; height:100vh; z-index:45; pointer-events:none; opacity:0; transition:opacity .6s"></canvas>
+<div style="position:fixed; inset:0; z-index:35; pointer-events:none; opacity:.07; mix-blend-mode:overlay; background-image:url(&quot;data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'&gt;&lt;filter id='n'&gt;&lt;feTurbulence type='fractalNoise' sc-camel-base-frequency='.9' sc-camel-num-octaves='2' sc-camel-stitch-tiles='stitch'/&gt;&lt;/filter&gt;&lt;rect width='160' height='160' filter='url(%23n)'/&gt;&lt;/svg&gt;&quot;)"></div>
+</sc-if>
+
+<div style="position:fixed; left:50%; bottom:24px; z-index:90; transform:translateX(-50%) {{ toastY }}; opacity:{{ toastO }}; pointer-events:{{ toastPE }}; transition:transform .55s cubic-bezier(.16,1,.3,1), opacity .4s">
+  <div style="display:flex; align-items:center; gap:14px; padding:10px 10px 10px 14px; border-radius:12px; white-space:nowrap; background:color-mix(in srgb, var(--color-surface) 88%, transparent); backdrop-filter:blur(14px); box-shadow:var(--shadow-md)">
+    <span style="width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--color-accent-800); color:var(--color-accent-200)"><svg width="14" height="14" sc-camel-view-box="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg></span>
+    <div style="display:flex; flex-direction:column"><span style="font-size:13px">{{ toastTitle }}</span><span style="font-size:12px; color:var(--color-neutral-400)">{{ toastSub }}</span></div>
+    <button class="btn btn-ghost" sc-camel-on-click="{{ openCart }}">Ver carrito</button>
+  </div>
+</div>
+
+</div>
+</x-dc>

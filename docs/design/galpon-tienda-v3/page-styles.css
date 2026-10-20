@@ -1,0 +1,17 @@
+
+html:root { color-scheme: dark;
+  --color-bg: #1a1210; --color-surface: #271b15; --color-text: #f3ebe3;
+  --color-accent: #c0803f; --color-accent-2: #8ba43f;
+  --color-divider: color-mix(in srgb, #f3ebe3 15%, transparent);
+  --color-neutral-100: #f8f1ea; --color-neutral-200: #ebe0d5; --color-neutral-300: #d6c8ba; --color-neutral-400: #b9a898; --color-neutral-500: #998877; --color-neutral-600: #7a6a5c; --color-neutral-700: #5c4f45; --color-neutral-800: #42382f; --color-neutral-900: #2b241f;
+  --color-accent-100: #fbf1e6; --color-accent-200: #f3dcc2; --color-accent-300: #e6bd91; --color-accent-400: #d59d63; --color-accent-500: #c0803f; --color-accent-600: #9c6430; --color-accent-700: #774a24; --color-accent-800: #53331a; --color-accent-900: #34200f;
+  --color-accent-2-100: #f1f5e1; --color-accent-2-200: #dfe8bb; --color-accent-2-300: #c5d68b; --color-accent-2-400: #a8bf5f; --color-accent-2-500: #8ba43f; --color-accent-2-600: #6d8430; --color-accent-2-700: #516324; --color-accent-2-800: #384419; --color-accent-2-900: #232b10;
+  --color-section: #3a2415; --color-section-glow: #5e3c20; --color-section-ghost: #7a5230;
+  --shadow-sm: 0 0 0 1px #42382f; --shadow-md: 0 0 0 1px #5c4f45, 0 6px 18px rgba(0,0,0,0.55); --shadow-lg: 0 0 0 1px #998877, 0 16px 40px rgba(0,0,0,0.65);
+}
+html { scroll-behavior: auto; }
+body { margin: 0; background: var(--color-bg); overflow-x: hidden; cursor: url("assets/cursor-default.png") 6 4, auto; }
+a, button, label, select, [role="button"], [data-tilt] { cursor: url("assets/cursor-pointer.png") 6 4, pointer !important; }
+input, textarea { cursor: text; }
+a { color: var(--color-accent-300); }
+a:hover { color: var(--color-accent-200); }
