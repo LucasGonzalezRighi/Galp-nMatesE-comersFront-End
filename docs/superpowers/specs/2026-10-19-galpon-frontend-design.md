@@ -40,7 +40,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 | Fotos | Cloudinary |
 | Animaciones | Todas las del diseño, en dos etapas |
 | Usuarios del dashboard | Un solo administrador |
-| Estructura | Next.js (tienda) + Vite/React (dashboard) en un workspace pnpm con paquetes compartidos |
+| Estructura | Next.js (tienda) + Vite/React (dashboard) en un workspace **npm** con paquetes compartidos (Lucas instala con `npm i` y levanta con `npm run dev`) |
 | Estilos | Tailwind CSS v4 + tokens del diseño |
 | Idioma del código | Identificadores, carpetas y archivos en inglés; interfaz y comentarios de documentación en español |
 
@@ -72,7 +72,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 
 ```
 E-comers Marcos/
-├─ frontend/                       ◄ Repo git del front = workspace pnpm
+├─ frontend/                       ◄ Repo git del front = workspace npm
 │  ├─ apps/
 │  │  ├─ store/                    Tienda pública · Next.js (App Router)
 │  │  └─ admin/                    Dashboard · Vite + React (SPA)
@@ -90,7 +90,7 @@ E-comers Marcos/
 │  │  └─ superpowers/              Specs y planes
 │  ├─ .github/workflows/ci.yml
 │  ├─ lefthook.yml
-│  ├─ pnpm-workspace.yaml          Paquetes + catálogo de versiones compartidas
+│  ├─ scripts/dependency-versions.json  Versiones exactas de todas las dependencias (fuente única)
 │  ├─ package.json                 Scripts: dev, build, typecheck, lint, test, e2e, api:generate
 │  └─ README.md
 ├─ backend/                        (otro repo · fase 2)
@@ -117,7 +117,7 @@ apps/admin ─┘         │
 
 ## 5. Stack
 
-Versiones estables verificadas el 2026-10-20. Se fijan en el **catálogo de pnpm** (`pnpm-workspace.yaml`) para que todo el workspace use la misma. Regla: la última estable **compatible con la matriz de dependencias** — `pnpm install` sin advertencias de peers.
+Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/dependency-versions.json` y cada `package.json` usa esa misma versión; `npm run lint` lo verifica. Regla: la última estable **compatible con la matriz de dependencias** — `npm install` sin errores de peers. `openapi-typescript` se ejecuta con `npx` (su peer pide TypeScript 5).
 
 | Uso | Librería (versión de referencia) |
 |---|---|
@@ -454,7 +454,7 @@ pending_payment ──(pago aprobado)──► paid ──► preparing ──�
 
 ## 12. Contrato de API (`docs/api/openapi.yaml`)
 
-OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos con `pnpm api:generate` y FastAPI lo implementa en la fase 2 (con un test que compara su OpenAPI con este).
+OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos con `npm run api:generate` y FastAPI lo implementa en la fase 2 (con un test que compara su OpenAPI con este).
 
 **Convenciones**: JSON en `camelCase`; montos en pesos enteros con sufijo `Ars` (`priceArs`, `totalArs`); fechas ISO 8601 UTC; listas `?page=&pageSize=` (máx. 100) → `{ items, page, pageSize, total }`; errores `problem+json` `{ type, title, status, detail, errors?: [{ field, code, message }] }`; `429` con `Retry-After`; las escrituras de pedidos y pagos llevan `Idempotency-Key` (UUID por intento).
 
@@ -756,7 +756,7 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 ## 20. Calidad, automatización y documentación
 
 - Scripts en `frontend/package.json`: `dev`, `dev:store`, `dev:admin`, `build`, `typecheck` (tienda: `next typegen && tsc --noEmit`; admin: `tsr generate && tsc --noEmit`), `lint`, `format`, `test`, `test:e2e`, `api:generate`.
-- `lefthook.yml` en la raíz del repo (que es la del workspace): Prettier + ESLint sobre lo cambiado + `typecheck`. Se instala con `"prepare": "lefthook install"` y permitiendo el script de build de lefthook en `pnpm-workspace.yaml`.
+- `lefthook.yml` en la raíz del repo (que es la del workspace): Prettier + ESLint sobre lo cambiado + `typecheck`. Se instala con `"prepare": "lefthook install"` al correr `npm install`.
 - Commits convencionales en español (`feat(store): agrega carrito lateral`).
 - CI (`.github/workflows/ci.yml`, Node 24): instalar, `api:generate` (falla si difiere de lo commiteado), `typecheck`, `lint`, `test`, `build`, `test:e2e`. Corre cuando Lucas suba el repo a GitHub.
 - `.editorconfig`, `.nvmrc` y `.env.example` por app con cada variable explicada.
@@ -771,7 +771,7 @@ Cada plan tiene su propio documento, sus tareas y su criterio de "listo"; termin
 
 | Plan | Contenido | Listo cuando |
 |---|---|---|
-| **P1 · Fundaciones y contrato** | Repo, workspace pnpm + catálogo, `config`, `design-tokens`, `domain` y `schemas` (con tests), `openapi.yaml` completo, `api-client` + mock + fixtures, esqueleto de las dos apps que arrancan con la API simulada, lefthook, CI, README, ADRs | Las dos apps arrancan en modo de prueba, CI en verde, `domain` y `schemas` con cobertura completa de las reglas |
+| **P1 · Fundaciones y contrato** | Repo, workspace npm con versiones exactas centralizadas, `config`, `design-tokens`, `domain` y `schemas` (con tests), `openapi.yaml` completo, `api-client` + mock + fixtures, esqueleto de las dos apps que arrancan con la API simulada, lefthook, CI, README, ADRs | Las dos apps arrancan en modo de prueba, CI en verde, `domain` y `schemas` con cobertura completa de las reglas |
 | **P2 · Tienda pública** | Layout (barra superior, header, menú, pie, toast), `components/ui`, Inicio (sin 3D), Tienda, Producto, Reseñas, Búsqueda, Carrito, Kit, Nosotros, Preguntas, Contacto, Arrepentimiento, Legales, SEO, animaciones de la etapa 1 | Lista de control visual de esas pantallas aprobada; E2E de navegación, carrito, kit, búsqueda, contacto y arrepentimiento |
 | **P3 · Checkout y cuenta** | Checkout de 3 pasos, cotización, pedidos, simulador de MP, tarjeta con Secure Fields y campos simulados, 3-D Secure, resultado, pedido de invitado, cuenta de cliente | E2E de todos los caminos de compra en verde |
 | **P4 · Dashboard** | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas, mensajes | E2E del admin en verde; lista de control del admin |
