@@ -65,13 +65,29 @@ export type BranchAddressInput = z.input<typeof branchAddressSchema>
 export type BranchAddress = z.output<typeof branchAddressSchema>
 
 /**
+ * Evalúa una dirección que falta (`undefined` o `null`) como una dirección vacía.
+ *
+ * Así un formulario que todavía no registró ningún campo de la dirección recibe un mensaje en
+ * español por cada campo (`address.street`, `address.city`, …) y no uno suelto en `address`,
+ * igual que con un campo de texto vacío.
+ *
+ * @param schema - Schema de la dirección.
+ * @returns El mismo schema, que además acepta `undefined` y `null` como "sin completar".
+ */
+function missingAsEmpty<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value: z.input<T> | null | undefined) => value ?? {}, schema)
+}
+
+/**
  * Paso 2 del checkout, Envío: el método elegido y la dirección que ese método pide.
  *
- * El retiro en persona no lleva dirección; si llega alguna de más, se descarta.
+ * El retiro en persona no lleva dirección; si llega alguna de más, se descarta. Con envío a
+ * domicilio o a sucursal, una dirección que falta se trata como vacía: cada campo da su propio
+ * "Requerido" o su mensaje de formato.
  */
 export const shippingSchema = z.discriminatedUnion('method', [
-  z.object({ method: z.literal('home'), address: homeAddressSchema }),
-  z.object({ method: z.literal('branch'), address: branchAddressSchema }),
+  z.object({ method: z.literal('home'), address: missingAsEmpty(homeAddressSchema) }),
+  z.object({ method: z.literal('branch'), address: missingAsEmpty(branchAddressSchema) }),
   z.object({ method: z.literal('pickup') }),
 ])
 

@@ -21,6 +21,7 @@ import {
   homeAddressSchema,
   shippingSchema,
 } from './checkout'
+import { toFieldErrors } from './form-errors'
 
 /** Camino y mensaje de cada error que da un schema para una entrada (vacío si es válida). */
 function issuesOf(schema: z.ZodType, input: unknown): { path: PropertyKey[]; message: string }[] {
@@ -152,6 +153,59 @@ describe('shippingSchema', () => {
       { path: ['address', 'street'], message: 'Requerido' },
     ])
   })
+
+  it.each([
+    ['sin la clave address', { method: 'home' }],
+    ['con address undefined', { method: 'home', address: undefined }],
+    ['con address null', { method: 'home', address: null }],
+    ['con address vacío', { method: 'home', address: {} }],
+  ])('el envío a domicilio %s marca cada campo de la dirección como faltante', (_case, input) => {
+    expect(issuesOf(shippingSchema, input)).toEqual([
+      { path: ['address', 'street'], message: 'Requerido' },
+      { path: ['address', 'number'], message: 'Requerido' },
+      { path: ['address', 'postalCode'], message: 'Código postal inválido' },
+      { path: ['address', 'city'], message: 'Requerido' },
+      { path: ['address', 'province'], message: 'Elegí una provincia' },
+    ])
+  })
+
+  it('el envío a sucursal sin dirección marca cada campo de la dirección como faltante', () => {
+    const expected = [
+      { path: ['address', 'postalCode'], message: 'Código postal inválido' },
+      { path: ['address', 'city'], message: 'Requerido' },
+      { path: ['address', 'province'], message: 'Elegí una provincia' },
+    ]
+    expect(issuesOf(shippingSchema, { method: 'branch' })).toEqual(expected)
+    expect(issuesOf(shippingSchema, { method: 'branch', address: null })).toEqual(expected)
+    expect(issuesOf(shippingSchema, { method: 'branch', address: {} })).toEqual(expected)
+  })
+
+  it.each([
+    [
+      'home',
+      {
+        'address.street': 'Requerido',
+        'address.number': 'Requerido',
+        'address.postalCode': 'Código postal inválido',
+        'address.city': 'Requerido',
+        'address.province': 'Elegí una provincia',
+      },
+    ],
+    [
+      'branch',
+      {
+        'address.postalCode': 'Código postal inválido',
+        'address.city': 'Requerido',
+        'address.province': 'Elegí una provincia',
+      },
+    ],
+  ])(
+    'toFieldErrors de un envío %s sin dirección da un mensaje por campo y ninguno suelto en address',
+    (method, expected) => {
+      const result = shippingSchema.safeParse({ method })
+      expect(result.success ? {} : toFieldErrors(result.error)).toEqual(expected)
+    },
+  )
 
   it('el envío a sucursal pide solo código postal, ciudad y provincia', () => {
     const address = { postalCode: '2000', city: 'Rosario', province: 'Santa Fe' }
@@ -286,6 +340,17 @@ describe('tipos', () => {
     }>()
     expectTypeOf<HomeAddressInput['apartment']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<BranchAddressInput['postalCode']>().toEqualTypeOf<string>()
+    // La dirección que falta se acepta como entrada, pero la salida siempre la trae completa.
+    expectTypeOf<Extract<ShippingInput, { method: 'home' }>['address']>().toEqualTypeOf<
+      HomeAddressInput | null | undefined
+    >()
+    expectTypeOf<Extract<ShippingInput, { method: 'branch' }>['address']>().toEqualTypeOf<
+      BranchAddressInput | null | undefined
+    >()
+    expectTypeOf<Extract<Shipping, { method: 'home' }>['address']>().toEqualTypeOf<HomeAddress>()
+    expectTypeOf<
+      Extract<Shipping, { method: 'branch' }>['address']
+    >().toEqualTypeOf<BranchAddress>()
     expectTypeOf<CardholderInput>().toEqualTypeOf<Cardholder>()
   })
 })

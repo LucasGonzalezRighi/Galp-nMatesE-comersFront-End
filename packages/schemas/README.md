@@ -11,7 +11,7 @@ Validaciones de los formularios de Galpón Mates con [Zod](https://zod.dev) 4, c
 
 - **Los textos se recortan antes de validar** (`.trim()`), y el schema devuelve el valor ya normalizado: email en minúsculas, código postal y número de pedido en mayúsculas, DNI sin puntos, teléfono de 10 dígitos.
 - **Los mensajes salen de `MESSAGES`** (`src/messages.ts`) y están en español. Se pasan como texto (`.min(2, MESSAGES.required)`) o como `{ error }` (`.min(1, { error: MESSAGES.required, abort: true })`); no se usa `message`, que Zod 4 dejó de recomendar. Los que llevan un número son funciones: `MESSAGES.max(50)` da "Máximo 50 caracteres".
-- **Un dato que falta (`undefined`) da el mismo mensaje que uno vacío.**
+- **Un dato que falta (`undefined`) da el mismo mensaje que uno vacío.** Vale también para la dirección entera de un envío a domicilio o a sucursal: si falta (`undefined` o `null`), `shippingSchema` la trata como vacía y da un mensaje por campo (`address.street`, `address.city`, …), nunca uno suelto en `address`.
 - **Cada schema de objeto exporta sus tipos** con el mismo patrón: `XInput` es lo que escribe la persona (`z.input`) y `X` lo que queda después de normalizar (`z.output`). Por ejemplo, `checkoutContactSchema` da `CheckoutContactInput` y `CheckoutContact`.
 - **`toFieldErrors(error)`** pasa un `ZodError` a `{ 'address.street': 'Requerido' }`: una clave por campo, con el camino unido con puntos, y gana el primer mensaje.
 
