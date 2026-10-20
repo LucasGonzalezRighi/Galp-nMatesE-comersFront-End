@@ -11,9 +11,12 @@ Puede importarse desde cualquier app y desde `schemas` y `api-client`; `domain` 
 
 ## Módulos
 
-| Módulo     | Qué resuelve                                                                                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `money.ts` | Tipo `Pesos` (entero de pesos con marca), validación con `pesos()`, formato "$39.999" sin espacio, descuentos con el signo menos U+2212 ("−$3.600", "−10%") y suma de montos |
+| Módulo       | Qué resuelve                                                                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `money.ts`   | Tipo `Pesos` (entero de pesos con marca), validación con `pesos()`, formato "$39.999" sin espacio, descuentos con el signo menos U+2212 ("−$3.600", "−10%") y suma de montos                                                   |
+| `options.ts` | Cueros (Negro, Marrón, Crudo, Borravino) y virolas (Alpaca lisa, Alpaca cincelada, Acero) de los mates, con sus valores por defecto, la virola fija del kit y los type guards                                                  |
+| `catalog.ts` | Grupos y estados de producto, regla de "comprable", cantidad máxima (20), código "N°07", orden del listado (destacados, menor, mayor, A-Z; los "a consultar" al final) y productos relacionados (misma línea primero, hasta 4) |
+| `text.ts`    | Normalización de texto para buscar (sin acentos ni mayúsculas), `matchesSearch` y `slugify`                                                                                                                                    |
 
 ## Uso
 
