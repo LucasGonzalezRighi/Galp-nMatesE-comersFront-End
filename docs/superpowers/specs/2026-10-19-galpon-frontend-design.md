@@ -58,6 +58,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 | D8 | **Sin analítica ni cookies de terceros** en la fase 1 | Se evalúa con el deploy |
 | D9 | **Botón de arrepentimiento visible desde el primer acceso** en una barra superior fina, además del pie | Lo exige la Disposición 954/2025; el diseño solo lo tiene en el pie |
 | D10 | Plan de implementación partido en **5 planes** (sección 21) | El alcance completo no entra en un solo plan verificable |
+| D11 | **Un repo de GitHub por carpeta** (frontend, backend, database). Lucas crea los repos y hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
 
 ## 3. Alcance
 
@@ -67,9 +68,11 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 
 ## 4. Estructura del repositorio
 
+**Un repositorio por carpeta** (D11): `frontend/`, `backend/` y `database/` son tres repos de GitHub independientes que crea y sube Lucas. Este documento cubre solo el repo `frontend/`.
+
 ```
 E-comers Marcos/
-├─ frontend/                       Workspace pnpm (todo el front)
+├─ frontend/                       ◄ Repo git del front = workspace pnpm
 │  ├─ apps/
 │  │  ├─ store/                    Tienda pública · Next.js (App Router)
 │  │  └─ admin/                    Dashboard · Vite + React (SPA)
@@ -80,19 +83,21 @@ E-comers Marcos/
 │  │  ├─ design-tokens/            Tokens del diseño (tema Tailwind v4 + constantes TS)
 │  │  └─ config/                   tsconfig, ESLint y Prettier base
 │  ├─ e2e/                         Playwright de punta a punta (tienda + admin)
+│  ├─ docs/
+│  │  ├─ api/openapi.yaml          Contrato front ↔ back (fuente de verdad hasta que exista el back)
+│  │  ├─ adr/                      Decisiones de arquitectura
+│  │  ├─ design/galpon-tienda-v3/  Referencia visual exportada (no se importa desde el código)
+│  │  └─ superpowers/              Specs y planes
+│  ├─ .github/workflows/ci.yml
+│  ├─ lefthook.yml
 │  ├─ pnpm-workspace.yaml          Paquetes + catálogo de versiones compartidas
-│  └─ package.json                 Scripts: dev, build, typecheck, lint, test, e2e, api:generate
-├─ backend/                        (fase 2)
-├─ database/                       (fase 2)
-├─ docs/
-│  ├─ api/openapi.yaml             Contrato front ↔ back (fuente de verdad)
-│  ├─ adr/                         Decisiones de arquitectura
-│  ├─ design/galpon-tienda-v3/     Referencia visual exportada (no se importa desde el código)
-│  └─ superpowers/specs/           Este documento
-├─ lefthook.yml                    Hooks de git (en la raíz del repo; los comandos corren en frontend/)
-├─ .github/workflows/ci.yml
-└─ README.md
+│  ├─ package.json                 Scripts: dev, build, typecheck, lint, test, e2e, api:generate
+│  └─ README.md
+├─ backend/                        (otro repo · fase 2)
+└─ database/                       (otro repo · fase 2)
 ```
+
+El contrato vive en este repo mientras se construye el front. En la fase 2, el repo del back implementa el mismo archivo y un test de contrato compara el OpenAPI que genera FastAPI con esta copia. Cualquier cambio de contrato se hace en los dos repos en el mismo cambio funcional.
 
 > Las apps se llaman `store` y `admin` en el código (convención en inglés). Las rutas públicas van en español (`/tienda`, `/producto/...`).
 
@@ -751,9 +756,9 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 ## 20. Calidad, automatización y documentación
 
 - Scripts en `frontend/package.json`: `dev`, `dev:store`, `dev:admin`, `build`, `typecheck` (tienda: `next typegen && tsc --noEmit`; admin: `tsr generate && tsc --noEmit`), `lint`, `format`, `test`, `test:e2e`, `api:generate`.
-- `lefthook.yml` en la raíz del repo (comandos con `root: frontend/`): Prettier + ESLint sobre lo cambiado + `typecheck`. Se instala con `"prepare": "lefthook install"` y `allowBuilds: { lefthook: true }` en `pnpm-workspace.yaml`.
+- `lefthook.yml` en la raíz del repo (que es la del workspace): Prettier + ESLint sobre lo cambiado + `typecheck`. Se instala con `"prepare": "lefthook install"` y permitiendo el script de build de lefthook en `pnpm-workspace.yaml`.
 - Commits convencionales en español (`feat(store): agrega carrito lateral`).
-- CI (`.github/workflows/ci.yml`, `working-directory: frontend`, Node 24): instalar, `api:generate` (falla si difiere de lo commiteado), `typecheck`, `lint`, `test`, `build`, `test:e2e`.
+- CI (`.github/workflows/ci.yml`, Node 24): instalar, `api:generate` (falla si difiere de lo commiteado), `typecheck`, `lint`, `test`, `build`, `test:e2e`. Corre cuando Lucas suba el repo a GitHub.
 - `.editorconfig`, `.nvmrc` y `.env.example` por app con cada variable explicada.
 - **Documentación**: `README.md` raíz (requisitos, levantar en modo de prueba en 3 comandos, mapa); `README.md` por app, paquete y funcionalidad; TSDoc en todo lo exportado; ADRs en `docs/adr/`:
   `0001` Next para la tienda y Vite para el admin · `0002` Contrato OpenAPI como fuente de verdad · `0003` Modo de prueba (mock en el servidor de Next, *rewrite* de mismo dominio) · `0004` Mercado Pago: API elegida, mapeo de estados, campos de preferencia, 3-D Secure, idempotencia · `0005` Cloudinary con subida firmada · `0006` Montos en pesos enteros · `0007` Opciones de TypeScript y versiones fijadas (TS 6, ESLint 9).
