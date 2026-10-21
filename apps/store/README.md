@@ -21,7 +21,6 @@ Sin ninguna variable de entorno la tienda arranca en modo de prueba (`API_MODE=m
 - **Navegador.** Siempre habla con `/api/v1` de su propio dominio (`src/lib/api.browser.ts`). Un _rewrite_ lleva `/api/v1/*` a `/api/mock/v1/*`, un route handler que responde con la misma base simulada.
 - **Latencia.** La API simulada demora entre 150 y 400 ms por pedido, como una real. `MOCK_LATENCY_MS=0` la quita.
 - **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos).
-- **Resultados de pago.** Se simulan por el nombre del titular, como el sandbox de Mercado Pago; la tabla está en el README de `@galpon/api-client`.
 
 Para probarlo:
 
