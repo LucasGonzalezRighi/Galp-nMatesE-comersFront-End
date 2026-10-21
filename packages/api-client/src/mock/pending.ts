@@ -2,7 +2,7 @@ import type { paths } from '../generated/schema'
 import type { HttpMethod } from './http'
 
 /** Plan del proyecto en que el modo de prueba va a atender una operación. */
-export type MockPlan = 'P2' | 'P3' | 'P4'
+export type MockPlan = 'P3' | 'P4'
 
 /** Operación del contrato que el modo de prueba todavía no atiende. */
 export interface PendingOperation {
@@ -29,12 +29,6 @@ function pending(plan: MockPlan, operations: readonly Operation[]): PendingOpera
  * una operación del YAML no está en alguna de las dos listas o está en las dos.
  */
 export const PENDING_OPERATIONS: readonly PendingOperation[] = [
-  // P2: reseñas nuevas, contacto y arrepentimiento.
-  ...pending('P2', [
-    ['POST', '/products/{slug}/reviews'],
-    ['POST', '/contact'],
-    ['POST', '/withdrawals'],
-  ]),
   // P3: carrito, envío, pedidos, pagos, webhooks y cuenta de clientes.
   ...pending('P3', [
     ['POST', '/cart/quote'],

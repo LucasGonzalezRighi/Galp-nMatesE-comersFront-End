@@ -1,6 +1,8 @@
 import type {
   AboutContent,
   AdminSettings,
+  ContactMessageKind,
+  ContactReason,
   FaqContent,
   FooterContent,
   HomeContent,
@@ -84,6 +86,30 @@ export interface MockReview {
   verifiedPurchase: boolean
 }
 
+/** Mensaje de la bandeja de la base simulada: del formulario de contacto o un arrepentimiento. */
+export interface MockMessage {
+  /** Identificador del mensaje, por ejemplo `msg-0001`. */
+  id: string
+  /** Si es del formulario de contacto o una solicitud de arrepentimiento. */
+  kind: ContactMessageKind
+  /** Nombre de quien escribió. */
+  name: string
+  /** Email de quien escribió, en minúsculas. */
+  email: string
+  /** Número del pedido del que se trata (`GLP-12345`), o `null` si no corresponde. */
+  orderNumber: string | null
+  /** Motivo elegido en el formulario de contacto, o `null` en un arrepentimiento. */
+  reason: ContactReason | null
+  /** Texto del mensaje, o `null` en un arrepentimiento sin comentario. */
+  message: string | null
+  /** Código de comprobante de un arrepentimiento (`ARR-000001`), o `null` en un mensaje de contacto. */
+  code: string | null
+  /** Momento en que llegó, ISO 8601 con hora y zona. */
+  createdAt: string
+  /** Si ya se leyó. */
+  read: boolean
+}
+
 /** Textos editables de la base simulada, uno por cada ruta de contenido de la API. */
 export interface MockContent {
   /** Textos del inicio. */
@@ -119,8 +145,8 @@ export interface MockAdminSession {
  * Base de datos simulada del modo de prueba: se siembra con los fixtures del diseño y se puede
  * guardar entera en un almacenamiento como JSON.
  *
- * Los pedidos, los mensajes y los clientes se tipan en las fases siguientes, cuando aparecen
- * las pantallas que los usan.
+ * Los pedidos y los clientes se tipan en las fases siguientes, cuando aparecen las pantallas
+ * que los usan.
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
@@ -146,8 +172,8 @@ export interface MockDb {
   adminSession: MockAdminSession | null
   /** Pedidos (se tipan en la fase de pedidos). */
   orders: unknown[]
-  /** Mensajes de contacto y de arrepentimiento (se tipan en la fase de mensajes). */
-  messages: unknown[]
+  /** Mensajes de contacto y de arrepentimiento, del más viejo al más nuevo. */
+  messages: MockMessage[]
   /** Clientes con cuenta (se tipan en la fase de clientes). */
   customers: unknown[]
 }

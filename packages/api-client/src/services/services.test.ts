@@ -3,6 +3,7 @@ import type { ApiClient } from '../client'
 import {
   adminLogin,
   adminLogout,
+  createReview,
   getAboutContent,
   getAdminCsrfToken,
   getAdminSession,
@@ -20,6 +21,8 @@ import {
   listProductReviews,
   listProducts,
   listRelatedProducts,
+  requestWithdrawal,
+  sendContactMessage,
 } from '.'
 import { createApiClient } from '../client'
 import { createFakeFetch, jsonResponse, problemResponse } from '../test/fake-fetch'
@@ -199,6 +202,98 @@ describe('reseñas', () => {
   })
 })
 
+describe('formularios públicos', () => {
+  it('createReview manda POST con la reseña y completa lo opcional con null', async () => {
+    const { api, requests } = setup({ status: 'pending' }, 202)
+    await expect(
+      createReview(api, 'mate-uno', { rating: 5, text: 'Un mate hermoso, lo recomiendo.' }),
+    ).resolves.toEqual({ status: 'pending' })
+    const sent = onlyRequest(requests)
+    expect(sent.request.method).toBe('POST')
+    expect(sent.path).toBe('/api/v1/products/mate-uno/reviews')
+    expect(sent.request.headers.get('Content-Type')).toBe('application/json')
+    await expect(sent.request.json()).resolves.toEqual({
+      rating: 5,
+      authorName: null,
+      text: 'Un mate hermoso, lo recomiendo.',
+      website: null,
+    })
+  })
+
+  it('createReview manda el nombre y el campo trampa tal como llegan', async () => {
+    const { api, requests } = setup({ status: 'pending' }, 202)
+    await createReview(api, 'mate-uno', {
+      rating: 4,
+      authorName: 'Paula N.',
+      text: 'Un mate hermoso, lo recomiendo.',
+      website: '',
+    })
+    await expect(onlyRequest(requests).request.json()).resolves.toMatchObject({
+      authorName: 'Paula N.',
+      website: '',
+    })
+  })
+
+  it('sendContactMessage manda POST, completa lo opcional con null y con 202 resuelve undefined', async () => {
+    const { fetch, requests } = createFakeFetch(() => new Response(null, { status: 202 }))
+    const api = createApiClient({ baseUrl: 'http://x/api/v1', fetch })
+    await expect(
+      sendContactMessage(api, {
+        name: 'Lucía Pérez',
+        email: 'lucia@ejemplo.com',
+        reason: 'Pedido',
+        message: 'Quería saber cuándo sale mi pedido.',
+      }),
+    ).resolves.toBeUndefined()
+    const sent = onlyRequest(requests)
+    expect(sent.request.method).toBe('POST')
+    expect(sent.path).toBe('/api/v1/contact')
+    await expect(sent.request.json()).resolves.toEqual({
+      name: 'Lucía Pérez',
+      email: 'lucia@ejemplo.com',
+      orderNumber: null,
+      reason: 'Pedido',
+      message: 'Quería saber cuándo sale mi pedido.',
+      website: null,
+    })
+  })
+
+  it('requestWithdrawal manda POST, completa lo opcional con null y devuelve el comprobante', async () => {
+    const { api, requests } = setup({ code: 'ARR-000007' }, 201)
+    await expect(
+      requestWithdrawal(api, { name: 'Lucía Pérez', email: 'lucia@ejemplo.com' }),
+    ).resolves.toEqual({ code: 'ARR-000007' })
+    const sent = onlyRequest(requests)
+    expect(sent.request.method).toBe('POST')
+    expect(sent.path).toBe('/api/v1/withdrawals')
+    await expect(sent.request.json()).resolves.toEqual({
+      name: 'Lucía Pérez',
+      email: 'lucia@ejemplo.com',
+      orderNumber: null,
+      comment: null,
+      website: null,
+    })
+  })
+
+  it('un 422 llega como ApiError "validation" con el mensaje de cada campo', async () => {
+    const problem = {
+      type: 'validation_error',
+      title: 'Los datos no son válidos',
+      status: 422,
+      errors: [{ field: 'email', code: 'invalid_format', message: 'Ingresá un email válido' }],
+    }
+    const { fetch } = createFakeFetch(() => problemResponse(422, problem))
+    const api = createApiClient({ baseUrl: 'http://x/api/v1', fetch })
+    await expect(
+      requestWithdrawal(api, { name: 'Lucía Pérez', email: 'no-es-un-email' }),
+    ).rejects.toMatchObject({
+      kind: 'validation',
+      status: 422,
+      fieldErrors: { email: 'Ingresá un email válido' },
+    })
+  })
+})
+
 describe('admin', () => {
   it('adminLogin manda POST con el email y la contraseña', async () => {
     const result = {
@@ -263,6 +358,9 @@ describe('validación de entradas', () => {
     )
     await expect(listRelatedProducts(api, slug)).rejects.toThrow(RangeError)
     await expect(listProductReviews(api, slug)).rejects.toThrow(RangeError)
+    await expect(
+      createReview(api, slug, { rating: 5, text: 'Un mate hermoso, lo recomiendo.' }),
+    ).rejects.toThrow(new RangeError('El slug del producto no puede estar vacío'))
   })
 
   it.each([
@@ -283,6 +381,9 @@ describe('validación de entradas', () => {
     await expect(getProduct(api, slug)).rejects.toThrow(new RangeError(message))
     await expect(listRelatedProducts(api, slug)).rejects.toThrow(RangeError)
     await expect(listProductReviews(api, slug)).rejects.toThrow(RangeError)
+    await expect(
+      createReview(api, slug, { rating: 5, text: 'Un mate hermoso, lo recomiendo.' }),
+    ).rejects.toThrow(new RangeError(message))
   })
 
   it.each([['a'], ['mate-imperial-2'], ['a'.repeat(80)]])('acepta el slug %j', async (slug) => {

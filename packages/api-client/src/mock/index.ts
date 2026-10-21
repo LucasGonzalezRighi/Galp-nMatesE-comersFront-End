@@ -14,6 +14,7 @@ export type {
   MockCategory,
   MockContent,
   MockDb,
+  MockMessage,
   MockProduct,
   MockReview,
 } from './types'

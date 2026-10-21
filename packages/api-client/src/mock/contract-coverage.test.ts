@@ -40,12 +40,20 @@ describe('cobertura del contrato', () => {
     ).toEqual([])
   })
 
+  it('atiende los formularios públicos de P2', () => {
+    for (const operation of [
+      'POST /contact',
+      'POST /withdrawals',
+      'POST /products/{slug}/reviews',
+    ]) {
+      expect(implemented).toContain(operation)
+      expect(pending).not.toContain(operation)
+    }
+  })
+
   it('reparte las pendientes según el plan', () => {
     const planOf = (operation: string) =>
       PENDING_OPERATIONS.find((pendingOperation) => key(pendingOperation) === operation)?.plan
-    expect(planOf('POST /contact')).toBe('P2')
-    expect(planOf('POST /withdrawals')).toBe('P2')
-    expect(planOf('POST /products/{slug}/reviews')).toBe('P2')
     expect(planOf('POST /orders')).toBe('P3')
     expect(planOf('POST /webhooks/mercadopago')).toBe('P3')
     expect(planOf('GET /me')).toBe('P3')

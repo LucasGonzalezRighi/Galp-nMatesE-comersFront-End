@@ -97,7 +97,7 @@ describe('respuestas genéricas del router', () => {
   it('responde 501 con el plan en que llega una operación pendiente', async () => {
     const mock = createMockApi()
     const cases = [
-      { path: '/products/mate-galleta/reviews', method: 'POST', plan: 'P2' },
+      { path: '/orders', method: 'POST', plan: 'P3' },
       { path: '/cart/quote', method: 'POST', plan: 'P3' },
       { path: '/admin/orders', method: 'GET', plan: 'P4' },
     ]

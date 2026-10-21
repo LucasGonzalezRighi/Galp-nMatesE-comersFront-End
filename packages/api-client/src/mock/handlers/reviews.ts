@@ -1,15 +1,18 @@
 import { averageRating, ratingDistribution } from '@galpon/domain'
+import { reviewSchema } from '@galpon/schemas'
 import type { FeaturedReview } from '../../generated/schema'
 import type { MockRoute } from '../router'
 import { json, notFound } from '../http'
 import { approvedReviews, findBySlug, publishedProducts, toReview } from '../mappers'
 import { route } from '../router'
+import { randomUuid } from '../uuid'
 import { QueryReader, slugParam } from '../validation'
+import { readPublicForm } from './forms'
 
 /** Reseñas por página en la ficha del producto. */
 export const REVIEWS_PAGE_SIZE = 10
 
-/** Rutas públicas de reseñas: las de un producto y las destacadas del inicio. */
+/** Rutas públicas de reseñas: las de un producto, las destacadas del inicio y enviar una nueva. */
 export const reviewsRoutes: readonly MockRoute[] = [
   route('GET', '/products/{slug}/reviews', ({ db, params, query }) => {
     const slug = slugParam(params)
@@ -33,6 +36,30 @@ export const reviewsRoutes: readonly MockRoute[] = [
         distribution: ratingDistribution(ratings).map((bucket) => ({ ...bucket })),
       },
     })
+  }),
+
+  route('POST', '/products/{slug}/reviews', async (ctx) => {
+    const slug = slugParam(ctx.params)
+    const product = findBySlug(publishedProducts(ctx.db), slug)
+    if (product === undefined) return notFound('No existe un producto con ese slug.')
+
+    const form = await readPublicForm(ctx, reviewSchema)
+    // La reseña queda pendiente: no se muestra ni cuenta hasta que el admin la apruebe, y nunca
+    // es "compra verificada" porque el visitante no demostró haber comprado.
+    if (!form.trapped) {
+      ctx.db.reviews.push({
+        id: `rev-${randomUuid()}`,
+        productId: product.id,
+        authorName: form.data.authorName,
+        rating: form.data.rating,
+        text: form.data.text,
+        createdAt: ctx.now.toISOString(),
+        status: 'pending',
+        featured: false,
+        verifiedPurchase: false,
+      })
+    }
+    return json({ status: 'pending' }, 202)
   }),
 
   route('GET', '/reviews/featured', ({ db }) => {
