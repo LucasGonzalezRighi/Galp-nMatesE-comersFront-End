@@ -108,7 +108,7 @@ Cada app y cada paquete tiene su propio `README.md` con lo que hace y cómo se u
 
 ## Pasar a la API real
 
-Se hace cambiando variables de entorno y volviendo a compilar, sin tocar código: `API_MODE` y `NEXT_PUBLIC_API_MODE` (tienda) y `VITE_API_MODE` (dashboard) pasan a `live`, y se completan `API_BASE_URL`, `VITE_API_BASE_URL`, `NEXT_PUBLIC_MP_PUBLIC_KEY` y `REVALIDATE_SECRET`. Una configuración incoherente hace fallar el build con un mensaje en español. La lista completa de variables y el procedimiento están en la [sección 13.4 del diseño](docs/superpowers/specs/2026-10-19-galpon-frontend-design.md#134-pasar-a-vivo) y en los README de la [tienda](apps/store/README.md) y del [dashboard](apps/admin/README.md).
+Se hace cambiando variables de entorno y volviendo a compilar, sin tocar código: `API_MODE` y `NEXT_PUBLIC_API_MODE` (tienda) y `VITE_API_MODE` (dashboard) pasan a `live`, y se completan `API_BASE_URL`, `VITE_API_BASE_URL`, `NEXT_PUBLIC_MP_PUBLIC_KEY` y `REVALIDATE_SECRET`. Una configuración incoherente hace fallar el build de la tienda con un mensaje en español; el dashboard no falla al compilar: muestra el motivo en pantalla al abrirse. La lista completa de variables y el procedimiento están en la [sección 13.4 del diseño](docs/superpowers/specs/2026-10-19-galpon-frontend-design.md#134-pasar-a-vivo) y en los README de la [tienda](apps/store/README.md) y del [dashboard](apps/admin/README.md).
 
 ## El contrato de la API
 
