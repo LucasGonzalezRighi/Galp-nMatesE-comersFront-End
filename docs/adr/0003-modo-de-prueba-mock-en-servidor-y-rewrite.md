@@ -16,7 +16,7 @@ En la tienda, los Server Components y las funciones `'use cache'` piden datos **
 - **Tienda, servidor**: los Server Components usan ese `fetch` en el mismo proceso (`src/lib/mock.server.ts`). La base vive en un singleton colgado de `globalThis.__galponMockDb`, así los bundles por ruta y el recargado en caliente ven los mismos datos.
 - **Tienda, navegador**: siempre llama a `/api/v1/*` de su propio dominio. En modo de prueba, un _rewrite_ lo lleva a `/api/mock/v1/*`, un route handler que responde con la misma base. En modo vivo, el _rewrite_ apunta a `API_BASE_URL/api/v1/*` y `/api/mock/v1` responde `404`.
 - **Admin**: es una SPA sin servidor, así que corre el `fetch` simulado **en el navegador**. La base y la sesión se guardan en `sessionStorage` (clave `galpon.admin.mock.v1`) y sobreviven a las recargas. Si el navegador no permite `sessionStorage`, sigue funcionando en memoria y la pantalla lo avisa.
-- Las variables de entorno se validan al cargar `next.config.ts` y al arrancar el admin. Una configuración incoherente (por ejemplo `API_MODE=live` sin `API_BASE_URL`) hace fallar el build con un mensaje en español, en lugar de compilar una tienda que apunta al mock.
+- Las variables de entorno se validan al cargar `next.config.ts` y al arrancar el admin. Una configuración incoherente (por ejemplo `API_MODE=live` sin `API_BASE_URL`) hace fallar el build de la tienda con un mensaje en español, en lugar de compilar una tienda que apunta al mock. El admin no falla en el build: es una SPA y el dashboard muestra el error de configuración al abrirse.
 
 ## Consecuencias
 

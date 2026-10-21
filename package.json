@@ -25,6 +25,7 @@
     "api:lint": "redocly lint docs/api/openapi.yaml",
     "api:generate": "npm run api:generate -w @galpon/api-client",
     "api:check": "npm run api:check -w @galpon/api-client",
+    "design:capture": "node scripts/capture-design.mjs",
     "prepare": "lefthook install"
   },
   "devDependencies": {
