@@ -103,6 +103,10 @@ export default defineConfig(
               allow: { to: { element: { type: 'domain' } } },
             },
             {
+              from: { element: { type: 'design-tokens' } },
+              allow: { to: { element: { type: 'domain' } } },
+            },
+            {
               from: { element: { type: 'api-client' } },
               allow: { to: { element: { type: ['schemas', 'domain'] } } },
             },

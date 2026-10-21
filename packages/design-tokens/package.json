@@ -1,0 +1,17 @@
+{
+  "name": "@galpon/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/tokens.ts",
+    "./tokens.css": "./tokens.css",
+    "./base.css": "./base.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@galpon/domain": "*"
+  }
+}
