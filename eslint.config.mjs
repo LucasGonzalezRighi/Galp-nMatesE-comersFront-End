@@ -56,6 +56,18 @@ export default defineConfig(
   },
   { files: ['apps/admin/src/**/*.{ts,tsx}'], extends: [reactRefresh.configs.vite()] },
   {
+    // Los archivos de ruta de TanStack Router exportan `Route` junto a su componente (el plugin del
+    // router se encarga del HMR) y lanzan `redirect()`, que devuelve una `Response`.
+    files: ['apps/admin/src/routes/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        { allow: [{ from: 'lib', name: 'Response' }] },
+      ],
+    },
+  },
+  {
     files: ['apps/store/**/*.{ts,tsx}'],
     extends: [nextPlugin.configs['core-web-vitals']],
     settings: { next: { rootDir: 'apps/store/' } },

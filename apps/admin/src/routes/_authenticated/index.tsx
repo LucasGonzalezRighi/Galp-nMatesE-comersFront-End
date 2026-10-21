@@ -1,10 +1,9 @@
-/* eslint-disable react-refresh/only-export-components -- Las rutas de TanStack Router exportan `Route` junto a su componente; el plugin del router se encarga del HMR. */
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { adminLogout, isApiError } from '@galpon/api-client'
 import { adminProductsQuery } from '@galpon/api-client/react'
 
-// Pantalla provisoria: la reemplaza el dashboard real en la fase P4.
+/** Ruta `/`: pantalla provisoria de inicio; la reemplaza el dashboard real en la fase P4. */
 export const Route = createFileRoute('/_authenticated/')({
   component: Home,
 })

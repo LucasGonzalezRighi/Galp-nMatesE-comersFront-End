@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- Las rutas de TanStack Router exportan `Route` junto a su componente; el plugin del router se encarga del HMR. */
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import type { AdminLoginResult } from '@galpon/api-client'
@@ -10,6 +9,7 @@ import { safeRedirectPath } from '../lib/redirect'
 /** `?redirect=` con la ruta a la que volver; si no es un texto, se ignora. */
 const searchSchema = z.object({ redirect: z.string().optional().catch(undefined) })
 
+/** Ruta `/login`: el formulario de acceso; con sesión abierta redirige a `?redirect=` (o a `/`). */
 export const Route = createFileRoute('/login')({
   validateSearch: searchSchema,
   beforeLoad: async ({ context, search }) => {
@@ -18,7 +18,6 @@ export const Route = createFileRoute('/login')({
       if (isApiError(error)) return null
       throw error
     })
-    // eslint-disable-next-line @typescript-eslint/only-throw-error -- `redirect()` devuelve el objeto que el router espera recibir con `throw`.
     if (session !== null) throw redirect({ href: safeRedirectPath(search.redirect) })
   },
   component: LoginPage,

@@ -1,8 +1,8 @@
-/* eslint-disable react-refresh/only-export-components -- Las rutas de TanStack Router exportan `Route` junto a su componente; el plugin del router se encarga del HMR. */
 import { createRootRouteWithContext, Link, Outlet, useRouter } from '@tanstack/react-router'
 import { isApiError } from '@galpon/api-client'
 import type { RouterContext } from '../features/auth'
 
+/** Ruta raíz: da el contexto del router a todas las rutas y define el 404 y la pantalla de error. */
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: Outlet,
   notFoundComponent: NotFound,
