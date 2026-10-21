@@ -32,13 +32,13 @@ Sin variables de entorno el dashboard arranca en **modo de prueba**: no necesita
 
 Se validan al arrancar (`src/lib/env.ts`); si alguna no sirve, la pantalla muestra el motivo en español. Ver `.env.example`; para cambiarlas, copiarlo a `.env.local`.
 
-| Variable                                            | Para qué                                                                                     |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `VITE_API_MODE`                                     | `mock` (por defecto) o `live`.                                                               |
-| `VITE_API_BASE_URL`                                 | URL de la API, sin `/api/v1`. Obligatoria con `live`; se llama con `credentials: 'include'`. |
-| `VITE_STORE_URL`                                    | Enlace a la tienda (por defecto `http://localhost:3000`).                                    |
-| `VITE_MOCK_ADMIN_EMAIL`, `VITE_MOCK_ADMIN_PASSWORD` | Cuenta de prueba (solo `mock`).                                                              |
-| `VITE_MOCK_LATENCY_MS`                              | Demora simulada: `200`, `0` o un rango `150-400` (solo `mock`).                              |
+| Variable                                            | Para qué                                                                                                                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_MODE`                                     | `mock` (por defecto) o `live`.                                                                                                                                                    |
+| `VITE_API_BASE_URL`                                 | Origen de la API (por ejemplo `https://api.galponmates.com.ar`): sin ruta, búsqueda ni credenciales, ni `/api/v1`. Obligatoria con `live`; se llama con `credentials: 'include'`. |
+| `VITE_STORE_URL`                                    | Enlace a la tienda (por defecto `http://localhost:3000`).                                                                                                                         |
+| `VITE_MOCK_ADMIN_EMAIL`, `VITE_MOCK_ADMIN_PASSWORD` | Cuenta de prueba (solo `mock`).                                                                                                                                                   |
+| `VITE_MOCK_LATENCY_MS`                              | Demora simulada: `200`, `0` o un rango `150-400` (solo `mock`).                                                                                                                   |
 
 Pasar a la API real es cambiar las variables y volver a compilar; no hay cambios de código.
 

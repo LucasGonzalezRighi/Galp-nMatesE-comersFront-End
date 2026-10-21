@@ -37,20 +37,20 @@ const api = createApiClient({
 
 Todo lo que falla llega como `ApiError`:
 
-| Propiedad           | Qué es                                                                                                                                                                                  |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`              | `validation` (400, 422 y otros 4xx), `unauthorized` (401), `forbidden` (403), `not_found` (404), `conflict` (409), `rate_limited` (429), `server` (5xx) o `network` (no hubo respuesta) |
-| `status`            | El estado HTTP, o `null` si no hubo respuesta                                                                                                                                           |
-| `problem`           | El `application/problem+json` del servidor, o `null` si no lo trajo                                                                                                                     |
-| `fieldErrors`       | El primer mensaje de cada campo, por ruta (`customer.email`); vacío si no hay detalle                                                                                                   |
-| `retryAfterSeconds` | Los segundos de `Retry-After`, o `null`                                                                                                                                                 |
-| `message`           | El `detail` (o `title`) del problema; si no hay, un texto en español según el `kind`                                                                                                    |
+| Propiedad           | Qué es                                                                                                                                                                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`              | `validation` (400, 422 y otros 4xx), `unauthorized` (401), `forbidden` (403), `not_found` (404), `conflict` (409), `rate_limited` (429), `server` (5xx) o `network` (no hubo respuesta: sin conexión, o un pedido cancelado o con el tiempo vencido) |
+| `status`            | El estado HTTP, o `null` si no hubo respuesta                                                                                                                                                                                                        |
+| `problem`           | El `application/problem+json` del servidor, o `null` si no lo trajo                                                                                                                                                                                  |
+| `fieldErrors`       | El primer mensaje de cada campo, por ruta (`customer.email`); vacío si no hay detalle                                                                                                                                                                |
+| `retryAfterSeconds` | Los segundos de `Retry-After`, o `null`                                                                                                                                                                                                              |
+| `message`           | El `detail` (o `title`) del problema; si no hay, un texto en español según el `kind`                                                                                                                                                                 |
 
 `isApiError(error)` es el type guard. `apiErrorFromResponse(response, body)` y `networkError(cause)` arman el error; `unwrap(call)` y `unwrapVoid(call)` desenvuelven una llamada de `openapi-fetch` (`api.GET(...)`) y devuelven los datos o lanzan el `ApiError`. Los servicios ya las usan.
 
 ## Servicios
 
-Cada servicio recibe el `ApiClient` como primer argumento y devuelve los datos ya tipados o lanza `ApiError`. Los que reciben un slug, una página o un documento lanzan `RangeError` si el valor no sirve para armar la ruta; el formato del slug lo valida el servidor.
+Cada servicio recibe el `ApiClient` como primer argumento y devuelve los datos ya tipados o lanza `ApiError`. Los que reciben un slug, una página o un documento lanzan `RangeError` si el valor no sirve para armar la ruta; el formato del slug lo valida el servidor. Lo mismo pasa con `page` y `pageSize` de `listProducts`: el cliente los manda tal cual y el servidor responde `422` si no sirven.
 
 | Archivo          | Servicios                                                                                                                                       |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -13,7 +13,7 @@ Este repo es la carpeta `frontend/` de `E-comers Marcos/`. El proyecto tiene dos
 
 ## Estado
 
-La **fase 1 (P1: fundaciones y contrato)** está cerrada: reglas de negocio y validaciones con tests, tokens de diseño, el contrato OpenAPI completo, el cliente de la API con modo de prueba, y las dos apps arrancando como esqueletos. Las pantallas reales llegan en los planes P2 a P5. El recorrido, las decisiones que cambiaron y lo que sigue están en la [bitácora](docs/BITACORA.md).
+La **fase 1 (P1: fundaciones y contrato)** está cerrada tras la revisión final: reglas de negocio y validaciones con tests, tokens de diseño, el contrato OpenAPI completo, el cliente de la API con modo de prueba, y las dos apps arrancando como esqueletos. Las pantallas reales llegan en los planes P2 a P5. El recorrido, las decisiones que cambiaron y lo que sigue están en la [bitácora](docs/BITACORA.md).
 
 ## Requisitos
 
@@ -46,24 +46,36 @@ Notas:
 
 Se corren desde esta carpeta.
 
-| Script                  | Qué hace                                                                                                                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`           | Tienda (:3000) y dashboard (:5173) juntos, en modo de prueba                                                                |
-| `npm run dev:store`     | Solo la tienda                                                                                                              |
-| `npm run dev:admin`     | Solo el dashboard                                                                                                           |
-| `npm run build`         | Compila la tienda y el dashboard                                                                                            |
-| `npm run typecheck`     | TypeScript en todos los workspaces y en la raíz                                                                             |
-| `npm run lint`          | Chequea que las versiones de las dependencias sean las fijadas y corre ESLint                                               |
-| `npm run format`        | Aplica Prettier a todo el repo                                                                                              |
-| `npm run format:check`  | Comprueba el formato sin cambiar archivos                                                                                   |
-| `npm test`              | Tests unitarios y de componentes (Vitest)                                                                                   |
-| `npm run test:coverage` | Lo mismo con cobertura; `domain` y `schemas` exigen 100 % de líneas, funciones y sentencias, y 95 % de ramas                |
-| `npm run test:e2e`      | Pruebas de punta a punta con Playwright (necesita `npm run build` antes y `npx playwright install chromium` la primera vez) |
-| `npm run api:lint`      | Valida `docs/api/openapi.yaml` con Redocly                                                                                  |
-| `npm run api:generate`  | Regenera los tipos de `packages/api-client` desde el contrato                                                               |
-| `npm run api:check`     | Falla si los tipos commiteados no coinciden con el contrato                                                                 |
+| Script                  | Qué hace                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`           | Tienda (:3000) y dashboard (:5173) juntos, en modo de prueba                                                                                            |
+| `npm run dev:store`     | Solo la tienda                                                                                                                                          |
+| `npm run dev:admin`     | Solo el dashboard                                                                                                                                       |
+| `npm run build`         | Compila la tienda y el dashboard                                                                                                                        |
+| `npm run typecheck`     | TypeScript en todos los workspaces y en la raíz                                                                                                         |
+| `npm run lint`          | Chequea que las versiones de las dependencias sean las fijadas y corre ESLint                                                                           |
+| `npm run format`        | Aplica Prettier a todo el repo                                                                                                                          |
+| `npm run format:check`  | Comprueba el formato sin cambiar archivos                                                                                                               |
+| `npm test`              | Tests unitarios y de componentes (Vitest)                                                                                                               |
+| `npm run test:coverage` | Lo mismo con cobertura; `domain` y `schemas` exigen 100 % de líneas, funciones y sentencias, y 95 % de ramas                                            |
+| `npm run test:e2e`      | Pruebas de humo de punta a punta con Playwright, sobre lo compilado (necesita `npm run build` antes y `npx playwright install chromium` la primera vez) |
+| `npm run api:lint`      | Valida `docs/api/openapi.yaml` con Redocly                                                                                                              |
+| `npm run api:generate`  | Regenera los tipos de `packages/api-client` desde el contrato                                                                                           |
+| `npm run api:check`     | Falla si los tipos commiteados no coinciden con el contrato                                                                                             |
 
 Al instalar, `lefthook` deja un hook de **pre-commit** (Prettier y ESLint sobre lo que se commitea) y uno de **pre-push** (`typecheck`, para que los commits sigan siendo rápidos).
+
+## Pruebas de punta a punta y CI
+
+Las pruebas de `e2e/` (Playwright, configuradas en `playwright.config.ts`) son de humo: corren sobre lo compilado, en modo de prueba.
+
+- **Tienda** (`e2e/store`, en Chrome de escritorio y en un Pixel 7): el título y las seis líneas, el descuento del kit (el camino del navegador por `/api/v1`), `GET /api/v1/categories` y la cabecera `Content-Security-Policy`.
+- **Dashboard** (`e2e/admin`, en Chrome de escritorio): la redirección a `/login`, el aviso de contraseña incorrecta, el ingreso con las credenciales de prueba, la sesión que sobrevive a una recarga y el cierre de sesión.
+- Todos los tests importan `test` de `e2e/support/test.ts`, que suma un fixture automático (`cspGuard`): si la consola de la página informa una violación de la CSP, el test falla.
+
+Para correrlas: `npm run build`, `npx playwright install chromium` (la primera vez) y `npm run test:e2e`. Playwright levanta la tienda (`npm run start -w @galpon/store`) y el dashboard (`npm run preview -w @galpon/admin`), o reutiliza los que ya estén en los puertos 3000 y 5173.
+
+El CI (`.github/workflows/ci.yml`, Node 24) corre en cada pull request y en cada push a `main`, y cancela la corrida anterior de la misma rama. El job `checks` hace `npm ci`, `api:lint`, `api:check`, `lint`, `typecheck` y `test:coverage`. El job `e2e`, que arranca cuando `checks` sale bien, instala Chromium, compila y corre `test:e2e`, y sube el informe de Playwright como artefacto por 7 días. Todavía no corrió: lo hará cuando Lucas suba el repo.
 
 ## Mapa de carpetas
 
@@ -78,7 +90,7 @@ frontend/
 │  ├─ domain/                   Reglas de negocio puras: dinero, kit, carrito, envío, cuotas, búsqueda
 │  ├─ design-tokens/            Tokens del diseño (tema de Tailwind v4 y constantes)
 │  └─ config/                   Configuración base de TypeScript y Prettier
-├─ e2e/                         Pruebas de punta a punta (Playwright)
+├─ e2e/                         Pruebas de humo de punta a punta (Playwright): tienda y dashboard
 ├─ docs/
 │  ├─ api/                      Contrato OpenAPI, la fuente de verdad entre front y back
 │  ├─ adr/                      Decisiones de arquitectura
@@ -86,7 +98,7 @@ frontend/
 │  ├─ superpowers/              Diseños (specs) y planes de implementación
 │  └─ BITACORA.md               Qué se hizo, cuándo, qué cambió y qué sigue
 ├─ scripts/                     Versiones fijadas de las dependencias y su chequeo
-├─ .github/workflows/ci.yml     Integración continua
+├─ .github/workflows/ci.yml     Integración continua: verificaciones y E2E
 └─ lefthook.yml                 Hooks de git
 ```
 
@@ -100,7 +112,7 @@ Se hace cambiando variables de entorno y volviendo a compilar, sin tocar código
 
 ## El contrato de la API
 
-[`docs/api/openapi.yaml`](docs/api/openapi.yaml) es la fuente de verdad de rutas, datos y errores ([ADR 0002](docs/adr/0002-contrato-openapi-fuente-de-verdad.md), [guía del contrato](docs/api/README.md)). Para cambiarlo: editar el YAML, correr `npm run api:lint` y `npm run api:generate`, y commitear el YAML junto con `packages/api-client/src/generated/schema.d.ts`. El backend implementa este mismo archivo; los cambios se hacen en los dos repos en el mismo cambio funcional.
+[`docs/api/openapi.yaml`](docs/api/openapi.yaml) es la fuente de verdad de rutas, datos y errores ([ADR 0002](docs/adr/0002-contrato-openapi-fuente-de-verdad.md), [guía del contrato](docs/api/README.md)). Para cambiarlo: editar el YAML, correr `npm run api:lint` y `npm run api:generate`, y commitear el YAML junto con `packages/api-client/src/generated/schema.d.ts`. El backend implementa este mismo archivo; los cambios se hacen en los dos repos en el mismo cambio funcional. Las reglas de validación se comparten con el back en [`docs/api/validation-cases.json`](docs/api/validation-cases.json): casos de entrada con el campo y el mensaje esperados, que los tests de los dos repos pueden recorrer.
 
 ## Agregar una dependencia
 

@@ -122,8 +122,22 @@ describe('unwrap', () => {
   })
 
   it.each([
+    ['AbortError', 'The operation was aborted.'],
+    ['TimeoutError', 'The operation timed out.'],
+  ])(
+    'convierte un DOMException %s (pedido cancelado o con tiempo vencido) en ApiError "network"',
+    async (name, message) => {
+      const cause = new DOMException(message, name)
+      const error = await unwrap(Promise.reject(cause)).catch((caught: unknown) => caught)
+      expect(isApiError(error)).toBe(true)
+      expect(error).toMatchObject({ kind: 'network', status: null, cause })
+    },
+  )
+
+  it.each([
     ['un SyntaxError, como el de un 2xx que no es JSON', new SyntaxError('Unexpected token <')],
     ['un Error cualquiera', new Error('boom')],
+    ['un DOMException que no es de cancelación', new DOMException('boom', 'NotFoundError')],
   ])('convierte %s en ApiError "server" y no en "network"', async (_description, cause) => {
     const error = await unwrap(Promise.reject(cause)).catch((caught: unknown) => caught)
     expect(isApiError(error)).toBe(true)
@@ -168,6 +182,9 @@ describe('unwrapVoid', () => {
     await expect(unwrapVoid(Promise.reject(new TypeError('boom')))).rejects.toMatchObject({
       kind: 'network',
     })
+    await expect(
+      unwrapVoid(Promise.reject(new DOMException('boom', 'AbortError'))),
+    ).rejects.toMatchObject({ kind: 'network' })
     await expect(unwrapVoid(Promise.reject(new SyntaxError('boom')))).rejects.toMatchObject({
       kind: 'server',
     })

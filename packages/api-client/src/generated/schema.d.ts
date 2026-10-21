@@ -1794,8 +1794,8 @@ export interface components {
             /** @description Importe de la línea, ya sin el ahorro. */
             totalArs: components["schemas"]["TotalArs"];
             type: components["schemas"]["LineType"];
-            /** @description Precio de lista de una unidad. */
-            unitPriceArs: components["schemas"]["Pesos"];
+            /** @description Precio de lista de una unidad (en un kit, la suma de las tres piezas). */
+            unitPriceArs: components["schemas"]["TotalArs"];
         };
         /** @description Línea de producto (por ejemplo "Imperiales" o "Bombillones"). */
         Category: {
@@ -2756,7 +2756,7 @@ export interface components {
             totalArs: components["schemas"]["TotalArs"];
             type: components["schemas"]["LineType"];
             /** @description Precio de lista de una unidad (en un kit, la suma de las tres piezas). */
-            unitPriceArs: components["schemas"]["Pesos"];
+            unitPriceArs: components["schemas"]["TotalArs"];
         };
         /**
          * @description Número de pedido, `GLP-` y cinco dígitos.
@@ -3556,7 +3556,7 @@ export interface components {
             titleLines: string[];
         };
         /**
-         * @description Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea, el subtotal o el total del pedido): entero, no negativo y de hasta 2.147.483.647, el máximo de un entero de 32 bits. Los precios unitarios usan `Pesos`, con tope menor.
+         * @description Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea, el precio de lista de un kit, que suma tres piezas, el subtotal o el total del pedido): entero, no negativo y de hasta 2.147.483.647, el máximo de un entero de 32 bits. El precio de un producto o de una pieza usa `Pesos`, con tope menor.
          * @example 68397
          */
         TotalArs: number;

@@ -2750,8 +2750,9 @@ components:
       type: integer
       description: >-
         Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea,
-        el subtotal o el total del pedido): entero, no negativo y de hasta 2.147.483.647, el
-        máximo de un entero de 32 bits. Los precios unitarios usan `Pesos`, con tope menor.
+        el precio de lista de un kit, que suma tres piezas, el subtotal o el total del pedido):
+        entero, no negativo y de hasta 2.147.483.647, el máximo de un entero de 32 bits. El precio
+        de un producto o de una pieza usa `Pesos`, con tope menor.
       minimum: 0
       maximum: 2147483647
       example: 68397
@@ -3961,8 +3962,8 @@ components:
           description: Texto secundario de la línea, con las opciones elegidas; vacío si no hay.
           example: Cuero Negro · Virola Alpaca cincelada
         unitPriceArs:
-          description: Precio de lista de una unidad.
-          $ref: '#/components/schemas/Pesos'
+          description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
+          $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
           description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
           $ref: '#/components/schemas/TotalArs'
@@ -4242,7 +4243,7 @@ components:
           example: 1
         unitPriceArs:
           description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
           description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
           $ref: '#/components/schemas/TotalArs'

@@ -8,16 +8,28 @@ interface CallResult<T> {
 }
 
 /**
- * Espera la llamada. Si lanza un `TypeError` (así falla `fetch` sin conexión, por CORS o por un
- * corte) es que no hubo respuesta; cualquier otra cosa (por ejemplo el `SyntaxError` de un 2xx
- * que no es JSON) es una falla inesperada del servidor.
+ * Dice si `fetch` falló sin llegar a tener una respuesta: un `TypeError` (sin conexión, por CORS o
+ * por un corte) o un `DOMException` `AbortError` o `TimeoutError` (pedido cancelado o con el
+ * tiempo vencido).
+ */
+function isNetworkFailure(cause: unknown): boolean {
+  if (cause instanceof TypeError) return true
+  return (
+    cause instanceof DOMException && (cause.name === 'AbortError' || cause.name === 'TimeoutError')
+  )
+}
+
+/**
+ * Espera la llamada. Si falla como lo hace `fetch` cuando no hubo respuesta (ver
+ * {@link isNetworkFailure}) es un error de red; cualquier otra cosa (por ejemplo el
+ * `SyntaxError` de un 2xx que no es JSON) es una falla inesperada del servidor.
  */
 async function settle<T>(call: Promise<CallResult<T>>): Promise<CallResult<T>> {
   try {
     return await call
   } catch (cause) {
     if (isApiError(cause)) throw cause
-    throw cause instanceof TypeError ? networkError(cause) : unexpectedError(cause)
+    throw isNetworkFailure(cause) ? networkError(cause) : unexpectedError(cause)
   }
 }
 
@@ -26,9 +38,10 @@ async function settle<T>(call: Promise<CallResult<T>>): Promise<CallResult<T>> {
  *
  * @param call - El resultado de `api.GET(...)`, `api.POST(...)`, etc.
  * @returns El cuerpo de la respuesta exitosa.
- * @throws {ApiError} Con `kind: 'network'` si la llamada lanzó un `TypeError` (no hubo respuesta),
- * con `kind: 'server'` si lanzó cualquier otra cosa (por ejemplo un 2xx que no es JSON) o si fue
- * exitosa pero sin cuerpo, y con la clase que corresponda al estado si la respuesta fue un error.
+ * @throws {ApiError} Con `kind: 'network'` si la llamada lanzó un `TypeError` o un `DOMException`
+ * `AbortError` o `TimeoutError` (no hubo respuesta), con `kind: 'server'` si lanzó cualquier otra
+ * cosa (por ejemplo un 2xx que no es JSON) o si fue exitosa pero sin cuerpo, y con la clase que
+ * corresponda al estado si la respuesta fue un error.
  */
 export async function unwrap<T>(call: Promise<CallResult<T>>): Promise<T> {
   const { data, error, response } = await settle(call)

@@ -181,7 +181,8 @@ export function apiErrorFromResponse(response: Response, body: unknown): ApiErro
 /**
  * Arma el {@link ApiError} de una llamada que no llegó a tener respuesta.
  *
- * @param cause - Lo que lanzó `fetch`, normalmente un `TypeError` (conserva en `cause`).
+ * @param cause - Lo que lanzó `fetch`: un `TypeError` o un `DOMException` `AbortError` o
+ * `TimeoutError` (se conserva en `cause`).
  */
 export function networkError(cause: unknown): ApiError {
   return new ApiError({

@@ -4,24 +4,26 @@ Qué se hizo, cuándo, qué decisiones cambiaron por el camino y qué sigue. Se 
 
 ## P1 · Fundaciones y contrato (2026-10-19 a 2026-10-21)
 
+**Estado**: cerrada tras la revisión final.
+
 ### Qué se construyó
 
-| Pieza                    | Qué quedó                                                                                                                                                            |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace                | npm workspaces, versiones exactas centralizadas y chequeadas por `npm run lint`, ESLint 9 con límites entre paquetes, Prettier, lefthook, `.editorconfig`, `.nvmrc`  |
-| `domain`                 | Reglas de negocio puras: dinero, catálogo y búsqueda, carrito, kit, totales, envío, cuotas, impuestos, reseñas, fechas y estados de pedido. Exige 100 % de cobertura |
-| `schemas`                | Validaciones Zod compartidas con mensajes en español (checkout, reseñas, contacto, arrepentimiento, cuenta, formularios del admin). Exige 100 % de cobertura         |
-| `design-tokens`          | Tema de Tailwind v4 y estilos base del diseño                                                                                                                        |
-| Contrato de la API       | `docs/api/openapi.yaml` con 75 operaciones (tienda, cuenta, admin), validado con Redocly sin avisos                                                                  |
-| `api-client`             | Tipos generados del contrato, cliente tipado, errores, servicios, hooks de TanStack Query y el modo de prueba (6 líneas, 27 productos, router y handlers de todo P1) |
-| `apps/store`             | Esqueleto de Next.js 16 con Cache Components, CSP y revalidación por etiqueta, conectado al modo de prueba                                                           |
-| `apps/admin`             | Esqueleto de Vite con login, sesión simulada que sobrevive a las recargas y CSP estricta                                                                             |
-| Documentación            | README raíz, un README por app y paquete, siete ADRs, specs del front y del back, esta bitácora                                                                      |
-| Pruebas y automatización | Más de 1.100 pruebas unitarias y de componentes, E2E de humo con Playwright y el workflow de CI (se corre cuando Lucas suba el repo)                                 |
+| Pieza                    | Qué quedó                                                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace                | npm workspaces, versiones exactas centralizadas y chequeadas por `npm run lint`, ESLint 9 con límites entre paquetes, Prettier, lefthook, `.editorconfig`, `.nvmrc`                                                                    |
+| `domain`                 | Reglas de negocio puras: dinero, catálogo y búsqueda, carrito, kit, totales, envío, cuotas, impuestos, reseñas, fechas y estados de pedido. Exige 100 % de cobertura                                                                   |
+| `schemas`                | Validaciones Zod compartidas con mensajes en español (checkout, reseñas, contacto, arrepentimiento, cuenta, formularios del admin). Exige 100 % de cobertura                                                                           |
+| `design-tokens`          | Tema de Tailwind v4 y estilos base del diseño                                                                                                                                                                                          |
+| Contrato de la API       | `docs/api/openapi.yaml` con 75 operaciones (tienda, cuenta, admin), validado con Redocly sin avisos                                                                                                                                    |
+| `api-client`             | Tipos generados del contrato, cliente tipado, errores, servicios, hooks de TanStack Query y el modo de prueba (6 líneas, 27 productos, router y handlers de todo P1)                                                                   |
+| `apps/store`             | Esqueleto de Next.js 16 con Cache Components, CSP y revalidación por etiqueta, conectado al modo de prueba                                                                                                                             |
+| `apps/admin`             | Esqueleto de Vite con login, sesión simulada que sobrevive a las recargas y CSP estricta                                                                                                                                               |
+| Documentación            | README raíz, un README por app y paquete, siete ADRs, specs del front y del back, esta bitácora                                                                                                                                        |
+| Pruebas y automatización | Más de 1.400 pruebas unitarias y de componentes, 13 E2E de humo con Playwright (tienda en escritorio y celular, acceso al dashboard, guardia de CSP) y el workflow de CI con verificaciones y E2E (se corre cuando Lucas suba el repo) |
 
 ### Cuándo
 
-Primer commit del front: 2026-10-20 13:18. Último commit de código de este tramo: 2026-10-21 10:57. En el medio hubo dos pausas largas por el límite de uso de la sesión de trabajo, que cortó la Task 6 y la Task 13.
+Primer commit del front: 2026-10-20 13:18. Último commit de este tramo, los ajustes de documentación al cerrar P1: 2026-10-21 11:48. En el medio hubo dos pausas largas por el límite de uso de la sesión de trabajo, que cortó la Task 6 y la Task 13.
 
 | Cuándo                       | Qué pasó                                                                                                  |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |

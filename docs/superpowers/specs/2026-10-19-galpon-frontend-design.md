@@ -58,13 +58,13 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 | D8 | **Sin analítica ni cookies de terceros** en la fase 1 | Se evalúa con el deploy |
 | D9 | **Botón de arrepentimiento visible desde el primer acceso** en una barra superior fina, además del pie | Lo exige la Disposición 954/2025; el diseño solo lo tiene en el pie |
 | D10 | Plan de implementación partido en **5 planes** (sección 21) | El alcance completo no entra en un solo plan verificable |
-| D11 | **Repos de GitHub separados**: `LucasGonzalezRighi/Galp-nMatesE-comersFront-End` (carpeta `frontend/`) y `LucasGonzalezRighi/Galp-nMatesE-comersBack-end` (carpeta `backend/`; dónde vive la base de datos se define en la fase 2). Lucas hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
+| D11 | **Repos de GitHub separados**: `LucasGonzalezRighi/Galp-nMatesE-comersFront-End` (carpeta `frontend/`) y `LucasGonzalezRighi/Galp-nMatesE-comersBack-end` (carpeta `backend/`; la base de datos vive dentro del repo del back). Lucas hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
 
 ## 3. Alcance
 
 **Dentro de la fase 1**: `frontend/` completo; `docs/api/openapi.yaml` (contrato público, de clientes y de admin); modo de prueba que hace funcionar todas las pantallas sin backend; tests, lint, documentación, ADRs y CI.
 
-**Fuera de la fase 1**: `backend/`, `database/`, envío real de emails, webhooks reales de Mercado Pago, firma real de Cloudinary, cálculo de envío por código postal, deploy.
+**Fuera de la fase 1**: `backend/` (con su base de datos), envío real de emails, webhooks reales de Mercado Pago, firma real de Cloudinary, cálculo de envío por código postal, deploy.
 
 ## 4. Estructura del repositorio
 
@@ -93,8 +93,7 @@ E-comers Marcos/
 │  ├─ scripts/dependency-versions.json  Versiones exactas de todas las dependencias (fuente única)
 │  ├─ package.json                 Scripts: dev, build, typecheck, lint, test, e2e, api:generate
 │  └─ README.md
-├─ backend/                        (otro repo · fase 2)
-└─ database/                       (otro repo · fase 2)
+└─ backend/                        (otro repo · fase 2; la base de datos vive dentro del repo del back)
 ```
 
 El contrato vive en este repo mientras se construye el front. En la fase 2, el repo del back implementa el mismo archivo y un test de contrato compara el OpenAPI que genera NestJS (Swagger) con esta copia. Cualquier cambio de contrato se hace en los dos repos en el mismo cambio funcional.
@@ -427,7 +426,7 @@ Cada tabla y formulario del admin define sus estados: cargando (esqueleto), vac�
 - Un único administrador; lo crea el back con un comando (no hay alta desde el dashboard).
 - `POST /admin/auth/login` → cookie `__Host-galpon_admin` (`httpOnly`, `Secure`, `SameSite=Lax`, vencimiento).
 - **CSRF**: token ligado a la sesión (HMAC del id de sesión), rotado en cada login y enviado en `X-CSRF-Token` en cada petición que modifica. `POST /admin/auth/login` lo devuelve en su respuesta `{ email, csrfToken, expiresAt }` (no hay sesión previa desde la cual pedirlo) y `GET /admin/auth/csrf` lo vuelve a entregar después de una recarga.
-- Un `401` cierra la sesión y lleva a `/login?volver=`.
+- Un `401` cierra la sesión y lleva a `/login?redirect=`.
 - Despliegue previsto: admin en `admin.galponmates.com.ar`, API en `api.galponmates.com.ar`. CORS de `/api/v1/admin/*` acepta solo el origen del admin con credenciales (`credentials: 'include'`).
 
 ### 11.4 Fotos (Cloudinary)

@@ -15,7 +15,7 @@ El front se construye antes que el back (fase 2, NestJS en otro repositorio). Ha
 - `npm run api:check` falla si lo commiteado difiere de lo que genera el YAML. Corre en CI.
 - `npm run api:lint` (Redocly) valida el YAML: cada operación con `operationId`, `summary` en español, `tags` y respuestas de error comunes por referencia.
 - **`contract-alignment`** (`packages/api-client/src/contract-alignment.ts`) compara con tipos cada enum del contrato (`ProductGroup`, `ShippingMethod`, `PaymentStatus`…) con el de `@galpon/domain`, y `ContactReason` con el de `@galpon/schemas`. Si un valor cambia de un lado y no del otro, `npm run typecheck` falla en esa línea.
-- Los handlers del modo de prueba validan con los mismos schemas que usará el back, y los casos de validación compartidos (`docs/api/validation-cases.json`) permiten que los tests de los dos repos comprueben las mismas reglas.
+- Los handlers del modo de prueba validan con los mismos schemas que usará el back, y los casos de validación compartidos ([`docs/api/validation-cases.json`](../api/validation-cases.json)) permiten que los tests de los dos repos comprueben las mismas reglas.
 - En la fase 2, el back implementa este archivo tal cual y un test compara el OpenAPI que genera Swagger con esta copia. Un cambio de contrato se hace en los dos repos en el mismo cambio funcional.
 
 Convenciones de forma: JSON en `camelCase`; montos en pesos enteros con sufijo `Ars` (ADR 0006); `problem+json` para los errores (RFC 9457); `Idempotency-Key` en las escrituras de pedidos y pagos; contenido por rutas separadas (`/content/home`, `/content/legal/{document}`…) para que cada respuesta tenga su tipo exacto.
