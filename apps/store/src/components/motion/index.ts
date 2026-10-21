@@ -1,0 +1,48 @@
+/**
+ * Animaciones de la etapa 1 de la tienda (spec §17). Todas respetan `prefers-reduced-motion`:
+ * con esa preferencia muestran su contenido en el estado final, sin animar, y nunca lo dejan
+ * invisible.
+ */
+export { CountUp, countUpValue, formatCount } from './CountUp'
+export type { CountUpProps } from './CountUp'
+export { DrawCheck } from './DrawCheck'
+export type { DrawCheckProps } from './DrawCheck'
+export { Float } from './Float'
+export type { FloatProps } from './Float'
+export { GridReplay } from './GridReplay'
+export type { GridReplayProps } from './GridReplay'
+export {
+  HorizontalScroll,
+  horizontalScrollTarget,
+  HorizontalScrollProgress,
+} from './HorizontalScroll'
+export type {
+  HorizontalScrollProgressProps,
+  HorizontalScrollProps,
+  HorizontalScrollTargetInput,
+} from './HorizontalScroll'
+export { Magnetic } from './Magnetic'
+export type { MagneticProps } from './Magnetic'
+export { MouseParallax } from './MouseParallax'
+export type { MouseParallaxProps } from './MouseParallax'
+export { PageCurtain } from './PageCurtain'
+export type { PageCurtainProps } from './PageCurtain'
+export { PageEnter } from './PageEnter'
+export type { PageEnterProps } from './PageEnter'
+export { Ping } from './Ping'
+export type { PingProps } from './Ping'
+export { Reveal, REVEAL_KINDS } from './Reveal'
+export type { RevealKind, RevealProps } from './Reveal'
+export { RiseText } from './RiseText'
+export type { RiseTextProps } from './RiseText'
+export { ScrubText, wordOpacity } from './ScrubText'
+export type { ScrubTextProps } from './ScrubText'
+export { Shake } from './Shake'
+export type { ShakeHandle, ShakeProps } from './Shake'
+export { TabFade } from './TabFade'
+export type { TabFadeProps } from './TabFade'
+export { Tilt, tiltAngles } from './Tilt'
+export type { TiltAngles, TiltProps } from './Tilt'
+export { usePrefersReducedMotion } from './use-prefers-reduced-motion'
+export { useScrollTopOnStep } from './use-scroll-top-on-step'
+export { EASE_MAIN, EASE_SPRING } from './easing'
