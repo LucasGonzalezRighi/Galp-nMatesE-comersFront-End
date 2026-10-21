@@ -4,11 +4,13 @@ import { inter } from './fonts'
 import './globals.css'
 import { Providers } from './providers'
 
+/** Título (con plantilla "· Galpón Mates") y descripción por omisión de todas las páginas. */
 export const metadata: Metadata = {
   title: { default: 'Galpón Mates', template: '%s · Galpón Mates' },
   description: 'Mates, bombillones y yerba con envío a todo el país.',
 }
 
+/** Color de la barra del navegador en el celular, el del fondo de la tienda. */
 export const viewport: Viewport = {
   themeColor: '#1a1210',
 }

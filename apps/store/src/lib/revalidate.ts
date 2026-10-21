@@ -46,3 +46,20 @@ export function revalidationProfileFor(tag: string): 'max' | { expire: 0 } {
   }
   return tag.startsWith('content:') ? 'max' : { expire: 0 }
 }
+
+/**
+ * Regenera las etiquetas que cumplen {@link REVALIDATE_TAG_PATTERN}, cada una con su perfil
+ * ({@link revalidationProfileFor}); las demás se ignoran sin tirar, porque una etiqueta rara no
+ * tiene que romper la escritura que la pidió.
+ *
+ * @param tags - Las etiquetas pedidas.
+ * @param revalidate - Quien regenera una etiqueta; en la tienda, `revalidateTag` de Next.
+ */
+export function revalidateValidTags(
+  tags: readonly string[],
+  revalidate: (tag: string, profile: 'max' | { expire: 0 }) => void,
+): void {
+  for (const tag of tags) {
+    if (REVALIDATE_TAG_PATTERN.test(tag)) revalidate(tag, revalidationProfileFor(tag))
+  }
+}

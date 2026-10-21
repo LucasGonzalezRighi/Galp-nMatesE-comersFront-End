@@ -70,7 +70,7 @@ curl -X POST localhost:3000/api/revalidate \
 - Etiquetas válidas: `products`, `categories`, `settings`, `product:{slug}`, `reviews:{slug}` y `content:{página}`.
 - Secreto inválido responde 401; una etiqueta inválida, 422.
 - `content:*` se regenera con el perfil `'max'` (se sirve lo anterior mientras tanto); el resto vence al instante.
-- En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché.
+- En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché (ignora las etiquetas que no cumplen el formato de arriba). Hoy ningún handler del mock invalida etiquetas: llega con las escrituras de P2–P4.
 
 ## Seguridad
 

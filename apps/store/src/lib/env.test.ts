@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EnvError, parseStoreEnv } from './env'
+import { EnvError, parseHttpOrigin, parseStoreEnv } from './env'
 
 const liveEnv = {
   API_MODE: 'live',
@@ -145,6 +145,25 @@ describe('parseStoreEnv', () => {
     expect(problemsOf({ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: 'a/b' })).toEqual([
       'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME solo puede tener letras, números, guiones y guiones bajos',
     ])
+  })
+})
+
+describe('parseHttpOrigin', () => {
+  it('devuelve el origen sin barra final', () => {
+    expect(parseHttpOrigin('https://api.galponmates.com.ar/')).toBe(
+      'https://api.galponmates.com.ar',
+    )
+    expect(parseHttpOrigin('http://localhost:4000')).toBe('http://localhost:4000')
+  })
+
+  it.each([
+    'https://api.galponmates.com.ar;script-src',
+    'https://api.galponmates.com.ar%3Bscript-src',
+    'https://api.galponmates.com.ar;',
+    'https://a,b.galponmates.com.ar',
+    'https://api.galponmates.com.ar script-src',
+  ])('rechaza "%s": un ";", una "," o un espacio en el host cortarían la CSP', (value) => {
+    expect(parseHttpOrigin(value)).toBeNull()
   })
 })
 

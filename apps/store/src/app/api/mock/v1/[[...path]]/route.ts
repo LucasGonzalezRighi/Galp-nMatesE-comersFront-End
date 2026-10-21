@@ -23,8 +23,13 @@ function handle(request: Request): Promise<Response> {
   return getStoreMockFetch()(request)
 }
 
+/** Atiende los pedidos GET de la API simulada. */
 export const GET = handle
+/** Atiende los pedidos POST de la API simulada. */
 export const POST = handle
+/** Atiende los pedidos PUT de la API simulada. */
 export const PUT = handle
+/** Atiende los pedidos PATCH de la API simulada. */
 export const PATCH = handle
+/** Atiende los pedidos DELETE de la API simulada. */
 export const DELETE = handle

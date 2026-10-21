@@ -60,7 +60,7 @@ export class EnvError extends Error {
 
 /**
  * Interpreta un texto como el origen de un sitio `http` o `https` (sin ruta, búsqueda ni
- * credenciales).
+ * credenciales, y sin `;`, `,` ni espacios en el host, que cortarían la CSP).
  *
  * @param value - Por ejemplo `https://api.galponmates.com.ar`; una barra final se acepta.
  * @returns El origen normalizado (sin barra final), o `null` si no es un origen válido.
@@ -74,7 +74,10 @@ export function parseHttpOrigin(value: string): string | null {
   }
   const isHttp = url.protocol === 'http:' || url.protocol === 'https:'
   const isBare = url.pathname === '/' && url.search === '' && url.hash === ''
-  return isHttp && isBare && url.username === '' && url.password === '' ? url.origin : null
+  // `;` y `,` son válidos en un host, pero cortarían la directiva de la CSP donde se copia.
+  const hasCspSeparator = /[;,\s]/.test(url.hostname)
+  const hasCredentials = url.username !== '' || url.password !== ''
+  return isHttp && isBare && !hasCredentials && !hasCspSeparator ? url.origin : null
 }
 
 /** El valor de la variable sin espacios en los bordes, o `undefined` si falta o está vacía. */

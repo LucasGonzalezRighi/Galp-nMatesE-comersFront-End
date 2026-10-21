@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   isValidRevalidateSecret,
   REVALIDATE_TAG_PATTERN,
+  revalidateValidTags,
   revalidationProfileFor,
 } from './revalidate'
 
@@ -48,6 +49,27 @@ describe('revalidationProfileFor', () => {
 
   it('rechaza una etiqueta que no es válida', () => {
     expect(() => revalidationProfileFor('../x')).toThrow(RangeError)
+  })
+})
+
+describe('revalidateValidTags', () => {
+  it('regenera las etiquetas válidas con su perfil e ignora el resto sin tirar', () => {
+    const revalidate = vi.fn<(tag: string, profile: 'max' | { expire: 0 }) => void>()
+
+    expect(() => {
+      revalidateValidTags(['products', '../x', 'content:home', 'product:Mate Imperial'], revalidate)
+    }).not.toThrow()
+
+    expect(revalidate.mock.calls).toEqual([
+      ['products', { expire: 0 }],
+      ['content:home', 'max'],
+    ])
+  })
+
+  it('sin etiquetas no llama a nada', () => {
+    const revalidate = vi.fn<(tag: string, profile: 'max' | { expire: 0 }) => void>()
+    revalidateValidTags([], revalidate)
+    expect(revalidate).not.toHaveBeenCalled()
   })
 })
 
