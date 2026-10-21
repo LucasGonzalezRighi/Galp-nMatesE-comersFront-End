@@ -1,3 +1,5 @@
+'use client'
+
 import { useSyncExternalStore } from 'react'
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion'
 

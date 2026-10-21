@@ -1,3 +1,5 @@
+'use client'
+
 import { useSyncExternalStore } from 'react'
 
 /** Consulta de medios con que el sistema pide menos movimiento. */

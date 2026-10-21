@@ -165,3 +165,107 @@ describe('Dialog', () => {
     expect(closeOuter).not.toHaveBeenCalled()
   })
 })
+
+/** El contenedor que ocupa toda la pantalla, padre del panel del diálogo. */
+function containerOf(dialog: HTMLElement): HTMLElement {
+  const container = dialog.parentElement
+  if (container === null) throw new Error('El diálogo no tiene contenedor')
+  return container
+}
+
+describe('Dialog: ubicación y aspecto', () => {
+  it('por defecto es una tarjeta centrada con el fondo oscuro de siempre', () => {
+    render(
+      <Dialog open onClose={vi.fn()} title="Hola">
+        Contenido
+      </Dialog>,
+    )
+    const dialog = screen.getByRole('dialog')
+
+    expect(containerOf(dialog)).toHaveAttribute('data-placement', 'center')
+    expect(containerOf(dialog)).toHaveClass('place-items-center')
+    expect(dialog).toHaveClass('bg-surface', 'rounded-lg', 'w-[min(440px,100%)]')
+    expect(backdropOf(dialog)).toHaveClass('bg-neutral-900/50')
+    expect(backdropOf(dialog)).not.toHaveClass('backdrop-blur-[18px]')
+  })
+
+  it('top es la capa del buscador: arriba, sin tarjeta y con la página desenfocada', () => {
+    render(
+      <Dialog open onClose={vi.fn()} title="Buscar" hideTitle placement="top">
+        <input aria-label="Buscar" />
+      </Dialog>,
+    )
+    const dialog = screen.getByRole('dialog')
+
+    expect(containerOf(dialog)).toHaveAttribute('data-placement', 'top')
+    expect(containerOf(dialog)).toHaveClass('items-start', 'justify-center', 'pt-[10vh]')
+    expect(dialog).toHaveClass('w-[min(720px,100%)]')
+    expect(dialog).not.toHaveClass('bg-surface', 'rounded-lg', 'shadow-lg')
+    expect(backdropOf(dialog)).toHaveClass('bg-background/84', 'backdrop-blur-[18px]')
+  })
+
+  it('end es un panel lateral a toda la altura y full cubre toda la pantalla', () => {
+    const { rerender } = render(
+      <Dialog open onClose={vi.fn()} title="Carrito" placement="end">
+        Contenido
+      </Dialog>,
+    )
+    let dialog = screen.getByRole('dialog')
+    expect(containerOf(dialog)).toHaveClass('justify-end')
+    expect(dialog).toHaveClass('h-full', 'w-[min(440px,100vw)]')
+    expect(backdropOf(dialog)).toHaveClass('bg-neutral-900/60', 'backdrop-blur-[4px]')
+
+    rerender(
+      <Dialog open onClose={vi.fn()} title="Menú" placement="full">
+        Contenido
+      </Dialog>,
+    )
+    dialog = screen.getByRole('dialog')
+    expect(containerOf(dialog)).toHaveAttribute('data-placement', 'full')
+    expect(dialog).toHaveClass('h-full', 'w-full')
+  })
+
+  it('unstyled deja solo las clases propias en el panel, sin las de la ubicación', () => {
+    render(
+      <Dialog open onClose={vi.fn()} title="Carrito" placement="end" unstyled className="w-80">
+        Contenido
+      </Dialog>,
+    )
+    const dialog = screen.getByRole('dialog')
+
+    expect(dialog).toHaveClass('w-80', 'relative')
+    expect(dialog).not.toHaveClass('bg-surface', 'shadow-lg', 'w-[min(440px,100vw)]')
+  })
+
+  it('backdropClassName reemplaza el fondo por defecto, no se suma', () => {
+    render(
+      <Dialog open onClose={vi.fn()} title="Hola" backdropClassName="bg-black/20">
+        Contenido
+      </Dialog>,
+    )
+    const backdrop = backdropOf(screen.getByRole('dialog'))
+
+    expect(backdrop).toHaveClass('bg-black/20', 'absolute', 'inset-0')
+    expect(backdrop).not.toHaveClass('bg-neutral-900/50')
+  })
+
+  it('en cada ubicación sigue cerrando con Escape y con el fondo, y atrapa el foco', async () => {
+    for (const placement of ['top', 'end', 'full'] as const) {
+      const onClose = vi.fn()
+      const { unmount } = render(
+        <Dialog open onClose={onClose} title="Hola" placement={placement}>
+          <button type="button">Uno</button>
+        </Dialog>,
+      )
+      expect(screen.getByRole('button', { name: 'Uno' })).toHaveFocus()
+
+      await userEvent.tab()
+      expect(screen.getByRole('button', { name: 'Uno' })).toHaveFocus()
+      await userEvent.keyboard('{Escape}')
+      await userEvent.click(backdropOf(screen.getByRole('dialog')))
+
+      expect(onClose, placement).toHaveBeenCalledTimes(2)
+      unmount()
+    }
+  })
+})

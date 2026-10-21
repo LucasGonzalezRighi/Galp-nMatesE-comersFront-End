@@ -42,3 +42,9 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
   `max / 2`.
 - `Ping` anima un halo con `transform` y `opacity` en lugar de la sombra del diseño.
 - Los efectos que dejaban un `filter: blur(0px)` puesto lo quitan al terminar la animación.
+- El barrel `@/components/motion` se puede importar desde un Server Component (por ejemplo, una
+  página con `Reveal`): todos los módulos que reexporta, hooks incluidos, empiezan con
+  `'use client'`. Un módulo nuevo que use React o Motion debe llevar la directiva; lo comprueba
+  `client-boundary.test.ts`. Desde un Server Component solo se renderizan los componentes: las
+  funciones y los hooks exportados (`formatCount`, `usePrefersReducedMotion`…) se llaman desde
+  Client Components.

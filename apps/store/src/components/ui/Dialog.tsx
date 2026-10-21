@@ -5,6 +5,15 @@ import { useEffect, useId, useRef, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { cx } from './cx'
 
+/**
+ * Dónde se ubica el panel del diálogo en la pantalla:
+ * - `center`: tarjeta centrada de 440 px (confirmaciones, verificación del banco).
+ * - `top`: capa arriba y centrada, de 720 px y sin tarjeta (el buscador).
+ * - `end`: panel pegado al borde derecho y a toda la altura (el carrito).
+ * - `full`: panel que cubre toda la pantalla (el menú del celular).
+ */
+export type DialogPlacement = 'center' | 'top' | 'end' | 'full'
+
 /** Props de {@link Dialog}. */
 export interface DialogProps {
   /** Si el diálogo está abierto. Cerrado no renderiza nada. */
@@ -23,8 +32,50 @@ export interface DialogProps {
   dismissible?: boolean
   /** Elemento que recibe el foco al abrir. Por defecto, el primero que se pueda enfocar. */
   initialFocusRef?: RefObject<HTMLElement | null>
-  /** Clases extra del panel, por ejemplo para cambiar el ancho. */
+  /** Dónde se ubica el panel y qué fondo lleva por defecto. Por defecto, `center`. */
+  placement?: DialogPlacement
+  /**
+   * Quita al panel lo que trae por defecto (fondo, bordes redondeados, sombra, espacios y ancho);
+   * solo conserva lo necesario para el foco. Así `className` es todo su aspecto y no compite con
+   * clases de Tailwind que traería el panel.
+   */
+  unstyled?: boolean
+  /**
+   * Clases del panel. Se suman a las del panel, salvo con `unstyled`, donde son las únicas: el
+   * componente no resuelve conflictos entre utilidades, así que para cambiar fondo, sombra o
+   * ancho conviene usar `unstyled` en lugar de repetir la propiedad.
+   */
   className?: string
+  /** Clases del fondo oscuro; reemplazan a las del fondo por defecto de `placement`. */
+  backdropClassName?: string
+}
+
+/** Clases del contenedor que ocupa toda la pantalla, según dónde va el panel. */
+const CONTAINER_CLASSES: Record<DialogPlacement, string> = {
+  center: 'grid place-items-center p-(--space-4)',
+  top: 'flex items-start justify-center px-5 pb-5 pt-[10vh]',
+  end: 'flex justify-end',
+  full: 'flex',
+}
+
+/** Fondo por defecto de cada ubicación: el buscador y el menú desenfocan la página, como el diseño. */
+const BACKDROP_CLASSES: Record<DialogPlacement, string> = {
+  center: 'bg-neutral-900/50',
+  top: 'bg-background/84 backdrop-blur-[18px]',
+  end: 'bg-neutral-900/60 backdrop-blur-[4px]',
+  full: 'bg-background/94 backdrop-blur-[18px]',
+}
+
+/** Clases del panel que no son de aspecto: la posición sobre el fondo y el contorno del foco. */
+const PANEL_BASE_CLASSES = 'relative focus:outline-none'
+
+/** Aspecto por defecto del panel de cada ubicación (la tarjeta solo existe en `center`). */
+const PANEL_CLASSES: Record<DialogPlacement, string> = {
+  center:
+    'bg-surface flex max-h-full w-[min(440px,100%)] flex-col gap-(--space-3) overflow-y-auto rounded-lg p-(--space-4) shadow-lg',
+  top: 'flex max-h-full w-[min(720px,100%)] flex-col gap-5 overflow-y-auto',
+  end: 'bg-surface flex h-full w-[min(440px,100vw)] flex-col overflow-y-auto shadow-lg',
+  full: 'flex h-full w-full flex-col overflow-y-auto',
 }
 
 /** Elementos a los que se llega con Tab. */
@@ -105,16 +156,25 @@ function useIsClient(): boolean {
 }
 
 /**
- * Diálogo modal accesible (`.dialog` del diseño): panel centrado sobre un fondo oscuro, con
+ * Diálogo modal accesible (`.dialog` del diseño): panel sobre un fondo oscuro, con
  * `role="dialog"` y `aria-modal`, trampa de foco (Tab y Mayús+Tab no salen del panel), cierre con
  * Escape o con un clic en el fondo, scroll de la página bloqueado y foco devuelto a quien lo abrió.
  * Se dibuja en `document.body`, fuera del flujo de la página. Con varios abiertos, solo el último
  * reacciona al teclado.
  *
+ * Por defecto es una tarjeta centrada. `placement` lo convierte en la capa del buscador (`top`),
+ * en el panel lateral del carrito (`end`) o en una pantalla completa (`full`); `unstyled` y
+ * `backdropClassName` dejan al consumidor el aspecto del panel y del fondo. Ninguna de estas
+ * opciones toca el foco, Escape ni el bloqueo del scroll.
+ *
  * @param props - Ver {@link DialogProps}.
  * @example
  * <Dialog open={isOpen} onClose={close} title="Verificá tu compra con tu banco">
  *   <iframe title="Banco" src={challengeUrl} />
+ * </Dialog>
+ * @example
+ * <Dialog open={isOpen} onClose={close} title="Buscar" hideTitle placement="top" unstyled>
+ *   <input type="search" aria-label="Buscar" />
  * </Dialog>
  */
 export function Dialog({
@@ -126,7 +186,10 @@ export function Dialog({
   children,
   dismissible = true,
   initialFocusRef,
+  placement = 'center',
+  unstyled = false,
   className,
+  backdropClassName,
 }: DialogProps): ReactNode {
   const isClient = useIsClient()
   const titleId = useId()
@@ -184,10 +247,13 @@ export function Dialog({
   if (!isShown) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 grid place-items-center p-(--space-4)">
+    <div
+      data-placement={placement}
+      className={cx('fixed inset-0 z-50', CONTAINER_CLASSES[placement])}
+    >
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-neutral-900/50"
+        className={cx('absolute inset-0', backdropClassName ?? BACKDROP_CLASSES[placement])}
         onClick={() => {
           if (dismissible) onClose()
         }}
@@ -199,10 +265,7 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-describedby={description === undefined ? undefined : descriptionId}
         tabIndex={-1}
-        className={cx(
-          'bg-surface relative flex max-h-full w-[min(440px,100%)] flex-col gap-(--space-3) overflow-y-auto rounded-lg p-(--space-4) shadow-lg focus:outline-none',
-          className,
-        )}
+        className={cx(PANEL_BASE_CLASSES, unstyled ? null : PANEL_CLASSES[placement], className)}
       >
         <h2 id={titleId} className={hideTitle ? 'sr-only' : 'text-h4'}>
           {title}

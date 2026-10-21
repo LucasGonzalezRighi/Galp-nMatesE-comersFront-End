@@ -6,7 +6,7 @@
  */
 export type { ButtonProps, ButtonSize, ButtonVariant } from './Button'
 export { Button } from './Button'
-export type { DialogProps } from './Dialog'
+export type { DialogPlacement, DialogProps } from './Dialog'
 export { Dialog } from './Dialog'
 export type { FieldControlProps, FieldProps } from './Field'
 export { Field } from './Field'
