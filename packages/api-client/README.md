@@ -1,6 +1,6 @@
 # @galpon/api-client
 
-Cliente de la API de Galpón Mates (sección 13 del spec): los tipos del contrato, el cliente tipado, los errores, los servicios y los hooks de TanStack Query. El modo de prueba (`@galpon/api-client/mock`) llega en una tarea posterior del plan.
+Cliente de la API de Galpón Mates (sección 13 del spec): los tipos del contrato, el cliente tipado, los errores, los servicios y los hooks de TanStack Query. El modo de prueba (`@galpon/api-client/mock`) responde la API en memoria, sin backend.
 
 ## Tipos del contrato
 
@@ -82,9 +82,42 @@ function Settings() {
 - `queryKeys`: `categories()`, `publicSettings()`, `adminSession()`, `adminCsrf()` y `adminProducts(query)`. Sirven para consultar y para invalidar.
 - `publicSettingsQuery`, `adminSessionQuery`, `adminCsrfQuery` y `adminProductsQuery(api, query)`: `queryOptions` listas para `useQuery`, `useSuspenseQuery` o `queryClient.query`. Reintentan hasta dos veces solo los errores de red y de servidor (`shouldRetryQuery`): un 401 no hace esperar al admin.
 
+## Modo de prueba
+
+`@galpon/api-client/mock` trae la API simulada que usan la tienda y el admin mientras no hay backend (`API_MODE=mock`). `createMockFetch` devuelve un `fetch` que se pasa a `createApiClient({ fetch })`: quita el prefijo (`/api/mock/v1` o `/api/v1`), busca la ruta del contrato y corre su handler contra la base de `getDb()`.
+
+```ts
+import { createApiClient } from '@galpon/api-client'
+import { createMockDb, createMockFetch, DEFAULT_MOCK_DB_OPTIONS } from '@galpon/api-client/mock'
+
+const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
+const api = createApiClient({
+  baseUrl: 'http://localhost:3000/api/mock/v1',
+  fetch: createMockFetch({ getDb: () => db }),
+})
+```
+
+**Latencia.** Por omisión cada respuesta tarda entre 150 y 400 ms (se sortea). `latencyMs: 0` responde sin esperar, y un número o un rango `[mín, máx]` fijan otra. Los tests usan `0`.
+
+**Rutas implementadas (P1).**
+
+| Grupo     | Rutas                                                                                                                              |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Catálogo  | `GET /categories`, `/products` (filtros, orden y página), `/products/{slug}` (acepta slugs anteriores), `/products/{slug}/related` |
+| Reseñas   | `GET /products/{slug}/reviews` (aprobadas, de a 10, con estadísticas), `/reviews/featured`                                         |
+| Contenido | `GET /content/home`, `/about`, `/faq`, `/footer`, `/product-tabs` y `/legal/{document}`                                            |
+| Ajustes   | `GET /settings/public` (sin alícuota de IVA ni umbral de stock)                                                                    |
+| Admin     | `POST /admin/auth/login`, `/logout`, `GET /admin/auth/me`, `/csrf` y `GET /admin/products`                                         |
+
+El login usa el email y la contraseña de `DEFAULT_MOCK_DB_OPTIONS`, abre una sesión de 8 horas y devuelve un `csrfToken` que las escrituras mandan en `X-CSRF-Token`.
+
+**Pendientes.** Toda otra operación del contrato (`PENDING_OPERATIONS`) responde `501` con `title: 'No implementado en el modo de prueba'` y `detail: 'Llega en P2'` (reseñas nuevas, contacto y arrepentimiento), `P3` (carrito, envío, pedidos, pagos, webhooks y cuenta de clientes) o `P4` (el resto del admin). Una ruta desconocida responde `404` y un método que la ruta no admite, `405`, siempre como `application/problem+json`. `contract-coverage.test.ts` falla si una operación de `docs/api/openapi.yaml` no está en `IMPLEMENTED_ROUTES` ni en `PENDING_OPERATIONS`.
+
+**Base.** `createMockDb` crea una base nueva; `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin), llamando a `onMutation` después de cada escritura exitosa.
+
 ## Exports
 
-`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba, que se crea en una tarea posterior).
+`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada y su persistencia).
 
 ## Tests
 
