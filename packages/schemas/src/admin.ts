@@ -14,6 +14,12 @@ const CUIT_PATTERN = /^(?:\d{11}|\d{2}-\d{8}-\d)$/
 /** Pesos del dígito verificador del CUIT, para los primeros 10 dígitos. */
 const CUIT_WEIGHTS = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2] as const
 
+/**
+ * Máximo de un monto en pesos: el `maximum` de `Pesos` en el contrato, que entra en un entero de
+ * 32 bits de la base de datos.
+ */
+const MAX_PESOS = 99_999_999
+
 /** Máximo de fotos de un producto (spec 11.4). */
 const MAX_PRODUCT_IMAGES = 8
 
@@ -150,7 +156,7 @@ export type ImageForm = z.output<typeof imageFormSchema>
  * Formulario de producto del dashboard.
  *
  * - `name` (3 a 120), `slug`, `categoryId` y `description` (10 a 2000).
- * - `priceArs`: entero mayor a 0 en pesos, o `null` para "a consultar".
+ * - `priceArs`: entero de 1 a 99.999.999 pesos, o `null` para "a consultar".
  * - `stock`: entero de 0 a 9999.
  * - `status`: borrador o publicado.
  * - `tabsOverride`: texto propio de Materiales y Cuidados (hasta 2000 cada uno); vacío queda en
@@ -162,7 +168,11 @@ export const productFormSchema = z.object({
   slug: slugSchema,
   categoryId: requiredText(1, 100),
   description: requiredText(10, 2000),
-  priceArs: z.int({ error: MESSAGES.invalidPrice }).positive(MESSAGES.invalidPrice).nullable(),
+  priceArs: z
+    .int({ error: MESSAGES.invalidPrice })
+    .positive(MESSAGES.invalidPrice)
+    .max(MAX_PESOS, MESSAGES.priceTooHigh)
+    .nullable(),
   stock: boundedInt(0, 9999),
   featured: z.boolean(),
   status: z.enum(FORM_PRODUCT_STATUSES, { error: MESSAGES.invalidProductStatus }),
@@ -217,7 +227,10 @@ export const cuitSchema = z
 /** Opción de envío del formulario de ajustes: un costo, un plazo y si está habilitada. */
 const shippingOptionFormSchema = z.object({
   method: z.enum(SHIPPING_METHODS),
-  costArs: z.int({ error: MESSAGES.invalidAmount }).min(0, MESSAGES.invalidAmount),
+  costArs: z
+    .int({ error: MESSAGES.invalidAmount })
+    .min(0, MESSAGES.invalidAmount)
+    .max(MAX_PESOS, MESSAGES.amountTooHigh),
   eta: requiredText(2, 60),
   enabled: z.boolean(),
 })
@@ -233,7 +246,7 @@ const dataFiscalUrlSchema = z
  * Formulario de ajustes del dashboard.
  *
  * - `kitDiscountPercent`: entero de 0 a 30.
- * - `shippingOptions`: exactamente tres, una por método, con costo desde 0 y plazo de 2 a 60.
+ * - `shippingOptions`: exactamente tres, una por método, con costo de 0 a 99.999.999 y plazo de 2 a 60.
  * - `installments`: cuotas sin interés (1 a 12) y si se muestran en la ficha.
  * - `lowStockThreshold`: entero de 0 a 999.
  * - `vatRatePercent`: de 0 a 100, admite decimales (10,5).

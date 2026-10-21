@@ -1181,6 +1181,1241 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/ServerError'
+  /admin/auth/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Iniciar sesión en el dashboard
+      description: >-
+        Inicia la sesión del administrador: la respuesta trae la cookie de sesión y un token
+        anti-CSRF para las escrituras (`csrfToken`). Con un email o una contraseña incorrectos
+        responde `401` sin decir cuál de los dos falló.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginInput'
+      responses:
+        '200':
+          description: Sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLoginResult'
+        '401':
+          description: El email o la contraseña no son correctos.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: invalid_credentials
+                title: Credenciales incorrectas
+                status: 401
+                detail: Email o contraseña incorrectos.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/auth/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Cerrar sesión en el dashboard
+      description: Cierra la sesión del administrador y borra la cookie.
+      security:
+        - adminSession: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Sesión cerrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/auth/me:
+    get:
+      operationId: getAdminSession
+      tags: [admin]
+      summary: Obtener la sesión del dashboard
+      description: >-
+        Devuelve el email del administrador con la sesión iniciada y cuándo vence. Es lo que
+        consulta el dashboard al cargar para saber si hay una sesión activa.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Sesión activa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/auth/csrf:
+    get:
+      operationId: getAdminCsrfToken
+      tags: [admin]
+      summary: Obtener el token anti-CSRF del dashboard
+      description: >-
+        Devuelve de nuevo el token que las escrituras mandan en `X-CSRF-Token`, por ejemplo
+        después de recargar la página (el login lo entrega una sola vez). Está ligado a la
+        sesión actual.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Token anti-CSRF.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/auth/password:
+    post:
+      operationId: changeAdminPassword
+      tags: [admin]
+      summary: Cambiar la contraseña del administrador
+      description: >-
+        Cambia la contraseña. Si la actual es incorrecta, o `confirmation` no coincide con
+        `newPassword`, responde `422` con el error en ese campo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminPasswordChange'
+      responses:
+        '204':
+          description: Contraseña cambiada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [admin]
+      summary: Obtener el resumen del dashboard
+      description: >-
+        Devuelve las cifras del inicio del dashboard: ventas, pedidos para despachar, productos
+        con poco stock, reseñas y mensajes pendientes y alertas de pago.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Resumen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/products:
+    get:
+      operationId: listAdminProducts
+      tags: [admin]
+      summary: Listar los productos del dashboard
+      description: >-
+        Devuelve los productos en cualquier estado (borrador, publicado o archivado), paginados.
+        Los filtros se combinan entre sí (todos tienen que cumplirse).
+      security:
+        - adminSession: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: >-
+            Texto a buscar. Se compara sin acentos ni mayúsculas sobre el nombre y el código del
+            producto.
+          schema:
+            type: string
+            maxLength: 100
+          example: bombillon
+        - name: category
+          in: query
+          required: false
+          description: Slug de la línea; deja solo los productos de esa línea.
+          schema:
+            type: string
+            maxLength: 80
+            pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          example: torpedos
+        - name: status
+          in: query
+          required: false
+          description: Estado del producto; deja solo los que están en ese estado.
+          schema:
+            $ref: '#/components/schemas/ProductStatus'
+        - name: stock
+          in: query
+          required: false
+          description: Con `out`, deja solo los productos sin stock.
+          schema:
+            type: string
+            enum: [out]
+          example: out
+        - name: sort
+          in: query
+          required: false
+          description: >-
+            Orden de los resultados. Si falta, van por código (`sequence`) de menor a mayor.
+          schema:
+            $ref: '#/components/schemas/ProductSortOrder'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de productos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProductPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: createAdminProduct
+      tags: [admin]
+      summary: Crear un producto
+      description: >-
+        Crea un producto. El back le asigna el código correlativo (`code`). Responde `409` si ya
+        hay un producto con ese `slug` (o que lo tuvo antes).
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminProductInput'
+      responses:
+        '201':
+          description: Producto creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/SlugTaken'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/products/{id}:
+    get:
+      operationId: getAdminProduct
+      tags: [admin]
+      summary: Obtener un producto del dashboard
+      description: >-
+        Devuelve el producto en cualquier estado, con los datos que solo ve el dashboard.
+      security:
+        - adminSession: []
+      parameters:
+        - $ref: '#/components/parameters/AdminProductId'
+      responses:
+        '200':
+          description: Producto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      operationId: updateAdminProduct
+      tags: [admin]
+      summary: Modificar un producto
+      description: >-
+        Reemplaza los datos editables del producto: el cuerpo lleva el producto completo. Si
+        cambia el `slug`, el anterior pasa a `previousSlugs` y la tienda lo redirige al nuevo.
+        Responde `409` si el `slug` ya lo usa otro producto.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminProductInput'
+      responses:
+        '200':
+          description: Producto modificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SlugTaken'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/products/{id}/archive:
+    post:
+      operationId: archiveAdminProduct
+      tags: [admin]
+      summary: Archivar un producto
+      description: >-
+        Archiva el producto: deja de estar a la venta y desaparece de la tienda, pero se
+        conserva con sus pedidos. Para volver a publicarlo se modifica con `status: published`.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminProductId'
+      responses:
+        '200':
+          description: Producto archivado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/categories:
+    get:
+      operationId: listAdminCategories
+      tags: [admin]
+      summary: Listar las líneas del dashboard
+      description: >-
+        Devuelve todas las líneas, ordenadas por `position`. `productCount` cuenta solo los
+        productos publicados.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Líneas de producto.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Líneas ordenadas por `position`.
+                items:
+                  $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: createAdminCategory
+      tags: [admin]
+      summary: Crear una línea
+      description: >-
+        Crea una línea al final del listado. Responde `409` si ya hay una línea con ese `slug`.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '201':
+          description: Línea creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/SlugTaken'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/categories/order:
+    put:
+      operationId: reorderAdminCategories
+      tags: [admin]
+      summary: Reordenar las líneas
+      description: >-
+        Fija el orden del listado: `ids` tiene que traer todas las líneas, una vez cada una, en
+        el orden nuevo. `position` pasa a ser el lugar de cada una, empezando en 1.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryOrderInput'
+      responses:
+        '204':
+          description: Orden guardado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/categories/{id}:
+    patch:
+      operationId: updateAdminCategory
+      tags: [admin]
+      summary: Modificar una línea
+      description: >-
+        Reemplaza los datos editables de la línea: el cuerpo lleva la línea completa. Responde
+        `409` si el `slug` ya lo usa otra línea.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminCategoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '200':
+          description: Línea modificada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SlugTaken'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteAdminCategory
+      tags: [admin]
+      summary: Borrar una línea
+      description: >-
+        Borra una línea que no tiene productos. Si tiene alguno responde `409`.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminCategoryId'
+      responses:
+        '204':
+          description: Línea borrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: >-
+            La línea tiene productos y no se puede borrar. Se cuentan todos, también los
+            borradores y los archivados.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: category_has_products
+                title: La línea tiene productos
+                status: 409
+                detail: Mové o borrá los productos de la línea antes de borrarla.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/media/signature:
+    post:
+      operationId: createMediaSignature
+      tags: [admin]
+      summary: Firmar una subida de foto
+      description: >-
+        Devuelve los datos firmados para subir una foto directo a Cloudinary desde el navegador,
+        a la carpeta que corresponde a `purpose`. El secreto de la cuenta no sale del back.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaSignatureInput'
+      responses:
+        '200':
+          description: Firma de subida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaSignature'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin]
+      summary: Listar los pedidos
+      description: >-
+        Devuelve los pedidos, del más nuevo al más viejo, de a 20 por página. Los filtros se
+        combinan entre sí (todos tienen que cumplirse).
+      security:
+        - adminSession: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Estado del pedido; deja solo los pedidos en ese estado.
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: paymentStatus
+          in: query
+          required: false
+          description: Estado del pago; deja solo los pedidos con ese estado de pago.
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+        - name: q
+          in: query
+          required: false
+          description: >-
+            Texto a buscar en el número de pedido y en el nombre y el email del cliente. No
+            distingue acentos ni mayúsculas.
+          schema:
+            type: string
+            maxLength: 100
+          example: GLP-12345
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Página de pedidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrderPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/orders/{number}:
+    get:
+      operationId: getAdminOrder
+      tags: [admin]
+      summary: Obtener un pedido del dashboard
+      description: Devuelve el pedido completo, con su historial y los datos del pago.
+      security:
+        - adminSession: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      responses:
+        '200':
+          description: Pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/orders/{number}/status:
+    post:
+      operationId: changeOrderStatus
+      tags: [admin]
+      summary: Cambiar el estado de un pedido
+      description: >-
+        Mueve el pedido a `preparing`, `shipped`, `delivered` o `cancelled`. Para `shipped`
+        hacen falta `carrier` y `trackingNumber`; para los demás van en `null`. Solo se cancela
+        un pedido que todavía no se pagó. El estado del pago no se edita: lo escribe el back a
+        partir de Mercado Pago.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusChange'
+      responses:
+        '200':
+          description: Pedido con el estado nuevo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: >-
+            El pedido no puede pasar a ese estado desde el que tiene. Por ejemplo, no se cancela
+            un pedido pagado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: invalid_status_transition
+                title: Transición inválida
+                status: 409
+                detail: Un pedido pagado no se puede cancelar.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/home:
+    get:
+      operationId: getAdminHomeContent
+      tags: [admin]
+      summary: Obtener los textos del inicio
+      description: >-
+        Devuelve los textos editables del inicio, tal como los guarda el dashboard.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Textos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminHomeContent
+      tags: [admin]
+      summary: Guardar los textos del inicio
+      description: >-
+        Reemplaza los textos del inicio: el cuerpo lleva el contenido completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeContent'
+      responses:
+        '200':
+          description: Textos guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/about:
+    get:
+      operationId: getAdminAboutContent
+      tags: [admin]
+      summary: Obtener los textos de Nosotros
+      description: >-
+        Devuelve los textos editables de Nosotros, tal como los guarda el dashboard.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Textos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminAboutContent
+      tags: [admin]
+      summary: Guardar los textos de Nosotros
+      description: >-
+        Reemplaza los textos de Nosotros: el cuerpo lleva el contenido completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AboutContent'
+      responses:
+        '200':
+          description: Textos guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/faq:
+    get:
+      operationId: getAdminFaqContent
+      tags: [admin]
+      summary: Obtener los textos de las preguntas frecuentes
+      description: >-
+        Devuelve los textos editables de las preguntas frecuentes, tal como los guarda el
+        dashboard.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Textos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaqContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminFaqContent
+      tags: [admin]
+      summary: Guardar los textos de las preguntas frecuentes
+      description: >-
+        Reemplaza los textos de las preguntas frecuentes: el cuerpo lleva el contenido completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FaqContent'
+      responses:
+        '200':
+          description: Textos guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaqContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/footer:
+    get:
+      operationId: getAdminFooterContent
+      tags: [admin]
+      summary: Obtener los textos del pie de página
+      description: >-
+        Devuelve los textos editables del pie de página, tal como los guarda el dashboard.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Textos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminFooterContent
+      tags: [admin]
+      summary: Guardar los textos del pie de página
+      description: >-
+        Reemplaza los textos del pie de página: el cuerpo lleva el contenido completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterContent'
+      responses:
+        '200':
+          description: Textos guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/product-tabs:
+    get:
+      operationId: getAdminProductTabsContent
+      tags: [admin]
+      summary: Obtener los textos de las pestañas de producto
+      description: >-
+        Devuelve los textos editables de las pestañas de producto, tal como los guarda el
+        dashboard.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Textos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTabsContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminProductTabsContent
+      tags: [admin]
+      summary: Guardar los textos de las pestañas de producto
+      description: >-
+        Reemplaza los textos de las pestañas de producto: el cuerpo lleva el contenido completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductTabsContent'
+      responses:
+        '200':
+          description: Textos guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTabsContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/content/legal/{document}:
+    get:
+      operationId: getAdminLegalContent
+      tags: [admin]
+      summary: Obtener un documento legal
+      description: >-
+        Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+      security:
+        - adminSession: []
+      parameters:
+        - $ref: '#/components/parameters/LegalDocument'
+      responses:
+        '200':
+          description: Documento legal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminLegalContent
+      tags: [admin]
+      summary: Guardar un documento legal
+      description: >-
+        Reemplaza el documento legal: el cuerpo lleva el documento completo.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/LegalDocument'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalContent'
+      responses:
+        '200':
+          description: Documento guardado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Obtener los ajustes del dashboard
+      description: >-
+        Devuelve los ajustes públicos de la tienda más los que solo ve el dashboard: el umbral
+        de poco stock y el IVA.
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Ajustes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: updateAdminSettings
+      tags: [admin]
+      summary: Guardar los ajustes
+      description: >-
+        Reemplaza los ajustes: el cuerpo lleva todos. Tienen que venir las tres opciones de
+        envío, una por método.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSettings'
+      responses:
+        '200':
+          description: Ajustes guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/reviews:
+    get:
+      operationId: listAdminReviews
+      tags: [admin]
+      summary: Listar las reseñas
+      description: >-
+        Devuelve las reseñas en cualquier estado, de la más nueva a la más vieja, de a 20 por
+        página.
+      security:
+        - adminSession: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Estado de la reseña; deja solo las que están en ese estado.
+          schema:
+            $ref: '#/components/schemas/ReviewStatus'
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Página de reseñas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReviewPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/reviews/{id}:
+    patch:
+      operationId: updateAdminReview
+      tags: [admin]
+      summary: Moderar una reseña
+      description: >-
+        Cambia el estado de la reseña (la aprueba, la oculta o la deja pendiente) o si es
+        destacada. Solo se modifican los campos que vienen en el cuerpo. Las aprobadas cuentan
+        en el promedio del producto y se muestran en la ficha.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReviewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReviewUpdate'
+      responses:
+        '200':
+          description: Reseña modificada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/messages:
+    get:
+      operationId: listAdminMessages
+      tags: [admin]
+      summary: Listar los mensajes
+      description: >-
+        Devuelve los mensajes del formulario de contacto y las solicitudes de arrepentimiento,
+        del más nuevo al más viejo, de a 20 por página.
+      security:
+        - adminSession: []
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          description: Tipo de mensaje; deja solo los de ese tipo.
+          schema:
+            $ref: '#/components/schemas/ContactMessageKind'
+        - name: read
+          in: query
+          required: false
+          description: >-
+            Con `true`, deja solo los mensajes leídos; con `false`, solo los no leídos.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Página de mensajes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactMessagePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/messages/{id}:
+    patch:
+      operationId: updateAdminMessage
+      tags: [admin]
+      summary: Marcar un mensaje como leído o no leído
+      description: >-
+        Cambia si el mensaje está leído. Los no leídos se cuentan en `unreadMessages` del
+        resumen.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactMessageUpdate'
+      responses:
+        '200':
+          description: Mensaje modificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
 components:
   securitySchemes:
     customerSession:
@@ -1280,6 +2515,46 @@ components:
         minLength: 1
         maxLength: 80
       example: adr-0001
+    AdminProductId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de un producto.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: prd-imperial-premium
+    AdminCategoryId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de una línea de producto.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: cat-imperiales
+    ReviewId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de una reseña.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: rev-0001
+    MessageId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de un mensaje.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: msg-0001
   responses:
     ValidationError:
       description: Los datos enviados no son válidos. `errors` detalla cada campo.
@@ -1376,6 +2651,19 @@ components:
             title: Error del servidor
             status: 500
             detail: Algo salió mal de nuestro lado. Probá de nuevo en un rato.
+    SlugTaken:
+      description: >-
+        Ya hay un producto o una línea con ese `slug` (en un producto, también si alguno lo tuvo
+        antes y la tienda lo redirige).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: slug_taken
+            title: El slug ya está en uso
+            status: 409
+            detail: Ya hay algo con el slug mate-imperial-premium.
   schemas:
     Problem:
       type: object
@@ -3563,3 +4851,644 @@ components:
           minLength: 1
           description: Token que va en la cabecera `X-CSRF-Token`. Está ligado a la sesión actual.
           example: 4b8f2a7c91d3e65f0a1b2c3d4e5f6a7b
+    ProductStatus:
+      type: string
+      description: >-
+        Estado de un producto. `draft` es un borrador que la tienda no ve, `published` está a la
+        venta y `archived` se conserva con sus pedidos pero no se muestra.
+      enum: [draft, published, archived]
+      example: published
+    ReviewStatus:
+      type: string
+      description: >-
+        Estado de una reseña. `pending` espera la moderación, `approved` se muestra y cuenta en el
+        promedio y `hidden` quedó oculta.
+      enum: [pending, approved, hidden]
+      example: approved
+    ContactMessageKind:
+      type: string
+      description: Tipo de mensaje de la bandeja. `contact` es del formulario de contacto y `withdrawal` una solicitud de arrepentimiento.
+      enum: [contact, withdrawal]
+      example: contact
+    AdminLoginInput:
+      type: object
+      description: Datos para iniciar sesión en el dashboard.
+      required: [email, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Contraseña del administrador. No se le exige la fortaleza de una contraseña nueva.
+          example: mate-con-yerba-2026
+    AdminLoginResult:
+      type: object
+      description: Sesión del dashboard recién iniciada. La cookie de sesión viaja aparte, en `Set-Cookie`.
+      required: [email, csrfToken, expiresAt]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        csrfToken:
+          type: string
+          minLength: 1
+          description: Token que va en la cabecera `X-CSRF-Token` de las escrituras. Está ligado a la sesión que se acaba de iniciar.
+          example: 4b8f2a7c91d3e65f0a1b2c3d4e5f6a7b
+        expiresAt:
+          type: string
+          format: date-time
+          description: Cuándo vence la sesión, en UTC.
+          example: '2026-10-21T01:00:00Z'
+    AdminSession:
+      type: object
+      description: Sesión activa del dashboard.
+      required: [email, expiresAt]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        expiresAt:
+          type: string
+          format: date-time
+          description: Cuándo vence la sesión, en UTC.
+          example: '2026-10-21T01:00:00Z'
+    AdminPasswordChange:
+      type: object
+      description: Cambio de la contraseña del administrador.
+      required: [currentPassword, newPassword, confirmation]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Contraseña actual.
+          example: mate-con-yerba-2026
+        newPassword:
+          $ref: '#/components/schemas/Password'
+        confirmation:
+          type: string
+          maxLength: 128
+          description: Repetición de la contraseña nueva. Tiene que ser igual a `newPassword`; si no, el back responde `422` con el error en este campo.
+          example: mate-con-yerba-2027
+    DashboardSummary:
+      type: object
+      description: Cifras del inicio del dashboard.
+      required:
+        - salesTodayArs
+        - salesLast7DaysArs
+        - ordersToShip
+        - lowStock
+        - pendingReviews
+        - unreadMessages
+        - paymentAlerts
+      properties:
+        salesTodayArs:
+          type: integer
+          minimum: 0
+          description: Total vendido hoy (día de Buenos Aires), sumando los pedidos pagados. Es una suma, así que no tiene el tope de `Pesos`.
+          example: 79998
+        salesLast7DaysArs:
+          type: integer
+          minimum: 0
+          description: Total vendido en los últimos 7 días (hoy incluido), sumando los pedidos pagados. Es una suma, así que no tiene el tope de `Pesos`.
+          example: 412500
+        ordersToShip:
+          type: integer
+          minimum: 0
+          description: Pedidos pagados o en preparación que todavía no se despacharon.
+          example: 3
+        lowStock:
+          type: array
+          description: Productos publicados con stock menor o igual al umbral `lowStockThreshold` de los ajustes.
+          items:
+            type: object
+            description: Producto con poco stock.
+            required: [id, name, stock]
+            properties:
+              id:
+                type: string
+                description: Identificador del producto.
+                example: prd-imperial-premium
+              name:
+                type: string
+                description: Nombre del producto.
+                example: Mate Imperial Premium
+              stock:
+                type: integer
+                minimum: 0
+                description: Unidades que quedan.
+                example: 2
+        pendingReviews:
+          type: integer
+          minimum: 0
+          description: Reseñas pendientes de moderación.
+          example: 4
+        unreadMessages:
+          type: integer
+          minimum: 0
+          description: Mensajes de la bandeja sin leer.
+          example: 2
+        paymentAlerts:
+          type: array
+          description: Pedidos con un problema de pago que hay que mirar.
+          items:
+            type: object
+            description: Alerta de pago de un pedido.
+            required: [orderNumber, kind, message]
+            properties:
+              orderNumber:
+                $ref: '#/components/schemas/OrderNumber'
+              kind:
+                type: string
+                description: >-
+                  Qué pasó. `charged_back` es un contracargo, `in_dispute` una mediación abierta y
+                  `duplicate_payment` un segundo pago aprobado para un pedido ya pagado, que hay
+                  que devolver.
+                enum: [charged_back, in_dispute, duplicate_payment]
+                example: duplicate_payment
+              message:
+                type: string
+                description: Explicación para mostrar, en español.
+                example: Se aprobó un segundo pago de $46.499. Devolvelo desde Mercado Pago.
+    ImageInput:
+      type: object
+      description: Foto que ya se subió a Cloudinary, como la manda el dashboard.
+      required: [publicId, width, height, alt]
+      properties:
+        publicId:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Identificador de la foto en el proveedor de imágenes.
+          example: galpon/productos/mate-imperial-premium
+        width:
+          type: integer
+          minimum: 1
+          description: Ancho en píxeles.
+          example: 960
+        height:
+          type: integer
+          minimum: 1
+          description: Alto en píxeles.
+          example: 1280
+        alt:
+          type: string
+          minLength: 3
+          maxLength: 120
+          description: Texto alternativo para lectores de pantalla, de 3 a 120 caracteres.
+          example: Mate Imperial Premium con virola de alpaca cincelada
+    ProductTabsOverride:
+      type: object
+      description: Textos propios de un producto para las pestañas Materiales y Cuidado. Una pestaña en `null` usa el texto de su grupo.
+      required: [materials, care]
+      properties:
+        materials:
+          type: [string, 'null']
+          maxLength: 2000
+          description: Texto de la pestaña de materiales, o `null` para usar el del grupo.
+          example: Calabaza natural curable, virola de alpaca y cuero vacuno cosido a mano.
+        care:
+          type: [string, 'null']
+          maxLength: 2000
+          description: Texto de la pestaña de cuidado, o `null` para usar el del grupo.
+          example: null
+    AdminProduct:
+      description: >-
+        Producto como lo ve el dashboard: todo lo de la ficha (`ProductDetail`) más lo que la
+        tienda no muestra. `tabs` sigue viniendo combinado; `tabsOverride` trae solo el texto
+        propio del producto.
+      allOf:
+        - $ref: '#/components/schemas/ProductDetail'
+        - type: object
+          required: [status, stock, sequence, tabsOverride, previousSlugs, createdAt, updatedAt]
+          properties:
+            status:
+              $ref: '#/components/schemas/ProductStatus'
+            stock:
+              type: integer
+              minimum: 0
+              maximum: 9999
+              description: Unidades en stock.
+              example: 12
+            sequence:
+              type: integer
+              minimum: 1
+              description: Número correlativo del producto; `code` es este número con formato ("N°07"). Lo asigna el back.
+              example: 1
+            tabsOverride:
+              description: Textos propios de las pestañas, o `null` si el producto usa los de su grupo.
+              oneOf:
+                - $ref: '#/components/schemas/ProductTabsOverride'
+                - type: 'null'
+            previousSlugs:
+              type: array
+              description: Slugs anteriores del producto. La tienda redirige cada uno al `slug` actual.
+              items:
+                type: string
+                maxLength: 80
+                pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+              example: [mate-imperial]
+            createdAt:
+              type: string
+              format: date-time
+              description: Momento en que se creó el producto, en UTC.
+              example: '2026-08-01T12:00:00Z'
+            updatedAt:
+              type: string
+              format: date-time
+              description: Momento de la última modificación, en UTC.
+              example: '2026-10-15T18:30:00Z'
+    AdminProductInput:
+      type: object
+      description: >-
+        Producto que guarda el dashboard. Las reglas son las de `productFormSchema` de
+        `@galpon/schemas`. `code`, `sequence`, `previousSlugs` y las fechas los pone el back, y
+        las opciones de un mate no se editan.
+      required: [name, slug, categoryId, description, priceArs, stock, featured, status, images]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 120
+          description: Nombre del producto, de 3 a 120 caracteres.
+          example: Mate Imperial Premium
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Identificador legible para la dirección web. Minúsculas, números y guiones; tiene que ser único.
+          example: mate-imperial-premium
+        categoryId:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Identificador de la línea del producto.
+          example: cat-imperiales
+        description:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Descripción del producto, de 10 a 2000 caracteres.
+          example: Imperial con virola y base de alpaca con pelotitas en bronce.
+        priceArs:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 99999999
+          description: Precio de venta con impuestos incluidos, de 1 a 99.999.999 pesos, o `null` para que el producto quede "a consultar".
+          example: 39999
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 9999
+          description: Unidades en stock, de 0 a 9999.
+          example: 12
+        featured:
+          type: boolean
+          description: Si es un producto destacado.
+          example: false
+        status:
+          type: string
+          description: Estado del producto. Archivar se hace con `POST /admin/products/{id}/archive`; con `published` se vuelve a publicar uno archivado.
+          enum: [draft, published]
+          example: published
+        tabsOverride:
+          description: Textos propios de las pestañas. Si falta o es `null`, el producto usa los de su grupo.
+          oneOf:
+            - $ref: '#/components/schemas/ProductTabsOverride'
+            - type: 'null'
+        images:
+          type: array
+          description: Fotos del producto, hasta 8. La primera es la principal.
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/ImageInput'
+    AdminProductPage:
+      type: object
+      description: Página de productos del dashboard.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Productos de la página.
+          items:
+            $ref: '#/components/schemas/AdminProduct'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de elementos por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 24
+        total:
+          type: integer
+          description: Cantidad total de productos que cumplen los filtros, en todas las páginas.
+          minimum: 0
+          example: 27
+    CategoryInput:
+      type: object
+      description: >-
+        Línea que guarda el dashboard. Las reglas son las de `categoryFormSchema` de
+        `@galpon/schemas`. `position` y `productCount` los calcula el back.
+      required: [name, slug, group, blurb, image]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 60
+          description: Nombre de la línea, de 2 a 60 caracteres.
+          example: Imperiales
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Identificador legible para la dirección web. Minúsculas, números y guiones; tiene que ser único.
+          example: imperiales
+        group:
+          $ref: '#/components/schemas/ProductGroup'
+        blurb:
+          type: string
+          maxLength: 200
+          description: Descripción corta de la línea, de hasta 200 caracteres. Puede ser vacía.
+          example: Boca ancha, virola de alpaca y pie de apoyo. El mate de ceremonia.
+        image:
+          description: Foto de la línea, o `null` si no tiene.
+          oneOf:
+            - $ref: '#/components/schemas/ImageInput'
+            - type: 'null'
+    CategoryOrderInput:
+      type: object
+      description: Orden nuevo de las líneas.
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          description: Identificadores de todas las líneas, una vez cada una, en el orden en que se muestran.
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          example: [cat-imperiales, cat-torpedos]
+    MediaSignatureInput:
+      type: object
+      description: Pedido de firma para subir una foto.
+      required: [purpose]
+      properties:
+        purpose:
+          type: string
+          description: Para qué es la foto; define la carpeta de Cloudinary donde se guarda.
+          enum: [product, category, partner, site]
+          example: product
+    MediaSignature:
+      type: object
+      description: Datos firmados para subir una foto a Cloudinary desde el navegador.
+      required: [timestamp, signature, apiKey, cloudName, folder]
+      properties:
+        timestamp:
+          type: integer
+          minimum: 0
+          description: Momento de la firma, en segundos desde 1970 (hora Unix). Cloudinary lo exige en la subida.
+          example: 1792508400
+        signature:
+          type: string
+          minLength: 1
+          description: Firma de los parámetros de la subida, calculada por el back con el secreto de la cuenta.
+          example: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+        apiKey:
+          type: string
+          minLength: 1
+          description: Clave pública de la cuenta de Cloudinary.
+          example: '123456789012345'
+        cloudName:
+          type: string
+          minLength: 1
+          description: Nombre de la cuenta de Cloudinary.
+          example: galpon
+        folder:
+          type: string
+          minLength: 1
+          description: Carpeta donde se guarda la foto; la subida tiene que mandar este mismo valor.
+          example: galpon/productos
+    AdminOrderPage:
+      type: object
+      description: Página de pedidos del dashboard.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Pedidos de la página.
+          items:
+            $ref: '#/components/schemas/Order'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de pedidos por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 20
+        total:
+          type: integer
+          description: Cantidad total de pedidos que cumplen los filtros, en todas las páginas.
+          minimum: 0
+          example: 58
+    OrderStatusChange:
+      type: object
+      description: Cambio de estado de un pedido que pide el dashboard.
+      required: [status, carrier, trackingNumber, note]
+      properties:
+        status:
+          type: string
+          description: Estado al que pasa el pedido.
+          enum: [preparing, shipped, delivered, cancelled]
+          example: shipped
+        carrier:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 40
+          description: Empresa de transporte. Obligatoria con `shipped`; con los demás estados va en `null`.
+          example: Andreani
+        trackingNumber:
+          type: [string, 'null']
+          minLength: 4
+          maxLength: 40
+          description: Número de seguimiento. Obligatorio con `shipped`; con los demás estados va en `null`.
+          example: AND123456789
+        note:
+          type: [string, 'null']
+          maxLength: 500
+          description: Nota que queda en el historial del pedido, o `null` si no hay.
+          example: null
+    AdminSettings:
+      description: >-
+        Ajustes del dashboard: los públicos de la tienda (`PublicSettings`) más el umbral de poco
+        stock y el IVA, que solo ve el dashboard.
+      allOf:
+        - $ref: '#/components/schemas/PublicSettings'
+        - type: object
+          required: [lowStockThreshold, vatRatePercent]
+          properties:
+            lowStockThreshold:
+              type: integer
+              minimum: 0
+              maximum: 999
+              description: Un producto cuenta como "con poco stock" cuando le quedan este número de unidades o menos.
+              example: 3
+            vatRatePercent:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: Alícuota de IVA en porcentaje, de 0 a 100, con decimales si hace falta (10,5). Con ella se calcula el precio sin impuestos nacionales.
+              example: 21
+    AdminReview:
+      description: Reseña como la ve el dashboard, en cualquier estado y con el producto al que pertenece.
+      allOf:
+        - $ref: '#/components/schemas/Review'
+        - type: object
+          required: [status, featured, product]
+          properties:
+            status:
+              $ref: '#/components/schemas/ReviewStatus'
+            featured:
+              type: boolean
+              description: Si la reseña es destacada. Se muestra en el inicio mientras esté aprobada.
+              example: false
+            product:
+              type: object
+              description: Producto reseñado.
+              required: [slug, name]
+              properties:
+                slug:
+                  type: string
+                  description: Slug actual del producto.
+                  example: mate-imperial-premium
+                name:
+                  type: string
+                  description: Nombre del producto.
+                  example: Mate Imperial Premium
+    AdminReviewPage:
+      type: object
+      description: Página de reseñas del dashboard.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Reseñas de la página.
+          items:
+            $ref: '#/components/schemas/AdminReview'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de reseñas por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 20
+        total:
+          type: integer
+          description: Cantidad total de reseñas que cumplen el filtro, en todas las páginas.
+          minimum: 0
+          example: 12
+    AdminReviewUpdate:
+      type: object
+      description: Cambios a una reseña. Solo se modifican los campos que vienen.
+      minProperties: 1
+      properties:
+        status:
+          $ref: '#/components/schemas/ReviewStatus'
+        featured:
+          type: boolean
+          description: Si la reseña es destacada. Se muestra en el inicio mientras esté aprobada.
+          example: true
+    ContactMessage:
+      type: object
+      description: Mensaje de la bandeja del dashboard, del formulario de contacto o de una solicitud de arrepentimiento.
+      required: [id, kind, name, email, orderNumber, reason, message, code, createdAt, read]
+      properties:
+        id:
+          type: string
+          description: Identificador del mensaje.
+          example: msg-0001
+        kind:
+          $ref: '#/components/schemas/ContactMessageKind'
+        name:
+          type: string
+          description: Nombre de quien escribió.
+          example: Lucía Pérez
+        email:
+          $ref: '#/components/schemas/Email'
+        orderNumber:
+          description: Número del pedido del que se trata, o `null` si no corresponde.
+          oneOf:
+            - $ref: '#/components/schemas/OrderNumber'
+            - type: 'null'
+        reason:
+          description: Motivo elegido en el formulario de contacto, o `null` en un arrepentimiento.
+          oneOf:
+            - $ref: '#/components/schemas/ContactReason'
+            - type: 'null'
+        message:
+          type: [string, 'null']
+          description: Texto del mensaje, o `null` si es un arrepentimiento sin comentario.
+          example: Pedí un mate hace una semana y todavía no tengo novedades del envío.
+        code:
+          type: [string, 'null']
+          description: Código de comprobante de un arrepentimiento, o `null` en un mensaje de contacto.
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          description: Momento en que llegó el mensaje, en UTC.
+          example: '2026-10-20T15:00:00Z'
+        read:
+          type: boolean
+          description: Si el mensaje ya se leyó.
+          example: false
+    ContactMessagePage:
+      type: object
+      description: Página de mensajes de la bandeja.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Mensajes de la página.
+          items:
+            $ref: '#/components/schemas/ContactMessage'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de mensajes por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 20
+        total:
+          type: integer
+          description: Cantidad total de mensajes que cumplen los filtros, en todas las páginas.
+          minimum: 0
+          example: 9
+    ContactMessageUpdate:
+      type: object
+      description: Cambio de un mensaje de la bandeja.
+      required: [read]
+      properties:
+        read:
+          type: boolean
+          description: Si el mensaje queda como leído (`true`) o como no leído (`false`).
+          example: true

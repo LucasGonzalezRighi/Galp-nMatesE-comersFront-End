@@ -82,6 +82,10 @@ export const MESSAGES = {
   invalidPrice: 'Ingresá un precio en pesos mayor a 0, o dejalo a consultar',
   /** Monto en pesos (por ejemplo el costo de envío) que no es un entero desde 0. */
   invalidAmount: 'Ingresá un monto en pesos, entero y desde 0',
+  /** Precio de un producto por encima de los $99.999.999 que admite el contrato. */
+  priceTooHigh: 'El precio no puede superar los $99.999.999',
+  /** Monto en pesos (por ejemplo el costo de envío) por encima de los $99.999.999 del contrato. */
+  amountTooHigh: 'El monto no puede superar los $99.999.999',
   /** Producto con más de `n` fotos. */
   maxImages: (n: number) => `Máximo ${String(n)} fotos`,
   /** Texto alternativo de una foto vacío, muy corto o muy largo (3 a 120 caracteres). */

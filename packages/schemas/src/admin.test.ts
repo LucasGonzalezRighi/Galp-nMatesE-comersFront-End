@@ -215,8 +215,14 @@ describe('productFormSchema', () => {
   })
 
   describe('precio', () => {
-    it.each([1, 39999, 1_000_000])('acepta %j', (priceArs) => {
+    it.each([1, 39999, 1_000_000, 99_999_999])('acepta %j', (priceArs) => {
       expect(productFormSchema.parse({ ...validProduct, priceArs }).priceArs).toBe(priceArs)
+    })
+
+    it('rechaza un precio mayor a $99.999.999, el máximo del contrato', () => {
+      expect(issuesOf(productFormSchema, { ...validProduct, priceArs: 100_000_000 })).toEqual([
+        { path: ['priceArs'], message: 'El precio no puede superar los $99.999.999' },
+      ])
     })
 
     it('acepta null: el precio queda "a consultar"', () => {
@@ -464,6 +470,20 @@ describe('settingsFormSchema', () => {
           },
         ])
       }
+    })
+
+    it('acepta un costo de $99.999.999 y rechaza uno mayor, el máximo del contrato', () => {
+      const atMax = [{ ...home, costArs: 99_999_999 }, branch, pickup]
+      expect(settingsFormSchema.safeParse(settingsWith({ shippingOptions: atMax })).success).toBe(
+        true,
+      )
+      const overMax = [{ ...home, costArs: 100_000_000 }, branch, pickup]
+      expect(issuesOf(settingsFormSchema, settingsWith({ shippingOptions: overMax }))).toEqual([
+        {
+          path: ['shippingOptions', 0, 'costArs'],
+          message: 'El monto no puede superar los $99.999.999',
+        },
+      ])
     })
 
     it.each([

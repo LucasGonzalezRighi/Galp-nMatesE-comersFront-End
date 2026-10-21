@@ -1,0 +1,26 @@
+{
+  "name": "@galpon/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts",
+    "./mock": "./src/mock/index.ts"
+  },
+  "scripts": {
+    "api:generate": "npx --yes openapi-typescript@7.13.0 ../../docs/api/openapi.yaml -o src/generated/schema.d.ts --root-types --root-types-no-schema-prefix --alphabetize",
+    "api:check": "npx --yes openapi-typescript@7.13.0 ../../docs/api/openapi.yaml -o src/generated/schema.d.ts --root-types --root-types-no-schema-prefix --alphabetize --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@galpon/domain": "*",
+    "@galpon/schemas": "*",
+    "openapi-fetch": "0.17.0",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.104.4",
+    "react": "^19.3.1"
+  }
+}
