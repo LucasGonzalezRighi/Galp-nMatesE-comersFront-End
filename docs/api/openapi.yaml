@@ -1,0 +1,1578 @@
+openapi: 3.1.0
+info:
+  title: Galpón Mates API
+  version: 1.0.0
+  summary: Contrato de la API REST de Galpón Mates.
+  description: |
+    Contrato entre el front (tienda y dashboard) y el back (NestJS) de Galpón Mates.
+
+    Convenciones:
+
+    - JSON en `camelCase`.
+    - Montos en pesos enteros, con sufijo `Ars` (`priceArs`, `totalArs`).
+    - Fechas en ISO 8601 UTC.
+    - Listas paginadas con `?page=&pageSize=` (máximo 100) que responden `{ items, page, pageSize, total }`.
+    - Errores en `application/problem+json` (RFC 9457), con el detalle por campo en `errors`.
+    - `429` siempre trae `Retry-After`.
+    - Las escrituras de pedidos y pagos llevan `Idempotency-Key` (un UUID por intento).
+
+    Las rutas de este documento son relativas al prefijo `/api/v1` de `servers`.
+  license:
+    name: Propietaria
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://api.galponmates.com.ar/api/v1
+    description: Producción
+tags:
+  - name: catalog
+    description: Líneas de producto, catálogo y fichas de producto.
+  - name: reviews
+    description: Reseñas de los productos.
+  - name: content
+    description: Textos editables de la tienda (inicio, nosotros, preguntas, pie, pestañas y legales).
+  - name: settings
+    description: Ajustes públicos de la tienda (envíos, cuotas, descuento del kit y datos del vendedor).
+  - name: cart
+    description: Cotización del carrito y del envío.
+  - name: orders
+    description: Pedidos.
+  - name: payments
+    description: Pagos con Mercado Pago y sus avisos.
+  - name: contact
+    description: Formularios públicos de contacto y de arrepentimiento.
+  - name: account
+    description: Cuenta del cliente, sesión y libreta de direcciones.
+  - name: admin
+    description: Dashboard de administración.
+paths:
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [catalog]
+      summary: Listar las líneas de producto
+      description: >-
+        Devuelve todas las líneas, ordenadas por `position`, con la cantidad de productos
+        publicados de cada una.
+      security: []
+      responses:
+        '200':
+          description: Líneas de producto.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Líneas ordenadas por `position`.
+                items:
+                  $ref: '#/components/schemas/Category'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /products:
+    get:
+      operationId: listProducts
+      tags: [catalog]
+      summary: Listar el catálogo publicado
+      description: >-
+        Devuelve los productos publicados, paginados. Los filtros se combinan entre sí (todos
+        tienen que cumplirse). La tienda pide el catálogo completo con `pageSize=100`.
+      security: []
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: Slug de la línea; deja solo los productos de esa línea.
+          schema:
+            type: string
+            maxLength: 80
+            pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          example: torpedos
+        - name: group
+          in: query
+          required: false
+          description: Grupo de producto; deja solo los productos de ese grupo.
+          schema:
+            $ref: '#/components/schemas/ProductGroup'
+        - name: ids
+          in: query
+          required: false
+          description: Ids de producto separados por coma; deja solo esos productos.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4000
+          example: prd-galleta,prd-imperial-premium
+        - name: q
+          in: query
+          required: false
+          description: >-
+            Texto a buscar. Se compara sin acentos ni mayúsculas sobre el nombre, la descripción
+            y la línea del producto.
+          schema:
+            type: string
+            maxLength: 100
+          example: bombillon
+        - name: sort
+          in: query
+          required: false
+          description: Orden de los resultados.
+          schema:
+            $ref: '#/components/schemas/ProductSortOrder'
+            default: destacados
+        - name: featured
+          in: query
+          required: false
+          description: Con `true`, deja solo los productos destacados.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de productos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /products/{slug}:
+    get:
+      operationId: getProduct
+      tags: [catalog]
+      summary: Obtener la ficha de un producto
+      description: >-
+        Devuelve el producto publicado. Si el `slug` es uno anterior (el producto se renombró),
+        responde `200` igual, con el producto y su `slug` actual: la tienda lo compara con el
+        pedido y redirige con `308`. Si el producto no está publicado, responde `404`.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductSlug'
+      responses:
+        '200':
+          description: Ficha del producto, con su `slug` actual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /products/{slug}/related:
+    get:
+      operationId: listRelatedProducts
+      tags: [catalog]
+      summary: Listar los productos relacionados
+      description: >-
+        Devuelve hasta 4 productos relacionados: primero los de la misma línea y después los del
+        mismo grupo en otras líneas. Nunca incluye al producto pedido.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductSlug'
+      responses:
+        '200':
+          description: Productos relacionados (puede estar vacía).
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Hasta 4 productos.
+                maxItems: 4
+                items:
+                  $ref: '#/components/schemas/ProductSummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /products/{slug}/reviews:
+    get:
+      operationId: listProductReviews
+      tags: [reviews]
+      summary: Listar las reseñas de un producto
+      description: >-
+        Devuelve las reseñas aprobadas del producto, de la más nueva a la más vieja, junto con
+        el promedio y la distribución por estrellas de todas las aprobadas (no solo de la página).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductSlug'
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Página de reseñas con sus estadísticas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewPage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /reviews/featured:
+    get:
+      operationId: listFeaturedReviews
+      tags: [reviews]
+      summary: Listar las reseñas destacadas del inicio
+      description: Devuelve las reseñas aprobadas y marcadas como destacadas, con el producto de cada una.
+      security: []
+      responses:
+        '200':
+          description: Reseñas destacadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Reseñas destacadas, de la más nueva a la más vieja.
+                items:
+                  $ref: '#/components/schemas/FeaturedReview'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/home:
+    get:
+      operationId: getHomeContent
+      tags: [content]
+      summary: Obtener los textos del inicio
+      description: Devuelve los textos editables de la página de inicio.
+      security: []
+      responses:
+        '200':
+          description: Textos del inicio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeContent'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/about:
+    get:
+      operationId: getAboutContent
+      tags: [content]
+      summary: Obtener los textos de Nosotros
+      description: Devuelve los textos editables de la página Nosotros.
+      security: []
+      responses:
+        '200':
+          description: Textos de Nosotros.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutContent'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/faq:
+    get:
+      operationId: getFaqContent
+      tags: [content]
+      summary: Obtener las preguntas frecuentes
+      description: Devuelve las preguntas frecuentes, agrupadas por categoría.
+      security: []
+      responses:
+        '200':
+          description: Preguntas frecuentes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaqContent'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/footer:
+    get:
+      operationId: getFooterContent
+      tags: [content]
+      summary: Obtener los textos del pie
+      description: Devuelve los textos editables del pie de página.
+      security: []
+      responses:
+        '200':
+          description: Textos del pie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterContent'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/product-tabs:
+    get:
+      operationId: getProductTabsContent
+      tags: [content]
+      summary: Obtener los textos de las pestañas de producto
+      description: >-
+        Devuelve los textos de las pestañas de la ficha por grupo de producto. Son los textos de
+        fábrica: la ficha (`ProductDetail.tabs`) ya viene con el texto del producto, si lo tiene,
+        o con el del grupo.
+      security: []
+      responses:
+        '200':
+          description: Textos de las pestañas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTabsContent'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /content/legal/{document}:
+    get:
+      operationId: getLegalContent
+      tags: [content]
+      summary: Obtener un documento legal
+      description: Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/LegalDocument'
+      responses:
+        '200':
+          description: Documento legal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalContent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /settings/public:
+    get:
+      operationId: getPublicSettings
+      tags: [settings]
+      summary: Obtener los ajustes públicos
+      description: >-
+        Devuelve los ajustes que necesita la tienda: descuento del kit, opciones de envío,
+        cuotas, mail de contacto, cómo mostrar el precio y datos del vendedor.
+      security: []
+      responses:
+        '200':
+          description: Ajustes públicos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSettings'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    customerSession:
+      type: apiKey
+      in: cookie
+      name: __Host-galpon_session
+      description: >-
+        Sesión del cliente. Cookie `HttpOnly`, `Secure` y `SameSite=Lax` que pone el back al
+        iniciar sesión.
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: __Host-galpon_admin
+      description: >-
+        Sesión del administrador. Cookie `HttpOnly`, `Secure` y `SameSite=Strict` que pone el
+        back al iniciar sesión en el dashboard.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: >-
+        Token anti-CSRF que se obtiene en `/auth/csrf` o `/admin/auth/csrf`. Va en toda escritura
+        con sesión. Lo agrega el middleware del cliente, no cada llamada.
+    orderToken:
+      type: apiKey
+      in: header
+      name: X-Order-Token
+      description: >-
+        Token que devuelve la creación del pedido. Permite ver y pagar ese pedido sin tener
+        cuenta. Lo agrega el middleware del cliente, no cada llamada.
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Número de página, empezando en 1.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: Cantidad de elementos por página (de 1 a 100).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 24
+    ProductSlug:
+      name: slug
+      in: path
+      required: true
+      description: Slug del producto. Admite también un slug anterior del mismo producto.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+        pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+      example: mate-imperial-premium
+    LegalDocument:
+      name: document
+      in: path
+      required: true
+      description: 'Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).'
+      schema:
+        type: string
+        enum: [terms, privacy]
+      example: terms
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado
+        del primer intento en lugar de crear otro pedido o cobro.
+      schema:
+        type: string
+        format: uuid
+      example: 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
+  responses:
+    ValidationError:
+      description: Los datos enviados no son válidos. `errors` detalla cada campo.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: validation_error
+            title: Los datos no son válidos
+            status: 422
+            detail: Revisá los campos marcados.
+            errors:
+              - field: page
+                code: too_small
+                message: La página tiene que ser mayor o igual a 1.
+    Unauthorized:
+      description: Falta la sesión o venció.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: unauthorized
+            title: Sesión requerida
+            status: 401
+            detail: Iniciá sesión para continuar.
+    Forbidden:
+      description: La sesión es válida pero no alcanza para esta operación (por ejemplo, token CSRF inválido).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: forbidden
+            title: Acceso denegado
+            status: 403
+            detail: No tenés permiso para hacer esto.
+    NotFound:
+      description: El recurso no existe o no está publicado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: not_found
+            title: No encontrado
+            status: 404
+            detail: No existe un producto con ese slug.
+    Conflict:
+      description: >-
+        La operación choca con el estado actual. `type` dice el motivo (por ejemplo `stock_changed`
+        en un pedido) y `changes` detalla qué cambió.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: stock_changed
+            title: El stock cambió
+            status: 409
+            detail: Un producto del carrito ya no tiene el stock pedido.
+            changes:
+              - kind: stock
+                productId: prd-camionero-pelo
+                message: Quedan 2 unidades de Mate Camionero Criollo con Pelo.
+    RateLimited:
+      description: Demasiadas solicitudes. `Retry-After` dice en cuántos segundos reintentar.
+      headers:
+        Retry-After:
+          required: true
+          description: Segundos que hay que esperar antes de reintentar.
+          schema:
+            type: integer
+            minimum: 1
+          example: 30
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: rate_limited
+            title: Demasiadas solicitudes
+            status: 429
+            detail: Esperá unos segundos y volvé a intentar.
+    ServerError:
+      description: Error inesperado del servidor.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: server_error
+            title: Error del servidor
+            status: 500
+            detail: Algo salió mal de nuestro lado. Probá de nuevo en un rato.
+  schemas:
+    Problem:
+      type: object
+      description: >-
+        Error en formato `application/problem+json` (RFC 9457). `type` es un identificador estable
+        en `snake_case` (por ejemplo `validation_error`, `not_found`, `stock_changed`).
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          description: Identificador estable del tipo de error, en `snake_case`.
+          example: validation_error
+        title:
+          type: string
+          description: Resumen corto del error, en español.
+          example: Los datos no son válidos
+        status:
+          type: integer
+          description: Código HTTP de la respuesta.
+          minimum: 400
+          maximum: 599
+          example: 422
+        detail:
+          type: string
+          description: Explicación de esta ocurrencia, en español.
+          example: Revisá los campos marcados.
+        instance:
+          type: string
+          description: Identificador de esta ocurrencia, útil para buscarla en los registros.
+          example: /orders/GLP-12345
+        errors:
+          type: array
+          description: Errores por campo (en validaciones).
+          items:
+            $ref: '#/components/schemas/FieldError'
+        changes:
+          type: array
+          description: Qué cambió desde que el cliente armó el pedido (en conflictos de pedido).
+          items:
+            $ref: '#/components/schemas/ChangeNotice'
+    FieldError:
+      type: object
+      description: Error de validación de un campo.
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+          description: Ruta del campo con puntos, por ejemplo `customer.email`.
+          example: customer.email
+        code:
+          type: string
+          description: Código estable del error, en `snake_case`.
+          example: invalid_email
+        message:
+          type: string
+          description: Mensaje para mostrar al usuario, en español.
+          example: Ingresá un mail válido.
+    ChangeNotice:
+      type: object
+      description: Aviso de un cambio ocurrido entre que el cliente armó el pedido y que se confirmó.
+      required: [kind, productId, message]
+      properties:
+        kind:
+          type: string
+          description: Qué cambió.
+          enum: [price, stock, discount, shipping, unavailable]
+          example: stock
+        productId:
+          type: [string, 'null']
+          description: Producto afectado, o `null` si el cambio no es de un producto (envío o descuento).
+          example: prd-camionero-pelo
+        message:
+          type: string
+          description: Explicación del cambio, en español.
+          example: Quedan 2 unidades de Mate Camionero Criollo con Pelo.
+    Pesos:
+      type: integer
+      description: Monto en pesos argentinos, entero y no negativo.
+      minimum: 0
+      example: 39999
+    NullablePesos:
+      type: [integer, 'null']
+      description: Monto en pesos argentinos, entero y no negativo, o `null` cuando no corresponde (por ejemplo, "a consultar").
+      minimum: 0
+      example: 39999
+    ProductGroup:
+      type: string
+      description: Grupo al que pertenece un producto.
+      enum: [mate, bombilla, yerba]
+      example: mate
+    Leather:
+      type: string
+      description: Cuero de la funda de un mate.
+      enum: [Negro, Marrón, Crudo, Borravino]
+      example: Negro
+    Ferrule:
+      type: string
+      description: Virola de un mate.
+      enum: [Alpaca lisa, Alpaca cincelada, Acero]
+      example: Alpaca cincelada
+    ProductSortOrder:
+      type: string
+      description: Orden del catálogo. `destacados` pone primero los destacados, `menor` y `mayor` ordenan por precio y `az` por nombre.
+      enum: [destacados, menor, mayor, az]
+      example: destacados
+    ShippingMethod:
+      type: string
+      description: Método de envío. `home` es a domicilio, `branch` a sucursal y `pickup` retiro en persona.
+      enum: [home, branch, pickup]
+      example: home
+    Image:
+      type: object
+      description: Foto alojada en el proveedor de imágenes.
+      required: [publicId, url, width, height, alt]
+      properties:
+        publicId:
+          type: string
+          description: Identificador de la foto en el proveedor de imágenes.
+          example: galpon/productos/mate-imperial-premium
+        url:
+          type: string
+          description: Dirección de la foto, absoluta o relativa al sitio.
+          example: https://res.cloudinary.com/galpon/image/upload/galpon/productos/mate-imperial-premium.jpg
+        width:
+          type: integer
+          description: Ancho en píxeles.
+          minimum: 1
+          example: 960
+        height:
+          type: integer
+          description: Alto en píxeles.
+          minimum: 1
+          example: 1280
+        alt:
+          type: string
+          description: Texto alternativo para lectores de pantalla.
+          example: Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce
+    Category:
+      type: object
+      description: Línea de producto (por ejemplo "Imperiales" o "Bombillones").
+      required: [id, slug, name, group, blurb, image, position, productCount]
+      properties:
+        id:
+          type: string
+          description: Identificador de la línea.
+          example: cat-imperiales
+        slug:
+          type: string
+          description: Identificador legible para la dirección web.
+          example: imperiales
+        name:
+          type: string
+          description: Nombre de la línea.
+          example: Imperiales
+        group:
+          $ref: '#/components/schemas/ProductGroup'
+        blurb:
+          type: string
+          description: Descripción corta de la línea.
+          example: Boca ancha, virola de alpaca y pie de apoyo. El mate de ceremonia.
+        image:
+          description: Foto de la línea, o `null` si todavía no tiene.
+          oneOf:
+            - $ref: '#/components/schemas/Image'
+            - type: 'null'
+        position:
+          type: integer
+          description: Lugar de la línea en el listado, empezando en 1.
+          minimum: 1
+          example: 1
+        productCount:
+          type: integer
+          description: Cantidad de productos publicados de la línea.
+          minimum: 0
+          example: 4
+    Rating:
+      type: object
+      description: Calificación de un producto, calculada sobre sus reseñas aprobadas.
+      required: [average, count]
+      properties:
+        average:
+          type: number
+          description: Promedio de 0 a 5, sin redondear (el front lo muestra con un decimal). Es 0 si no hay reseñas.
+          minimum: 0
+          maximum: 5
+          example: 4.7
+        count:
+          type: integer
+          description: Cantidad de reseñas aprobadas.
+          minimum: 0
+          example: 3
+    ProductSummary:
+      type: object
+      description: Producto como se muestra en listados y tarjetas.
+      required:
+        - id
+        - slug
+        - code
+        - name
+        - description
+        - categoryId
+        - categorySlug
+        - categoryName
+        - group
+        - priceArs
+        - netPriceArs
+        - isPurchasable
+        - isSoldOut
+        - maxQuantity
+        - featured
+        - mainImage
+        - rating
+      properties:
+        id:
+          type: string
+          description: Identificador del producto.
+          example: prd-imperial-premium
+        slug:
+          type: string
+          description: Identificador legible para la dirección web. Cambia si se renombra el producto.
+          example: mate-imperial-premium
+        code:
+          type: string
+          description: Código correlativo que se muestra en la ficha (por ejemplo "N°07"). Lo asigna el back y no se edita.
+          example: N°01
+        name:
+          type: string
+          description: Nombre del producto.
+          example: Mate Imperial Premium
+        description:
+          type: string
+          description: Descripción del producto.
+          example: Imperial con virola y base de alpaca con pelotitas en bronce.
+        categoryId:
+          type: string
+          description: Identificador de la línea del producto.
+          example: cat-imperiales
+        categorySlug:
+          type: string
+          description: Slug de la línea del producto.
+          example: imperiales
+        categoryName:
+          type: string
+          description: Nombre de la línea del producto.
+          example: Imperiales
+        group:
+          $ref: '#/components/schemas/ProductGroup'
+        priceArs:
+          description: Precio de venta con impuestos incluidos, o `null` si el producto es "a consultar" (no se puede comprar).
+          $ref: '#/components/schemas/NullablePesos'
+        netPriceArs:
+          description: Precio sin impuestos nacionales (Ley 27.743), o `null` si `priceArs` es `null`.
+          $ref: '#/components/schemas/NullablePesos'
+        isPurchasable:
+          type: boolean
+          description: Si se puede agregar al carrito. Es verdadero si está publicado, tiene precio y hay stock.
+          example: true
+        isSoldOut:
+          type: boolean
+          description: Si no queda stock.
+          example: false
+        maxQuantity:
+          type: integer
+          description: Cantidad máxima que se puede pedir de una vez, es decir el menor entre 20 y el stock (0 si no hay stock).
+          minimum: 0
+          maximum: 20
+          example: 12
+        featured:
+          type: boolean
+          description: Si es un producto destacado.
+          example: false
+        mainImage:
+          description: Foto principal, o `null` si todavía no tiene.
+          oneOf:
+            - $ref: '#/components/schemas/Image'
+            - type: 'null'
+        rating:
+          $ref: '#/components/schemas/Rating'
+      example:
+        id: prd-imperial-premium
+        slug: mate-imperial-premium
+        code: N°01
+        name: Mate Imperial Premium
+        description: Imperial con virola y base de alpaca con pelotitas en bronce.
+        categoryId: cat-imperiales
+        categorySlug: imperiales
+        categoryName: Imperiales
+        group: mate
+        priceArs: 39999
+        netPriceArs: 33057
+        isPurchasable: true
+        isSoldOut: false
+        maxQuantity: 12
+        featured: false
+        mainImage:
+          publicId: galpon/productos/mate-imperial-premium
+          url: /mock-images/mate-imperial-premium.jpg
+          width: 960
+          height: 1280
+          alt: Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce
+        rating:
+          average: 4.7
+          count: 3
+    ProductTabs:
+      type: object
+      description: Textos de las pestañas de la ficha. Ya vienen combinados, con el texto del producto si lo tiene o, si no, el de su grupo.
+      required: [descriptionNote, materials, shipping, care]
+      properties:
+        descriptionNote:
+          type: [string, 'null']
+          description: Nota que se muestra debajo de la descripción, o `null` si no hay (por ejemplo, la de "cada pieza es artesanal" de los mates).
+          example: Cada pieza es artesanal, así que los tonos de la calabaza, el cuero y el cincelado pueden variar.
+        materials:
+          type: string
+          description: Texto de la pestaña de materiales (o de contenido, en las yerbas).
+          example: Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
+        shipping:
+          type: string
+          description: Texto de la pestaña de envío y cambios.
+          example: Enviamos a todo el país. También podés retirar sin costo.
+        care:
+          type: string
+          description: Texto de la pestaña de cuidado (o de conservación, en las yerbas).
+          example: Curalo antes del primer uso y secalo boca abajo después de cada ronda.
+    ProductOptions:
+      type: object
+      description: Opciones a elegir en un mate. No cambian el precio.
+      required: [leathers, ferrules]
+      properties:
+        leathers:
+          type: array
+          description: Cueros disponibles.
+          items:
+            $ref: '#/components/schemas/Leather'
+        ferrules:
+          type: array
+          description: Virolas disponibles.
+          items:
+            $ref: '#/components/schemas/Ferrule'
+    ProductDetail:
+      description: Producto completo, como se muestra en su ficha.
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          required: [images, tabs, options]
+          properties:
+            images:
+              type: array
+              description: Todas las fotos del producto, en el orden en que se muestran.
+              items:
+                $ref: '#/components/schemas/Image'
+            tabs:
+              $ref: '#/components/schemas/ProductTabs'
+            options:
+              description: Opciones a elegir, o `null` si el producto no tiene (solo los mates las tienen).
+              oneOf:
+                - $ref: '#/components/schemas/ProductOptions'
+                - type: 'null'
+    ProductPage:
+      type: object
+      description: Página de productos.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Productos de la página.
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de elementos por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 24
+        total:
+          type: integer
+          description: Cantidad total de productos que cumplen los filtros, en todas las páginas.
+          minimum: 0
+          example: 27
+    Review:
+      type: object
+      description: Reseña aprobada de un producto.
+      required: [id, authorName, rating, text, createdAt, verifiedPurchase]
+      properties:
+        id:
+          type: string
+          description: Identificador de la reseña.
+          example: rev-0001
+        authorName:
+          type: string
+          description: Nombre con el que firma la reseña.
+          example: Paula N.
+        rating:
+          type: integer
+          description: Puntuación en estrellas, de 1 a 5.
+          minimum: 1
+          maximum: 5
+          example: 5
+        text:
+          type: string
+          description: Texto de la reseña.
+          example: Muuu. Es el mate más lindo que tengo.
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de la reseña, en UTC. El front la muestra en hora de Buenos Aires.
+          example: '2026-08-15T15:00:00Z'
+        verifiedPurchase:
+          type: boolean
+          description: Si la reseña es de alguien que compró el producto.
+          example: true
+    ReviewStats:
+      type: object
+      description: Estadísticas de todas las reseñas aprobadas de un producto.
+      required: [average, count, distribution]
+      properties:
+        average:
+          type: number
+          description: Promedio de 0 a 5, sin redondear. Es 0 si no hay reseñas.
+          minimum: 0
+          maximum: 5
+          example: 4.7
+        count:
+          type: integer
+          description: Cantidad de reseñas aprobadas.
+          minimum: 0
+          example: 3
+        distribution:
+          type: array
+          description: Una fila por puntuación, de 5 a 1 estrellas.
+          items:
+            type: object
+            description: Cuántas reseñas tienen una puntuación.
+            required: [stars, count, percent]
+            properties:
+              stars:
+                type: integer
+                description: Puntuación de esta fila, de 1 a 5.
+                minimum: 1
+                maximum: 5
+                example: 5
+              count:
+                type: integer
+                description: Cantidad de reseñas con esa puntuación.
+                minimum: 0
+                example: 2
+              percent:
+                type: integer
+                description: Porcentaje sobre el total de reseñas, redondeado a entero (0 si no hay reseñas).
+                minimum: 0
+                maximum: 100
+                example: 67
+    ReviewPage:
+      type: object
+      description: Página de reseñas de un producto, con las estadísticas de todas.
+      required: [items, page, pageSize, total, stats]
+      properties:
+        items:
+          type: array
+          description: Reseñas de la página.
+          items:
+            $ref: '#/components/schemas/Review'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de reseñas por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 10
+        total:
+          type: integer
+          description: Cantidad total de reseñas aprobadas, en todas las páginas.
+          minimum: 0
+          example: 3
+        stats:
+          $ref: '#/components/schemas/ReviewStats'
+    FeaturedReview:
+      description: Reseña destacada, con el producto al que pertenece.
+      allOf:
+        - $ref: '#/components/schemas/Review'
+        - type: object
+          required: [product]
+          properties:
+            product:
+              type: object
+              description: Producto reseñado.
+              required: [slug, name]
+              properties:
+                slug:
+                  type: string
+                  description: Slug actual del producto.
+                  example: mate-imperial-premium
+                name:
+                  type: string
+                  description: Nombre del producto.
+                  example: Mate Imperial Premium
+    ShippingOption:
+      type: object
+      description: Opción de envío que se ofrece en el checkout.
+      required: [method, label, costArs, eta, enabled]
+      properties:
+        method:
+          $ref: '#/components/schemas/ShippingMethod'
+        label:
+          type: string
+          description: Nombre que ve el cliente.
+          example: Envío a domicilio
+        costArs:
+          description: Costo del envío en pesos; 0 si es gratis.
+          $ref: '#/components/schemas/Pesos'
+        eta:
+          type: string
+          description: Plazo estimado, en texto libre.
+          example: 3 a 6 días hábiles
+        enabled:
+          type: boolean
+          description: Si la opción está disponible para elegir.
+          example: true
+      example:
+        method: home
+        label: Envío a domicilio
+        costArs: 6500
+        eta: 3 a 6 días hábiles
+        enabled: true
+    PublicSettings:
+      type: object
+      description: Ajustes que necesita la tienda para mostrarse y calcular importes.
+      required:
+        - kitDiscountPercent
+        - shippingOptions
+        - installments
+        - contactEmail
+        - priceDisplay
+        - seller
+      properties:
+        kitDiscountPercent:
+          type: integer
+          description: Porcentaje de descuento del kit (mate, bombilla y yerba), de 0 a 30.
+          minimum: 0
+          maximum: 30
+          example: 10
+        shippingOptions:
+          type: array
+          description: Las 3 opciones de envío, una por método.
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/ShippingOption'
+        installments:
+          type: object
+          description: Cuotas sin interés.
+          required: [maxWithoutInterest, showOnProduct]
+          properties:
+            maxWithoutInterest:
+              type: integer
+              description: Máximo de cuotas sin interés, de 1 a 12.
+              minimum: 1
+              maximum: 12
+              example: 3
+            showOnProduct:
+              type: boolean
+              description: Si la ficha del producto muestra las cuotas.
+              example: true
+        contactEmail:
+          type: string
+          format: email
+          description: Mail de contacto de la tienda.
+          example: galpon.mates@gmail.com
+        priceDisplay:
+          type: object
+          description: Cómo se muestran los precios.
+          required: [showNetPrice]
+          properties:
+            showNetPrice:
+              type: boolean
+              description: Si se muestra debajo del precio el "Precio sin impuestos nacionales" (Ley 27.743).
+              example: true
+        seller:
+          type: object
+          description: Datos del vendedor que la tienda tiene que mostrar (Disp. 954/2025). Cada dato es `null` mientras no se cargue.
+          required:
+            - legalName
+            - cuit
+            - taxCondition
+            - address
+            - phone
+            - supportArea
+            - supportHours
+            - dataFiscalUrl
+          properties:
+            legalName:
+              type: [string, 'null']
+              description: Razón social o nombre completo.
+              maxLength: 120
+              example: Galpón Mates S. R. L.
+            cuit:
+              type: [string, 'null']
+              description: CUIT, con los 11 dígitos pegados y el dígito verificador correcto.
+              pattern: '^[0-9]{11}$'
+              example: '30712345671'
+            taxCondition:
+              type: [string, 'null']
+              description: Condición frente al IVA.
+              maxLength: 60
+              example: Responsable inscripto
+            address:
+              type: [string, 'null']
+              description: Domicilio del vendedor.
+              maxLength: 200
+              example: Av. Siempreviva 742, Neuquén
+            phone:
+              type: [string, 'null']
+              description: Teléfono o canal alternativo de atención.
+              maxLength: 60
+              example: '+54 9 299 123 4567'
+            supportArea:
+              type: [string, 'null']
+              description: Área responsable de la atención.
+              maxLength: 80
+              example: Atención al cliente
+            supportHours:
+              type: [string, 'null']
+              description: Horario de atención.
+              maxLength: 120
+              example: Lunes a viernes de 9 a 18
+            dataFiscalUrl:
+              type: [string, 'null']
+              format: uri
+              description: Enlace a Data Fiscal (ARCA).
+              example: https://example.com/data-fiscal
+    SectionHeading:
+      type: object
+      description: Encabezado de una sección del inicio.
+      required: [eyebrow, title]
+      properties:
+        eyebrow:
+          type: string
+          description: Texto corto que va arriba del título.
+          example: Destacados
+        title:
+          type: string
+          description: Título de la sección.
+          example: Los más elegidos de la ronda
+      example:
+        eyebrow: Destacados
+        title: Los más elegidos de la ronda
+    StoryScene:
+      type: object
+      description: Escena de la historia que se cuenta al bajar por el inicio.
+      required: [key, eyebrow, titleLines, text, ctaLabel]
+      properties:
+        key:
+          type: string
+          description: Escena a la que corresponde el texto. Cada una aparece una sola vez.
+          enum: [pieces, gourd, bombilla, yerba, ritual, leather]
+          example: gourd
+        eyebrow:
+          type: string
+          description: Texto corto que va arriba del título.
+          example: Mate
+        titleLines:
+          type: array
+          description: Líneas del título, una debajo de la otra.
+          items:
+            type: string
+          example: [Calabaza curada., Virola de alpaca.]
+        text:
+          type: string
+          description: Texto de la escena.
+          example: Cada calabaza se elige por su forma y sus paredes. La virola se cincela a mano y la base de bronce lo mantiene firme sobre la mesa.
+        ctaLabel:
+          type: [string, 'null']
+          description: Texto del botón de la escena, o `null` si la escena no tiene botón.
+          example: Ver mates
+    HomeContent:
+      type: object
+      description: Textos editables de la página de inicio.
+      required:
+        - hero
+        - scenes
+        - ritualSteps
+        - storyProducts
+        - collection
+        - featured
+        - reviews
+        - manifesto
+        - stats
+        - kitBlock
+      properties:
+        hero:
+          type: object
+          description: Portada del inicio.
+          required: [eyebrow, titleLines, text, primaryCtaLabel, secondaryCtaLabel]
+          properties:
+            eyebrow:
+              type: string
+              description: Texto corto que va arriba del título.
+              example: Hechos para compartir
+            titleLines:
+              type: array
+              description: Líneas del título, una debajo de la otra.
+              items:
+                type: string
+              example: [Encontrá, tu mate.]
+            text:
+              type: string
+              description: Texto debajo del título.
+              example: Calabaza curada, virola de alpaca cincelada y bombillones de bronce. Bajá, que te mostramos cada pieza de cerca.
+            primaryCtaLabel:
+              type: string
+              description: Texto del botón principal.
+              example: Ver la tienda
+            secondaryCtaLabel:
+              type: string
+              description: Texto del botón secundario.
+              example: Armá tu kit
+        scenes:
+          type: array
+          description: Las 6 escenas de la historia, en el orden en que se muestran.
+          minItems: 6
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/StoryScene'
+        ritualSteps:
+          type: array
+          description: Los 4 pasos del ritual, en orden.
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+          example: [Yerba, Montañita, Bombilla, Agua]
+        storyProducts:
+          type: object
+          description: Slugs de los productos que se muestran en la historia.
+          required: [hero, bombillas, yerbas]
+          properties:
+            hero:
+              type: string
+              description: Slug del mate de la portada.
+              example: mate-imperial-premium
+            bombillas:
+              type: array
+              description: Slugs de las 2 bombillas.
+              minItems: 2
+              maxItems: 2
+              items:
+                type: string
+              example: [bombillon-premium-curvo, bombillon-100-alpaca]
+            yerbas:
+              type: array
+              description: Slugs de las 3 yerbas.
+              minItems: 3
+              maxItems: 3
+              items:
+                type: string
+              example:
+                [yerba-canarias-1-kg, yerba-canarias-serena-1-kg, yerba-canarias-te-y-jengibre-1-kg]
+        collection:
+          description: Encabezado de la sección de líneas.
+          $ref: '#/components/schemas/SectionHeading'
+        featured:
+          description: Encabezado de la sección de destacados.
+          $ref: '#/components/schemas/SectionHeading'
+        reviews:
+          description: Encabezado de la sección de reseñas.
+          $ref: '#/components/schemas/SectionHeading'
+        manifesto:
+          type: object
+          description: Frase del manifiesto.
+          required: [eyebrow, text, ctaLabel]
+          properties:
+            eyebrow:
+              type: string
+              description: Texto corto que va arriba de la frase.
+              example: Manifiesto
+            text:
+              type: string
+              description: Frase del manifiesto.
+              example: Un mate no se compra, se elige. Calabaza curada, alpaca cincelada a mano y cuero cosido punto por punto. Piezas hechas para durar muchas rondas.
+            ctaLabel:
+              type: string
+              description: Texto del enlace a Nosotros.
+              example: Conocé la historia del galpón
+        stats:
+          type: object
+          description: Cifras editables que se muestran junto al manifiesto.
+          required: [provinces, partners]
+          properties:
+            provinces:
+              type: integer
+              description: Cantidad de provincias con envío.
+              minimum: 0
+              example: 24
+            partners:
+              type: integer
+              description: Cantidad de socios.
+              minimum: 0
+              example: 2
+        kitBlock:
+          type: object
+          description: Bloque que invita a armar el kit.
+          required: [eyebrow, title, text, ctaLabel]
+          properties:
+            eyebrow:
+              type: string
+              description: Texto corto que va arriba del título.
+              example: Armá tu kit
+            title:
+              type: string
+              description: Título del bloque.
+              example: Mate, bombilla y yerba.
+            text:
+              type: string
+              description: Texto del bloque.
+              example: Elegí las tres piezas en tres pasos. El descuento se aplica solo sobre el total del kit.
+            ctaLabel:
+              type: string
+              description: Texto del botón.
+              example: Armar mi kit
+    AboutContent:
+      type: object
+      description: Textos editables de la página Nosotros.
+      required: [hero, partners, quote, stepsEyebrow, steps, ctaLabel]
+      properties:
+        hero:
+          type: object
+          description: Portada de la página.
+          required: [eyebrow, titleLines, text]
+          properties:
+            eyebrow:
+              type: string
+              description: Texto corto que va arriba del título.
+              example: Sobre nosotros
+            titleLines:
+              type: array
+              description: Líneas del título, una debajo de la otra.
+              items:
+                type: string
+              example: [Dos socios., Un galpón., La ronda de siempre.]
+            text:
+              type: string
+              description: Texto debajo del título.
+              example: Galpón nació entre dos socios que compartían la misma costumbre, un buen mate al lado. Hoy elegimos cada pieza, la revisamos a mano y la mandamos a todo el país.
+        partners:
+          type: array
+          description: Socios, con su foto.
+          items:
+            type: object
+            description: Socio del galpón.
+            required: [name, role, photo]
+            properties:
+              name:
+                type: string
+                description: Nombre del socio.
+                example: Bruno Galimberti
+              role:
+                type: string
+                description: Rol del socio.
+                example: Socio fundador
+              photo:
+                description: Foto del socio, o `null` si todavía no hay.
+                oneOf:
+                  - $ref: '#/components/schemas/Image'
+                  - type: 'null'
+        quote:
+          type: string
+          description: Frase destacada de la página.
+          example: No vendemos lo que no usaríamos. Cada mate pasa por nuestras manos antes de llegar a las tuyas.
+        stepsEyebrow:
+          type: string
+          description: Texto corto que va arriba de los pasos.
+          example: Cómo trabajamos
+        steps:
+          type: array
+          description: Pasos de cómo trabaja el galpón.
+          items:
+            type: object
+            description: Paso de trabajo.
+            required: [title, text]
+            properties:
+              title:
+                type: string
+                description: Título del paso.
+                example: Elegimos cada calabaza
+              text:
+                type: string
+                description: Texto del paso.
+                example: Buscamos formas parejas, paredes firmes y buena boca. Si no pasa la revisión, no sale.
+        ctaLabel:
+          type: string
+          description: Texto del botón que lleva a la tienda.
+          example: Conocé la tienda
+    FaqContent:
+      type: object
+      description: Preguntas frecuentes, agrupadas por categoría.
+      required: [categories]
+      properties:
+        categories:
+          type: array
+          description: Categorías de preguntas, en el orden en que se muestran.
+          items:
+            type: object
+            description: Categoría de preguntas.
+            required: [id, label, items]
+            properties:
+              id:
+                type: string
+                description: Identificador de la categoría, usado en la dirección web.
+                example: envios
+              label:
+                type: string
+                description: Nombre de la categoría.
+                example: Envíos
+              items:
+                type: array
+                description: Preguntas de la categoría.
+                items:
+                  type: object
+                  description: Pregunta con su respuesta.
+                  required: [question, answer]
+                  properties:
+                    question:
+                      type: string
+                      description: Pregunta.
+                      example: ¿Hacen envíos a todo el país?
+                    answer:
+                      type: string
+                      description: Respuesta.
+                      example: Sí, enviamos a las 24 provincias. Podés elegir envío a domicilio o a sucursal.
+    FooterContent:
+      type: object
+      description: Textos editables del pie de página.
+      required: [tagline, text, paymentMethods, consumerDefenseUrl]
+      properties:
+        tagline:
+          type: string
+          description: Frase del pie.
+          example: Hechos para compartir.
+        text:
+          type: string
+          description: Texto debajo de la frase.
+          example: Mates, bombillones y yerba con envío a todo el país.
+        paymentMethods:
+          type: array
+          description: Nombres de los medios de pago que se muestran.
+          items:
+            type: string
+          example: [Mercado Pago, Visa, Mastercard, American Express]
+        consumerDefenseUrl:
+          type: [string, 'null']
+          format: uri
+          description: Enlace a Defensa del Consumidor, o `null` si no se muestra.
+          example: https://www.argentina.gob.ar/produccion/defensadelconsumidor
+      example:
+        tagline: Hechos para compartir.
+        text: Mates, bombillones y yerba con envío a todo el país.
+        paymentMethods: [Mercado Pago, Visa, Mastercard, American Express]
+        consumerDefenseUrl: null
+    ProductTabsGroupContent:
+      type: object
+      description: Textos de las pestañas de la ficha para un grupo de producto.
+      required: [descriptionNote, materialsTitle, materials, careTitle, care]
+      properties:
+        descriptionNote:
+          type: [string, 'null']
+          description: Nota que se muestra debajo de la descripción, o `null` si el grupo no tiene.
+          example: Cada pieza es artesanal, así que los tonos de la calabaza, el cuero y el cincelado pueden variar.
+        materialsTitle:
+          type: string
+          description: Título de la pestaña de materiales ("Materiales" o "Contenido").
+          example: Materiales
+        materials:
+          type: string
+          description: Texto de la pestaña de materiales.
+          example: Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
+        careTitle:
+          type: string
+          description: Título de la pestaña de cuidado ("Cuidado" o "Conservación").
+          example: Cuidado
+        care:
+          type: string
+          description: Texto de la pestaña de cuidado.
+          example: Curalo antes del primer uso y secalo boca abajo después de cada ronda.
+    ProductTabsContent:
+      type: object
+      description: Textos de fábrica de las pestañas de la ficha, por grupo de producto, más el de envío y cambios, que es común.
+      required: [mate, bombilla, yerba, shipping]
+      properties:
+        mate:
+          $ref: '#/components/schemas/ProductTabsGroupContent'
+        bombilla:
+          $ref: '#/components/schemas/ProductTabsGroupContent'
+        yerba:
+          $ref: '#/components/schemas/ProductTabsGroupContent'
+        shipping:
+          type: string
+          description: Texto de la pestaña de envío y cambios, igual para todos los grupos.
+          example: Enviamos a todo el país y calculás el costo en el checkout. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.
+    LegalContent:
+      type: object
+      description: Documento legal (términos y condiciones o política de privacidad).
+      required: [title, updatedAt, body]
+      properties:
+        title:
+          type: string
+          description: Título del documento.
+          example: Términos y condiciones
+        updatedAt:
+          type: string
+          format: date
+          description: Fecha de la última actualización.
+          example: '2026-10-01'
+        body:
+          type: string
+          description: Texto del documento, con los párrafos separados por una línea en blanco.
+          example: "Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.\n\nSegundo párrafo."
