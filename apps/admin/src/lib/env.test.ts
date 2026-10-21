@@ -56,6 +56,9 @@ describe('parseAdminEnv', () => {
     ['VITE_API_MODE', 'demo'],
     ['VITE_STORE_URL', 'galponmates.com.ar'],
     ['VITE_API_BASE_URL', 'ftp://api.galponmates.com.ar'],
+    ['VITE_API_BASE_URL', 'https://api.galponmates.com.ar/api/v1'],
+    ['VITE_API_BASE_URL', 'https://api.galponmates.com.ar/?token=1'],
+    ['VITE_API_BASE_URL', 'https://usuario:clave@api.galponmates.com.ar'],
     ['VITE_MOCK_LATENCY_MS', 'rapido'],
     ['VITE_MOCK_LATENCY_MS', '300-100'],
   ])('rechaza %s=%s con un mensaje que nombra la variable', (name, value) => {

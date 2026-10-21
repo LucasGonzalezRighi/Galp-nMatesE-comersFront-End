@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { safeRedirectPath } from './redirect'
 
 describe('safeRedirectPath', () => {
-  it.each(['/productos', '/productos?page=2#lista', '/'])(
+  it.each(['/productos', '/productos?page=2#lista', '/', '/login-historial'])(
     'deja pasar la ruta interna %s',
     (path) => {
       expect(safeRedirectPath(path)).toBe(path)
@@ -15,6 +15,11 @@ describe('safeRedirectPath', () => {
     ['/\\evil.com'],
     ['/\u0009/evil.com'],
     ['/a\u000ab'],
+    ['/login'],
+    ['/login/'],
+    ['/login?redirect=%2Fproductos'],
+    ['/login#error'],
+    ['/LOGIN'],
     ['productos'],
     [''],
     [undefined],

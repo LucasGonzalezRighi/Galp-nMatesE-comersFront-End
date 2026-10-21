@@ -4,7 +4,7 @@ import { DEFAULT_MOCK_DB_OPTIONS } from '@galpon/api-client/mock'
 export interface AdminEnv {
   /** `mock` trabaja sin backend; `live` llama a la API real. */
   apiMode: 'mock' | 'live'
-  /** URL base de la API sin barra final (solo en `live`), o `null` en modo de prueba. */
+  /** Origen de la API, sin ruta ni barra final (solo en `live`), o `null` en modo de prueba. */
   apiBaseUrl: string | null
   /** URL de la tienda, sin barra final: el dashboard enlaza a ella. */
   storeUrl: string
@@ -31,8 +31,12 @@ function readVar(source: EnvSource, name: string): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined
 }
 
-/** Valida que una variable sea una URL absoluta `http(s)` y la devuelve sin barra final. */
-function parseUrl(name: string, value: string): string {
+/**
+ * Valida que una variable sea una URL absoluta `http(s)` y la devuelve sin barra final. Con
+ * `originOnly` exige además un origen puro (sin ruta, búsqueda, fragmento ni credenciales) y
+ * devuelve ese origen.
+ */
+function parseUrl(name: string, value: string, originOnly = false): string {
   let url: URL | null = null
   try {
     url = new URL(value)
@@ -43,6 +47,15 @@ function parseUrl(name: string, value: string): string {
     throw new RangeError(
       `${name} tiene que ser una URL absoluta con http o https (por ejemplo "http://localhost:4000"), y recibió ${JSON.stringify(value)}.`,
     )
+  }
+  if (originOnly) {
+    const isBare = url.pathname === '/' && url.search === '' && url.hash === ''
+    if (!isBare || url.username !== '' || url.password !== '') {
+      throw new RangeError(
+        `${name} tiene que ser un origen sin ruta (por ejemplo "http://localhost:4000"), y recibió ${JSON.stringify(value)}.`,
+      )
+    }
+    return url.origin
   }
   return value.trim().replace(/\/+$/, '')
 }
@@ -87,7 +100,9 @@ export function parseAdminEnv(source: EnvSource): AdminEnv {
   return {
     apiMode: mode,
     apiBaseUrl:
-      mode === 'live' && baseUrl !== undefined ? parseUrl('VITE_API_BASE_URL', baseUrl) : null,
+      mode === 'live' && baseUrl !== undefined
+        ? parseUrl('VITE_API_BASE_URL', baseUrl, true)
+        : null,
     storeUrl: parseUrl('VITE_STORE_URL', readVar(source, 'VITE_STORE_URL') ?? DEFAULT_STORE_URL),
     mockAdminEmail: readVar(source, 'VITE_MOCK_ADMIN_EMAIL') ?? DEFAULT_MOCK_DB_OPTIONS.adminEmail,
     mockAdminPassword:
