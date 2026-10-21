@@ -19,7 +19,23 @@ export default defineConfig({
           include: ['**/*.test.mjs'],
         },
       },
-      // La Task 14 agrega el proyecto 'store' y la Task 15 el proyecto 'admin'.
+      {
+        test: {
+          name: 'store',
+          root: './apps/store',
+          environment: 'node',
+          include: ['src/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'admin',
+          root: './apps/admin',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['./src/test/setup.ts'],
+        },
+      },
     ],
     coverage: {
       provider: 'v8',
