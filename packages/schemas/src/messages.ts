@@ -62,4 +62,36 @@ export const MESSAGES = {
   invalidSlug: 'Solo minúsculas, números y guiones',
   /** CUIT con formato o dígito verificador inválidos. */
   invalidCuit: 'CUIT inválido',
+  /**
+   * Motivo del formulario de contacto que no está en la lista.
+   *
+   * No está en el spec: el motivo no tiene mensaje en la tabla de la sección 15.
+   */
+  invalidContactReason: 'Elegí un motivo',
+  /** Texto con menos de `n` caracteres, para los formularios del dashboard (los con * en el spec). */
+  min: (n: number) => `Mínimo ${String(n)} caracteres`,
+  /** Número entero fuera del rango `min`–`max`, para los formularios del dashboard. */
+  intBetween: (min: number, max: number) =>
+    `Ingresá un número entero entre ${String(min)} y ${String(max)}`,
+  /** Número (con decimales si hace falta) fuera del rango `min`–`max`, por ejemplo el IVA. */
+  numberBetween: (min: number, max: number) =>
+    `Ingresá un número entre ${String(min)} y ${String(max)}`,
+  /** Medida de una foto que no es un entero mayor a 0. */
+  positiveInt: 'Ingresá un número entero mayor a 0',
+  /** Precio de un producto que no es un entero mayor a 0 ni "a consultar". */
+  invalidPrice: 'Ingresá un precio en pesos mayor a 0, o dejalo a consultar',
+  /** Monto en pesos (por ejemplo el costo de envío) que no es un entero desde 0. */
+  invalidAmount: 'Ingresá un monto en pesos, entero y desde 0',
+  /** Producto con más de `n` fotos. */
+  maxImages: (n: number) => `Máximo ${String(n)} fotos`,
+  /** Texto alternativo de una foto vacío, muy corto o muy largo (3 a 120 caracteres). */
+  imageAlt: 'Escribí un texto alternativo de 3 a 120 caracteres',
+  /** Opciones de envío que no son exactamente una por método. */
+  invalidShippingOptions: 'Cargá los tres métodos de envío, uno de cada tipo',
+  /** Dirección web que no empieza con http:// o https://. */
+  invalidUrl: 'Ingresá una URL válida, con http:// o https://',
+  /** Categoría sin grupo (mate, bombilla o yerba). */
+  invalidGroup: 'Elegí un grupo',
+  /** Estado del producto que no es borrador ni publicado. */
+  invalidProductStatus: 'Elegí un estado',
 } as const

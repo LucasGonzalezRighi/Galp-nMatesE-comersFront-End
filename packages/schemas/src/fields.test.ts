@@ -7,7 +7,9 @@ import {
   dniSchema,
   emailSchema,
   honeypotSchema,
+  optionalOrderNumberSchema,
   optionalPhoneSchema,
+  optionalTextSchema,
   orderNumberSchema,
   personNameSchema,
   postalCodeSchema,
@@ -130,12 +132,23 @@ describe('optionalPhoneSchema', () => {
     '11 15 2345 6789',
     '011 15 2345 6789',
     '+54 9 011 2345 6789',
+    '+54 9 11 2345 678',
+    '+54 11 2345 678',
+    '+54 9 0 11 2345 678',
     '0123456789',
     '2345 6789',
     '11 2345 67890',
     'abc',
   ])('rechaza %j', (input) => {
     expect(errorsOf(optionalPhoneSchema, input)).toEqual([
+      'Ingresá el código de área y el número, sin 0 ni 15',
+    ])
+  })
+
+  it('quita el 549 o el 54 solo si lo que queda son 10 dígitos', () => {
+    expect(optionalPhoneSchema.parse('+54 9 11 2345 6789')).toBe('1123456789')
+    expect(optionalPhoneSchema.parse('+54 11 2345 6789')).toBe('1123456789')
+    expect(errorsOf(optionalPhoneSchema, '+54 9 11 2345 678')).toEqual([
       'Ingresá el código de área y el número, sin 0 ni 15',
     ])
   })
@@ -190,6 +203,10 @@ describe('streetNumberSchema', () => {
 describe('apartmentSchema', () => {
   it('es opcional', () => {
     expect(apartmentSchema.parse(undefined)).toBeUndefined()
+  })
+
+  it.each(['', '   '])('vacío o solo con espacios queda en undefined (%j)', (input) => {
+    expect(apartmentSchema.parse(input)).toBeUndefined()
   })
 
   it('recorta los espacios', () => {
@@ -284,6 +301,47 @@ describe('orderNumberSchema', () => {
   it.each(['GLP-123', 'GLP-123456', 'GLP12345', 'XYZ-12345', ''])('rechaza %j', (input) => {
     expect(errorsOf(orderNumberSchema, input)).toEqual(['El número tiene el formato GLP-12345'])
   })
+})
+
+describe('optionalOrderNumberSchema', () => {
+  it.each([undefined, '', '   '])('lo deja en undefined si no se completa (%j)', (input) => {
+    expect(optionalOrderNumberSchema.parse(input)).toBeUndefined()
+  })
+
+  it('normaliza igual que orderNumberSchema', () => {
+    expect(optionalOrderNumberSchema.parse(' glp-12345 ')).toBe('GLP-12345')
+  })
+
+  it.each(['GLP-123', 'GLP-123456', 'GLP12345', 1])('rechaza %j', (input) => {
+    expect(errorsOf(optionalOrderNumberSchema, input)).toEqual([
+      'El número tiene el formato GLP-12345',
+    ])
+  })
+})
+
+describe('optionalTextSchema', () => {
+  const text = optionalTextSchema(5)
+
+  it('recorta los espacios', () => {
+    expect(text.parse(' hola ')).toBe('hola')
+  })
+
+  it.each([undefined, '', '   '])('lo deja en undefined si no se completa (%j)', (input) => {
+    expect(text.parse(input)).toBeUndefined()
+  })
+
+  it('acepta hasta el máximo y rechaza un caracter más', () => {
+    expect(text.safeParse('a'.repeat(5)).success).toBe(true)
+    expect(errorsOf(text, 'a'.repeat(6))).toEqual(['Máximo 5 caracteres'])
+  })
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'lanza RangeError si el máximo es %j',
+    (max) => {
+      expect(() => optionalTextSchema(max)).toThrow(RangeError)
+      expect(() => optionalTextSchema(max)).toThrow(/máximo/i)
+    },
+  )
 })
 
 describe('honeypotSchema', () => {
