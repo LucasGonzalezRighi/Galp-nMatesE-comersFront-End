@@ -61,7 +61,7 @@ describe('reviewSchema', () => {
   it('rechaza el campo trampa con contenido', () => {
     expect(
       issuesOf(reviewSchema, { ...validReview, website: 'https://spam.example' }),
-    ).toHaveLength(1)
+    ).toMatchObject([{ path: ['website'] }])
   })
 
   it('tiene tipos de entrada y de salida distintos', () => {

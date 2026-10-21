@@ -79,7 +79,7 @@ describe('personNameSchema', () => {
   )
 
   it('acepta una letra con tilde escrita con su marca combinada', () => {
-    const decomposed = 'Luciá'
+    const decomposed = 'Lucia\u0301'
     expect(personNameSchema.parse(decomposed)).toBe(decomposed)
   })
 

@@ -32,7 +32,9 @@ describe('withdrawalSchema', () => {
   })
 
   it.each(['A', '1234', undefined])('rechaza el nombre %j', (name) => {
-    expect(issuesOf(withdrawalSchema, { ...validWithdrawal, name })).toHaveLength(1)
+    expect(issuesOf(withdrawalSchema, { ...validWithdrawal, name })).toMatchObject([
+      { path: ['name'] },
+    ])
   })
 
   it('pide el nombre con "Requerido" si viene vacío', () => {
@@ -79,7 +81,9 @@ describe('withdrawalSchema', () => {
   })
 
   it('rechaza el campo trampa con contenido', () => {
-    expect(issuesOf(withdrawalSchema, { ...validWithdrawal, website: 'spam' })).toHaveLength(1)
+    expect(issuesOf(withdrawalSchema, { ...validWithdrawal, website: 'spam' })).toMatchObject([
+      { path: ['website'] },
+    ])
   })
 
   it('deja opcionales el número de pedido y el comentario en el tipo de salida', () => {

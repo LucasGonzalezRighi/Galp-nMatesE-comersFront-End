@@ -103,7 +103,9 @@ describe('contactSchema', () => {
   })
 
   it('rechaza el campo trampa con contenido', () => {
-    expect(issuesOf(contactSchema, { ...validContact, website: 'spam' })).toHaveLength(1)
+    expect(issuesOf(contactSchema, { ...validContact, website: 'spam' })).toMatchObject([
+      { path: ['website'] },
+    ])
   })
 
   it('devuelve el motivo con el tipo de la lista', () => {

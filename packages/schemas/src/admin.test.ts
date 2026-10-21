@@ -383,7 +383,9 @@ describe('categoryFormSchema', () => {
   })
 
   it('exige decidir la foto: o hay una foto o es null', () => {
-    expect(issuesOf(categoryFormSchema, { ...validCategory, image: undefined })).toHaveLength(1)
+    expect(issuesOf(categoryFormSchema, { ...validCategory, image: undefined })).toMatchObject([
+      { path: ['image'] },
+    ])
   })
 
   it('valida la foto de la categoría', () => {
@@ -566,7 +568,9 @@ describe('settingsFormSchema', () => {
   })
 
   it('pide decidir si se muestra el precio sin impuestos', () => {
-    expect(issuesOf(settingsFormSchema, settingsWith({ priceDisplay: {} }))).toHaveLength(1)
+    expect(issuesOf(settingsFormSchema, settingsWith({ priceDisplay: {} }))).toMatchObject([
+      { path: ['priceDisplay', 'showNetPrice'] },
+    ])
   })
 
   describe('datos del vendedor', () => {
@@ -595,7 +599,9 @@ describe('settingsFormSchema', () => {
     })
 
     it('exige que el vendedor esté, aunque sea con todo en null', () => {
-      expect(issuesOf(settingsFormSchema, settingsWith({ seller: undefined }))).toHaveLength(1)
+      expect(issuesOf(settingsFormSchema, settingsWith({ seller: undefined }))).toMatchObject([
+        { path: ['seller'] },
+      ])
     })
 
     it.each(['legalName', 'taxCondition', 'address', 'phone', 'supportArea', 'supportHours'])(
