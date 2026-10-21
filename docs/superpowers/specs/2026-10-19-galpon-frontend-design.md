@@ -5,7 +5,7 @@
 | **Fecha** | 2026-10-19 · revisado 2026-10-20 (revisión adversarial de 4 enfoques: fidelidad al diseño, pagos/seguridad/legal, viabilidad técnica, completitud) |
 | **Estado** | Borrador para revisión de Lucas |
 | **Alcance** | Fase 1: `frontend/` completo (tienda pública + dashboard) y el contrato de API que después implementa el backend |
-| **Fuera de este documento** | Backend FastAPI y base de datos PostgreSQL (diseño propio en la fase 2) |
+| **Fuera de este documento** | Backend NestJS hexagonal + PostgreSQL + Redis: diseño propio en `2026-10-20-galpon-backend-design.md` (fase 2) |
 | **Diseño visual de referencia** | `docs/design/galpon-tienda-v3/` (exportado de claude.ai/design, proyecto "Galpon Tienda v3") |
 
 ---
@@ -32,7 +32,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 
 | Tema | Decisión |
 |---|---|
-| Backend (fase 2) | Python + FastAPI; el front se conecta por un contrato OpenAPI |
+| Backend (fase 2) | ~~Python + FastAPI~~ → **NestJS** (TypeScript) con **arquitectura hexagonal** en un monolito modular, **PostgreSQL + Prisma**, **Redis** (colas BullMQ, caché, sesiones), Swagger. Cambio pedido por Lucas el 2026-10-20. El front se conecta por el mismo contrato OpenAPI |
 | Base de datos (fase 2) | PostgreSQL |
 | Pagos | Mercado Pago: redirección (Checkout Pro) **y** tarjeta en la página (Secure Fields) |
 | Funciones del dashboard | Productos y stock · Pedidos y pagos · Contenido del sitio · Reseñas y mensajes |
@@ -97,7 +97,7 @@ E-comers Marcos/
 └─ database/                       (otro repo · fase 2)
 ```
 
-El contrato vive en este repo mientras se construye el front. En la fase 2, el repo del back implementa el mismo archivo y un test de contrato compara el OpenAPI que genera FastAPI con esta copia. Cualquier cambio de contrato se hace en los dos repos en el mismo cambio funcional.
+El contrato vive en este repo mientras se construye el front. En la fase 2, el repo del back implementa el mismo archivo y un test de contrato compara el OpenAPI que genera NestJS (Swagger) con esta copia. Cualquier cambio de contrato se hace en los dos repos en el mismo cambio funcional.
 
 > Las apps se llaman `store` y `admin` en el código (convención en inglés). Las rutas públicas van en español (`/tienda`, `/producto/...`).
 
@@ -454,7 +454,7 @@ pending_payment ──(pago aprobado)──► paid ──► preparing ──�
 
 ## 12. Contrato de API (`docs/api/openapi.yaml`)
 
-OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos con `npm run api:generate` y FastAPI lo implementa en la fase 2 (con un test que compara su OpenAPI con este).
+OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos con `npm run api:generate` y el back NestJS lo implementa en la fase 2 (con un test que compara su OpenAPI con este).
 
 **Convenciones**: JSON en `camelCase`; montos en pesos enteros con sufijo `Ars` (`priceArs`, `totalArs`); fechas ISO 8601 UTC; listas `?page=&pageSize=` (máx. 100) → `{ items, page, pageSize, total }`; errores `problem+json` `{ type, title, status, detail, errors?: [{ field, code, message }] }`; `429` con `Retry-After`; las escrituras de pedidos y pagos llevan `Idempotency-Key` (UUID por intento).
 
@@ -647,7 +647,7 @@ En el pie y en Contacto, editable desde Ajustes: razón social o nombre completo
 
 ## 15. Validaciones (`packages/schemas`)
 
-Mismas reglas en la tienda, el admin, el mock y (fase 2) Pydantic. Los textos se recortan antes de validar. Los mensajes respetan los del diseño; los nuevos están marcados con *.
+Mismas reglas en la tienda, el admin, el mock y (fase 2) los DTOs del back NestJS, verificadas con un archivo compartido de casos de validación (`docs/api/validation-cases.json`) que corren los tests de los dos repos. Los textos se recortan antes de validar. Los mensajes respetan los del diseño; los nuevos están marcados con *.
 
 | Campo | Regla | Mensaje |
 |---|---|---|
@@ -783,7 +783,7 @@ Para cada pantalla, a 1440 px y 390 px, contra capturas del diseño exportado (s
 
 ## 22. Pendientes para la fase 2 (backend y base de datos)
 
-Implementar `openapi.yaml` en FastAPI con Pydantic (mismas reglas que la sección 15) y test de contrato; PostgreSQL con migraciones (Alembic) y seed desde los fixtures; integración con Mercado Pago (ADR 0004: API, webhook con verificación de `x-signature`, idempotencia, un intento activo, reserva y vencimiento); firma de Cloudinary; emails (confirmación, seguimiento, código de arrepentimiento en 24 h, recuperación de contraseña); rate limiting; usuario admin por comando; cálculo de `verifiedPurchase` y `netPriceArs`; llamadas a `/api/revalidate`; cache handler compartido si hay más de una instancia.
+Ver `docs/superpowers/specs/2026-10-20-galpon-backend-design.md`: NestJS hexagonal (monolito modular), PostgreSQL + Prisma, Redis + BullMQ, Mercado Pago (Stripe en una fase posterior por el mismo puerto), idempotencia en pedidos y pagos, webhooks con verificación de firma, Swagger igual al contrato del front, seed desde los fixtures, llamadas a `/api/revalidate`.
 
 ## 23. Riesgos y supuestos
 
