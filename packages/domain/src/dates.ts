@@ -22,7 +22,8 @@ const MONTH_ABBREVIATIONS = [
  *
  * Sin zona horaria `Date` interpretaría la hora según la máquina, y con solo fecha usaría UTC.
  */
-const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/
+const ISO_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/
 
 /** Fecha y hora en Buenos Aires, con día, mes y hora de dos dígitos y hora de 0 a 23. */
 const AR_DATE_TIME_FORMAT = new Intl.DateTimeFormat('es-AR', {
@@ -34,6 +35,20 @@ const AR_DATE_TIME_FORMAT = new Intl.DateTimeFormat('es-AR', {
   minute: '2-digit',
   hourCycle: 'h23',
 })
+
+/**
+ * Indica si el año, mes y día existen en el calendario (por ejemplo, el 30 de febrero no).
+ *
+ * `Date` corrige solo los días imposibles pasándose al mes siguiente, así que se reconstruye
+ * el día y se compara con el que se pidió.
+ */
+function isRealCalendarDay(year: number, month: number, day: number): boolean {
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  )
+}
 
 /** Partes de una fecha vistas desde Buenos Aires. */
 interface ArgentinaDateParts {
@@ -48,11 +63,17 @@ interface ArgentinaDateParts {
 /**
  * Descompone una fecha ISO en sus partes según la hora de Buenos Aires.
  *
- * @throws {RangeError} Si el texto no es una fecha ISO 8601 con hora y zona horaria válida.
+ * @throws {RangeError} Si el texto no es una fecha ISO 8601 con hora y zona horaria válida, o si el
+ *   día no existe en el calendario.
  */
 function argentinaParts(iso: string): ArgentinaDateParts {
   const date = new Date(iso)
-  if (!ISO_DATE_TIME.test(iso) || Number.isNaN(date.getTime())) {
+  const match = ISO_DATE_TIME.exec(iso)
+  if (
+    match === null ||
+    Number.isNaN(date.getTime()) ||
+    !isRealCalendarDay(Number(match[1]), Number(match[2]), Number(match[3]))
+  ) {
     throw new RangeError(
       `La fecha tiene que ser ISO 8601 con hora y zona horaria (por ejemplo 2026-10-19T17:05:00Z); se recibió "${iso}".`,
     )

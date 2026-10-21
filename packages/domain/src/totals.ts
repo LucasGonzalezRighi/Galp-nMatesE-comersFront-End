@@ -49,10 +49,10 @@ export function productLineAmounts(unitPriceArs: Pesos, quantity: number): LineA
  *
  * @param pieceListPrices - Precios de lista del mate, la bombilla y la yerba del kit.
  * @param quantity - Cantidad de kits, un entero mayor o igual a 1.
- * @param discountPercent - Porcentaje de descuento del kit, entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
+ * @param discountPercent - Porcentaje de descuento del kit; el rango válido es el que exige {@link kitSavings}.
  * @returns Bruto, ahorro y total de la línea.
  * @throws {RangeError} Si la cantidad no es un entero mayor o igual a 1, o si el porcentaje no es
- *   un entero entre 0 y {@link MAX_KIT_DISCOUNT_PERCENT}.
+ *   un entero dentro del rango que exige {@link kitSavings}.
  * @example
  * kitLineAmounts([pesos(39999), pesos(25999), pesos(9999)], 1, 10)
  * // { grossArs: 75997, savingsArs: 7600, totalArs: 68397 }

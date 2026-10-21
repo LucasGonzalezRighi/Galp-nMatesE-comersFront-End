@@ -78,10 +78,18 @@ describe('validación de la fecha', () => {
     ['un mes que no existe', '2026-13-01T00:00:00Z'],
     ['solo fecha, sin hora ni zona', '2026-10-19'],
     ['sin zona horaria, que dependería de la máquina', '2026-10-19T17:05:00'],
+    ['un día que no existe en febrero', '2026-02-30T00:00:00Z'],
+    ['el 29 de febrero de un año no bisiesto', '2026-02-29T00:00:00Z'],
+    ['el día 31 de un mes de 30 días', '2026-04-31T12:00:00Z'],
+    ['el día 0', '2026-10-00T12:00:00Z'],
   ])('rechaza %s', (_description, iso) => {
     expect(() => formatDate(iso)).toThrow(RangeError)
     expect(() => formatDateTime(iso)).toThrow(RangeError)
     expect(() => formatMonthYear(iso)).toThrow(RangeError)
+  })
+  it('acepta el 29 de febrero de un año bisiesto y el último día de cada mes', () => {
+    expect(formatDate('2028-02-29T15:00:00Z')).toBe('29/02/2028')
+    expect(formatDate('2026-12-31T15:00:00Z')).toBe('31/12/2026')
   })
   it('el mensaje de error está en español', () => {
     expect(() => formatDate('ayer')).toThrow(

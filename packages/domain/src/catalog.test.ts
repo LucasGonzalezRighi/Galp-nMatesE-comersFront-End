@@ -36,6 +36,13 @@ describe('isPurchasable', () => {
   it('no es comprable sin stock', () => {
     expect(isPurchasable({ ...buyable, stock: 0 })).toBe(false)
   })
+  it('concuerda con maxQuantity: un stock fraccionario menor a 1 o no finito no es comprable', () => {
+    expect(isPurchasable({ ...buyable, stock: 0.5 })).toBe(false)
+    expect(isPurchasable({ ...buyable, stock: Number.POSITIVE_INFINITY })).toBe(false)
+    expect(isPurchasable({ ...buyable, stock: Number.NaN })).toBe(false)
+    expect(isPurchasable({ ...buyable, stock: -3 })).toBe(false)
+    expect(isPurchasable({ ...buyable, stock: 1.5 })).toBe(true)
+  })
   it.each<ProductStatus>(['draft', 'archived'])(
     'no es comprable si está en estado %s',
     (status) => {
@@ -234,6 +241,9 @@ describe('selectRelated', () => {
   it('un límite fraccionario se redondea hacia abajo', () => {
     expect(ids(selectRelated(m1, catalog, 2.9))).toEqual(['m3', 'm5'])
     expect(selectRelated(m1, catalog, -0.5)).toEqual([])
+  })
+  it('un límite que no es un número no devuelve ninguno', () => {
+    expect(selectRelated(m1, catalog, Number.NaN)).toEqual([])
   })
   it('devuelve los que hay si hay menos que el límite', () => {
     expect(ids(selectRelated(m1, [m1, item('m3', 'imperial')]))).toEqual(['m3'])

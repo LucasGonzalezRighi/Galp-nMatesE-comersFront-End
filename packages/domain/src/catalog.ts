@@ -21,7 +21,8 @@ const DEFAULT_RELATED_LIMIT = 4
 /**
  * Indica si un producto se puede agregar al carrito.
  *
- * Tiene que estar publicado, con precio (no "a consultar") y con stock.
+ * Tiene que estar publicado, con precio (no "a consultar") y con stock para al menos una
+ * unidad entera (se usa {@link maxQuantity}, así que 0,5 o un stock infinito no alcanzan).
  *
  * @param product - Estado, precio y stock del producto.
  * @returns `true` si se puede comprar.
@@ -31,7 +32,9 @@ export function isPurchasable(product: {
   priceArs: Pesos | null
   stock: number
 }): boolean {
-  return product.status === 'published' && product.priceArs !== null && product.stock > 0
+  return (
+    product.status === 'published' && product.priceArs !== null && maxQuantity(product.stock) > 0
+  )
 }
 
 /**
