@@ -9,7 +9,8 @@ import { assertPage, assertSlug } from './validation'
  * @param api - Cliente de la API.
  * @param slug - Slug del producto.
  * @param page - Número de página, empezando en 1; sin él, la primera.
- * @throws {RangeError} Si el slug está vacío o la página no es un entero mayor o igual a 1.
+ * @throws {RangeError} Si el slug está vacío o no cumple el patrón del contrato (ver `assertSlug`), o si
+ *   la página no es un entero mayor o igual a 1.
  * @throws {ApiError} Si la llamada falla (`not_found` si el producto no existe).
  */
 export async function listProductReviews(

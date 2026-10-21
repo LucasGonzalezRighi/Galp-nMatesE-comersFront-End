@@ -57,6 +57,17 @@ describe('createMockFetch', () => {
     expect(await isSettled(response)).toBe(true)
   })
 
+  it('por omisión el piso de la latencia es de 150 ms', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
+    const response = createMockFetch({ getDb: () => db })(new Request(SETTINGS_URL))
+    await vi.advanceTimersByTimeAsync(149)
+    expect(await isSettled(response)).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(await isSettled(response)).toBe(true)
+  })
+
   it('rechaza latencias y prefijos inválidos', () => {
     const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
     const getDb = () => db

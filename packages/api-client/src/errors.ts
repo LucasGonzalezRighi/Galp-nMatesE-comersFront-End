@@ -181,7 +181,7 @@ export function apiErrorFromResponse(response: Response, body: unknown): ApiErro
 /**
  * Arma el {@link ApiError} de una llamada que no llegó a tener respuesta.
  *
- * @param cause - Lo que lanzó `fetch` (conserva en `cause`).
+ * @param cause - Lo que lanzó `fetch`, normalmente un `TypeError` (conserva en `cause`).
  */
 export function networkError(cause: unknown): ApiError {
   return new ApiError({
@@ -189,6 +189,22 @@ export function networkError(cause: unknown): ApiError {
     status: null,
     problem: null,
     message: DEFAULT_MESSAGES.network,
+    cause,
+  })
+}
+
+/**
+ * Arma el {@link ApiError} de una falla inesperada que no es de red: por ejemplo el `SyntaxError`
+ * de una respuesta exitosa cuyo cuerpo no es JSON. Es `kind: 'server'`, sin estado ni problema.
+ *
+ * @param cause - Lo que se lanzó (conserva en `cause`).
+ */
+export function unexpectedError(cause: unknown): ApiError {
+  return new ApiError({
+    kind: 'server',
+    status: null,
+    problem: null,
+    message: DEFAULT_MESSAGES.server,
     cause,
   })
 }

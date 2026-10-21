@@ -7,6 +7,7 @@ import { createPersistentMockDb, safeSessionStorage } from './storage'
 
 const OPTIONS = { adminEmail: 'dueno@galpon.test', adminPassword: 'clave-de-prueba-1' }
 const KEY = 'galpon-mock-db'
+const SESSION_EXPIRES = '2026-10-21T15:00:00Z'
 
 /** Almacenamiento en memoria con la misma forma que `sessionStorage`. */
 function memoryStorage() {
@@ -175,6 +176,29 @@ describe('createPersistentMockDb', () => {
       const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
       expect(handle.db).toEqual(createMockDb(OPTIONS))
     }
+  })
+
+  it.each([
+    ['una cuenta del admin sin email', { adminAccount: { password: 'clave' } }],
+    [
+      'una contraseña del admin que no es un texto',
+      { adminAccount: { email: 'a@b.c', password: 5 } },
+    ],
+    ['una sesión sin token CSRF', { adminSession: { email: 'a@b.c', expiresAt: SESSION_EXPIRES } }],
+    [
+      'una sesión con el email que no es un texto',
+      { adminSession: { email: null, csrfToken: 'token', expiresAt: SESSION_EXPIRES } },
+    ],
+    [
+      'una sesión con un vencimiento que no es una fecha',
+      { adminSession: { email: 'a@b.c', csrfToken: 'token', expiresAt: 'mañana' } },
+    ],
+    ['una sesión que es un arreglo', { adminSession: [] }],
+  ])('con %s guardada vuelve a sembrar los datos', (_description, broken) => {
+    const { storage } = memoryStorage()
+    storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), ...broken }))
+    const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    expect(handle.db).toEqual(createMockDb(OPTIONS))
   })
 
   it('con un almacenamiento cuyo getItem tira, funciona en memoria (isPersistent false)', () => {

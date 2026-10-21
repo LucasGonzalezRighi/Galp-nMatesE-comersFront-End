@@ -113,11 +113,11 @@ El login usa el email y la contraseña de `DEFAULT_MOCK_DB_OPTIONS`, abre una se
 
 **Pendientes.** Toda otra operación del contrato (`PENDING_OPERATIONS`) responde `501` con `title: 'No implementado en el modo de prueba'` y `detail: 'Llega en P2'` (reseñas nuevas, contacto y arrepentimiento), `P3` (carrito, envío, pedidos, pagos, webhooks y cuenta de clientes) o `P4` (el resto del admin). Una ruta desconocida responde `404` y un método que la ruta no admite, `405`, siempre como `application/problem+json`. `contract-coverage.test.ts` falla si una operación de `docs/api/openapi.yaml` no está en `IMPLEMENTED_ROUTES` ni en `PENDING_OPERATIONS`.
 
-**Base.** `createMockDb` crea una base nueva; `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin), llamando a `onMutation` después de cada escritura exitosa.
+**Base.** `createMockDb` crea una base nueva; `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin). La base no se guarda sola: quien llama a `onMutation` es `createMockFetch`, después de cada pedido que no es `GET` y responde 2xx, así que se le pasa `onMutation: handle.persist` (con `handle` lo que devuelve `createPersistentMockDb`). `onInvalidate` se llama cuando un handler avisa, con `ctx.invalidate`, que cambió algo que la tienda tiene en caché.
 
 ## Exports
 
-`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada y su persistencia).
+`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia y los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers).
 
 ## Tests
 

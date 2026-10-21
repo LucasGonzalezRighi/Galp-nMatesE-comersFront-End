@@ -168,10 +168,10 @@ describe('catálogo', () => {
     })
   })
 
-  it('getProduct codifica el slug en la ruta', async () => {
+  it('getProduct arma la ruta con el slug', async () => {
     const { api, requests } = setup()
-    await getProduct(api, 'a b')
-    expect(onlyRequest(requests).request.url).toBe('http://x/api/v1/products/a%20b')
+    await getProduct(api, 'mate-imperial-2')
+    expect(onlyRequest(requests).request.url).toBe('http://x/api/v1/products/mate-imperial-2')
   })
 
   it('un 404 de getProduct llega como ApiError "not_found"', async () => {
@@ -263,6 +263,30 @@ describe('validación de entradas', () => {
     )
     await expect(listRelatedProducts(api, slug)).rejects.toThrow(RangeError)
     await expect(listProductReviews(api, slug)).rejects.toThrow(RangeError)
+  })
+
+  it.each([
+    ['.'],
+    ['..'],
+    ['a/b'],
+    ['a b'],
+    ['Mate'],
+    ['mate_uno'],
+    ['-mate'],
+    ['mate-'],
+    ['mate--uno'],
+    ['mate?x=1'],
+    ['a'.repeat(81)],
+  ])('rechaza el slug %j, que no cumple el patrón del contrato', async (slug) => {
+    const message =
+      'El slug del producto tiene que tener minúsculas, números y guiones sueltos, hasta 80 caracteres'
+    await expect(getProduct(api, slug)).rejects.toThrow(new RangeError(message))
+    await expect(listRelatedProducts(api, slug)).rejects.toThrow(RangeError)
+    await expect(listProductReviews(api, slug)).rejects.toThrow(RangeError)
+  })
+
+  it.each([['a'], ['mate-imperial-2'], ['a'.repeat(80)]])('acepta el slug %j', async (slug) => {
+    await expect(getProduct(api, slug)).resolves.toBeDefined()
   })
 
   it.each([[0], [-1], [1.5], [Number.NaN], [Number.POSITIVE_INFINITY]])(

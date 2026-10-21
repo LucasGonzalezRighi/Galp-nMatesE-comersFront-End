@@ -113,13 +113,35 @@ describe('unwrap', () => {
     expect(error).toMatchObject({ kind: 'conflict', status: 409 })
   })
 
-  it('convierte un throw en ApiError "network" y deja pasar un ApiError', async () => {
-    const network = await unwrap(Promise.reject(new Error('boom'))).catch(
-      (caught: unknown) => caught,
-    )
-    expect(network).toMatchObject({ kind: 'network' })
+  it('convierte un TypeError (falla de red) en ApiError "network" y deja pasar un ApiError', async () => {
+    const cause = new TypeError('fetch failed')
+    const network = await unwrap(Promise.reject(cause)).catch((caught: unknown) => caught)
+    expect(network).toMatchObject({ kind: 'network', status: null, cause })
     const original = new ApiError({ kind: 'server', status: 500, problem: null, message: 'x' })
     await expect(unwrap(Promise.reject(original))).rejects.toBe(original)
+  })
+
+  it.each([
+    ['un SyntaxError, como el de un 2xx que no es JSON', new SyntaxError('Unexpected token <')],
+    ['un Error cualquiera', new Error('boom')],
+  ])('convierte %s en ApiError "server" y no en "network"', async (_description, cause) => {
+    const error = await unwrap(Promise.reject(cause)).catch((caught: unknown) => caught)
+    expect(isApiError(error)).toBe(true)
+    expect(error).toMatchObject({
+      kind: 'server',
+      status: null,
+      cause,
+      message: 'Hubo un problema en el servidor. Probá de nuevo en unos minutos.',
+    })
+  })
+
+  it('un 2xx que no es JSON, leído por openapi-fetch, termina en ApiError "server"', async () => {
+    const { fetch } = createFakeFetch(
+      () => new Response('<html>no soy JSON</html>', { status: 200 }),
+    )
+    const api = createApiClient({ baseUrl: BASE_URL, fetch })
+    const error = await listCategories(api).catch((caught: unknown) => caught)
+    expect(error).toMatchObject({ kind: 'server' })
   })
 
   it('falla si la respuesta es exitosa pero no trae cuerpo', async () => {
@@ -143,8 +165,11 @@ describe('unwrapVoid', () => {
     await expect(unwrapVoid(Promise.resolve({ error: undefined, response }))).rejects.toMatchObject(
       { kind: 'unauthorized' },
     )
-    await expect(unwrapVoid(Promise.reject(new Error('boom')))).rejects.toMatchObject({
+    await expect(unwrapVoid(Promise.reject(new TypeError('boom')))).rejects.toMatchObject({
       kind: 'network',
+    })
+    await expect(unwrapVoid(Promise.reject(new SyntaxError('boom')))).rejects.toMatchObject({
+      kind: 'server',
     })
   })
 })

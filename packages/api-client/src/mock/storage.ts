@@ -1,5 +1,5 @@
 import type { MockDbOptions } from './db'
-import type { MockDb } from './types'
+import type { MockAdminSession, MockDb } from './types'
 import { createMockDb, MOCK_DB_VERSION } from './db'
 
 /** Lo mínimo que se le pide a un almacenamiento: leer, escribir y borrar un texto por clave. */
@@ -55,16 +55,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** Revisa la forma de primer nivel de una base guardada: la versión y cada lista o grupo. */
-function isMockDb(value: unknown): value is MockDb {
+/** Indica si `value` es un objeto cuyos campos `names` son todos textos. */
+function hasTextFields(value: unknown, names: readonly string[]): value is Record<string, string> {
+  return isRecord(value) && names.every((name) => typeof value[name] === 'string')
+}
+
+/** Indica si `value` es una sesión del administrador con sus tres textos y un vencimiento que es fecha. */
+function isAdminSession(value: unknown): value is MockAdminSession {
   return (
-    isRecord(value) &&
+    hasTextFields(value, ['email', 'csrfToken', 'expiresAt']) &&
+    !Number.isNaN(Date.parse(value.expiresAt ?? ''))
+  )
+}
+
+/**
+ * Revisa la forma de una base guardada: la versión, cada lista o grupo y, a fondo, la cuenta y la
+ * sesión del administrador (si no tuvieran sus textos, el login o el guardián de rutas fallarían).
+ */
+function isMockDb(value: unknown): value is MockDb {
+  if (!isRecord(value)) return false
+  return (
     value.version === MOCK_DB_VERSION &&
     ['categories', 'products', 'reviews', 'orders', 'messages', 'customers'].every((name) =>
       Array.isArray(value[name]),
     ) &&
-    ['content', 'settings', 'adminAccount'].every((name) => isRecord(value[name])) &&
-    (value.adminSession === null || isRecord(value.adminSession))
+    ['content', 'settings'].every((name) => isRecord(value[name])) &&
+    hasTextFields(value.adminAccount, ['email', 'password']) &&
+    (value.adminSession === null || isAdminSession(value.adminSession))
   )
 }
 

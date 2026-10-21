@@ -1,4 +1,4 @@
-import { ApiError, apiErrorFromResponse, isApiError, networkError } from './errors'
+import { ApiError, apiErrorFromResponse, isApiError, networkError, unexpectedError } from './errors'
 
 /** Lo que devuelve una llamada de `openapi-fetch`: los datos o el error, y siempre la respuesta. */
 interface CallResult<T> {
@@ -7,12 +7,17 @@ interface CallResult<T> {
   response: Response
 }
 
-/** Espera la llamada; si lanza algo que no es un `ApiError`, es que no hubo respuesta. */
+/**
+ * Espera la llamada. Si lanza un `TypeError` (así falla `fetch` sin conexión, por CORS o por un
+ * corte) es que no hubo respuesta; cualquier otra cosa (por ejemplo el `SyntaxError` de un 2xx
+ * que no es JSON) es una falla inesperada del servidor.
+ */
 async function settle<T>(call: Promise<CallResult<T>>): Promise<CallResult<T>> {
   try {
     return await call
   } catch (cause) {
-    throw isApiError(cause) ? cause : networkError(cause)
+    if (isApiError(cause)) throw cause
+    throw cause instanceof TypeError ? networkError(cause) : unexpectedError(cause)
   }
 }
 
@@ -21,9 +26,9 @@ async function settle<T>(call: Promise<CallResult<T>>): Promise<CallResult<T>> {
  *
  * @param call - El resultado de `api.GET(...)`, `api.POST(...)`, etc.
  * @returns El cuerpo de la respuesta exitosa.
- * @throws {ApiError} Con `kind: 'network'` si la llamada lanzó (no hubo respuesta), con la clase
- * que corresponda al estado si la respuesta fue un error, y con `kind: 'server'` si fue exitosa
- * pero sin cuerpo.
+ * @throws {ApiError} Con `kind: 'network'` si la llamada lanzó un `TypeError` (no hubo respuesta),
+ * con `kind: 'server'` si lanzó cualquier otra cosa (por ejemplo un 2xx que no es JSON) o si fue
+ * exitosa pero sin cuerpo, y con la clase que corresponda al estado si la respuesta fue un error.
  */
 export async function unwrap<T>(call: Promise<CallResult<T>>): Promise<T> {
   const { data, error, response } = await settle(call)

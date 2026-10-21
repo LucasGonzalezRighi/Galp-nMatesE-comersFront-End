@@ -1,14 +1,26 @@
+/** Patrón del slug del contrato (`docs/api/openapi.yaml`): minúsculas y números separados por guiones sueltos. */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/** Largo máximo del slug, como en el contrato. */
+const SLUG_MAX_LENGTH = 80
+
 /**
- * Comprueba que el slug de un producto no esté vacío.
+ * Comprueba que el slug de un producto cumpla el patrón y el largo del contrato.
  *
- * Solo descarta lo que no se puede convertir en una ruta; el formato del slug lo valida el
- * servidor, que responde `422` o `404` y llega como `ApiError`.
+ * Así un `'.'` o un `'..'` no llegan a la ruta (`/products/..` apuntaría a otro recurso) y los
+ * slugs inválidos fallan acá, sin ir a la red.
  *
  * @param slug - Slug del producto.
- * @throws {RangeError} Si está vacío o son solo espacios.
+ * @throws {RangeError} Si está vacío o son solo espacios, o si no cumple
+ *   `^[a-z0-9]+(?:-[a-z0-9]+)*$` o pasa de 80 caracteres.
  */
 export function assertSlug(slug: string): void {
   if (slug.trim() === '') throw new RangeError('El slug del producto no puede estar vacío')
+  if (slug.length > SLUG_MAX_LENGTH || !SLUG_PATTERN.test(slug)) {
+    throw new RangeError(
+      'El slug del producto tiene que tener minúsculas, números y guiones sueltos, hasta 80 caracteres',
+    )
+  }
 }
 
 /**

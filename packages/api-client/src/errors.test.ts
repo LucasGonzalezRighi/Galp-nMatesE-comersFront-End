@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiErrorKind } from './errors'
-import { ApiError, apiErrorFromResponse, isApiError, networkError } from './errors'
+import { ApiError, apiErrorFromResponse, isApiError, networkError, unexpectedError } from './errors'
 
 const validationProblem = {
   type: 'validation_error',
@@ -131,6 +131,18 @@ describe('networkError', () => {
     expect(error.retryAfterSeconds).toBeNull()
     expect(error.cause).toBe(cause)
     expect(error.message).toBe('No pudimos conectarnos con el servidor. Revisá tu conexión.')
+  })
+})
+
+describe('unexpectedError', () => {
+  it('es un ApiError "server" sin estado ni problema, y conserva la causa', () => {
+    const cause = new SyntaxError('Unexpected token <')
+    const error = unexpectedError(cause)
+    expect(error.kind).toBe('server')
+    expect(error.status).toBeNull()
+    expect(error.problem).toBeNull()
+    expect(error.cause).toBe(cause)
+    expect(error.message).toBe('Hubo un problema en el servidor. Probá de nuevo en unos minutos.')
   })
 })
 

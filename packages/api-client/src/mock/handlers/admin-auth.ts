@@ -3,6 +3,7 @@ import type { MockContext, MockRoute } from '../router'
 import type { MockAdminSession } from '../types'
 import { json, noContent, problem, ResponseError, validationProblem } from '../http'
 import { route } from '../router'
+import { randomUuid } from '../uuid'
 import { zodFieldErrors } from '../validation'
 
 /** Duración de la sesión del administrador: 8 horas. */
@@ -46,11 +47,14 @@ export const adminAuthRoutes: readonly MockRoute[] = [
       result.data.email !== adminAccount.email.trim().toLowerCase() ||
       result.data.password !== adminAccount.password
     ) {
-      return problem(401, 'Email o contraseña incorrectos', { type: 'invalid_credentials' })
+      return problem(401, 'Credenciales incorrectas', {
+        type: 'invalid_credentials',
+        detail: 'Email o contraseña incorrectos.',
+      })
     }
     const session: MockAdminSession = {
       email: adminAccount.email,
-      csrfToken: crypto.randomUUID(),
+      csrfToken: randomUuid(),
       expiresAt: new Date(ctx.now.getTime() + ADMIN_SESSION_MS).toISOString(),
     }
     ctx.db.adminSession = session

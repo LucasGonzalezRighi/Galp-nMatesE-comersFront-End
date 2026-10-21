@@ -63,7 +63,7 @@ export async function listAllProducts(
  *
  * @param api - Cliente de la API.
  * @param slug - Slug del producto.
- * @throws {RangeError} Si el slug está vacío.
+ * @throws {RangeError} Si el slug está vacío o no cumple el patrón del contrato (ver `assertSlug`).
  * @throws {ApiError} Si la llamada falla (`not_found` si no existe).
  */
 export async function getProduct(api: ApiClient, slug: string): Promise<ProductDetail> {
@@ -76,7 +76,7 @@ export async function getProduct(api: ApiClient, slug: string): Promise<ProductD
  *
  * @param api - Cliente de la API.
  * @param slug - Slug del producto.
- * @throws {RangeError} Si el slug está vacío.
+ * @throws {RangeError} Si el slug está vacío o no cumple el patrón del contrato (ver `assertSlug`).
  * @throws {ApiError} Si la llamada falla (`not_found` si el producto no existe).
  */
 export async function listRelatedProducts(api: ApiClient, slug: string): Promise<ProductSummary[]> {

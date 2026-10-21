@@ -4,8 +4,10 @@
  *
  * @packageDocumentation
  */
+export type { HttpMethod } from './http'
 export type { MockFetchOptions } from './mock-fetch'
 export type { MockPlan, PendingOperation } from './pending'
+export type { MockContext, MockRoute } from './router'
 export type { PersistentMockDb, PersistentMockDbOptions, StorageLike } from './storage'
 export type {
   MockAdminSession,
