@@ -21,20 +21,25 @@ Salen de la sección 12 del [diseño del front](../superpowers/specs/2026-10-19-
 - **Seguridad**: la sesión, el token CSRF (`X-CSRF-Token`) y el token de pedido (`X-Order-Token`) son esquemas de seguridad (`components.securitySchemes`), no parámetros. Así el middleware del cliente los agrega y las llamadas no los piden una por una. Las rutas públicas declaran `security: []`.
 - **Idempotencia**: las escrituras de pedidos y pagos llevan `Idempotency-Key` (un UUID por intento), que es el parámetro `IdempotencyKey`.
 - **Operaciones**: cada una tiene `operationId` en `camelCase`, `summary` en español, `tags` y `responses`.
-- **Enums**: `ProductGroup`, `Leather`, `Ferrule`, `ProductSortOrder` y `ShippingMethod` copian literalmente los valores de `packages/domain`. Si se cambia uno hay que cambiar el otro; la alineación se comprueba con tipos en `packages/api-client`.
+- **Enums**: `ProductGroup`, `Leather`, `Ferrule`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod` y `Province` copian literalmente los valores de `packages/domain`; `ContactReason` los de `packages/schemas`. Si se cambia uno hay que cambiar el otro; la alineación se comprueba con tipos en `packages/api-client`.
 
 ## Qué cubre hoy
 
-Esta versión del contrato tiene la base (raíz, seguridad, parámetros, respuestas de error y enums) y las lecturas públicas:
+Esta versión del contrato tiene la base (raíz, seguridad, parámetros, respuestas de error y enums), las lecturas públicas y las escrituras de la tienda y de la cuenta del cliente:
 
-| Tag        | Rutas                                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------------- |
-| `catalog`  | `GET /categories`, `/products`, `/products/{slug}`, `/products/{slug}/related`                  |
-| `reviews`  | `GET /products/{slug}/reviews`, `/reviews/featured`                                             |
-| `content`  | `GET /content/home`, `/about`, `/faq`, `/footer`, `/product-tabs` y `/content/legal/{document}` |
-| `settings` | `GET /settings/public`                                                                          |
+| Tag        | Rutas                                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`  | `GET /categories`, `/products`, `/products/{slug}`, `/products/{slug}/related`                                                                                                        |
+| `reviews`  | `GET` y `POST /products/{slug}/reviews`, `GET /reviews/featured`                                                                                                                      |
+| `content`  | `GET /content/home`, `/about`, `/faq`, `/footer`, `/product-tabs` y `/content/legal/{document}`                                                                                       |
+| `settings` | `GET /settings/public`                                                                                                                                                                |
+| `cart`     | `POST /cart/quote`, `POST /shipping/quote`                                                                                                                                            |
+| `orders`   | `POST /orders`, `GET /orders/{number}`                                                                                                                                                |
+| `payments` | `POST /orders/{number}/payments/mercadopago/preference` y `/card`, `POST /webhooks/mercadopago` (solo lo llama Mercado Pago)                                                          |
+| `contact`  | `POST /contact`, `POST /withdrawals`                                                                                                                                                  |
+| `account`  | `/auth/csrf`, `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/password/forgot` y `/reset`, `/me`, `/me/orders`, `/me/orders/{number}`, `/me/addresses` y `/me/addresses/{id}` |
 
-Los tags `cart`, `orders`, `payments`, `contact`, `account` y `admin` ya están declarados; sus rutas se agregan en las próximas tareas.
+El tag `admin` ya está declarado y su cookie de sesión (`adminSession`) está definida; sus rutas se agregan en la próxima tarea.
 
 ## Cómo se valida
 

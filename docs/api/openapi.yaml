@@ -161,6 +161,8 @@ paths:
                 $ref: '#/components/schemas/ProductDetail'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -189,6 +191,8 @@ paths:
                   $ref: '#/components/schemas/ProductSummary'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -214,6 +218,40 @@ paths:
                 $ref: '#/components/schemas/ReviewPage'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Enviar una reseña
+      description: >-
+        Recibe la reseña de un producto. No se publica enseguida: queda pendiente hasta que el
+        administrador la aprueba, por eso responde `202`. Si `authorName` es `null` o vacío, el
+        back la firma como "Anónimo". `website` es un campo trampa contra bots (ver `Honeypot`).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '202':
+          description: Reseña recibida; queda pendiente de aprobación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewReceipt'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -374,6 +412,775 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/ServerError'
+  /cart/quote:
+    post:
+      operationId: quoteCart
+      tags: [cart]
+      summary: Cotizar el carrito
+      description: >-
+        Recibe las líneas del carrito y devuelve los importes que calcula el back, con el ahorro
+        por kit y la disponibilidad de cada línea. Es la fuente de verdad de los importes en el
+        checkout: la tienda no calcula precios por su cuenta. No reserva stock. Una línea con
+        problemas no hace fallar la cotización: se informa en su `issue` y el front decide qué
+        mostrar.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartQuoteInput'
+      responses:
+        '200':
+          description: Cotización del carrito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartQuote'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /shipping/quote:
+    post:
+      operationId: quoteShipping
+      tags: [cart]
+      summary: Cotizar el envío
+      description: >-
+        Devuelve el costo y el plazo del envío para un método, un código postal y los productos
+        del carrito. En esta versión la tienda no la usa: el costo sale de
+        `PublicSettings.shippingOptions` y es fijo por método. Queda en el contrato para cuando
+        el costo dependa del destino. `postalCode` puede ser `null` en `pickup`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingQuoteInput'
+      responses:
+        '200':
+          description: Costo y plazo del envío.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingQuote'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Crear un pedido
+      description: >-
+        Valida los datos, recalcula precios, kits, envío y stock, reserva el stock durante 30
+        minutos y crea el pedido en `pending_payment`, sin cobrar. Si el total que calculó el
+        back es distinto de `expectedTotalArs`, o cambió un precio o el stock, responde `409` con
+        `type` `total_changed`, `price_changed` o `stock_changed` y el detalle en `changes`, y no
+        crea nada: el front muestra qué cambió, actualiza el resumen y, si la persona acepta,
+        reintenta con una `Idempotency-Key` nueva.
+
+
+        Con la misma `Idempotency-Key` (se recuerda 24 horas) devuelve el pedido ya creado en
+        lugar de crear otro, y si el cuerpo es distinto responde `422`. Si hay una sesión de
+        cliente, el pedido queda en su cuenta.
+
+
+        El `orderToken` se entrega solo en esta respuesta. El front lo guarda y lo manda en
+        `X-Order-Token` para consultar y pagar el pedido; nunca va en la dirección web.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderInput'
+      responses:
+        '201':
+          description: Pedido creado, con el token para consultarlo y pagarlo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResult'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders/{number}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Obtener un pedido
+      description: >-
+        Devuelve el pedido a quien presenta su `X-Order-Token` o a la sesión del cliente dueño del
+        pedido. Si el pedido no existe, o el token falta o no corresponde, responde `404` igual en
+        todos los casos, para no revelar si el número existe. Es lo que consulta la pantalla
+        `/checkout/resultado`.
+      security:
+        - orderToken: []
+        - customerSession: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      responses:
+        '200':
+          description: Pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders/{number}/payments/mercadopago/preference:
+    post:
+      operationId: createMercadoPagoPreference
+      tags: [payments]
+      summary: Crear la preferencia de pago en Mercado Pago
+      description: >-
+        Crea la preferencia de Mercado Pago del pedido y devuelve `initPoint`, la dirección a la
+        que el front redirige al cliente para que pague. La preferencia vence junto con la reserva
+        de stock del pedido.
+
+
+        **Idempotencia**: con la misma `Idempotency-Key` devuelve la misma preferencia en lugar de
+        crear otra.
+
+
+        **Un intento de pago activo por pedido**: si el pedido ya tenía una preferencia o un pago
+        pendiente, el back lo cancela antes de crear este. Si igual llegara un segundo pago
+        aprobado, se marca para devolverlo y aparece como alerta en el dashboard.
+
+
+        **El estado definitivo llega por webhook**: la redirección de vuelta de Mercado Pago no
+        prueba nada. El pedido pasa a pagado solo cuando el back recibe la notificación (ver
+        `POST /webhooks/mercadopago`); el front lo consulta con `GET /orders/{number}`.
+      security:
+        - orderToken: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Preferencia creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MercadoPagoPreference'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El pedido ya está pagado o venció, así que no admite un pago nuevo.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: order_not_payable
+                title: El pedido no admite un pago nuevo
+                status: 409
+                detail: El pedido ya está pagado o venció.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders/{number}/payments/mercadopago/card:
+    post:
+      operationId: payWithCard
+      tags: [payments]
+      summary: Pagar un pedido con tarjeta
+      description: >-
+        Cobra el pedido con el token de tarjeta que generó MercadoPago.js en el navegador. Los
+        datos de la tarjeta nunca pasan por esta API: solo viaja el token, que es de un solo uso
+        (cada intento lleva uno nuevo).
+
+
+        **Idempotencia**: con la misma `Idempotency-Key` devuelve el resultado del primer intento
+        en lugar de cobrar otra vez, y si el cuerpo es distinto responde `422`.
+
+
+        **Un intento de pago activo por pedido**: al iniciar uno nuevo, el back cancela el pago
+        pendiente anterior.
+
+
+        **El estado definitivo llega por webhook**: `paymentStatus` es el estado en este momento,
+        no el final. Si trae `challenge` (verificación 3-D Secure), el front abre esa dirección en
+        un diálogo y después consulta el pedido. El pedido pasa a pagado solo cuando el back
+        recibe la notificación de Mercado Pago (ver `POST /webhooks/mercadopago`).
+      security:
+        - orderToken: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardPaymentInput'
+      responses:
+        '200':
+          description: Resultado del intento de pago.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardPaymentResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El pedido ya está pagado o venció, así que no admite un pago nuevo.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: order_not_payable
+                title: El pedido no admite un pago nuevo
+                status: 409
+                detail: El pedido ya está pagado o venció.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /contact:
+    post:
+      operationId: sendContactMessage
+      tags: [contact]
+      summary: Enviar un mensaje de contacto
+      description: >-
+        Recibe el mensaje del formulario de contacto y lo deja en la bandeja del dashboard.
+        Responde `202` sin cuerpo. `website` es un campo trampa contra bots (ver `Honeypot`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactInput'
+      responses:
+        '202':
+          description: Mensaje recibido.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /withdrawals:
+    post:
+      operationId: requestWithdrawal
+      tags: [contact]
+      summary: Pedir el arrepentimiento de una compra
+      description: >-
+        Registra una solicitud de arrepentimiento (10 días corridos desde que se recibe el
+        producto, sin causa y sin costo) y devuelve un código de comprobante. Pide los mínimos
+        datos: el número de pedido y el comentario son opcionales. La solicitud queda en la
+        bandeja del dashboard como mensaje de tipo `withdrawal`. `website` es un campo trampa
+        contra bots (ver `Honeypot`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalInput'
+      responses:
+        '201':
+          description: Solicitud registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalReceipt'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /webhooks/mercadopago:
+    post:
+      operationId: receiveMercadoPagoWebhook
+      tags: [payments]
+      summary: Recibir una notificación de Mercado Pago
+      description: >-
+        Solo lo llama Mercado Pago; el front no lo usa. Está en el contrato para que el back lo
+        implemente. Es la única fuente del estado definitivo del pago.
+
+
+        El back valida la firma `x-signature` (con `x-request-id` y el `data.id` de la dirección),
+        consulta el pago en Mercado Pago, traduce su estado a `PaymentStatus` y actualiza el
+        pedido. Procesa cada notificación una sola vez aunque Mercado Pago la reenvíe. Responde
+        `200` cuando la registró; con una firma inválida responde `401` y no hace nada.
+      security: []
+      parameters:
+        - name: x-signature
+          in: header
+          required: true
+          description: Firma de la notificación, con el formato `ts=<marca de tiempo>,v1=<hash>`.
+          schema:
+            type: string
+          example: ts=1742505638683,v1=ced36ab6d33566bb1e16c125819b8d840d6b8ef136b0b9127c76064466f5229b
+        - name: x-request-id
+          in: header
+          required: true
+          description: Identificador de la solicitud que genera Mercado Pago; entra en el cálculo de la firma.
+          schema:
+            type: string
+          example: 4a1b9d7e-6f3c-4b0a-8c52-9d1e7f2a3b4c
+        - name: data.id
+          in: query
+          required: false
+          description: Identificador del pago, repetido en la dirección; entra en el cálculo de la firma.
+          schema:
+            type: string
+          example: '1234567890'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MercadoPagoWebhookEvent'
+      responses:
+        '200':
+          description: Notificación registrada.
+        '401':
+          description: La firma no es válida.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: invalid_signature
+                title: Firma inválida
+                status: 401
+                detail: La firma de la notificación no coincide.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/csrf:
+    get:
+      operationId: getCustomerCsrfToken
+      tags: [account]
+      summary: Obtener el token anti-CSRF del cliente
+      description: >-
+        Devuelve el token que las escrituras de la cuenta mandan en `X-CSRF-Token`. El token está
+        ligado a la sesión actual, así que hay que pedir uno nuevo al cargar la tienda y de nuevo
+        después de iniciar o cerrar sesión.
+      security: []
+      responses:
+        '200':
+          description: Token anti-CSRF.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/register:
+    post:
+      operationId: registerCustomer
+      tags: [account]
+      summary: Crear una cuenta
+      description: >-
+        Crea la cuenta del cliente e inicia la sesión: la respuesta trae la cookie de sesión.
+        Después de esta llamada hay que pedir un token nuevo en `/auth/csrf`.
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        '201':
+          description: Cuenta creada y sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Ya existe una cuenta con ese email.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: email_already_registered
+                title: El email ya tiene una cuenta
+                status: 409
+                detail: Ya existe una cuenta con ese email. Iniciá sesión o recuperá tu contraseña.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/login:
+    post:
+      operationId: loginCustomer
+      tags: [account]
+      summary: Iniciar sesión
+      description: >-
+        Inicia la sesión del cliente: la respuesta trae la cookie de sesión. Con un email o una
+        contraseña incorrectos responde `401` sin decir cuál de los dos falló. Después de esta
+        llamada hay que pedir un token nuevo en `/auth/csrf`.
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          description: El email o la contraseña no son correctos.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: invalid_credentials
+                title: Credenciales incorrectas
+                status: 401
+                detail: Email o contraseña incorrectos.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/logout:
+    post:
+      operationId: logoutCustomer
+      tags: [account]
+      summary: Cerrar sesión
+      description: Cierra la sesión del cliente y borra la cookie. Después hay que pedir un token nuevo en `/auth/csrf`.
+      security:
+        - customerSession: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Sesión cerrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/password/forgot:
+    post:
+      operationId: requestPasswordReset
+      tags: [account]
+      summary: Pedir el cambio de contraseña
+      description: >-
+        Si existe una cuenta con ese email, le manda un enlace para elegir una contraseña nueva.
+        Responde siempre `202`, exista la cuenta o no, para no revelar qué emails están
+        registrados.
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordInput'
+      responses:
+        '202':
+          description: Pedido recibido.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags: [account]
+      summary: Elegir una contraseña nueva
+      description: >-
+        Cambia la contraseña con el `token` del enlace que llegó por mail. Un token inválido,
+        vencido o ya usado responde `422` con el error en el campo `token`.
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordInput'
+      responses:
+        '204':
+          description: Contraseña cambiada.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /me:
+    get:
+      operationId: getMe
+      tags: [account]
+      summary: Obtener mis datos
+      description: Devuelve los datos del cliente con la sesión iniciada.
+      security:
+        - customerSession: []
+      responses:
+        '200':
+          description: Datos del cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      operationId: updateMe
+      tags: [account]
+      summary: Actualizar mis datos
+      description: >-
+        Cambia el nombre, el apellido o el teléfono. Solo se modifican los campos que vienen en el
+        cuerpo; `phone: null` borra el teléfono. El email no se puede cambiar.
+      security:
+        - customerSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdate'
+      responses:
+        '200':
+          description: Datos actualizados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /me/orders:
+    get:
+      operationId: listMyOrders
+      tags: [account]
+      summary: Listar mis pedidos
+      description: Devuelve los pedidos del cliente, del más nuevo al más viejo, de a 10 por página.
+      security:
+        - customerSession: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Página de pedidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSummaryPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /me/orders/{number}:
+    get:
+      operationId: getMyOrder
+      tags: [account]
+      summary: Obtener uno de mis pedidos
+      description: Devuelve el pedido si es del cliente con la sesión iniciada; si es de otra persona responde `404`.
+      security:
+        - customerSession: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      responses:
+        '200':
+          description: Pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /me/addresses:
+    get:
+      operationId: listMyAddresses
+      tags: [account]
+      summary: Listar mis direcciones
+      description: Devuelve la libreta de direcciones del cliente, con la predeterminada primero.
+      security:
+        - customerSession: []
+      responses:
+        '200':
+          description: Direcciones guardadas (puede estar vacía).
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Direcciones del cliente.
+                items:
+                  $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: createMyAddress
+      tags: [account]
+      summary: Guardar una dirección
+      description: >-
+        Agrega una dirección a la libreta. Solo una es la predeterminada: si viene con
+        `isDefault: true`, la anterior deja de serlo.
+      security:
+        - customerSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressBookInput'
+      responses:
+        '201':
+          description: Dirección guardada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /me/addresses/{id}:
+    patch:
+      operationId: updateMyAddress
+      tags: [account]
+      summary: Modificar una dirección
+      description: >-
+        Reemplaza los datos de una dirección de la libreta: el cuerpo lleva la dirección completa.
+        Si viene con `isDefault: true`, la predeterminada anterior deja de serlo.
+      security:
+        - customerSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AddressId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressBookInput'
+      responses:
+        '200':
+          description: Dirección modificada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteMyAddress
+      tags: [account]
+      summary: Borrar una dirección
+      description: Borra una dirección de la libreta.
+      security:
+        - customerSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AddressId'
+      responses:
+        '204':
+          description: Dirección borrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
 components:
   securitySchemes:
     customerSession:
@@ -455,6 +1262,24 @@ components:
         type: string
         format: uuid
       example: 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
+    OrderNumber:
+      name: number
+      in: path
+      required: true
+      description: Número del pedido, `GLP-` y cinco dígitos.
+      schema:
+        $ref: '#/components/schemas/OrderNumber'
+      example: GLP-12345
+    AddressId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de una dirección de la libreta del cliente.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: adr-0001
   responses:
     ValidationError:
       description: Los datos enviados no son válidos. `errors` detalla cada campo.
@@ -628,13 +1453,15 @@ components:
           example: Quedan 2 unidades de Mate Camionero Criollo con Pelo.
     Pesos:
       type: integer
-      description: Monto en pesos argentinos, entero y no negativo.
+      description: Monto en pesos argentinos, entero, no negativo y de hasta 99.999.999.
       minimum: 0
+      maximum: 99999999
       example: 39999
     NullablePesos:
       type: [integer, 'null']
-      description: Monto en pesos argentinos, entero y no negativo, o `null` cuando no corresponde (por ejemplo, "a consultar").
+      description: Monto en pesos argentinos, entero, no negativo y de hasta 99.999.999, o `null` cuando no corresponde (por ejemplo, "a consultar").
       minimum: 0
+      maximum: 99999999
       example: 39999
     ProductGroup:
       type: string
@@ -1188,7 +2015,9 @@ components:
             dataFiscalUrl:
               type: [string, 'null']
               format: uri
-              description: Enlace a Data Fiscal (ARCA).
+              maxLength: 2048
+              pattern: '^https?://'
+              description: Enlace a Data Fiscal (ARCA), con http o https.
               example: https://example.com/data-fiscal
     SectionHeading:
       type: object
@@ -1576,3 +2405,1161 @@ components:
           type: string
           description: Texto del documento, con los párrafos separados por una línea en blanco.
           example: "Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.\n\nSegundo párrafo."
+    OrderStatus:
+      type: string
+      description: >-
+        Estado de un pedido. El ciclo normal es `pending_payment` (espera el pago, con el stock
+        reservado), `paid`, `preparing`, `shipped` y `delivered`. Los finales alternativos son
+        `cancelled`, `expired` (venció la reserva sin pago) y `refunded`.
+      enum:
+        - pending_payment
+        - paid
+        - preparing
+        - shipped
+        - delivered
+        - cancelled
+        - expired
+        - refunded
+      example: paid
+    PaymentStatus:
+      type: string
+      description: >-
+        Estado del pago de un pedido, ya traducido por el back desde los estados de Mercado Pago.
+        `none` es que todavía no hay ningún intento y `action_required` que falta la verificación
+        3-D Secure. `refunded` y `partially_refunded` son las devoluciones, `in_dispute` una
+        mediación abierta y `charged_back` un contracargo.
+      enum:
+        - none
+        - pending
+        - action_required
+        - approved
+        - rejected
+        - cancelled
+        - refunded
+        - partially_refunded
+        - in_dispute
+        - charged_back
+      example: approved
+    PaymentMethod:
+      type: string
+      description: Forma de pago elegida en el checkout. `mp_redirect` lleva al cliente a Mercado Pago y `card` cobra con tarjeta dentro de la tienda.
+      enum: [mp_redirect, card]
+      example: mp_redirect
+    Province:
+      type: string
+      description: Provincia o jurisdicción de entrega (las 24 del selector, con CABA).
+      enum:
+        - Buenos Aires
+        - CABA
+        - Catamarca
+        - Chaco
+        - Chubut
+        - Córdoba
+        - Corrientes
+        - Entre Ríos
+        - Formosa
+        - Jujuy
+        - La Pampa
+        - La Rioja
+        - Mendoza
+        - Misiones
+        - Neuquén
+        - Río Negro
+        - Salta
+        - San Juan
+        - San Luis
+        - Santa Cruz
+        - Santa Fe
+        - Santiago del Estero
+        - Tierra del Fuego
+        - Tucumán
+      example: Neuquén
+    ContactReason:
+      type: string
+      description: Motivo de un mensaje de contacto.
+      enum: [Pedido, Envío, Cambio, Arrepentimiento, Otro]
+      example: Pedido
+    LineType:
+      type: string
+      description: Tipo de línea del carrito o del pedido. `product` es un producto suelto y `kit` es un kit de mate, bombilla y yerba con descuento.
+      enum: [product, kit]
+      example: product
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+      description: Email. El back lo guarda en minúsculas y sin espacios alrededor.
+      example: vos@ejemplo.com
+    PersonName:
+      type: string
+      minLength: 2
+      maxLength: 50
+      pattern: "^\\p{L}[\\p{L}\\p{M} '’-]*$"
+      description: Nombre o apellido de una persona, de 2 a 50 caracteres. Solo letras (con acentos y ñ), espacios, apóstrofo y guion.
+      example: Lucía
+    Phone:
+      type: string
+      pattern: '^[1-9][0-9]{9}$'
+      description: Teléfono argentino de 10 dígitos, con el código de área y sin 0, 15 ni +54. La tienda lo normaliza antes de enviarlo.
+      example: '1123456789'
+    PostalCode:
+      type: string
+      pattern: '^[A-Za-z]?[0-9]{4}[A-Za-z]{0,3}$'
+      description: Código postal argentino, como `1414`, `B1900` o `C1414ABC`. El back lo guarda en mayúsculas.
+      example: C1414
+    OrderNumber:
+      type: string
+      pattern: '^GLP-[0-9]{5}$'
+      description: Número de pedido, `GLP-` y cinco dígitos.
+      example: GLP-12345
+    Password:
+      type: string
+      minLength: 10
+      maxLength: 128
+      pattern: '^(?=.*\p{L})(?=.*[0-9])'
+      description: Contraseña nueva, de 10 a 128 caracteres y con al menos una letra y un número.
+      example: mate-con-yerba-2026
+    Honeypot:
+      type: [string, 'null']
+      description: >-
+        Campo trampa contra bots. Las personas no lo ven y lo dejan vacío (`null` o `""`). Si
+        llega con texto, el back descarta el envío en silencio: responde como si hubiera
+        funcionado y no guarda nada.
+      example: null
+    CartItemOptions:
+      type: object
+      description: Opciones elegidas de un mate. No cambian el precio.
+      required: [leather, ferrule]
+      properties:
+        leather:
+          $ref: '#/components/schemas/Leather'
+        ferrule:
+          $ref: '#/components/schemas/Ferrule'
+    ProductCartItemInput:
+      type: object
+      description: Producto suelto en el carrito.
+      required: [type, productId, quantity, options]
+      properties:
+        type:
+          type: string
+          const: product
+          description: Discriminador; en un producto suelto vale `product`.
+          example: product
+        productId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Identificador del producto.
+          example: prd-imperial-premium
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Unidades, de 1 a 20 (y no más que el stock).
+          example: 1
+        options:
+          description: Cuero y virola elegidos; `null` en los productos que no son mates.
+          oneOf:
+            - $ref: '#/components/schemas/CartItemOptions'
+            - type: 'null'
+    KitCartItemInput:
+      type: object
+      description: Kit de mate, bombilla y yerba, con el descuento del kit.
+      required: [type, mateId, bombillaId, yerbaId, leather, quantity]
+      properties:
+        type:
+          type: string
+          const: kit
+          description: Discriminador; en un kit vale `kit`.
+          example: kit
+        mateId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Identificador del mate del kit.
+          example: prd-imperial-premium
+        bombillaId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Identificador de la bombilla del kit.
+          example: prd-bombillon-premium-curvo
+        yerbaId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Identificador de la yerba del kit.
+          example: prd-yerba-canarias-1-kg
+        leather:
+          $ref: '#/components/schemas/Leather'
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Cantidad de kits, de 1 a 20 (y no más que el stock de cada pieza).
+          example: 1
+    CartItemInput:
+      description: Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto o un kit.
+      oneOf:
+        - $ref: '#/components/schemas/ProductCartItemInput'
+        - $ref: '#/components/schemas/KitCartItemInput'
+      discriminator:
+        propertyName: type
+        mapping:
+          product: '#/components/schemas/ProductCartItemInput'
+          kit: '#/components/schemas/KitCartItemInput'
+    CartQuoteInput:
+      type: object
+      description: Carrito a cotizar.
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: Líneas del carrito.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/CartItemInput'
+      example:
+        items:
+          - type: product
+            productId: prd-imperial-premium
+            quantity: 1
+            options:
+              leather: Negro
+              ferrule: Alpaca cincelada
+    CartQuoteLine:
+      type: object
+      description: >-
+        Línea cotizada. `unitPriceArs` es el precio de lista de una unidad (en un kit, la suma de
+        las tres piezas), `kitSavingsArs` es el ahorro de toda la línea y
+        `totalArs = unitPriceArs × cantidad − kitSavingsArs`. Las líneas `unavailable` y
+        `sold_out` tienen todos sus importes en 0 y no suman a los totales.
+      required:
+        - key
+        - type
+        - name
+        - detail
+        - unitPriceArs
+        - kitSavingsArs
+        - totalArs
+        - maxQuantity
+        - issue
+      properties:
+        key:
+          type: string
+          description: >-
+            Clave de la línea, igual a la que arma la tienda: `product:{productId}:{cuero}:{virola}`
+            (con `-` si no hay opciones) o `kit:{mateId}:{bombillaId}:{yerbaId}:{cuero}`.
+          example: product:prd-imperial-premium:Negro:Alpaca cincelada
+        type:
+          $ref: '#/components/schemas/LineType'
+        name:
+          type: string
+          description: Nombre de la línea, es decir el del producto o "Kit".
+          example: Mate Imperial Premium
+        detail:
+          type: string
+          description: Texto secundario de la línea, con las opciones elegidas; vacío si no hay.
+          example: Cuero Negro · Virola Alpaca cincelada
+        unitPriceArs:
+          description: Precio de lista de una unidad.
+          $ref: '#/components/schemas/Pesos'
+        kitSavingsArs:
+          description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
+          $ref: '#/components/schemas/Pesos'
+        totalArs:
+          description: Importe de la línea, ya sin el ahorro.
+          $ref: '#/components/schemas/Pesos'
+        maxQuantity:
+          type: integer
+          description: Cantidad máxima que se puede pedir de esta línea, es decir el menor entre 20 y el stock de sus piezas (0 si no hay).
+          minimum: 0
+          maximum: 20
+          example: 12
+        issue:
+          description: >-
+            Problema de la línea, o `null` si está bien. `unavailable`: el producto ya no está
+            publicado o no tiene precio. `sold_out`: no queda stock. `quantity_reduced`: había
+            menos stock que lo pedido y la línea se cotizó con `maxQuantity` unidades.
+            `price_changed`: el precio cambió desde la cotización anterior y los importes ya son
+            los vigentes.
+          type: [string, 'null']
+          enum: [unavailable, sold_out, quantity_reduced, price_changed, null]
+          example: null
+    CartQuote:
+      type: object
+      description: >-
+        Cotización del carrito. `subtotalArs = itemsGrossArs − kitSavingsArs`. No incluye el
+        envío.
+      required: [lines, itemsGrossArs, kitSavingsArs, subtotalArs]
+      properties:
+        lines:
+          type: array
+          description: Líneas cotizadas, en el mismo orden que el carrito enviado.
+          items:
+            $ref: '#/components/schemas/CartQuoteLine'
+        itemsGrossArs:
+          description: Suma de los precios de lista de todas las líneas.
+          $ref: '#/components/schemas/Pesos'
+        kitSavingsArs:
+          description: Suma de los ahorros por kit.
+          $ref: '#/components/schemas/Pesos'
+        subtotalArs:
+          description: Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit.
+          $ref: '#/components/schemas/Pesos'
+      example:
+        lines:
+          - key: product:prd-imperial-premium:Negro:Alpaca cincelada
+            type: product
+            name: Mate Imperial Premium
+            detail: Cuero Negro · Virola Alpaca cincelada
+            unitPriceArs: 39999
+            kitSavingsArs: 0
+            totalArs: 39999
+            maxQuantity: 12
+            issue: null
+        itemsGrossArs: 39999
+        kitSavingsArs: 0
+        subtotalArs: 39999
+    ShippingQuoteInput:
+      type: object
+      description: Datos para cotizar un envío.
+      required: [method, postalCode, items]
+      properties:
+        method:
+          $ref: '#/components/schemas/ShippingMethod'
+        postalCode:
+          description: Código postal de destino, o `null` si no corresponde (retiro en persona).
+          oneOf:
+            - $ref: '#/components/schemas/PostalCode'
+            - type: 'null'
+        items:
+          type: array
+          description: Líneas del carrito.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/CartItemInput'
+    ShippingQuote:
+      type: object
+      description: Costo y plazo de un envío.
+      required: [method, costArs, eta]
+      properties:
+        method:
+          $ref: '#/components/schemas/ShippingMethod'
+        costArs:
+          description: Costo del envío en pesos; 0 si es gratis.
+          $ref: '#/components/schemas/Pesos'
+        eta:
+          type: string
+          description: Plazo estimado, en texto libre.
+          example: 3 a 6 días hábiles
+    CustomerInput:
+      type: object
+      description: Datos de contacto de quien compra.
+      required: [email, firstName, lastName, phone]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        firstName:
+          $ref: '#/components/schemas/PersonName'
+        lastName:
+          $ref: '#/components/schemas/PersonName'
+        phone:
+          description: Teléfono para el correo, o `null` si no lo cargó.
+          oneOf:
+            - $ref: '#/components/schemas/Phone'
+            - type: 'null'
+    AddressInput:
+      type: object
+      description: Dirección de entrega completa, para los envíos a domicilio.
+      required: [street, number, apartment, postalCode, city, province]
+      properties:
+        street:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: Calle.
+          example: Av. Corrientes
+        number:
+          type: string
+          pattern: '^(?:[0-9]{1,5}|S/N)$'
+          description: Número de la calle, de 1 a 5 dígitos, o `S/N` si no tiene.
+          example: '1234'
+        apartment:
+          type: [string, 'null']
+          maxLength: 10
+          description: Piso o departamento, o `null` si no corresponde.
+          example: 5° B
+        postalCode:
+          $ref: '#/components/schemas/PostalCode'
+        city:
+          type: string
+          minLength: 2
+          maxLength: 60
+          description: Ciudad o localidad.
+          example: CABA
+        province:
+          $ref: '#/components/schemas/Province'
+    BranchAddressInput:
+      type: object
+      description: Destino de un envío a sucursal. Solo se piden el código postal, la ciudad y la provincia.
+      additionalProperties: false
+      required: [postalCode, city, province]
+      properties:
+        postalCode:
+          $ref: '#/components/schemas/PostalCode'
+        city:
+          type: string
+          minLength: 2
+          maxLength: 60
+          description: Ciudad o localidad.
+          example: Neuquén
+        province:
+          $ref: '#/components/schemas/Province'
+    ShippingAddress:
+      description: >-
+        Destino de un envío: la dirección completa (`AddressInput`) en `home` o solo el código
+        postal, la ciudad y la provincia (`BranchAddressInput`) en `branch`.
+      oneOf:
+        - $ref: '#/components/schemas/AddressInput'
+        - $ref: '#/components/schemas/BranchAddressInput'
+    ShippingInput:
+      type: object
+      description: Envío elegido en el checkout.
+      required: [method, address]
+      properties:
+        method:
+          $ref: '#/components/schemas/ShippingMethod'
+        address:
+          description: >-
+            Destino del envío. En `home` va la dirección completa, en `branch` solo código postal,
+            ciudad y provincia y en `pickup` va `null`.
+          oneOf:
+            - $ref: '#/components/schemas/ShippingAddress'
+            - type: 'null'
+    CreateOrderInput:
+      type: object
+      description: >-
+        Pedido que arma el checkout. El back recalcula todos los importes: `expectedTotalArs` es
+        solo el total que vio el cliente, para avisarle si cambió.
+      required: [customer, shipping, items, paymentMethod, expectedTotalArs, website]
+      properties:
+        customer:
+          $ref: '#/components/schemas/CustomerInput'
+        shipping:
+          $ref: '#/components/schemas/ShippingInput'
+        items:
+          type: array
+          description: Líneas del carrito.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/CartItemInput'
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        expectedTotalArs:
+          description: Total que el cliente vio en el resumen, con el envío incluido.
+          $ref: '#/components/schemas/Pesos'
+        website:
+          $ref: '#/components/schemas/Honeypot'
+      example:
+        customer:
+          email: vos@ejemplo.com
+          firstName: Lucía
+          lastName: Pérez
+          phone: '1123456789'
+        shipping:
+          method: home
+          address:
+            street: Av. Corrientes
+            number: '1234'
+            apartment: 5° B
+            postalCode: C1043
+            city: CABA
+            province: CABA
+        items:
+          - type: product
+            productId: prd-imperial-premium
+            quantity: 1
+            options:
+              leather: Negro
+              ferrule: Alpaca cincelada
+        paymentMethod: mp_redirect
+        expectedTotalArs: 46499
+        website: null
+    OrderShipping:
+      type: object
+      description: Envío del pedido, con el costo y el plazo vigentes al comprar.
+      required: [method, address, costArs, eta]
+      properties:
+        method:
+          $ref: '#/components/schemas/ShippingMethod'
+        address:
+          description: Destino del envío, o `null` en el retiro en persona.
+          oneOf:
+            - $ref: '#/components/schemas/ShippingAddress'
+            - type: 'null'
+        costArs:
+          description: Costo del envío en pesos; 0 si fue gratis.
+          $ref: '#/components/schemas/Pesos'
+        eta:
+          type: string
+          description: Plazo estimado, en texto libre.
+          example: 3 a 6 días hábiles
+    OrderLine:
+      type: object
+      description: >-
+        Línea de un pedido. Es una copia de lo que se compró, con los nombres y precios del
+        momento de la compra: no cambia si después se edita el producto. Los importes se calculan
+        como en `CartQuoteLine`.
+      required:
+        - type
+        - name
+        - detail
+        - quantity
+        - unitPriceArs
+        - kitSavingsArs
+        - totalArs
+        - productSlug
+        - options
+        - kitItems
+      properties:
+        type:
+          $ref: '#/components/schemas/LineType'
+        name:
+          type: string
+          description: Nombre de la línea, es decir el del producto o "Kit".
+          example: Mate Imperial Premium
+        detail:
+          type: string
+          description: Texto secundario de la línea, con las opciones elegidas; vacío si no hay.
+          example: Cuero Negro · Virola Alpaca cincelada
+        quantity:
+          type: integer
+          description: Unidades compradas.
+          minimum: 1
+          maximum: 20
+          example: 1
+        unitPriceArs:
+          description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
+          $ref: '#/components/schemas/Pesos'
+        kitSavingsArs:
+          description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
+          $ref: '#/components/schemas/Pesos'
+        totalArs:
+          description: Importe de la línea, ya sin el ahorro.
+          $ref: '#/components/schemas/Pesos'
+        productSlug:
+          type: [string, 'null']
+          description: Slug del producto al comprar, o `null` en un kit.
+          example: mate-imperial-premium
+        options:
+          description: Cuero y virola de un mate o, en un kit, el cuero y la virola fija del kit. `null` en los demás productos.
+          oneOf:
+            - $ref: '#/components/schemas/CartItemOptions'
+            - type: 'null'
+        kitItems:
+          type: [array, 'null']
+          description: Las tres piezas de un kit (mate, bombilla y yerba), o `null` si no es un kit.
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            description: Pieza de un kit, con su precio de lista.
+            required: [slug, name, unitPriceArs]
+            properties:
+              slug:
+                type: string
+                description: Slug de la pieza al comprar.
+                example: mate-imperial-premium
+              name:
+                type: string
+                description: Nombre de la pieza.
+                example: Mate Imperial Premium
+              unitPriceArs:
+                description: Precio de lista de la pieza.
+                $ref: '#/components/schemas/Pesos'
+    OrderPayment:
+      type: object
+      description: Pago del pedido. Salvo `method`, cada dato es `null` hasta que hay un intento de pago que lo informe.
+      required: [method, installments, paymentTypeId, lastFour, statusDetail, mpPaymentId]
+      properties:
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        installments:
+          type: [integer, 'null']
+          description: Cantidad de cuotas del pago.
+          minimum: 1
+          maximum: 24
+          example: 3
+        paymentTypeId:
+          type: [string, 'null']
+          description: Tipo de medio de pago según Mercado Pago, por ejemplo `credit_card`, `debit_card` o `account_money`.
+          example: credit_card
+        lastFour:
+          type: [string, 'null']
+          pattern: '^[0-9]{4}$'
+          description: Últimos 4 dígitos de la tarjeta.
+          example: '4242'
+        statusDetail:
+          type: [string, 'null']
+          description: Detalle del estado que informa Mercado Pago, por ejemplo `accredited` o `cc_rejected_insufficient_amount`. El front lo traduce a un motivo legible.
+          example: accredited
+        mpPaymentId:
+          type: [string, 'null']
+          description: Identificador del pago en Mercado Pago.
+          example: '1234567890'
+    OrderTracking:
+      type: object
+      description: Datos del despacho, una vez que el pedido se envió.
+      required: [carrier, number]
+      properties:
+        carrier:
+          type: string
+          description: Empresa de transporte.
+          minLength: 2
+          maxLength: 40
+          example: Andreani
+        number:
+          type: string
+          description: Número de seguimiento.
+          minLength: 4
+          maxLength: 40
+          example: AND123456789
+    OrderHistoryEntry:
+      type: object
+      description: Cambio de estado de un pedido.
+      required: [status, at, note]
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        at:
+          type: string
+          format: date-time
+          description: Momento del cambio, en UTC.
+          example: '2026-10-20T15:02:10Z'
+        note:
+          type: [string, 'null']
+          description: Nota del cambio, o `null` si no tiene.
+          example: null
+    Order:
+      type: object
+      description: >-
+        Pedido. Los importes cumplen `subtotalArs = itemsGrossArs − kitSavingsArs` y
+        `totalArs = subtotalArs + shippingArs`. El pedido pasa a pagado cuando el back recibe la
+        notificación de Mercado Pago, no antes.
+      required:
+        - number
+        - status
+        - paymentStatus
+        - customer
+        - shipping
+        - lines
+        - itemsGrossArs
+        - kitSavingsArs
+        - subtotalArs
+        - shippingArs
+        - totalArs
+        - payment
+        - tracking
+        - history
+        - reservedUntil
+        - createdAt
+      properties:
+        number:
+          $ref: '#/components/schemas/OrderNumber'
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        shipping:
+          $ref: '#/components/schemas/OrderShipping'
+        lines:
+          type: array
+          description: Líneas del pedido.
+          items:
+            $ref: '#/components/schemas/OrderLine'
+        itemsGrossArs:
+          description: Suma de los precios de lista de todas las líneas.
+          $ref: '#/components/schemas/Pesos'
+        kitSavingsArs:
+          description: Suma de los ahorros por kit.
+          $ref: '#/components/schemas/Pesos'
+        subtotalArs:
+          description: Importe de las líneas sin envío.
+          $ref: '#/components/schemas/Pesos'
+        shippingArs:
+          description: Costo del envío.
+          $ref: '#/components/schemas/Pesos'
+        totalArs:
+          description: Total del pedido, con el envío incluido.
+          $ref: '#/components/schemas/Pesos'
+        payment:
+          $ref: '#/components/schemas/OrderPayment'
+        tracking:
+          description: Datos del despacho, o `null` mientras el pedido no se envió.
+          oneOf:
+            - $ref: '#/components/schemas/OrderTracking'
+            - type: 'null'
+        history:
+          type: array
+          description: Cambios de estado del pedido, del más viejo al más nuevo.
+          items:
+            $ref: '#/components/schemas/OrderHistoryEntry'
+        reservedUntil:
+          type: string
+          format: date-time
+          description: Hasta cuándo se reserva el stock mientras se espera el pago (30 minutos desde la creación), en UTC. El valor no cambia cuando el pedido se paga.
+          example: '2026-10-20T15:30:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          description: Momento en que se creó el pedido, en UTC. El front lo muestra en hora de Buenos Aires.
+          example: '2026-10-20T15:00:00Z'
+      example:
+        number: GLP-12345
+        status: paid
+        paymentStatus: approved
+        customer:
+          email: vos@ejemplo.com
+          firstName: Lucía
+          lastName: Pérez
+          phone: '1123456789'
+        shipping:
+          method: home
+          address:
+            street: Av. Corrientes
+            number: '1234'
+            apartment: 5° B
+            postalCode: C1043
+            city: CABA
+            province: CABA
+          costArs: 6500
+          eta: 3 a 6 días hábiles
+        lines:
+          - type: product
+            name: Mate Imperial Premium
+            detail: Cuero Negro · Virola Alpaca cincelada
+            quantity: 1
+            unitPriceArs: 39999
+            kitSavingsArs: 0
+            totalArs: 39999
+            productSlug: mate-imperial-premium
+            options:
+              leather: Negro
+              ferrule: Alpaca cincelada
+            kitItems: null
+        itemsGrossArs: 39999
+        kitSavingsArs: 0
+        subtotalArs: 39999
+        shippingArs: 6500
+        totalArs: 46499
+        payment:
+          method: card
+          installments: 3
+          paymentTypeId: credit_card
+          lastFour: '4242'
+          statusDetail: accredited
+          mpPaymentId: '1234567890'
+        tracking: null
+        history:
+          - status: pending_payment
+            at: '2026-10-20T15:00:00Z'
+            note: null
+          - status: paid
+            at: '2026-10-20T15:02:10Z'
+            note: null
+        reservedUntil: '2026-10-20T15:30:00Z'
+        createdAt: '2026-10-20T15:00:00Z'
+    CreateOrderResult:
+      type: object
+      description: Pedido recién creado, con el token para consultarlo y pagarlo.
+      required: [order, orderToken]
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        orderToken:
+          type: string
+          description: Token del pedido. Se entrega solo esta vez y va en la cabecera `X-Order-Token`.
+          minLength: 1
+          example: ot_3f2b8c1e5d4a4e7b9a601c2d3e4f5a6b
+    OrderSummary:
+      type: object
+      description: Pedido como se muestra en el listado de "Mis pedidos".
+      required: [number, createdAt, status, paymentStatus, totalArs, itemCount]
+      properties:
+        number:
+          $ref: '#/components/schemas/OrderNumber'
+        createdAt:
+          type: string
+          format: date-time
+          description: Momento en que se creó el pedido, en UTC.
+          example: '2026-10-20T15:00:00Z'
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        totalArs:
+          description: Total del pedido, con el envío incluido.
+          $ref: '#/components/schemas/Pesos'
+        itemCount:
+          type: integer
+          description: Cantidad de unidades del pedido, es decir la suma de las cantidades de sus líneas (un kit cuenta como una).
+          minimum: 1
+          example: 2
+    OrderSummaryPage:
+      type: object
+      description: Página de pedidos del cliente.
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: Pedidos de la página.
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+        page:
+          type: integer
+          description: Número de esta página, empezando en 1.
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de pedidos por página que aplicó el servidor.
+          minimum: 1
+          maximum: 100
+          example: 10
+        total:
+          type: integer
+          description: Cantidad total de pedidos del cliente, en todas las páginas.
+          minimum: 0
+          example: 3
+    MercadoPagoPreference:
+      type: object
+      description: Preferencia de pago creada en Mercado Pago.
+      required: [initPoint]
+      properties:
+        initPoint:
+          type: string
+          format: uri
+          description: Dirección de Mercado Pago a la que hay que redirigir al cliente para que pague.
+          example: https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=123456789-abcd-1234
+    CardPaymentInput:
+      type: object
+      description: >-
+        Datos para cobrar con tarjeta. Los genera MercadoPago.js en el navegador; el número de la
+        tarjeta, el vencimiento y el código de seguridad nunca llegan a esta API.
+      required: [token, paymentMethodId, issuerId, installments, payer]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Token de la tarjeta (`createCardToken`). Es de un solo uso, así que cada intento lleva uno nuevo.
+          example: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+        paymentMethodId:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Marca de la tarjeta según Mercado Pago, por ejemplo `visa`, `master` o `amex`.
+          example: visa
+        issuerId:
+          type: [string, 'null']
+          minLength: 1
+          maxLength: 50
+          description: Banco emisor según Mercado Pago, o `null` si la tarjeta no necesita elegirlo.
+          example: '310'
+        installments:
+          type: integer
+          minimum: 1
+          maximum: 24
+          description: Cantidad de cuotas elegida, desde 1.
+          example: 3
+        payer:
+          type: object
+          description: Quien paga.
+          required: [email, identification]
+          properties:
+            email:
+              $ref: '#/components/schemas/Email'
+            identification:
+              type: object
+              description: Documento de quien paga.
+              required: [type, number]
+              properties:
+                type:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                  description: Tipo de documento según Mercado Pago, por ejemplo `DNI`.
+                  example: DNI
+                number:
+                  type: string
+                  pattern: '^[A-Za-z0-9]{5,20}$'
+                  description: Número de documento, sin puntos ni espacios.
+                  example: '12345678'
+    CardPaymentResult:
+      type: object
+      description: >-
+        Resultado de un intento de pago con tarjeta. `paymentStatus` es el estado en este momento:
+        el definitivo llega por la notificación de Mercado Pago.
+      required: [paymentStatus, statusDetail, challenge]
+      properties:
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        statusDetail:
+          type: [string, 'null']
+          description: Detalle del estado que informa Mercado Pago, o `null` si no hay.
+          example: accredited
+        challenge:
+          description: Verificación 3-D Secure pendiente, o `null` si no hace falta.
+          oneOf:
+            - type: object
+              description: Verificación que el cliente completa con su banco.
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Dirección que se abre en un diálogo para que el cliente verifique la compra.
+                  example: https://www.mercadopago.com.ar/3ds/challenge?id=abc123
+            - type: 'null'
+    ReviewInput:
+      type: object
+      description: Reseña que envía un visitante.
+      required: [rating, authorName, text, website]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Puntuación en estrellas, de 1 a 5.
+          example: 5
+        authorName:
+          type: [string, 'null']
+          maxLength: 40
+          description: Nombre con el que firma, o `null` para firmar como "Anónimo".
+          example: Paula N.
+        text:
+          type: string
+          minLength: 10
+          maxLength: 600
+          description: Texto de la reseña, de 10 a 600 caracteres.
+          example: Muuu. Es el mate más lindo que tengo.
+        website:
+          $ref: '#/components/schemas/Honeypot'
+    ReviewReceipt:
+      type: object
+      description: Confirmación de que la reseña se recibió.
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: pending
+          description: Estado de la reseña; siempre `pending`, porque espera su aprobación.
+          example: pending
+    ContactInput:
+      type: object
+      description: Mensaje del formulario de contacto.
+      required: [name, email, orderNumber, reason, message, website]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: Nombre de quien escribe, de 2 a 50 caracteres.
+          example: Lucía Pérez
+        email:
+          $ref: '#/components/schemas/Email'
+        orderNumber:
+          description: Número del pedido del que se trata, o `null` si no corresponde.
+          oneOf:
+            - $ref: '#/components/schemas/OrderNumber'
+            - type: 'null'
+        reason:
+          $ref: '#/components/schemas/ContactReason'
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Mensaje, de 10 a 2000 caracteres.
+          example: Pedí un mate hace una semana y todavía no tengo novedades del envío.
+        website:
+          $ref: '#/components/schemas/Honeypot'
+    WithdrawalInput:
+      type: object
+      description: Solicitud de arrepentimiento de una compra.
+      required: [name, email, orderNumber, comment, website]
+      properties:
+        name:
+          $ref: '#/components/schemas/PersonName'
+        email:
+          $ref: '#/components/schemas/Email'
+        orderNumber:
+          description: Número del pedido que se quiere devolver, o `null` si no lo tiene a mano.
+          oneOf:
+            - $ref: '#/components/schemas/OrderNumber'
+            - type: 'null'
+        comment:
+          type: [string, 'null']
+          maxLength: 2000
+          description: Comentario opcional, de hasta 2000 caracteres.
+          example: Me llegó en perfecto estado, pero me arrepentí de la compra.
+        website:
+          $ref: '#/components/schemas/Honeypot'
+    WithdrawalReceipt:
+      type: object
+      description: Comprobante de una solicitud de arrepentimiento.
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Código de comprobante de la solicitud, para que la persona haga el seguimiento.
+          example: ARR-00031
+    MercadoPagoWebhookEvent:
+      type: object
+      description: >-
+        Notificación de Mercado Pago. Conserva el formato de Mercado Pago (con `snake_case`) y puede
+        traer más campos que los que se listan acá, que el back ignora.
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          description: Tipo de evento; para los pagos vale `payment`.
+          example: payment
+        action:
+          type: string
+          description: Acción que originó la notificación, por ejemplo `payment.created` o `payment.updated`.
+          example: payment.updated
+        data:
+          type: object
+          description: Recurso al que se refiere la notificación.
+          required: [id]
+          properties:
+            id:
+              type: string
+              description: Identificador del pago en Mercado Pago.
+              example: '1234567890'
+    Customer:
+      type: object
+      description: Datos de un cliente.
+      required: [email, firstName, lastName, phone]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        firstName:
+          $ref: '#/components/schemas/PersonName'
+        lastName:
+          $ref: '#/components/schemas/PersonName'
+        phone:
+          description: Teléfono, o `null` si no lo cargó.
+          oneOf:
+            - $ref: '#/components/schemas/Phone'
+            - type: 'null'
+      example:
+        email: vos@ejemplo.com
+        firstName: Lucía
+        lastName: Pérez
+        phone: '1123456789'
+    CustomerUpdate:
+      type: object
+      description: Cambios a los datos del cliente. Solo se modifican los campos que vienen.
+      minProperties: 1
+      properties:
+        firstName:
+          $ref: '#/components/schemas/PersonName'
+        lastName:
+          $ref: '#/components/schemas/PersonName'
+        phone:
+          description: Teléfono nuevo, o `null` para borrarlo.
+          oneOf:
+            - $ref: '#/components/schemas/Phone'
+            - type: 'null'
+    AddressBookInput:
+      description: Dirección que el cliente guarda en su libreta.
+      allOf:
+        - $ref: '#/components/schemas/AddressInput'
+        - type: object
+          required: [label, isDefault]
+          properties:
+            label:
+              type: [string, 'null']
+              maxLength: 30
+              description: Nombre con el que el cliente reconoce la dirección ("Casa", "Trabajo"), o `null`.
+              example: Casa
+            isDefault:
+              type: boolean
+              description: Si es la dirección predeterminada. Solo una lo es.
+              example: true
+    Address:
+      description: Dirección de la libreta del cliente.
+      allOf:
+        - $ref: '#/components/schemas/AddressBookInput'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              description: Identificador de la dirección.
+              example: adr-0001
+    RegisterInput:
+      type: object
+      description: Datos para crear una cuenta.
+      required: [email, firstName, lastName, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        firstName:
+          $ref: '#/components/schemas/PersonName'
+        lastName:
+          $ref: '#/components/schemas/PersonName'
+        password:
+          $ref: '#/components/schemas/Password'
+    LoginInput:
+      type: object
+      description: Datos para iniciar sesión.
+      required: [email, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Contraseña de la cuenta. No se le exige la fortaleza de una contraseña nueva.
+          example: mate-con-yerba-2026
+    ForgotPasswordInput:
+      type: object
+      description: Pedido de cambio de contraseña.
+      required: [email]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+    ResetPasswordInput:
+      type: object
+      description: Contraseña nueva, con el token del enlace que llegó por mail.
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Token del enlace de cambio de contraseña. Es de un solo uso y vence.
+          example: rt_7d6c5b4a39281706f5e4d3c2b1a09f8e
+        password:
+          $ref: '#/components/schemas/Password'
+    CsrfToken:
+      type: object
+      description: Token anti-CSRF para las escrituras de la cuenta.
+      required: [csrfToken]
+      properties:
+        csrfToken:
+          type: string
+          minLength: 1
+          description: Token que va en la cabecera `X-CSRF-Token`. Está ligado a la sesión actual.
+          example: 4b8f2a7c91d3e65f0a1b2c3d4e5f6a7b
