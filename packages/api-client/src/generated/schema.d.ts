@@ -465,7 +465,7 @@ export interface paths {
         };
         /**
          * Listar los productos del dashboard
-         * @description Devuelve los productos en cualquier estado (borrador, publicado o archivado), paginados. Los filtros se combinan entre sí (todos tienen que cumplirse).
+         * @description Devuelve los productos en cualquier estado, paginados. Sin `status` se excluyen los archivados; para verlos hay que pedir `status=archived`. Los filtros se combinan entre sí (todos tienen que cumplirse).
          */
         get: operations["listAdminProducts"];
         put?: never;
@@ -1733,13 +1733,13 @@ export interface components {
          */
         CartQuote: {
             /** @description Suma de los precios de lista de todas las líneas. */
-            itemsGrossArs: components["schemas"]["Pesos"];
+            itemsGrossArs: components["schemas"]["TotalArs"];
             /** @description Suma de los ahorros por kit. */
-            kitSavingsArs: components["schemas"]["Pesos"];
+            kitSavingsArs: components["schemas"]["TotalArs"];
             /** @description Líneas cotizadas, en el mismo orden que el carrito enviado. */
             lines: components["schemas"]["CartQuoteLine"][];
             /** @description Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit. */
-            subtotalArs: components["schemas"]["Pesos"];
+            subtotalArs: components["schemas"]["TotalArs"];
         };
         /**
          * @description Carrito a cotizar.
@@ -1780,7 +1780,7 @@ export interface components {
              */
             key: string;
             /** @description Ahorro por kit de toda la línea; 0 en los productos sueltos. */
-            kitSavingsArs: components["schemas"]["Pesos"];
+            kitSavingsArs: components["schemas"]["TotalArs"];
             /**
              * @description Cantidad máxima que se puede pedir de esta línea, es decir el menor entre 20 y el stock de sus piezas (0 si no hay).
              * @example 12
@@ -1792,7 +1792,7 @@ export interface components {
              */
             name: string;
             /** @description Importe de la línea, ya sin el ahorro. */
-            totalArs: components["schemas"]["Pesos"];
+            totalArs: components["schemas"]["TotalArs"];
             type: components["schemas"]["LineType"];
             /** @description Precio de lista de una unidad. */
             unitPriceArs: components["schemas"]["Pesos"];
@@ -2021,7 +2021,7 @@ export interface components {
         CreateOrderInput: {
             customer: components["schemas"]["CustomerInput"];
             /** @description Total que el cliente vio en el resumen, con el envío incluido. */
-            expectedTotalArs: components["schemas"]["Pesos"];
+            expectedTotalArs: components["schemas"]["TotalArs"];
             /** @description Líneas del carrito. */
             items: components["schemas"]["CartItemInput"][];
             paymentMethod: components["schemas"]["PaymentMethod"];
@@ -2671,9 +2671,9 @@ export interface components {
             /** @description Cambios de estado del pedido, del más viejo al más nuevo. */
             history: components["schemas"]["OrderHistoryEntry"][];
             /** @description Suma de los precios de lista de todas las líneas. */
-            itemsGrossArs: components["schemas"]["Pesos"];
+            itemsGrossArs: components["schemas"]["TotalArs"];
             /** @description Suma de los ahorros por kit. */
-            kitSavingsArs: components["schemas"]["Pesos"];
+            kitSavingsArs: components["schemas"]["TotalArs"];
             /** @description Líneas del pedido. */
             lines: components["schemas"]["OrderLine"][];
             number: components["schemas"]["OrderNumber"];
@@ -2690,9 +2690,9 @@ export interface components {
             shippingArs: components["schemas"]["Pesos"];
             status: components["schemas"]["OrderStatus"];
             /** @description Importe de las líneas sin envío. */
-            subtotalArs: components["schemas"]["Pesos"];
+            subtotalArs: components["schemas"]["TotalArs"];
             /** @description Total del pedido, con el envío incluido. */
-            totalArs: components["schemas"]["Pesos"];
+            totalArs: components["schemas"]["TotalArs"];
             /** @description Datos del despacho, o `null` mientras el pedido no se envió. */
             tracking: components["schemas"]["OrderTracking"] | null;
         };
@@ -2734,7 +2734,7 @@ export interface components {
                 unitPriceArs: components["schemas"]["Pesos"];
             }[] | null;
             /** @description Ahorro por kit de toda la línea; 0 en los productos sueltos. */
-            kitSavingsArs: components["schemas"]["Pesos"];
+            kitSavingsArs: components["schemas"]["TotalArs"];
             /**
              * @description Nombre de la línea, es decir el del producto o "Kit".
              * @example Mate Imperial Premium
@@ -2753,7 +2753,7 @@ export interface components {
              */
             quantity: number;
             /** @description Importe de la línea, ya sin el ahorro. */
-            totalArs: components["schemas"]["Pesos"];
+            totalArs: components["schemas"]["TotalArs"];
             type: components["schemas"]["LineType"];
             /** @description Precio de lista de una unidad (en un kit, la suma de las tres piezas). */
             unitPriceArs: components["schemas"]["Pesos"];
@@ -2852,7 +2852,7 @@ export interface components {
             paymentStatus: components["schemas"]["PaymentStatus"];
             status: components["schemas"]["OrderStatus"];
             /** @description Total del pedido, con el envío incluido. */
-            totalArs: components["schemas"]["Pesos"];
+            totalArs: components["schemas"]["TotalArs"];
         };
         /** @description Página de pedidos del cliente. */
         OrderSummaryPage: {
@@ -3555,6 +3555,11 @@ export interface components {
              */
             titleLines: string[];
         };
+        /**
+         * @description Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea, el subtotal o el total del pedido): entero, no negativo y de hasta 2.147.483.647, el máximo de un entero de 32 bits. Los precios unitarios usan `Pesos`, con tope menor.
+         * @example 68397
+         */
+        TotalArs: number;
         /** @description Solicitud de arrepentimiento de una compra. */
         WithdrawalInput: {
             /**
@@ -3901,6 +3906,7 @@ export type ShippingOption = components['schemas']['ShippingOption'];
 export type ShippingQuote = components['schemas']['ShippingQuote'];
 export type ShippingQuoteInput = components['schemas']['ShippingQuoteInput'];
 export type StoryScene = components['schemas']['StoryScene'];
+export type TotalArs = components['schemas']['TotalArs'];
 export type WithdrawalInput = components['schemas']['WithdrawalInput'];
 export type WithdrawalReceipt = components['schemas']['WithdrawalReceipt'];
 export type ResponseConflict = components['responses']['Conflict'];

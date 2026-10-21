@@ -1347,8 +1347,9 @@ paths:
       tags: [admin]
       summary: Listar los productos del dashboard
       description: >-
-        Devuelve los productos en cualquier estado (borrador, publicado o archivado), paginados.
-        Los filtros se combinan entre sí (todos tienen que cumplirse).
+        Devuelve los productos en cualquier estado, paginados. Sin `status` se excluyen los
+        archivados; para verlos hay que pedir `status=archived`. Los filtros se combinan entre sí
+        (todos tienen que cumplirse).
       security:
         - adminSession: []
       parameters:
@@ -2430,7 +2431,7 @@ components:
       in: cookie
       name: __Host-galpon_admin
       description: >-
-        Sesión del administrador. Cookie `HttpOnly`, `Secure` y `SameSite=Strict` que pone el
+        Sesión del administrador. Cookie `HttpOnly`, `Secure` y `SameSite=Lax` que pone el
         back al iniciar sesión en el dashboard.
     csrfToken:
       type: apiKey
@@ -2745,6 +2746,15 @@ components:
       minimum: 0
       maximum: 99999999
       example: 39999
+    TotalArs:
+      type: integer
+      description: >-
+        Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea,
+        el subtotal o el total del pedido): entero, no negativo y de hasta 2.147.483.647, el
+        máximo de un entero de 32 bits. Los precios unitarios usan `Pesos`, con tope menor.
+      minimum: 0
+      maximum: 2147483647
+      example: 68397
     NullablePesos:
       type: [integer, 'null']
       description: Monto en pesos argentinos, entero, no negativo y de hasta 99.999.999, o `null` cuando no corresponde (por ejemplo, "a consultar").
@@ -3955,10 +3965,10 @@ components:
           $ref: '#/components/schemas/Pesos'
         kitSavingsArs:
           description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         totalArs:
           description: Importe de la línea, ya sin el ahorro.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         maxQuantity:
           type: integer
           description: Cantidad máxima que se puede pedir de esta línea, es decir el menor entre 20 y el stock de sus piezas (0 si no hay).
@@ -3989,13 +3999,13 @@ components:
             $ref: '#/components/schemas/CartQuoteLine'
         itemsGrossArs:
           description: Suma de los precios de lista de todas las líneas.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
           description: Suma de los ahorros por kit.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         subtotalArs:
           description: Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
       example:
         lines:
           - key: product:prd-imperial-premium:Negro:Alpaca cincelada
@@ -4149,7 +4159,7 @@ components:
           $ref: '#/components/schemas/PaymentMethod'
         expectedTotalArs:
           description: Total que el cliente vio en el resumen, con el envío incluido.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         website:
           $ref: '#/components/schemas/Honeypot'
       example:
@@ -4235,10 +4245,10 @@ components:
           $ref: '#/components/schemas/Pesos'
         kitSavingsArs:
           description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         totalArs:
           description: Importe de la línea, ya sin el ahorro.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         productSlug:
           type: [string, 'null']
           description: Slug del producto al comprar, o `null` en un kit.
@@ -4373,19 +4383,19 @@ components:
             $ref: '#/components/schemas/OrderLine'
         itemsGrossArs:
           description: Suma de los precios de lista de todas las líneas.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
           description: Suma de los ahorros por kit.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         subtotalArs:
           description: Importe de las líneas sin envío.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         shippingArs:
           description: Costo del envío.
           $ref: '#/components/schemas/Pesos'
         totalArs:
           description: Total del pedido, con el envío incluido.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         payment:
           $ref: '#/components/schemas/OrderPayment'
         tracking:
@@ -4493,7 +4503,7 @@ components:
           $ref: '#/components/schemas/PaymentStatus'
         totalArs:
           description: Total del pedido, con el envío incluido.
-          $ref: '#/components/schemas/Pesos'
+          $ref: '#/components/schemas/TotalArs'
         itemCount:
           type: integer
           description: Cantidad de unidades del pedido, es decir la suma de las cantidades de sus líneas (un kit cuenta como una).

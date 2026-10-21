@@ -12,7 +12,7 @@ Las rutas son relativas al prefijo `/api/v1` que figura en `servers`.
 Salen de la sección 12 del [diseño del front](../superpowers/specs/2026-10-19-galpon-frontend-design.md).
 
 - **Nombres**: JSON en `camelCase`. Los schemas llevan nombre en inglés (`ProductSummary`, `Order`) y su `description` va en español.
-- **Montos**: enteros de pesos, con sufijo `Ars` (`priceArs`, `totalArs`). Los tipos son `Pesos` y `NullablePesos`; este último vale `null` cuando no corresponde (un producto "a consultar").
+- **Montos**: enteros de pesos, con sufijo `Ars` (`priceArs`, `totalArs`). Los precios y costos unitarios son `Pesos` (hasta 99.999.999) y `NullablePesos`, que vale `null` cuando no corresponde (un producto "a consultar"). Los montos que resultan de sumar o multiplicar (el total de una línea, el subtotal, el total del pedido, `expectedTotalArs`) son `TotalArs`, que admite hasta 2.147.483.647 (un entero de 32 bits) para que una suma de precios válidos nunca se salga del contrato.
 - **Nulos**: se escriben con `type: [X, 'null']`, o con `oneOf` cuando es una referencia. Un campo que puede faltar y uno que vale `null` son cosas distintas: todo campo que no está en `required` puede no venir; el resto siempre viene, aunque sea `null`.
 - **Fechas**: ISO 8601 en UTC (`date-time`). Solo `LegalContent.updatedAt` es una fecha sin hora (`date`). El front las muestra en `America/Argentina/Buenos_Aires`.
 - **Listas paginadas**: `?page=&pageSize=` (de 1 a 100) y respuesta `{ items, page, pageSize, total }`.
@@ -40,7 +40,7 @@ Esta versión del contrato tiene la base (raíz, seguridad, parámetros, respues
 | `account`  | `/auth/csrf`, `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/password/forgot` y `/reset`, `/me`, `/me/orders`, `/me/orders/{number}`, `/me/addresses` y `/me/addresses/{id}`                                                                                                                                                                                                                                                                              |
 | `admin`    | Todo bajo `/admin`: `/auth/login`, `/logout`, `/me`, `/csrf` y `/password`; `/dashboard/summary`; `/products`, `/products/{id}` y `/products/{id}/archive`; `/categories`, `/categories/{id}` y `/categories/order`; `/media/signature`; `/orders`, `/orders/{number}` y `/orders/{number}/status`; `/content/home`, `/about`, `/faq`, `/footer`, `/product-tabs` y `/legal/{document}`; `/settings`; `/reviews` y `/reviews/{id}`; `/messages` y `/messages/{id}` |
 
-Las rutas de `admin` llevan la cookie de sesión `adminSession` (`__Host-galpon_admin`, `SameSite=Strict`); las que escriben llevan además el token `X-CSRF-Token`. El login es la excepción: no tiene sesión todavía y devuelve el token en `csrfToken`. El `PUT` de contenido y de ajustes y el `PATCH` de productos y líneas llevan el objeto completo, como `PATCH /me/addresses/{id}`; el `PATCH` de reseñas y de mensajes modifica solo los campos que vienen.
+Las rutas de `admin` llevan la cookie de sesión `adminSession` (`__Host-galpon_admin`, `SameSite=Lax`); las que escriben llevan además el token `X-CSRF-Token`. El login es la excepción: no tiene sesión todavía y devuelve el token en `csrfToken`. El `PUT` de contenido y de ajustes y el `PATCH` de productos y líneas llevan el objeto completo, como `PATCH /me/addresses/{id}`; el `PATCH` de reseñas y de mensajes modifica solo los campos que vienen.
 
 ## Cómo se valida
 
@@ -58,6 +58,34 @@ npm run api:check      # falla si el archivo generado no coincide con el contrat
 ```
 
 El archivo generado se commitea y no se edita a mano. Cada schema de `components.schemas` pasa a ser un tipo con el mismo nombre (`Category`, `ProductDetail`...), además de `paths`, `components` y `operations`. `openapi-typescript` no es una dependencia: los scripts lo ejecutan con `npx --yes openapi-typescript@7.13.0`, así que la primera vez necesitan conexión.
+
+## Casos de validación compartidos
+
+[`validation-cases.json`](validation-cases.json) reúne los casos de las reglas de la sección 15 del diseño (email, nombre, teléfono, dirección, reseña, contacto, contraseña, formularios del dashboard...). Cada campo tiene al menos tres: uno válido, uno inválido con su mensaje exacto en español y uno de borde (el mínimo o el máximo permitido).
+
+```json
+{
+  "field": "Contacto: mensaje",
+  "name": "Contacto: mensaje: de 9 caracteres",
+  "schema": "contactSchema",
+  "input": {
+    "name": "Lucía Gómez",
+    "email": "lucia@example.com",
+    "reason": "Pedido",
+    "message": "aaaaaaaaa"
+  },
+  "valid": false,
+  "errors": { "message": "Escribí al menos 10 caracteres" }
+}
+```
+
+- `field` es el campo o la regla que se prueba (los casos de un mismo `field` van juntos) y `name`, único, es el título del caso.
+- `schema` es el nombre del schema exportado por `@galpon/schemas` (`contactSchema`, `shippingSchema`, `productFormSchema`...).
+- `input` es lo que llega, sin normalizar. Con `"valid": true`, `output` es el resultado ya normalizado (email en minúsculas, teléfono de 10 dígitos, `S/N` en mayúsculas...); si falta, solo se exige que pase.
+- Con `"valid": false`, `errors` trae el mensaje de cada campo con error, con el camino unido por puntos (`address.street`, `shippingOptions.0.costArs`). Tienen que fallar esos campos, ni uno más ni uno menos. Un `null` en lugar del mensaje significa que el campo tiene que fallar pero el texto no está fijado (el campo trampa `website`, que se descarta en silencio).
+- Los datos de tarjeta (Secure Fields de Mercado Pago) y la cantidad por producto no están: los valida Mercado Pago y el dominio, no un schema.
+
+El archivo es la fuente: el test `packages/schemas/src/validation-cases.test.ts` lo corre contra los schemas reales y el back lo va a correr igual contra sus DTOs de NestJS. Para cambiar una regla se cambia el caso acá, el schema del front y el DTO del back en el mismo cambio funcional. Es un solo archivo (no se parte por schema) para que el back lo copie o lo lea tal cual.
 
 ## Cómo se cambia
 
