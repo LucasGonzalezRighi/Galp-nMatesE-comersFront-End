@@ -71,18 +71,24 @@ class InvalidJsonError extends Error {}
  *
  * @param {string} root - Carpeta raíz del workspace.
  * @param {string} path - Ruta del archivo relativa a la raíz, con `/` (es la que se muestra).
- * @returns {unknown} El contenido ya parseado.
- * @throws {InvalidJsonError} Si el archivo no es JSON válido: `<ruta>: JSON inválido (<motivo>)`.
+ * @returns {object} El contenido ya parseado, siempre un objeto.
+ * @throws {InvalidJsonError} Si el archivo no es JSON válido o no es un objeto (`null`, un arreglo
+ *   o un valor suelto): `<ruta>: JSON inválido (<motivo>)`.
  */
 function readJson(root, path) {
+  let parsed
   try {
-    return JSON.parse(readFileSync(join(root, path), 'utf8'))
+    parsed = JSON.parse(readFileSync(join(root, path), 'utf8'))
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new InvalidJsonError(`${path}: JSON inválido (${error.message})`, { cause: error })
     }
     throw error
   }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new InvalidJsonError(`${path}: JSON inválido (se esperaba un objeto)`)
+  }
+  return parsed
 }
 
 /**

@@ -214,6 +214,41 @@ describe('check-dependency-versions ejecutado directo', () => {
     expect(result.stderr).toMatch(/^scripts\/dependency-versions\.json: JSON inválido \(.+\)\n$/)
   })
 
+  it.each([
+    ['null', 'null'],
+    ['un arreglo', '[]'],
+    ['un texto', '"x"'],
+  ])(
+    'rechaza un package.json válido que es %s y no un objeto, y sale con 1',
+    (_description, text) => {
+      const root = createWorkspace({ 'package.json': { name: 'raiz' } })
+      mkdirSync(join(root, 'apps', 'store'), { recursive: true })
+      writeFileSync(join(root, 'apps', 'store', 'package.json'), text)
+      const result = runScript(root)
+      expect(result.status).toBe(1)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toBe('apps/store/package.json: JSON inválido (se esperaba un objeto)\n')
+    },
+  )
+
+  it.each([
+    ['null', 'null'],
+    ['un arreglo', '[]'],
+    ['un texto', '"x"'],
+  ])(
+    'rechaza un dependency-versions.json válido que es %s y no un objeto, y sale con 1',
+    (_description, text) => {
+      const root = createWorkspace({ 'package.json': { name: 'raiz' } })
+      writeFileSync(join(root, 'scripts', 'dependency-versions.json'), text)
+      const result = runScript(root)
+      expect(result.status).toBe(1)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toBe(
+        'scripts/dependency-versions.json: JSON inválido (se esperaba un objeto)\n',
+      )
+    },
+  )
+
   it('también revisa cuando se lo invoca por un enlace (junction o symlink)', () => {
     const root = createWorkspace({
       'package.json': { devDependencies: { typescript: '^6.0.3' } },
