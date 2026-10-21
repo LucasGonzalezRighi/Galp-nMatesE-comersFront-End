@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Fecha** | 2026-10-19 · revisado 2026-10-20 (revisión adversarial de 4 enfoques: fidelidad al diseño, pagos/seguridad/legal, viabilidad técnica, completitud) |
+| **Fecha** | 2026-10-19 · revisado 2026-10-20 (revisión adversarial de 4 enfoques: fidelidad al diseño, pagos/seguridad/legal, viabilidad técnica, completitud) · ajustado 2026-10-21 al cerrar P1 (contrato, contenido por rutas, versiones fijadas; ver la bitácora en `docs/BITACORA.md`) |
 | **Estado** | Borrador para revisión de Lucas |
 | **Alcance** | Fase 1: `frontend/` completo (tienda pública + dashboard) y el contrato de API que después implementa el backend |
 | **Fuera de este documento** | Backend NestJS hexagonal + PostgreSQL + Redis: diseño propio en `2026-10-20-galpon-backend-design.md` (fase 2) |
@@ -117,7 +117,9 @@ apps/admin ─┘         │
 
 ## 5. Stack
 
-Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/dependency-versions.json` y cada `package.json` usa esa misma versión; `npm run lint` lo verifica. Regla: la última estable **compatible con la matriz de dependencias** — `npm install` sin errores de peers. `openapi-typescript` se ejecuta con `npx` (su peer pide TypeScript 5).
+Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/dependency-versions.json` (fuente única) y cada `package.json` usa esa misma versión; los paquetes propios (`@galpon/*`) se declaran con `"*"`. `npm run lint` corre `scripts/check-dependency-versions.mjs`, que falla si alguno se desvía. Regla: la última estable **compatible con la matriz de dependencias** — `npm install` sin errores de peers. `openapi-typescript` no se instala: se ejecuta con `npx --yes openapi-typescript@7.13.0` (su peer pide TypeScript 5 y npm no admite ese conflicto).
+
+**Gestor de paquetes**: **npm workspaces** (`apps/*`, `packages/*`), por pedido de Lucas (2026-10-20): `npm i` instala todo y `npm run dev` levanta tienda (:3000) y admin (:5173) juntos con `concurrently`. El plan arrancó con pnpm; `catalog:` y `workspace:*` rompen `npm install`, por eso las versiones se centralizan en el JSON y se verifican con el script. El `package.json` raíz fuerza `handlebars` 4.7.10 con `overrides` (ver ADR 0007).
 
 | Uso | Librería (versión de referencia) |
 |---|---|
@@ -128,7 +130,7 @@ Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/d
 | Datos en cliente (las dos apps) | TanStack Query 5 |
 | Estilos | Tailwind CSS 4.3 (`@theme`; `@tailwindcss/postcss` en Next, `@tailwindcss/vite` en el admin) |
 | Componentes accesibles del admin | Radix UI (`radix-ui`), estilados con Tailwind, código dentro del repo |
-| Formularios | React Hook Form 7 + `@hookform/resolvers` |
+| Formularios | React Hook Form 7 + `@hookform/resolvers` **5.9.2** |
 | Validación | Zod 4 |
 | Estado del carrito y del kit | Zustand 5 (carrito con `persist`) |
 | Cliente HTTP | `openapi-fetch` + tipos de `openapi-typescript` 7 |
@@ -137,7 +139,7 @@ Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/d
 | Imágenes | `next/image` con loader de Cloudinary; subida firmada directa en el admin |
 | Íconos | `@phosphor-icons/react` (el diseño usa Phosphor) |
 | Tipografía | Inter: `next/font` en la tienda, `@fontsource-variable/inter` en el admin |
-| Tests | Vitest 5 + Testing Library + Playwright 1.6x + `@axe-core/playwright` |
+| Tests | Vitest 5 + Testing Library + jsdom **29.1.1** (no 30: pide Node ≥ 22.22 y Lucas usa 22.20) + Playwright 1.6x + `@axe-core/playwright` |
 | Calidad | ESLint **9.39** (no 10: jsx-a11y, eslint-config-next y eslint-plugin-import no lo soportan todavía) + typescript-eslint `strictTypeChecked` + jsx-a11y + boundaries + react-hooks; Prettier; lefthook |
 
 **TypeScript**: `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`. **No** se activa `exactOptionalPropertyTypes`: choca con los tipos que infiere Zod y con props opcionales de Radix y React Hook Form, y el costo supera el beneficio (ADR 0007).
@@ -223,7 +225,7 @@ Funciones puras con tests escritos antes que el código.
 |---|---|---|
 | `/` | Inicio | Estático + revalidación por etiqueta |
 | `/tienda` · `/tienda/[linea]` | Catálogo completo / por línea. Búsqueda y orden en `?q=&orden=` | Estático (catálogo publicado completo); filtrado y orden en el cliente (`useSearchParams` dentro de `<Suspense>`) |
-| `/producto/[slug]` | Ficha | Estático por producto + revalidación; `dynamicParams` para productos nuevos; slug viejo → redirección 308 al actual |
+| `/producto/[slug]` | Ficha | Estático por producto + revalidación; `dynamicParams` para productos nuevos; slug viejo → la API responde `200` con el producto y su slug actual, y la página hace `permanentRedirect` (308) al actual |
 | `/kit` · `/kit?mate={slug}` | Armá tu kit (con `mate`: lo elige si es un mate comprable, conserva lo ya elegido y abre en el paso Bombilla; si no sirve, se ignora) | Estático; interacción en cliente |
 | `/checkout` | Checkout | Dinámico, solo cliente, `noindex` |
 | `/checkout/resultado?pedido=GLP-12345` | Resultado del pago | Dinámico, `noindex` |
@@ -424,7 +426,7 @@ Cada tabla y formulario del admin define sus estados: cargando (esqueleto), vac�
 
 - Un único administrador; lo crea el back con un comando (no hay alta desde el dashboard).
 - `POST /admin/auth/login` → cookie `__Host-galpon_admin` (`httpOnly`, `Secure`, `SameSite=Lax`, vencimiento).
-- **CSRF**: token ligado a la sesión (HMAC del id de sesión), entregado por `GET /admin/auth/csrf`, rotado en cada login y enviado en `X-CSRF-Token` en cada petición que modifica.
+- **CSRF**: token ligado a la sesión (HMAC del id de sesión), rotado en cada login y enviado en `X-CSRF-Token` en cada petición que modifica. `POST /admin/auth/login` lo devuelve en su respuesta `{ email, csrfToken, expiresAt }` (no hay sesión previa desde la cual pedirlo) y `GET /admin/auth/csrf` lo vuelve a entregar después de una recarga.
 - Un `401` cierra la sesión y lleva a `/login?volver=`.
 - Despliegue previsto: admin en `admin.galponmates.com.ar`, API en `api.galponmates.com.ar`. CORS de `/api/v1/admin/*` acepta solo el origen del admin con credenciales (`credentials: 'include'`).
 
@@ -464,12 +466,12 @@ OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos 
 |---|---|
 | `GET /categories` | Líneas con cantidad de productos publicados |
 | `GET /products?category=&group=&ids=&q=&sort=&featured=&page=&pageSize=` | Catálogo (la tienda pide el publicado completo) |
-| `GET /products/{slug}` | Ficha; `404` si no está publicado; si el slug es viejo: `308` con el actual |
+| `GET /products/{slug}` | Ficha; `404` si no está publicado; si el slug es viejo: `200` con el producto y su `slug` actual (la página de la tienda redirige con `permanentRedirect`, 308; así `fetch` no sigue la redirección por su cuenta) |
 | `GET /products/{slug}/related` | Hasta 4 relacionados |
 | `GET /products/{slug}/reviews?page=` | Reseñas aprobadas + promedio + distribución |
 | `POST /products/{slug}/reviews` | Nueva reseña → `202` (pendiente de aprobación) |
 | `GET /reviews/featured` | Reseñas destacadas del inicio (con producto) |
-| `GET /content/{page}` | `home`, `about`, `faq`, `footer`, `product-tabs`, `legal-terms`, `legal-privacy` |
+| `GET /content/home` · `/content/about` · `/content/faq` · `/content/footer` · `/content/product-tabs` · `/content/legal/{document}` (`terms` \| `privacy`) | Contenido editable; una ruta por contenido, así cada respuesta tiene su tipo exacto (`HomeContent`, `AboutContent`, `FaqContent`, `FooterContent`, `ProductTabsContent`, `LegalContent`) |
 | `GET /settings/public` | Ver `PublicSettings` |
 | `POST /cart/quote` | `{ items }` → precios, ahorros, disponibilidad y máximos por línea (fuente de verdad de los importes en el checkout) |
 | `POST /shipping/quote` | `{ method, postalCode?, items }` → costo y plazo. En v1 no se usa: el costo sale de `PublicSettings`. `postalCode` es opcional para `pickup` |
@@ -487,20 +489,21 @@ OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos 
 
 **Admin** (prefijo `/admin`, cookie de admin + `X-CSRF-Token`)
 
-`POST /admin/auth/login` · `POST /admin/auth/logout` · `GET /admin/auth/me` · `GET /admin/auth/csrf` · `POST /admin/auth/password` · `GET /admin/dashboard/summary` · `GET|POST /admin/products` · `GET|PATCH /admin/products/{id}` · `POST /admin/products/{id}/archive` · `GET|POST /admin/categories` · `PATCH|DELETE /admin/categories/{id}` (`409` si tiene productos) · `PUT /admin/categories/order` · `POST /admin/media/signature` · `GET /admin/orders` · `GET /admin/orders/{number}` · `POST /admin/orders/{number}/status` · `GET|PUT /admin/content/{page}` · `GET|PUT /admin/settings` · `GET /admin/reviews` · `PATCH /admin/reviews/{id}` · `GET /admin/messages` · `PATCH /admin/messages/{id}`
+`POST /admin/auth/login` (→ `{ email, csrfToken, expiresAt }`) · `POST /admin/auth/logout` · `GET /admin/auth/me` · `GET /admin/auth/csrf` (vuelve a entregar el token después de una recarga) · `POST /admin/auth/password` · `GET /admin/dashboard/summary` · `GET|POST /admin/products` · `GET|PATCH /admin/products/{id}` · `POST /admin/products/{id}/archive` · `GET|POST /admin/categories` · `PATCH|DELETE /admin/categories/{id}` (`409` si tiene productos) · `PUT /admin/categories/order` · `POST /admin/media/signature` · `GET /admin/orders` · `GET /admin/orders/{number}` · `POST /admin/orders/{number}/status` · `GET|PUT /admin/content/home` · `/about` · `/faq` · `/footer` · `/product-tabs` · `/legal/{document}` (`terms` \| `privacy`) · `GET|PUT /admin/settings` · `GET /admin/reviews` · `PATCH /admin/reviews/{id}` · `GET /admin/messages` · `PATCH /admin/messages/{id}`
 
 **Modelos** (resumen; el detalle está en el YAML)
 
 - `Category { id, slug, name, group: 'mate'|'bombilla'|'yerba', blurb, image?, position, productCount }`
 - `ProductSummary { id, slug, code, name, description, categoryId, categorySlug, categoryName, group, priceArs|null, netPriceArs|null, isPurchasable, isSoldOut, maxQuantity, featured, mainImage?, rating: { average, count } }`
-- `ProductDetail = ProductSummary + { images[], tabs: { materials, shipping, care }, options?: { leathers[], ferrules[] } }` (la pestaña Descripción usa `description`; `tabs` viene ya combinado: texto del producto si existe, si no el del grupo)
+- `ProductDetail = ProductSummary + { images[], tabs: { descriptionNote: string | null, materials, shipping, care }, options?: { leathers[], ferrules[] } }` (la pestaña Descripción muestra `description` y, si existe, `descriptionNote`, por ejemplo la nota de "cada pieza es artesanal" de los mates; el resto de `tabs` viene ya combinado: texto del producto si existe, si no el del grupo)
 - `Image { publicId, url, width, height, alt }`
 - `Review { id, authorName, rating, text, createdAt, verifiedPurchase, product?: { slug, name } }`
 - `CartItemInput = { type: 'product', productId, quantity, options? } | { type: 'kit', mateId, bombillaId, yerbaId, leather, quantity }`
 - `CartQuote { lines: [{ key, name, detail, unitPriceArs, kitSavingsArs, totalArs, maxQuantity, issue?: 'unavailable'|'sold_out'|'quantity_reduced'|'price_changed' }], itemsGrossArs, kitSavingsArs, subtotalArs }`
-- `CreateOrderInput { customer: { email, firstName, lastName, phone? }, shipping: { method, address? }, items: CartItemInput[], paymentMethod: 'mp_redirect'|'card', expectedTotalArs, website? }`
-- `Order { number, status, paymentStatus, customer, shipping: { method, address?, costArs, eta }, lines: OrderLine[], itemsGrossArs, kitSavingsArs, subtotalArs, shippingArs, totalArs, payment: { method, installments?, paymentTypeId?, lastFour?, statusDetail?, mpPaymentId? }, tracking?: { carrier, number }, history: [{ status, at, note? }], reservedUntil, createdAt }`
+- `CreateOrderInput { customer: { email, firstName, lastName, phone? }, shipping: { method, address: ShippingAddress | null }, items: CartItemInput[], paymentMethod: 'mp_redirect'|'card', expectedTotalArs, website? }`
+- `Order { number, status, paymentStatus, customer, shipping: { method, address: ShippingAddress | null, costArs, eta }, lines: OrderLine[], itemsGrossArs, kitSavingsArs, subtotalArs, shippingArs, totalArs, payment: { method, installments?, paymentTypeId?, lastFour?, statusDetail?, mpPaymentId? }, tracking?: { carrier, number }, history: [{ status, at, note? }], reservedUntil, createdAt }`
 - `OrderLine` (copia al momento de la compra) `{ type, name, detail, quantity, unitPriceArs, kitSavingsArs, totalArs, productSlug?, options?, kitItems?: [{ slug, name, unitPriceArs }] }`
+- `ShippingAddress = AddressInput | BranchAddressInput`: destino de un envío. `AddressInput { street, number, apartment: string | null, postalCode, city, province }` se usa en `home`; `BranchAddressInput { postalCode, city, province }` en `branch` (a sucursal solo se piden esos tres datos); en `pickup` la dirección es `null`
 - `Address { id, label?, street, number, apartment?, postalCode, city, province, isDefault }` · `Customer { email, firstName, lastName, phone? }` · `OrderSummary { number, createdAt, status, paymentStatus, totalArs, itemCount }`
 - `ShippingOption { method: 'home'|'branch'|'pickup', label, costArs, eta, enabled }`
 - `PublicSettings { kitDiscountPercent, shippingOptions: ShippingOption[], installments: { maxWithoutInterest, showOnProduct }, contactEmail, priceDisplay: { showNetPrice }, seller: { legalName, cuit, taxCondition, address, phone, supportArea, supportHours, dataFiscalUrl? } }`
@@ -521,7 +524,8 @@ packages/api-client/src/
 ├─ react/                      Hooks de TanStack Query (subpath @galpon/api-client/react)
 └─ mock/
    ├─ fixtures/                Datos del diseño: 6 líneas, 27 productos, reseñas, FAQ, contenidos, ajustes
-   │                           (también exportados como JSON para el seed de la fase 2)
+   │                           (en P1 se garantiza que se pueden serializar a JSON, con un test; la
+   │                           exportación a JSON para el seed se hace en la fase 2)
    ├─ db.ts                    Base en memoria (singleton en globalThis.__galponMockDb)
    ├─ handlers/                Un handler por endpoint, con los mismos schemas que usará el back
    └─ mock-fetch.ts            fetch(request: Request) que enruta al handler (lee el body con request.json())
@@ -755,13 +759,13 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 
 ## 20. Calidad, automatización y documentación
 
-- Scripts en `frontend/package.json`: `dev`, `dev:store`, `dev:admin`, `build`, `typecheck` (tienda: `next typegen && tsc --noEmit`; admin: `tsr generate && tsc --noEmit`), `lint`, `format`, `test`, `test:e2e`, `api:generate`.
-- `lefthook.yml` en la raíz del repo (que es la del workspace): Prettier + ESLint sobre lo cambiado + `typecheck`. Se instala con `"prepare": "lefthook install"` al correr `npm install`.
+- Scripts en `frontend/package.json`: `dev` (tienda y admin juntos), `dev:store`, `dev:admin`, `build`, `typecheck` (tienda: `next typegen && tsc --noEmit`; admin: `tsr generate && tsc --noEmit`), `lint` (chequeo de versiones fijadas + ESLint), `format`, `format:check`, `test`, `test:coverage`, `test:e2e`, `api:lint`, `api:generate`, `api:check`.
+- `lefthook.yml` en la raíz del repo (que es la del workspace): en `pre-commit`, Prettier + ESLint sobre lo cambiado; en `pre-push`, `typecheck` (antes de que Lucas suba, y así los commits siguen siendo rápidos). Se instala con `"prepare": "lefthook install"` al correr `npm install`.
 - Commits convencionales en español (`feat(store): agrega carrito lateral`).
-- CI (`.github/workflows/ci.yml`, Node 24): instalar, `api:generate` (falla si difiere de lo commiteado), `typecheck`, `lint`, `test`, `build`, `test:e2e`. Corre cuando Lucas suba el repo a GitHub.
+- CI (`.github/workflows/ci.yml`, Node 24, `npm ci`): `api:lint`, `api:check` (falla si los tipos difieren de lo commiteado), `lint`, `typecheck`, `test:coverage`; y en un segundo job, `build` y `test:e2e`. Corre cuando Lucas suba el repo a GitHub.
 - `.editorconfig`, `.nvmrc` y `.env.example` por app con cada variable explicada.
 - **Documentación**: `README.md` raíz (requisitos, levantar en modo de prueba en 3 comandos, mapa); `README.md` por app, paquete y funcionalidad; TSDoc en todo lo exportado; ADRs en `docs/adr/`:
-  `0001` Next para la tienda y Vite para el admin · `0002` Contrato OpenAPI como fuente de verdad · `0003` Modo de prueba (mock en el servidor de Next, *rewrite* de mismo dominio) · `0004` Mercado Pago: API elegida, mapeo de estados, campos de preferencia, 3-D Secure, idempotencia · `0005` Cloudinary con subida firmada · `0006` Montos en pesos enteros · `0007` Opciones de TypeScript y versiones fijadas (TS 6, ESLint 9).
+  `0001` Next para la tienda y Vite para el admin · `0002` Contrato OpenAPI como fuente de verdad · `0003` Modo de prueba (mock en el servidor de Next, *rewrite* de mismo dominio) · `0004` Mercado Pago: API elegida, mapeo de estados, campos de preferencia, 3-D Secure, idempotencia · `0005` Cloudinary con subida firmada · `0006` Montos en pesos enteros · `0007` Opciones de TypeScript, versiones fijadas (TS 6, ESLint 9, jsdom 29), npm workspaces y avisos conocidos de `npm audit`. El índice está en `docs/adr/README.md`; el recorrido de P1, en `docs/BITACORA.md`.
 
 ## 21. Entrega
 
@@ -783,7 +787,7 @@ Para cada pantalla, a 1440 px y 390 px, contra capturas del diseño exportado (s
 
 ## 22. Pendientes para la fase 2 (backend y base de datos)
 
-Ver `docs/superpowers/specs/2026-10-20-galpon-backend-design.md`: NestJS hexagonal (monolito modular), PostgreSQL + Prisma, Redis + BullMQ, Mercado Pago (Stripe en una fase posterior por el mismo puerto), idempotencia en pedidos y pagos, webhooks con verificación de firma, Swagger igual al contrato del front, seed desde los fixtures, llamadas a `/api/revalidate`.
+Ver `docs/superpowers/specs/2026-10-20-galpon-backend-design.md`: NestJS hexagonal (monolito modular), PostgreSQL + Prisma, Redis + BullMQ, Mercado Pago (Stripe en una fase posterior por el mismo puerto), idempotencia en pedidos y pagos, webhooks con verificación de firma, Swagger igual al contrato del front, seed desde los fixtures (la exportación de los fixtures a JSON se hace en esta fase), llamadas a `/api/revalidate`.
 
 ## 23. Riesgos y supuestos
 
