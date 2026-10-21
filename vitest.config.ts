@@ -24,7 +24,8 @@ export default defineConfig({
           name: 'store',
           root: './apps/store',
           environment: 'node',
-          include: ['src/**/*.test.ts'],
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['./src/test/setup.ts'],
         },
       },
       {
