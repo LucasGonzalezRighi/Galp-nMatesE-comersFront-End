@@ -1,0 +1,37 @@
+/*
+ * Fondo y entrada del panel del carrito (los del diseño): el panel se desliza desde la derecha en 650 ms
+ * con la curva principal y el fondo aparece en 450 ms. Dialog no tiene animación de salida, así
+ * que solo se anima la entrada. Con `prefers-reduced-motion: reduce` aparece sin moverse.
+ */
+@keyframes cart-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes cart-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.cart-panel {
+  /* Del `surface` teñido de cobre al fondo de la tienda, como el diseño. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-surface) 94%, var(--color-accent-900)),
+    var(--color-background)
+  );
+  animation: cart-panel-in 650ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.cart-backdrop {
+  animation: cart-backdrop-in 450ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-panel,
+  .cart-backdrop {
+    animation: none;
+  }
+}

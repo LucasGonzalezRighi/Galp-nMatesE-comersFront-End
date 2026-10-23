@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from 'react'
-import type { Pesos } from '@galpon/domain'
 import { formatPercentAr, formatPesos, installmentAmount, pesos } from '@galpon/domain'
 import { cx } from './cx'
 import { INSTALLMENTS_COPY } from './ui.copy'
@@ -14,8 +13,8 @@ export interface InstallmentsSetting {
 
 /** Props de {@link InstallmentsNote}: las de `<p>` más el precio y el ajuste. */
 export interface InstallmentsNoteProps extends Omit<ComponentProps<'p'>, 'children'> {
-  /** Precio de venta, o `null` si el producto es "a consultar". */
-  price: Pesos | null
+  /** Precio de venta (un número que se valida), o `null` si el producto es "a consultar". */
+  price: number | null
   /** Ajuste de cuotas de la tienda. */
   installments: InstallmentsSetting
 }

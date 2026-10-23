@@ -54,6 +54,52 @@ describe('Button', () => {
     expect(link).toHaveAttribute('aria-busy', 'true')
   })
 
+  it.each([['disabled'], ['loading']] as const)(
+    'con asChild y %s el enlace no se enfoca con Tab y su clic no navega',
+    async (state) => {
+      const onClick = vi.fn()
+      const clicks: boolean[] = []
+      const track = (event: Event): void => {
+        clicks.push(event.defaultPrevented)
+      }
+      document.addEventListener('click', track)
+      render(
+        <Button asChild {...{ [state]: true }}>
+          <a href="/pagar" onClick={onClick}>
+            Pagar
+          </a>
+        </Button>,
+      )
+
+      const link = screen.getByRole('link', { name: 'Pagar' })
+      expect(link).toHaveAttribute('tabindex', '-1')
+      await userEvent.click(link)
+
+      expect(onClick).not.toHaveBeenCalled()
+      expect(clicks).toEqual([true])
+      document.removeEventListener('click', track)
+    },
+  )
+
+  it('con asChild habilitado deja el enlace enfocable y navegable', async () => {
+    const onClick = vi.fn((event: { preventDefault: () => void }) => {
+      event.preventDefault()
+    })
+    render(
+      <Button asChild>
+        <a href="/tienda" onClick={onClick}>
+          Ver tienda
+        </a>
+      </Button>,
+    )
+
+    const link = screen.getByRole('link', { name: 'Ver tienda' })
+    expect(link).not.toHaveAttribute('tabindex')
+    await userEvent.click(link)
+
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
   it('con asChild exige un único elemento hijo', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 

@@ -1,0 +1,229 @@
+// @vitest-environment jsdom
+
+import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ApiClient } from '@galpon/api-client'
+import { ApiClientProvider } from '@galpon/api-client/react'
+import { hideToast } from '../toast'
+import { addProductToCart, type CartableProduct } from './actions'
+import {
+  CART_STORAGE_KEY,
+  CART_STORAGE_VERSION,
+  ensureCartHydrated,
+  useCartStore,
+} from './cart.store'
+import { CartButton } from './CartButton'
+import { CartDrawer } from './CartDrawer'
+import { CartHydrator } from './CartHydrator'
+import { EMPTY_SEEN } from './reconcile'
+import { createTestApi } from './test/support'
+
+/** Carrito completo montado como en el layout, con la API simulada de fábrica. */
+function renderCart(api: ApiClient): void {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const tree: ReactNode = (
+    <QueryClientProvider client={queryClient}>
+      <ApiClientProvider client={api}>
+        <CartHydrator />
+        <CartButton />
+        <CartDrawer />
+      </ApiClientProvider>
+    </QueryClientProvider>
+  )
+  render(tree)
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  useCartStore.setState({ lines: [], seen: EMPTY_SEEN, hasHydrated: false, isOpen: false })
+})
+
+afterEach(() => {
+  hideToast()
+  cleanup()
+})
+
+describe('CartButton', () => {
+  it('muestra el contador de unidades y se marca para el vuelo y el rebote', async () => {
+    const { api } = createTestApi()
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify({
+        state: { lines: [{ type: 'product', productId: 'prd-yerba-canarias', quantity: 3 }] },
+        version: CART_STORAGE_VERSION,
+      }),
+    )
+
+    renderCart(api)
+
+    const button = await screen.findByRole('button', { name: 'Abrir carrito, 3 productos' })
+    expect(button).toHaveTextContent('Carrito3')
+    expect(button).toHaveAttribute('data-cart-button')
+    expect(button.querySelector('[data-cart-badge]')).toHaveTextContent('3')
+  })
+
+  it('hasta leer localStorage el contador está invisible (no desajusta la hidratación)', () => {
+    render(<CartButton />)
+    const badge = document.querySelector('[data-cart-badge]')
+
+    expect(badge).toHaveClass('invisible')
+    expect(badge).toHaveTextContent('0')
+
+    act(() => {
+      ensureCartHydrated()
+    })
+
+    expect(badge).not.toHaveClass('invisible')
+  })
+})
+
+describe('CartDrawer', () => {
+  it('con el carrito vacío muestra la ilustración y lleva a la tienda', async () => {
+    const { api } = createTestApi()
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir carrito' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Carrito (0)' })
+    expect(within(dialog).getByText('Tu carrito está vacío')).toBeVisible()
+    expect(within(dialog).getByText('Elegí tu próximo compañero de ronda.')).toBeVisible()
+    expect(within(dialog).getByRole('link', { name: 'Ir a la tienda' })).toHaveAttribute(
+      'href',
+      '/tienda',
+    )
+  })
+
+  it('un carrito viejo se concilia al abrir: sin stock bloquea, stock menor se baja, borrado se quita', async () => {
+    const { api } = createTestApi()
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          lines: [
+            { type: 'product', productId: 'prd-borrado', quantity: 1 },
+            { type: 'product', productId: 'prd-galleta', quantity: 1 },
+            { type: 'product', productId: 'prd-coquito-criollo', quantity: 5 },
+            {
+              type: 'product',
+              productId: 'prd-imperial-premium',
+              quantity: 1,
+              options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+            },
+          ],
+        },
+        version: CART_STORAGE_VERSION,
+      }),
+    )
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Carrito (4)' })
+    await within(dialog).findByText('Mate Imperial Premium')
+    expect(within(dialog).queryByText('prd-borrado')).not.toBeInTheDocument()
+    expect(within(dialog).getByText('Cuero negro · Alpaca cincelada')).toBeVisible()
+    // Sin stock: marcada y sin selector de cantidad; el total solo suma las líneas con stock.
+    expect(within(dialog).getByText('Sin stock')).toBeVisible()
+    expect(within(dialog).getByText('$97.997')).toBeVisible()
+    expect(within(dialog).getByText('El envío se calcula en el checkout.')).toBeVisible()
+    // Stock menor: baja de 5 a 2 (el total de la línea es 2 × $28.999).
+    expect(within(dialog).getByText('$57.998')).toBeVisible()
+    const checkout = within(dialog).getByRole('link', { name: 'Finalizar compra' })
+    expect(checkout).toHaveAttribute('aria-disabled', 'true')
+    expect(checkout).toHaveAttribute('tabindex', '-1')
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Quitá los productos sin stock para finalizar la compra.',
+    )
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Quitar Mate Galleta' }))
+
+    await waitFor(() => {
+      expect(within(dialog).getByRole('link', { name: 'Finalizar compra' })).not.toHaveAttribute(
+        'aria-disabled',
+      )
+    })
+    expect(within(dialog).getByRole('link', { name: 'Finalizar compra' })).toHaveAttribute(
+      'href',
+      '/checkout',
+    )
+  })
+
+  it('muestra el kit con su ahorro, el "Ahorro por kit" y el subtotal con el descuento de domain', async () => {
+    const { api } = createTestApi()
+    useCartStore.setState({
+      lines: [
+        {
+          type: 'kit',
+          mateId: 'prd-imperial-premium',
+          bombillaId: 'prd-bombillon-premium-curvo',
+          yerbaId: 'prd-yerba-canarias',
+          leather: 'Negro',
+          quantity: 1,
+        },
+      ],
+      hasHydrated: true,
+    })
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText('Kit ronda completa')).toBeVisible()
+    expect(
+      within(dialog).getByText(
+        'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Cuero negro',
+      ),
+    ).toBeVisible()
+    // Suma de las tres piezas: $78.997; 10 % de descuento: $7.900 de ahorro.
+    expect(within(dialog).getByText('Ahorrás $7.900')).toBeVisible()
+    expect(within(dialog).getByText('Ahorro por kit')).toBeVisible()
+    expect(within(dialog).getByText('−$7.900')).toBeVisible()
+    expect(within(dialog).getAllByText('$71.097')).toHaveLength(2)
+  })
+
+  it('cambiar la cantidad actualiza la línea y "−" en 1 la quita', async () => {
+    const { api } = createTestApi()
+    const yerba: CartableProduct = {
+      id: 'prd-yerba-canarias',
+      name: 'Yerba Canarias 1 kg',
+      group: 'yerba',
+      priceArs: 9999,
+      maxQuantity: 12,
+      isPurchasable: true,
+    }
+    renderCart(api)
+    await screen.findByRole('button', { name: 'Abrir carrito' })
+    addProductToCart({ product: yerba })
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findByText('Yerba Canarias 1 kg')
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Sumar' }))
+    expect(await within(dialog).findAllByText('$19.998')).not.toHaveLength(0)
+    expect(useCartStore.getState().lines[0]?.quantity).toBe(2)
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Restar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Quitar' }))
+
+    expect(useCartStore.getState().lines).toEqual([])
+    expect(await within(dialog).findByText('Tu carrito está vacío')).toBeVisible()
+  })
+
+  it('Escape y "Seguir comprando" lo cierran', async () => {
+    const { api } = createTestApi()
+    renderCart(api)
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir carrito' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+
+    await userEvent.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(useCartStore.getState().isOpen).toBe(false)
+  })
+})

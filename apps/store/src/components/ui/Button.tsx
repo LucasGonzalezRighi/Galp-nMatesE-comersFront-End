@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react'
+import type { ComponentProps, MouseEvent, ReactNode } from 'react'
 import { cloneElement, isValidElement } from 'react'
 import type { ButtonSize, ButtonVariant } from './button-styles'
 import { buttonClassName } from './button-styles'
@@ -19,7 +19,8 @@ export interface ButtonProps extends ComponentProps<'button'> {
   fullWidth?: boolean
   /**
    * Aplica el estilo al único elemento hijo (por ejemplo un `<Link>`) en lugar de renderizar un
-   * `<button>`. En un enlace, `disabled` y `loading` se expresan con `aria-disabled`.
+   * `<button>`. En un enlace, `disabled` y `loading` se expresan con `aria-disabled`, se lo saca del
+   * orden de tabulación (`tabIndex` -1) y su clic no navega ni llama a otros manejadores.
    */
   asChild?: boolean
 }
@@ -28,6 +29,11 @@ export interface ButtonProps extends ComponentProps<'button'> {
 interface AsChildTarget {
   className?: string
   children?: ReactNode
+}
+
+/** Frena el clic de un enlace que hace de botón no disponible: no navega ni llama a otros manejadores. */
+function blockClick(event: MouseEvent<HTMLElement>): void {
+  event.preventDefault()
 }
 
 /**
@@ -55,6 +61,7 @@ export function Button({
 }: ButtonProps): ReactNode {
   const classes = cx(buttonClassName({ variant, size, fullWidth }), className)
   const spinner = loading ? <Spinner size={size === 'lg' ? 18 : 16} /> : null
+  const inactive = disabled === true || loading
 
   if (asChild) {
     if (!isValidElement<AsChildTarget>(children)) {
@@ -67,7 +74,8 @@ export function Button({
       {
         ...props,
         className: cx(classes, children.props.className),
-        ...(disabled === true || loading ? { 'aria-disabled': true } : null),
+        // Un enlace no se deshabilita: se saca del orden de tabulación y se frena su clic.
+        ...(inactive ? { 'aria-disabled': true, tabIndex: -1, onClick: blockClick } : null),
         ...(loading ? { 'aria-busy': true } : null),
       },
       spinner,

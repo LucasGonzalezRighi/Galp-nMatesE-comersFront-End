@@ -2,9 +2,13 @@
  * Tema de Tailwind v4 de Galpón Mates (sección 7 del spec). Los mismos valores están en
  * src/tokens.ts; el test del paquete comprueba que no se desfasen. El bloque va con prettier-ignore
  * para conservar las curvas y las sombras tal como las define el diseño (`.34`, sin espacios).
+ *
+ * El bloque es `static`: Tailwind emite todas las variables, no solo las que usan sus utilidades,
+ * porque la tienda lee colores con `var(--color-...)` desde estilos en línea (por ejemplo, el fondo
+ * de la cortina entre páginas).
  */
 /* prettier-ignore */
-@theme {
+@theme static {
   /* Borra la paleta por defecto de Tailwind: solo existen los colores del diseño. */
   --color-*: initial;
 

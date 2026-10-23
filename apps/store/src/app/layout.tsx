@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import Image from 'next/image'
+import { Suspense } from 'react'
+import { Footer, Header, TopBar } from '@/components/layout'
+import { PageCurtain, PageEnter } from '@/components/motion'
+import { cx } from '@/components/ui/cx'
+import { CartDrawer, CartHydrator } from '@/features/cart'
+import { Toaster } from '@/features/toast'
 import { inter } from './fonts'
 import './globals.css'
 import { Providers } from './providers'
@@ -21,8 +28,14 @@ interface RootLayoutProps {
   children: ReactNode
 }
 
+/** Fondo de la tienda (el del diseño): un resplandor cobrizo arriba a la derecha sobre el fondo liso. */
+const PAGE_BACKGROUND =
+  'bg-background bg-[radial-gradient(1200px_720px_at_82%_-160px,color-mix(in_srgb,var(--color-accent-900)_75%,transparent),transparent_60%)]'
+
 /**
- * Estructura común de todas las páginas de la tienda: idioma, tipografía y proveedores del cliente.
+ * Estructura común de todas las páginas de la tienda (spec 9.5): idioma, tipografía, proveedores
+ * del cliente, barra superior de arrepentimiento, encabezado, la página (que entra con
+ * `PageEnter`), pie, cortina entre secciones, panel del carrito, avisos e hidratación del carrito.
  *
  * @param props - Ver {@link RootLayoutProps}.
  */
@@ -30,7 +43,29 @@ export default function RootLayout({ children }: RootLayoutProps): ReactNode {
   return (
     <html lang="es-AR" className={inter.variable}>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <div className={cx('relative min-h-screen overflow-x-clip text-pretty', PAGE_BACKGROUND)}>
+            <TopBar />
+            <Header />
+            <PageEnter>{children}</PageEnter>
+            <Footer />
+          </div>
+          {/* La cortina lee el pathname: con Cache Components va dentro de un Suspense. */}
+          <Suspense fallback={null}>
+            <PageCurtain>
+              <Image
+                src="/brand/galpon-mark.png"
+                alt=""
+                width={64}
+                height={85}
+                className="h-auto w-[64px] opacity-90"
+              />
+            </PageCurtain>
+          </Suspense>
+          <CartDrawer />
+          <Toaster />
+          <CartHydrator />
+        </Providers>
       </body>
     </html>
   )

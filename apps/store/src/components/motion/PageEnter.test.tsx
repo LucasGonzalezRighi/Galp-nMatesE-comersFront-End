@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PageCurtain } from './PageCurtain'
 import { PageEnter } from './PageEnter'
+import { firstPathSegment } from './route-watchers'
 import { cleanUpAfterEach, mockReducedMotion } from './test/support'
 
 /** Ruta simulada: la prueba la cambia y vuelve a renderizar. */
@@ -85,7 +86,7 @@ describe('PageCurtain', () => {
     expect(curtain).toHaveStyle({ pointerEvents: 'none', position: 'fixed' })
   })
 
-  it('al cambiar el pathname recorre la pantalla; con solo un parámetro no', async () => {
+  it('al cambiar de sección recorre la pantalla; con un parámetro o dentro de la sección no', async () => {
     mockReducedMotion(false)
     const { rerender } = render(<PageCurtain>c</PageCurtain>)
     const curtain = screen.getByText('c')
@@ -99,6 +100,29 @@ describe('PageCurtain', () => {
     await waitFor(() => {
       expect(curtain.style.transform).not.toBe(start)
     })
+  })
+
+  it('no sale al pasar de /tienda a /tienda/bombillones, pero sí a /kit', async () => {
+    mockReducedMotion(false)
+    route.pathname = '/tienda'
+    const { rerender } = render(<PageCurtain>c</PageCurtain>)
+    const curtain = screen.getByText('c')
+    const start = curtain.style.transform
+    route.pathname = '/tienda/bombillones'
+    rerender(<PageCurtain>c</PageCurtain>)
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(curtain.style.transform).toBe(start)
+    route.pathname = '/kit'
+    rerender(<PageCurtain>c</PageCurtain>)
+    await waitFor(() => {
+      expect(curtain.style.transform).not.toBe(start)
+    })
+  })
+
+  it('firstPathSegment devuelve la sección de la ruta', () => {
+    expect(firstPathSegment('/')).toBe('')
+    expect(firstPathSegment('/tienda')).toBe('tienda')
+    expect(firstPathSegment('/tienda/bombillones')).toBe('tienda')
   })
 
   it('con prefers-reduced-motion no se dibuja', () => {

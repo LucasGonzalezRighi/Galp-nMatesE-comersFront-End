@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from 'react'
-import type { Pesos } from '@galpon/domain'
 import { formatPesos, pesos } from '@galpon/domain'
 import { cx } from './cx'
 import { UI_COPY } from './ui.copy'
@@ -9,8 +8,8 @@ export type PriceSize = 'sm' | 'md' | 'lg'
 
 /** Props de {@link Price}: las de `<span>` más el monto y el tamaño. */
 export interface PriceProps extends Omit<ComponentProps<'span'>, 'children'> {
-  /** Monto en pesos, o `null` si el producto es "a consultar". */
-  amount: Pesos | null
+  /** Monto en pesos (un `Pesos` o un número, que se valida), o `null` si el producto es "a consultar". */
+  amount: number | null
   /** Tamaño de la letra. Por defecto `md`. */
   size?: PriceSize
 }

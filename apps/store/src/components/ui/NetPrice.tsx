@@ -1,13 +1,12 @@
 import type { ComponentProps, ReactNode } from 'react'
-import type { Pesos } from '@galpon/domain'
 import { formatPesos, pesos } from '@galpon/domain'
 import { cx } from './cx'
 import { UI_COPY } from './ui.copy'
 
 /** Props de {@link NetPrice}: las de `<span>` más el monto. */
 export interface NetPriceProps extends Omit<ComponentProps<'span'>, 'children'> {
-  /** Precio sin impuestos nacionales (`netPriceArs`, lo calcula el back), o `null` si no hay. */
-  amount: Pesos | null
+  /** Precio sin impuestos nacionales (`netPriceArs`, lo calcula el back; un número que se valida), o `null` si no hay. */
+  amount: number | null
 }
 
 /**

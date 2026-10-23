@@ -223,6 +223,9 @@ describe('Dialog: ubicación y aspecto', () => {
     dialog = screen.getByRole('dialog')
     expect(containerOf(dialog)).toHaveAttribute('data-placement', 'full')
     expect(dialog).toHaveClass('h-full', 'w-full')
+    // El menú queda por debajo del encabezado fijo (z-50); los demás diálogos van por encima.
+    expect(containerOf(dialog)).toHaveClass('z-[45]')
+    expect(containerOf(dialog)).not.toHaveClass('z-50')
   })
 
   it('unstyled deja solo las clases propias en el panel, sin las de la ubicación', () => {

@@ -50,6 +50,17 @@ export interface DialogProps {
   backdropClassName?: string
 }
 
+/**
+ * Capa de cada ubicación. El menú del celular (`full`) queda por debajo del encabezado fijo (z-50)
+ * para que este siga a la vista y se pueda tocar; las demás cubren todo.
+ */
+const LAYER_CLASSES: Record<DialogPlacement, string> = {
+  center: 'z-50',
+  top: 'z-50',
+  end: 'z-50',
+  full: 'z-[45]',
+}
+
 /** Clases del contenedor que ocupa toda la pantalla, según dónde va el panel. */
 const CONTAINER_CLASSES: Record<DialogPlacement, string> = {
   center: 'grid place-items-center p-(--space-4)',
@@ -249,7 +260,7 @@ export function Dialog({
   return createPortal(
     <div
       data-placement={placement}
-      className={cx('fixed inset-0 z-50', CONTAINER_CLASSES[placement])}
+      className={cx('fixed inset-0', LAYER_CLASSES[placement], CONTAINER_CLASSES[placement])}
     >
       <div
         aria-hidden="true"

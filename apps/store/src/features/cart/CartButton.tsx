@@ -1,0 +1,51 @@
+'use client'
+
+import type { ReactNode } from 'react'
+import { HandbagIcon } from '@phosphor-icons/react/Handbag'
+import { pluralize } from '@galpon/domain'
+import { Magnetic } from '../../components/motion'
+import { Button } from '../../components/ui'
+import { cx } from '../../components/ui/cx'
+import { openCart } from './actions'
+import { CART_COPY } from './cart.copy'
+import { useCart } from './cart.store'
+
+/**
+ * Botón "Carrito" del encabezado con el contador de unidades (`.btn-secondary` del diseño). Abre
+ * el panel del carrito. El contador rebota cuando se agrega algo (`flyToCart`) y queda invisible
+ * hasta que se lee `localStorage` (`hasHydrated`), reservando su lugar para que el encabezado no
+ * salte. Se acerca al mouse como un imán.
+ */
+export function CartButton(): ReactNode {
+  const { count, hasHydrated } = useCart()
+  const label =
+    hasHydrated && count > 0
+      ? `${CART_COPY.openCart}, ${pluralize(count, 'producto', 'productos')}`
+      : CART_COPY.openCart
+
+  return (
+    <Magnetic strength={0.3}>
+      <Button
+        variant="secondary"
+        aria-label={label}
+        aria-haspopup="dialog"
+        className="relative min-h-[38px] gap-[8px]! px-[14px]!"
+        onClick={openCart}
+        data-cart-button=""
+      >
+        <HandbagIcon size={18} aria-hidden="true" />
+        <span>{CART_COPY.title}</span>
+        <span
+          aria-hidden="true"
+          className={cx(
+            'bg-accent-800 text-accent-100 inline-grid h-[20px] min-w-[20px] place-items-center rounded-full px-[6px] text-[11px] tabular-nums',
+            !hasHydrated && 'invisible',
+          )}
+          data-cart-badge=""
+        >
+          {hasHydrated ? count : 0}
+        </span>
+      </Button>
+    </Magnetic>
+  )
+}

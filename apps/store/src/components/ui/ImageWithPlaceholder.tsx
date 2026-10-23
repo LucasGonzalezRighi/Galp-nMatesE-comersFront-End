@@ -2,13 +2,19 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { cx } from './cx'
 
+/** `sizes` por omisión: grilla de cuatro columnas en escritorio, dos en tabletas y una en celulares. */
+const DEFAULT_SIZES = '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw'
+
 /** Props de {@link ImageWithPlaceholder}. */
 export interface ImageWithPlaceholderProps {
   /** Dirección de la imagen, o `null`/`undefined` si el producto todavía no tiene foto. */
   src?: string | null
   /** Texto alternativo: describe la imagen o, sin foto, el producto que representa la silueta. */
   alt: string
-  /** Anchos que ocupa la imagen según el ancho de pantalla (ver `next/image`). */
+  /**
+   * Anchos que ocupa la imagen según el ancho de pantalla (ver `next/image`). Por omisión, el de una
+   * grilla de productos: un cuarto, la mitad o todo el ancho según la pantalla.
+   */
   sizes?: string
   /** Carga la imagen con prioridad (la del primer pliegue). */
   priority?: boolean
@@ -32,7 +38,7 @@ export interface ImageWithPlaceholderProps {
 export function ImageWithPlaceholder({
   src,
   alt,
-  sizes,
+  sizes = DEFAULT_SIZES,
   priority = false,
   fit = 'cover',
   className,

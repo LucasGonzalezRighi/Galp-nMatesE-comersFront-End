@@ -16,6 +16,12 @@ describe('Price', () => {
     expect(screen.getByText('$39.999')).toBeVisible()
   })
 
+  it('acepta un número entero (por ejemplo, el de la API) además de un Pesos', () => {
+    render(<Price amount={39999} />)
+
+    expect(screen.getByText('$39.999')).toBeVisible()
+  })
+
   it('muestra "Consultar" cuando no hay precio', () => {
     render(<Price amount={null} />)
 
@@ -25,7 +31,7 @@ describe('Price', () => {
   it('rechaza un monto que no es un entero de pesos', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    expect(() => render(<Price amount={1.5 as ReturnType<typeof pesos>} />)).toThrow(RangeError)
+    expect(() => render(<Price amount={1.5} />)).toThrow(RangeError)
 
     consoleError.mockRestore()
   })
@@ -36,6 +42,12 @@ describe('NetPrice', () => {
     const { container } = render(<NetPrice amount={pesos(33057)} />)
 
     expect(container).toHaveTextContent(/^Precio sin impuestos nacionales: \$33\.057$/)
+  })
+
+  it('acepta un número entero además de un Pesos', () => {
+    const { container } = render(<NetPrice amount={33057} />)
+
+    expect(container).toHaveTextContent('Precio sin impuestos nacionales: $33.057')
   })
 
   it('no muestra nada sin monto', () => {
@@ -56,6 +68,12 @@ describe('InstallmentsNote', () => {
     expect(container).toHaveTextContent(
       /^o 3 cuotas sin interés de \$13\.333 · CFT 0,00 % \(TEA 0,00 %\)$/,
     )
+  })
+
+  it('acepta un número entero además de un Pesos', () => {
+    const { container } = render(<InstallmentsNote price={39999} installments={installments} />)
+
+    expect(container).toHaveTextContent('o 3 cuotas sin interés de $13.333')
   })
 
   it('destaca el CFT y deja la TEA en letra menor', () => {

@@ -30,13 +30,35 @@ function RouteWatcherInner({ onChange }: RouteWatcherProps): null {
 }
 
 /**
- * No dibuja nada: avisa cuando cambia el `pathname`. Usa solo `usePathname`, que no exige
- * `Suspense`.
+ * Primer segmento de un `pathname`: la "sección" del sitio.
+ *
+ * @param pathname - Ruta, por ejemplo `/tienda/bombillones`.
+ * @returns `tienda` para `/tienda` y `/tienda/bombillones`; `""` para `/`.
+ */
+export function firstPathSegment(pathname: string): string {
+  return pathname.split('/')[1] ?? ''
+}
+
+/**
+ * No dibuja nada: avisa cuando cambia el `pathname`. Usa solo `usePathname`; con Cache Components, en
+ * rutas con parámetros dinámicos, conviene montarlo dentro de un `<Suspense>`.
  *
  * @param props - Ver `RouteWatcherProps`.
  */
 export function PathnameWatcher({ onChange }: RouteWatcherProps): null {
   useOnKeyChange(usePathname(), onChange)
+  return null
+}
+
+/**
+ * No dibuja nada: avisa cuando cambia la sección (el primer segmento del `pathname`): de `/tienda` a
+ * `/kit` sí, de `/tienda` a `/tienda/bombillones` no. Usa solo `usePathname`; con Cache Components
+ * conviene montarlo dentro de un `<Suspense>`.
+ *
+ * @param props - Ver `RouteWatcherProps`.
+ */
+export function SectionWatcher({ onChange }: RouteWatcherProps): null {
+  useOnKeyChange(firstPathSegment(usePathname()), onChange)
   return null
 }
 
