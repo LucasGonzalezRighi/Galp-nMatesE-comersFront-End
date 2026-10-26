@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -23,6 +24,7 @@ export default defineConfig({
         test: {
           name: 'store',
           root: './apps/store',
+          alias: { '@': fileURLToPath(new URL('./apps/store/src', import.meta.url)) },
           environment: 'node',
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['./src/test/setup.ts'],
