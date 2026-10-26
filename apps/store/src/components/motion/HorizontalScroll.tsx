@@ -4,6 +4,7 @@ import type { MotionValue } from 'motion/react'
 import type { CSSProperties, FocusEvent, ReactNode } from 'react'
 import { m, useMotionValue, useScroll, useTransform } from 'motion/react'
 import { createContext, useContext, useEffect, useRef } from 'react'
+import './horizontal-scroll.css'
 import { MotionFeatures } from './MotionFeatures'
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion'
 import { assertFinite } from './validate'
@@ -131,11 +132,12 @@ function PinnedScroll({
     <ProgressContext.Provider value={scrollYProgress}>
       <m.section
         ref={sectionRef}
-        className={className}
-        style={{ position: 'relative', minHeight: '100vh', height: sectionHeight }}
+        className={className === undefined ? 'hscroll-section' : `hscroll-section ${className}`}
+        style={{ position: 'relative', height: sectionHeight }}
       >
         <div
           ref={stickyRef}
+          className="hscroll-sticky"
           onFocusCapture={onFocusCapture}
           onScroll={(event) => {
             // El navegador desplaza este contenedor al enfocar algo fuera de vista; la pista se
@@ -145,7 +147,6 @@ function PinnedScroll({
           style={{
             position: 'sticky',
             top: 0,
-            height: '100vh',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

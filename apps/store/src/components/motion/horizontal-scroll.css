@@ -1,0 +1,14 @@
+/*
+ * Alturas de la sección fija de `HorizontalScroll`: la ventana completa. Se usa `svh` (la altura
+ * con las barras del navegador del celular visibles) para que el contenido no salte al mostrarse
+ * u ocultarse la barra de direcciones; `vh` queda de respaldo para navegadores sin `svh`.
+ */
+.hscroll-section {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+.hscroll-sticky {
+  height: 100vh;
+  height: 100svh;
+}
