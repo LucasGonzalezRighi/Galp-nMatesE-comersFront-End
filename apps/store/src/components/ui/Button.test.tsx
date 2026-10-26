@@ -32,12 +32,12 @@ describe('Button', () => {
   it('con asChild aplica el estilo al enlace sin envolverlo en un botón', () => {
     render(
       <Button asChild variant="primary">
-        <a href="/tienda">Ver tienda</a>
+        <a href="https://ejemplo.test/tienda">Ver tienda</a>
       </Button>,
     )
 
     const link = screen.getByRole('link', { name: 'Ver tienda' })
-    expect(link).toHaveAttribute('href', '/tienda')
+    expect(link).toHaveAttribute('href', 'https://ejemplo.test/tienda')
     expect(link).toHaveClass('border-accent')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
@@ -87,7 +87,7 @@ describe('Button', () => {
     })
     render(
       <Button asChild>
-        <a href="/tienda" onClick={onClick}>
+        <a href="https://ejemplo.test/tienda" onClick={onClick}>
           Ver tienda
         </a>
       </Button>,
