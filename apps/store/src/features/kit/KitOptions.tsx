@@ -77,8 +77,9 @@ export function KitOptions({ group, options, selectedId, onPick }: KitOptionsPro
                       <ImageWithPlaceholder
                         src={product.image?.url}
                         alt={product.image?.alt ?? product.name}
+                        label={product.name}
                         sizes={OPTION_IMAGE_SIZES}
-                        className="aspect-square rounded-[8px]"
+                        className="bg-background aspect-square rounded-[8px]"
                       />
                       <span
                         className={cx(

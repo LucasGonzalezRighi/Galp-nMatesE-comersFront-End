@@ -161,12 +161,14 @@ describe('ProductCard', () => {
     expect(cartLines()).toEqual([])
   })
 
-  it('sin foto muestra la silueta del mate con el nombre del producto', () => {
+  it('sin foto muestra la tarjeta punteada con el ícono y el nombre del producto', () => {
     renderCard({ ...mate, mainImage: null })
 
     const placeholder = screen.getByRole('img', { name: 'Mate Imperial Premium' })
     expect(placeholder.tagName).toBe('DIV')
+    expect(placeholder).toHaveClass('border-dashed')
     expect(placeholder.querySelector('svg')).toBeInTheDocument()
+    expect(placeholder).toHaveTextContent('Mate Imperial Premium')
   })
 
   it('agregar rápido suma el mate con Negro y Alpaca cincelada y avisa "Agregado al carrito"', async () => {

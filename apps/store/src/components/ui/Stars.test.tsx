@@ -34,23 +34,33 @@ describe('Stars', () => {
     expect(screen.getByRole('img', { name: label })).toBeVisible()
   })
 
-  it('dibuja estrellas llenas, medias y vacías', () => {
-    const { container } = render(<Stars value={3.5} />)
+  it('dibuja estrellas enteras: la quinta de 4,7 queda vacía, sin media estrella', () => {
+    const { container } = render(<Stars value={4.7} />)
 
-    expect(fillsOf(container)).toEqual(['full', 'full', 'full', 'half', 'empty'])
+    expect(fillsOf(container)).toEqual(['full', 'full', 'full', 'full', 'empty'])
   })
 
-  it('redondea a la media estrella más cercana', () => {
-    const high = render(<Stars value={4.8} />)
-    expect(fillsOf(high.container)).toEqual(['full', 'full', 'full', 'full', 'full'])
+  it('llena la estrella i cuando la puntuación es de i - 0,25 o más', () => {
+    const below = render(<Stars value={4.74} />)
+    expect(fillsOf(below.container)).toEqual(['full', 'full', 'full', 'full', 'empty'])
     cleanup()
 
-    const middle = render(<Stars value={4.3} />)
-    expect(fillsOf(middle.container)).toEqual(['full', 'full', 'full', 'full', 'half'])
+    const edge = render(<Stars value={4.75} />)
+    expect(fillsOf(edge.container)).toEqual(['full', 'full', 'full', 'full', 'full'])
     cleanup()
 
-    const low = render(<Stars value={4.2} />)
-    expect(fillsOf(low.container)).toEqual(['full', 'full', 'full', 'full', 'empty'])
+    const middle = render(<Stars value={3.5} />)
+    expect(fillsOf(middle.container)).toEqual(['full', 'full', 'full', 'empty', 'empty'])
+    cleanup()
+
+    const none = render(<Stars value={0} />)
+    expect(fillsOf(none.container)).toEqual(['empty', 'empty', 'empty', 'empty', 'empty'])
+  })
+
+  it('nunca dibuja una media estrella', () => {
+    const { container } = render(<Stars value={4.5} />)
+
+    expect(container.querySelector('[data-fill="half"]')).toBeNull()
   })
 
   it('rechaza valores fuera de 0 a 5', () => {

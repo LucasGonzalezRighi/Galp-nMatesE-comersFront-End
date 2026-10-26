@@ -15,7 +15,7 @@ import { ImageWithPlaceholder } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
 import { Eyebrow } from './Eyebrow'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
-import { HOME_COPY, orderLabel, piecesLabel } from './home.copy'
+import { HOME_COPY, linePhotoPlaceholder, orderLabel, piecesLabel } from './home.copy'
 
 /** Medidas de las tarjetas de la pista, como el diseño: no más de 440 px de ancho ni 500 de alto. */
 const CARD_SIZE = 'h-[min(56vh,500px)] flex-none'
@@ -59,6 +59,7 @@ function LineCard({ line, position }: LineCardProps): ReactNode {
         <ImageWithPlaceholder
           src={line.image?.url}
           alt=""
+          label={linePhotoPlaceholder(line.name)}
           sizes="(min-width: 640px) 440px, 78vw"
           className="size-full"
         />

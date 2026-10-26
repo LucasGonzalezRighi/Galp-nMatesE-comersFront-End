@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ImageIcon } from '@phosphor-icons/react/dist/ssr/Image'
 import Image from 'next/image'
 import { cx } from './cx'
 
@@ -9,8 +10,14 @@ const DEFAULT_SIZES = '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw'
 export interface ImageWithPlaceholderProps {
   /** Dirección de la imagen, o `null`/`undefined` si el producto todavía no tiene foto. */
   src?: string | null
-  /** Texto alternativo: describe la imagen o, sin foto, el producto que representa la silueta. */
+  /** Texto alternativo: describe la imagen o, sin foto, el producto que representa el marco vacío. */
   alt: string
+  /**
+   * Texto que se escribe bajo el ícono cuando no hay foto, como en el diseño (por ejemplo el nombre
+   * del producto o "Foto 1 · Mate Galleta"). Sin él, el marco vacío solo muestra el ícono. Es
+   * visual: lo que anuncian los lectores de pantalla es `alt`.
+   */
+  label?: string
   /**
    * Anchos que ocupa la imagen según el ancho de pantalla (ver `next/image`). Por omisión, el de una
    * grilla de productos: un cuarto, la mitad o todo el ancho según la pantalla.
@@ -22,14 +29,16 @@ export interface ImageWithPlaceholderProps {
   fit?: 'cover' | 'contain'
   /**
    * Clases del marco, que es quien define el tamaño: la imagen lo llena, así que hace falta un
-   * alto (por ejemplo `aspect-[4/5]`). También sirve para el radio de las esquinas.
+   * alto (por ejemplo `aspect-[4/5]`). También sirve para el radio de las esquinas, que el borde
+   * punteado del marco vacío copia. El marco no pinta fondo: lo pone quien lo contiene.
    */
   className?: string
 }
 
 /**
- * Imagen de producto en un marco que la recorta (`next/image` con `fill`). Sin imagen muestra la
- * silueta de un mate sobre el fondo de la tienda, así el diseño no cambia cuando falta la foto.
+ * Imagen de producto en un marco que la recorta (`next/image` con `fill`). Sin imagen dibuja lo que
+ * el diseño llama "foto pendiente": un marco de borde punteado con un ícono de imagen y, si se
+ * pasa `label`, el texto debajo.
  *
  * @param props - Ver {@link ImageWithPlaceholderProps}.
  * @example
@@ -38,6 +47,7 @@ export interface ImageWithPlaceholderProps {
 export function ImageWithPlaceholder({
   src,
   alt,
+  label,
   sizes = DEFAULT_SIZES,
   priority = false,
   fit = 'cover',
@@ -46,7 +56,7 @@ export function ImageWithPlaceholder({
   const hasImage = src !== undefined && src !== null && src !== ''
 
   return (
-    <div className={cx('bg-background relative overflow-hidden', className)}>
+    <div className={cx('relative overflow-hidden', className)}>
       {hasImage ? (
         <Image
           src={src}
@@ -60,14 +70,10 @@ export function ImageWithPlaceholder({
         <div
           role="img"
           aria-label={alt}
-          className="flex size-full items-center justify-center text-neutral-700"
+          className="flex size-full flex-col items-center justify-center gap-2 rounded-[inherit] border border-dashed border-neutral-700 px-3 text-center text-[13px] text-neutral-500"
         >
-          <svg viewBox="0 0 120 120" fill="currentColor" aria-hidden="true" className="size-3/5">
-            {/* Virola, cuerpo de calabaza y bombilla. */}
-            <path d="M26 46a4 4 0 0 1 4-4h60a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4z" />
-            <path d="M31 54h58c1 26-10 46-29 50-19-4-30-24-29-50z" />
-            <path d="M78 8l4.5 2L68 56l-4.5-1.5z" />
-          </svg>
+          <ImageIcon size={22} aria-hidden="true" />
+          {label}
         </div>
       )}
     </div>

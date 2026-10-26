@@ -24,7 +24,7 @@ interface KitPieceProps {
   label: string
   /** Cuántas opciones comprables tiene el paso. */
   options: number
-  /** Un producto del grupo, para mostrar su foto; sin foto se dibuja la silueta. */
+  /** Un producto del grupo, para mostrar su foto; sin foto se dibuja el marco punteado. */
   product: ProductSummary | null
   /** Retardo de entrada, en milisegundos. */
   delay: number
@@ -49,8 +49,9 @@ function KitPiece({
             <ImageWithPlaceholder
               src={product?.mainImage?.url}
               alt=""
+              label={label}
               sizes="(min-width: 1024px) 14vw, 30vw"
-              className="size-full"
+              className="size-full rounded-[14px]"
             />
           </div>
           <div

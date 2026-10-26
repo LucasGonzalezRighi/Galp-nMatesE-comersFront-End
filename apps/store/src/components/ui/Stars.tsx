@@ -5,16 +5,13 @@ import { UI_COPY } from './ui.copy'
 
 /** Props de {@link Stars}. */
 export interface StarsProps {
-  /** Puntuación de 0 a 5; admite decimales (se redondea a la media estrella más cercana). */
+  /** Puntuación de 0 a 5; admite decimales (se dibujan estrellas enteras, ver {@link Stars}). */
   value: number
   /** Lado de cada estrella en píxeles. Por defecto 14. */
   size?: number
   /** Clases extra del contenedor. */
   className?: string
 }
-
-/** Cuánto se llena una estrella. */
-type StarFill = 'full' | 'half' | 'empty'
 
 /** Silueta de la estrella (Phosphor, relleno), la misma que usa el diseño. */
 const STAR_PATH =
@@ -26,11 +23,9 @@ const POSITIONS = [1, 2, 3, 4, 5] as const
 /** Opacidad de la parte vacía de una estrella (la del diseño). */
 const EMPTY_STAR_CLASS = 'opacity-[0.22]'
 
-/** Decide cuánto se llena la estrella de esa posición: redondea la puntuación a la media más cercana. */
-function fillOf(value: number, position: number): StarFill {
-  if (value >= position - 0.25) return 'full'
-  if (value >= position - 0.75) return 'half'
-  return 'empty'
+/** Regla del diseño: la estrella de esa posición se llena si la puntuación llega a `posición - 0,25`. */
+function isFilled(value: number, position: number): boolean {
+  return value >= position - 0.25
 }
 
 /** Dibuja una estrella de `size` píxeles. */
@@ -50,8 +45,9 @@ function StarIcon({ size, className }: { size: number; className?: string }): Re
 }
 
 /**
- * Puntuación en estrellas de solo lectura, con medias estrellas. Se anuncia como una imagen con
- * el texto "4,7 de 5".
+ * Puntuación en estrellas enteras de solo lectura, como en el diseño: la estrella `i` se llena si la
+ * puntuación es de `i - 0,25` o más (4,7 dibuja cuatro llenas y una vacía; no hay medias estrellas).
+ * Se anuncia como una imagen con el texto exacto, por ejemplo "4,7 de 5".
  *
  * @param props - Ver {@link StarsProps}.
  * @throws {RangeError} Si `value` no es un número entre 0 y 5, o `size` no es mayor a 0.
@@ -74,15 +70,10 @@ export function Stars({ value, size = 14, className }: StarsProps): ReactNode {
       className={cx('text-accent inline-flex', size < 15 ? 'gap-[2px]' : 'gap-[3px]', className)}
     >
       {POSITIONS.map((position) => {
-        const fill = fillOf(value, position)
+        const filled = isFilled(value, position)
         return (
-          <span key={position} data-fill={fill} className="relative inline-flex">
-            <StarIcon size={size} className={fill === 'full' ? undefined : EMPTY_STAR_CLASS} />
-            {fill === 'half' ? (
-              <span className="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
-                <StarIcon size={size} />
-              </span>
-            ) : null}
+          <span key={position} data-fill={filled ? 'full' : 'empty'} className="inline-flex">
+            <StarIcon size={size} className={filled ? undefined : EMPTY_STAR_CLASS} />
           </span>
         )
       })}

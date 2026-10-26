@@ -225,11 +225,14 @@ describe('ProductGallery', () => {
     expect(screen.queryByRole('button', { name: /Ver la foto/ })).toBeNull()
   })
 
-  it('sin fotos muestra la silueta con el nombre del producto', () => {
+  it('sin fotos muestra la tarjeta punteada con "Foto 1 · nombre del producto"', () => {
     render(<ProductGallery productName="Mate Imperial Premium" code="N°07" images={[]} />)
 
     expect(screen.getByText('01 / 01')).toBeVisible()
-    expect(screen.getByRole('img', { name: 'Mate Imperial Premium' })).toBeVisible()
+    const placeholder = screen.getByRole('img', { name: 'Mate Imperial Premium' })
+    expect(placeholder).toBeVisible()
+    expect(placeholder).toHaveClass('border-dashed')
+    expect(placeholder).toHaveTextContent('Foto 1 · Mate Imperial Premium')
   })
 })
 

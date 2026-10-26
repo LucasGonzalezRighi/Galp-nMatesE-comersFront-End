@@ -66,6 +66,16 @@ export function quoteLabel(text: string): string {
 }
 
 /**
+ * Texto del marco de la tarjeta de una línea cuando todavía no tiene foto, como en el diseño.
+ *
+ * @param name - Nombre de la línea.
+ * @returns Por ejemplo `Foto · Bombillones`.
+ */
+export function linePhotoPlaceholder(name: string): string {
+  return `Foto · ${name}`
+}
+
+/**
  * Cantidad de piezas de una línea o del catálogo.
  *
  * @param count - Un entero mayor o igual a 0.

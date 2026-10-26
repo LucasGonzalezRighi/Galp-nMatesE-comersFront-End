@@ -29,10 +29,10 @@ Aparecen en las tablas como ✅ con su nota.
 | Pantalla | Estructura | Textos | Colores | Tipografía | Espacios | Estados | Animaciones |
 |---|---|---|---|---|---|---|---|
 | Inicio (`home`) 1440 y 390 | ✅ A1 A2 | ✅ | ✅ | ✅ | ✅ A1 | ✅ A9 | ✅ |
-| Tienda (`shop`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1, 3 | ✅ |
-| Línea (`shop-bombillones`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1 | ✅ |
-| Producto (`product-imperial-premium`, `product-galleta`) 1440 y 390 | ✅ A5 | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1, 3 | ✅ |
-| Armá tu kit (`kit`) 1440 y 390 | ✅ | ✅ A7 | ✅ | ✅ | ✅ | ❌ 1 | ✅ |
+| Tienda (`shop`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Línea (`shop-bombillones`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Producto (`product-imperial-premium`, `product-galleta`) 1440 y 390 | ✅ A5 | ✅ A4 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Armá tu kit (`kit`) 1440 y 390 | ✅ | ✅ A7 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nosotros (`about`) 1440 y 390 | ✅ A8 | ✅ | ✅ | ✅ | ✅ | ✅ A9 | ✅ |
 | Preguntas frecuentes (`faq`) 1440 y 390 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Contacto (`contact`) 1440 y 390 | ✅ A6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -53,16 +53,18 @@ Se revisaron solo por coherencia con el resto de la tienda.
 
 ## Desvíos a corregir
 
-Siguen abiertos (1 y 3). El plan termina en la Task 11 y ninguna tarea los tiene a su cargo: hay que asignarlos o aceptarlos de forma explícita.
-
-1. **Placeholder de producto sin foto.** El diseño dibuja una tarjeta con borde punteado, un ícono de imagen chico y el nombre del producto ("Foto · Mate Torpedo Premium"). La tienda dibuja un mate grande sin borde punteado ni nombre. Se ve en las tarjetas del inicio, de la tienda, de las líneas, de "Más para la ronda", del kit y en la galería de la ficha sin foto. Los placeholders sin foto son un desvío aceptado, pero su aspecto no es el del diseño; en cambio los de Nosotros sí coinciden. Hay que decidir si se iguala o se acepta.
-3. **Estrellas de la valoración.** Con 4,7 el diseño muestra cuatro estrellas llenas y una vacía; la tienda muestra la quinta llena a medias. Se ve en las tarjetas y en la ficha.
+Ninguno abierto.
 
 ## Desvíos corregidos en la ola de la revisión (2026-10-26)
 
 2. **Botón "Agregar kit al carrito" del resumen del kit.** Ahora ocupa todo el ancho de la tarjeta (1440 y 390 px). Causa: el imán (`Magnetic`) se estiraba pero su contenido seguía midiendo lo que su texto; el imán tiene la opción `fullWidth`. Lo cubre un E2E (`cart.spec.ts`) que compara el ancho del botón con el interior de la tarjeta.
 4. **Título de Arrepentimiento a 1440 px.** Se bajó el tope del título a `clamp(36px, 4.4vw, 64px)`: ya no se corta "arrepentimiento" en ningún ancho de 360 a 1920 px. Lo cubre un E2E (`withdrawal.spec.ts`) que falla si algún elemento del título desborda su caja.
 5. **Botón "Carrito 0" del encabezado.** El nombre accesible ahora contiene el texto visible ("Abrir carrito, 0 productos", también con el carrito vacío) y un espacio separa "Carrito" del contador en el DOM. Se quitó la excepción de `a11y.spec.ts`: axe no encuentra violaciones serias en ninguna pantalla.
+
+## Desvíos corregidos en la Task 11b (2026-10-26)
+
+1. **Placeholder de producto sin foto.** Ahora es el del diseño: marco con borde punteado, ícono de imagen de 22 px y texto chico debajo, sobre el fondo del contenedor (el `bg-background` de la tarjeta, el `bg-surface` de la galería). El texto sale del diseño: el nombre del producto en las tarjetas (inicio, tienda, "Más para la ronda") y en las opciones del kit, "Foto 1 · {nombre}" en la galería de la ficha, "Foto · {línea}" en las líneas del inicio y el nombre del paso ("Bombilla", "Yerba") en el bloque del kit del inicio; el carrito solo lleva el ícono. La silueta del mate se retiró: ningún otro componente la usaba. En el diseño las tarjetas no llevan el prefijo "Foto ·". Lo cubren `ImageWithPlaceholder.test.tsx`, `ProductCard.test.tsx`, `ProductDetailView.test.tsx` y `home-page.test.tsx`.
+3. **Estrellas de la valoración.** Ahora son enteras, con la regla del diseño (`dc-script.js`, `stars`): la estrella `i` se llena si el promedio es de `i - 0,25` o más, así que 4,7 dibuja cuatro llenas y una vacía. El `aria-label` sigue siendo exacto ("4,7 de 5"). Lo cubre `Stars.test.tsx`.
 
 ## Otras observaciones
 

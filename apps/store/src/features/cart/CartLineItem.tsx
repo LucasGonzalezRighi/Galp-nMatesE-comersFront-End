@@ -29,7 +29,7 @@ export interface CartLineItemProps {
   line: CartLineView
 }
 
-/** Foto de la línea (72 por 88 px): la del producto, su silueta o, en un kit, el logo sobre un brillo. */
+/** Foto de la línea (72 por 88 px): la del producto, el marco punteado o, en un kit, el logo sobre un brillo. */
 function LineImage({ line }: CartLineItemProps): ReactNode {
   return (
     <div
@@ -51,7 +51,7 @@ function LineImage({ line }: CartLineItemProps): ReactNode {
           src={line.image?.url}
           alt={line.image?.alt ?? line.name}
           sizes="72px"
-          className="size-full"
+          className="size-full rounded-lg"
         />
       )}
     </div>

@@ -89,6 +89,11 @@ describe('HomePage', () => {
     expect(kitLink).toHaveTextContent('−10%')
   })
 
+  it('las líneas sin foto dibujan el marco punteado con "Foto · nombre de la línea"', async () => {
+    renderSection(await HomePage())
+    expect(screen.getByText('Foto · Torpedos')).toBeInTheDocument()
+  })
+
   it('los destacados usan la tarjeta de producto y las escenas ofrecen agregar al carrito', async () => {
     const data = await homeData()
     renderSection(await HomePage())
@@ -125,11 +130,11 @@ describe('HomeKit', () => {
     expect(summary).toHaveTextContent('−10%')
     expect(screen.getByText('Armar mi kit').closest('a')).toHaveAttribute('href', '/kit')
     const { mate, bombilla, yerba } = data.stats.kitOptions
-    expect(screen.getByText('Mate').parentElement).toHaveTextContent(`${String(mate)} opciones`)
-    expect(screen.getByText('Bombilla').parentElement).toHaveTextContent(
-      `${String(bombilla)} opciones`,
-    )
-    expect(screen.getByText('Yerba').parentElement).toHaveTextContent(`${String(yerba)} opciones`)
+    // Sin foto el marco punteado repite el nombre del paso (como el diseño); el título es el `span`.
+    const stepTitle = (name: string): HTMLElement => screen.getByText(name, { selector: 'span' })
+    expect(stepTitle('Mate').parentElement).toHaveTextContent(`${String(mate)} opciones`)
+    expect(stepTitle('Bombilla').parentElement).toHaveTextContent(`${String(bombilla)} opciones`)
+    expect(stepTitle('Yerba').parentElement).toHaveTextContent(`${String(yerba)} opciones`)
   })
 
   it('sin descuento en el kit no muestra ningún "−N%"', async () => {

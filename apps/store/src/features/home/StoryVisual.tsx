@@ -26,7 +26,7 @@ const SIDE_CLASSES = {
 
 /**
  * Foto del producto de una escena de la historia, flotando al costado del texto. Reemplaza al
- * mate 3D del diseño, que llega en P5. Sin foto no dibuja nada (no se muestra una silueta en
+ * mate 3D del diseño, que llega en P5. Sin foto no dibuja nada (no se muestra un marco vacío en
  * medio de la historia). Las fotos que no son la de la portada son decorativas: se ocultan a los
  * lectores de pantalla porque el producto ya está en el texto de la escena.
  *

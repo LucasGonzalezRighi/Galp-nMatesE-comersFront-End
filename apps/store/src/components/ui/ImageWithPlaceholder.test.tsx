@@ -25,12 +25,34 @@ describe('ImageWithPlaceholder', () => {
     )
   })
 
-  it.each([[null], [undefined], ['']])('sin imagen (%s) muestra la silueta del mate', (src) => {
-    const { container } = render(<ImageWithPlaceholder src={src} alt="Mate imperial" />)
+  it.each([[null], [undefined], ['']])(
+    'sin imagen (%s) muestra una tarjeta de borde punteado con el ícono de imagen',
+    (src) => {
+      const { container } = render(<ImageWithPlaceholder src={src} alt="Mate imperial" />)
 
-    const placeholder = screen.getByRole('img', { name: 'Mate imperial' })
-    expect(placeholder.tagName).toBe('DIV')
-    expect(container.querySelector('img')).toBeNull()
-    expect(placeholder.querySelector('svg')).toBeInTheDocument()
+      const placeholder = screen.getByRole('img', { name: 'Mate imperial' })
+      expect(placeholder.tagName).toBe('DIV')
+      expect(placeholder).toHaveClass('border-dashed')
+      expect(container.querySelector('img')).toBeNull()
+      expect(placeholder.querySelector('svg')).toHaveAttribute('viewBox', '0 0 256 256')
+    },
+  )
+
+  it('sin imagen escribe el texto que se le pasa debajo del ícono', () => {
+    render(<ImageWithPlaceholder alt="Mate imperial" label="Foto 1 · Mate imperial" />)
+
+    expect(screen.getByText('Foto 1 · Mate imperial')).toBeVisible()
+  })
+
+  it('sin imagen ni texto dibuja solo el ícono', () => {
+    render(<ImageWithPlaceholder alt="Mate imperial" />)
+
+    expect(screen.getByRole('img', { name: 'Mate imperial' })).toHaveTextContent('')
+  })
+
+  it('con imagen no dibuja el texto del marco vacío', () => {
+    render(<ImageWithPlaceholder src="/mock-images/mate.jpg" alt="Mate imperial" label="Mate" />)
+
+    expect(screen.queryByText('Mate')).toBeNull()
   })
 })

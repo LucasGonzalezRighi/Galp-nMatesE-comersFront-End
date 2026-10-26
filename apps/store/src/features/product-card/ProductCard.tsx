@@ -91,7 +91,7 @@ export interface ProductCardProps {
 }
 
 /**
- * Tarjeta de producto Vitrina (spec 9.5, `ProductCard.dc.html`): foto o silueta de mate, línea,
+ * Tarjeta de producto Vitrina (spec 9.5, `ProductCard.dc.html`): foto o marco punteado, línea,
  * nombre, estrella y promedio si hay reseñas, precio o "Consultar", leyenda de cuotas con CFT
  * (o "Precio a confirmar" sin precio), "Precio sin impuestos nacionales", etiquetas "Sin stock" y
  * "Consultar", la píldora "Ver detalle" y el botón de agregar rápido.
@@ -154,9 +154,10 @@ export function ProductCard({
                 <ImageWithPlaceholder
                   src={product.mainImage?.url}
                   alt={product.mainImage?.alt ?? product.name}
+                  label={product.name}
                   sizes={sizes}
                   priority={priority}
-                  className="size-full"
+                  className="size-full rounded-[10px]"
                 />
               </div>
               <div

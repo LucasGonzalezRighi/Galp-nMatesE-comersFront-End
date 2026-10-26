@@ -8,11 +8,11 @@ import type { Image as ProductImage } from '@galpon/api-client'
 import { Tilt } from '../../components/motion'
 import { IconButton, ImageWithPlaceholder } from '../../components/ui'
 import { cx } from '../../components/ui/cx'
-import { PRODUCT_COPY } from './product.copy'
+import { PRODUCT_COPY, photoPlaceholder } from './product.copy'
 
 /** Props de {@link ProductGallery}. */
 export interface ProductGalleryProps {
-  /** Nombre del producto: texto alternativo de la silueta cuando no hay fotos. */
+  /** Nombre del producto: texto alternativo y texto del marco cuando no hay fotos. */
   productName: string
   /** Código del producto (por ejemplo "N°07"), arriba a la izquierda de la foto. */
   code: string
@@ -41,7 +41,7 @@ function twoDigits(value: number): string {
 /**
  * Galería de la ficha (spec 9.5): la foto principal en un marco 4:5 con el código y "01 / 03",
  * flechas y miniaturas numeradas si hay más de una foto, y acercamiento con el mouse. Sin fotos
- * muestra la silueta del mate.
+ * muestra el marco punteado con "Foto 1 · nombre".
  *
  * @param props - Ver {@link ProductGalleryProps}.
  */
@@ -63,9 +63,10 @@ export function ProductGallery({ productName, code, images }: ProductGalleryProp
               key={current?.url ?? 'placeholder'}
               src={current?.url}
               alt={current?.alt ?? productName}
+              label={photoPlaceholder(index + 1, productName)}
               sizes={GALLERY_SIZES}
               priority={index === 0}
-              className="size-full"
+              className="size-full rounded-[14px]"
             />
           </div>
         </Tilt>

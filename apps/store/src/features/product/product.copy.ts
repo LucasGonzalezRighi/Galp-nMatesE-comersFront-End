@@ -57,6 +57,23 @@ export const PRODUCT_COPY = {
   relatedTitle: 'Más para la ronda',
 } as const
 
+/**
+ * Texto del marco de la galería cuando el producto no tiene fotos, como en el diseño.
+ *
+ * @param position - Número de la foto, un entero mayor o igual a 1.
+ * @param productName - Nombre del producto.
+ * @returns Por ejemplo `Foto 1 · Mate Galleta`.
+ * @throws {RangeError} Si `position` no es un entero mayor o igual a 1.
+ */
+export function photoPlaceholder(position: number, productName: string): string {
+  if (!Number.isInteger(position) || position < 1) {
+    throw new RangeError(
+      `El número de foto tiene que ser un entero mayor o igual a 1; se recibió ${String(position)}.`,
+    )
+  }
+  return `Foto ${String(position)} · ${productName}`
+}
+
 /** Título de la banda del kit: con descuento, lo nombra; sin descuento, solo invita a sumar las piezas. */
 export function kitBandTitle(discount: string | null): string {
   return discount === null
