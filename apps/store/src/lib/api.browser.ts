@@ -1,4 +1,5 @@
 import type { ApiClient } from '@galpon/api-client'
+import { readCsrfToken } from '@/features/account'
 import { createApiClient } from '@galpon/api-client'
 import { DEFAULT_SITE_URL, parseHttpOrigin } from './env'
 
@@ -28,7 +29,8 @@ export function resolveBrowserBaseUrl(siteUrl: string): string {
 /**
  * Cliente de la API para los Client Components. Habla con `/api/v1` del mismo dominio: en modo de
  * prueba un *rewrite* lo lleva a la API simulada y en vivo al backend. Manda las cookies propias
- * (`credentials: 'same-origin'`).
+ * (`credentials: 'same-origin'`) y, en las escrituras, el token anti-CSRF de la sesión que guarda
+ * la cuenta de cliente (`readCsrfToken`).
  */
 export function getBrowserApi(): ApiClient {
   // Next.js reemplaza este acceso literal por el valor de la variable al compilar.
@@ -40,6 +42,7 @@ export function getBrowserApi(): ApiClient {
         : configuredSiteUrl,
     ),
     credentials: 'same-origin',
+    getCsrfToken: readCsrfToken,
   })
   return browserApi
 }

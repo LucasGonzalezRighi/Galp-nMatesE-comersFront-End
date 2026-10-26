@@ -20,6 +20,8 @@ export type { InstallmentsNoteProps, InstallmentsSetting } from './InstallmentsN
 export { InstallmentsNote } from './InstallmentsNote'
 export type { NetPriceProps } from './NetPrice'
 export { NetPrice } from './NetPrice'
+export type { OrderLinesProps } from './OrderLines'
+export { OrderLines } from './OrderLines'
 export type { PriceProps, PriceSize } from './Price'
 export { Price } from './Price'
 export type { QuantityStepperProps } from './QuantityStepper'

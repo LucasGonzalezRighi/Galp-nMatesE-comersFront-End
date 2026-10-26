@@ -5,6 +5,7 @@ import { ListIcon } from '@phosphor-icons/react/List'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/MagnifyingGlass'
 import Link from 'next/link'
 import { Suspense, useEffect, useRef, useState } from 'react'
+import { AccountButton } from '../../features/account'
 import { CartButton } from '../../features/cart'
 import { asRoute } from '../../lib/routes'
 import { IconButton } from '../ui'
@@ -97,6 +98,7 @@ export function Header(): ReactNode {
             <IconButton aria-label={LAYOUT_COPY.search} aria-haspopup="dialog" onClick={openSearch}>
               <MagnifyingGlassIcon size={19} aria-hidden="true" />
             </IconButton>
+            <AccountButton />
             <CartButton />
             <IconButton
               aria-label={LAYOUT_COPY.openMenu}
