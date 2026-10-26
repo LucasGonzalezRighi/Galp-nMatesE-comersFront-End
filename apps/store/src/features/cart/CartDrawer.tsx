@@ -6,9 +6,9 @@ import { XIcon } from '@phosphor-icons/react/X'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect } from 'react'
-import { formatDiscountPesos, formatPesos } from '@galpon/domain'
+import { formatDiscountPesos, formatPesos, pesos } from '@galpon/domain'
 import { Float } from '../../components/motion'
-import { Button, Dialog, IconButton } from '../../components/ui'
+import { Button, Dialog, IconButton, NetPrice } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
 import { closeCart } from './actions'
 import { CART_COPY } from './cart.copy'
@@ -51,15 +51,17 @@ function EmptyCart(): ReactNode {
 /**
  * Panel lateral del carrito (spec 9.4 y 9.5), un `Dialog` pegado a la derecha que se desliza en
  * 650 ms. Muestra "Carrito (N)", las líneas con su importe, el "Ahorro por kit" (informativo), el
- * "Subtotal" y "El envío se calcula en el checkout.", con "Finalizar compra" (lleva a `/checkout`
- * y se deshabilita si hay líneas sin stock o sin datos) y "Seguir comprando". Vacío muestra la
- * ilustración con "Ir a la tienda". Al abrirse concilia el carrito con el catálogo. Todos los
- * importes salen de `@galpon/domain`. Se monta una sola vez en el layout.
+ * "Subtotal" (con su "Precio sin impuestos nacionales" si el ajuste está activo) y "El envío se
+ * calcula en el checkout.", con "Finalizar compra" (lleva a `/checkout` y se deshabilita si hay
+ * líneas sin stock o sin datos, o mientras se actualiza la cotización) y "Seguir comprando". Vacío
+ * muestra la ilustración con "Ir a la tienda". Al abrirse concilia el carrito con el catálogo y lo
+ * cotiza con la API: los importes, el ahorro por kit y el precio sin impuestos salen de esa
+ * cotización, sin cálculos locales. Se monta una sola vez en el layout.
  */
 export function CartDrawer(): ReactNode {
   const { isOpen, hasHydrated } = useCart()
   const syncCart = useCartSync()
-  const { view, isError } = useCartView({ enabled: isOpen })
+  const { view, isError, isUpdating } = useCartView({ enabled: isOpen })
   const { totals } = view
 
   useEffect(() => {
@@ -101,13 +103,16 @@ export function CartDrawer(): ReactNode {
             {totals.kitSavingsArs > 0 ? (
               <div className="text-accent-300 flex justify-between text-[13px]">
                 <span>{CART_COPY.kitSavings}</span>
-                <span className="tabular-nums">{formatDiscountPesos(totals.kitSavingsArs)}</span>
+                <span className="tabular-nums">
+                  {formatDiscountPesos(pesos(totals.kitSavingsArs))}
+                </span>
               </div>
             ) : null}
             <div className="flex justify-between text-[16px]">
               <span>{CART_COPY.subtotal}</span>
-              <span className="tabular-nums">{formatPesos(totals.subtotalArs)}</span>
+              <span className="tabular-nums">{formatPesos(pesos(totals.subtotalArs))}</span>
             </div>
+            <NetPrice amount={totals.netSubtotalArs} className="-mt-[6px] text-right" />
             <span className="text-[12px] text-neutral-500">{CART_COPY.shippingNote}</span>
             {hasSoldOut ? (
               <span role="alert" className="text-danger text-[12px]">
@@ -121,7 +126,7 @@ export function CartDrawer(): ReactNode {
             ) : null}
             <Button
               asChild
-              disabled={!view.canCheckout}
+              disabled={!view.canCheckout || isUpdating}
               className="min-h-[48px] w-full gap-[10px] text-[15px] shadow-[0_0_30px_-10px_var(--color-accent)]"
             >
               <Link href={asRoute('/checkout')} onClick={closeCart}>

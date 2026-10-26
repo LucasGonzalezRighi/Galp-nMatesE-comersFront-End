@@ -21,6 +21,9 @@ import { CartHydrator } from './CartHydrator'
 import { EMPTY_SEEN } from './reconcile'
 import { createTestApi } from './test/support'
 
+/** Cuero y virola de un mate: la cotización los exige en cada mate. */
+const OPTIONS = { leather: 'Negro', ferrule: 'Alpaca cincelada' } as const
+
 /** Carrito completo montado como en el layout, con la API simulada de fábrica. */
 function renderCart(api: ApiClient): void {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -120,8 +123,8 @@ describe('CartDrawer', () => {
         state: {
           lines: [
             { type: 'product', productId: 'prd-borrado', quantity: 1 },
-            { type: 'product', productId: 'prd-galleta', quantity: 1 },
-            { type: 'product', productId: 'prd-coquito-criollo', quantity: 5 },
+            { type: 'product', productId: 'prd-galleta', quantity: 1, options: OPTIONS },
+            { type: 'product', productId: 'prd-coquito-criollo', quantity: 5, options: OPTIONS },
             {
               type: 'product',
               productId: 'prd-imperial-premium',
@@ -138,9 +141,10 @@ describe('CartDrawer', () => {
     await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
 
     const dialog = await screen.findByRole('dialog', { name: 'Carrito (4)' })
-    await within(dialog).findByText('Mate Imperial Premium')
+    // El detalle llega con la cotización; hasta entonces las líneas están cargando.
+    expect(await within(dialog).findAllByText('Cuero negro · Alpaca cincelada')).toHaveLength(3)
+    expect(within(dialog).getByText('Mate Imperial Premium')).toBeVisible()
     expect(within(dialog).queryByText('prd-borrado')).not.toBeInTheDocument()
-    expect(within(dialog).getByText('Cuero negro · Alpaca cincelada')).toBeVisible()
     // Sin stock: marcada y sin selector de cantidad; el total solo suma las líneas con stock.
     expect(within(dialog).getByText('Sin stock')).toBeVisible()
     expect(within(dialog).getByText('$97.997')).toBeVisible()
@@ -200,7 +204,7 @@ describe('CartDrawer', () => {
     expect(within(dialog).getAllByText('$71.097')).toHaveLength(2)
   })
 
-  it('muestra "Precio sin impuestos nacionales" en un producto suelto pero no en el kit, y se apaga con el ajuste', async () => {
+  it('muestra "Precio sin impuestos nacionales" en cada línea (también en el kit, con "c/u" si hay más de una unidad) y bajo el subtotal, y se apaga con el ajuste', async () => {
     const { api, db } = createTestApi()
     useCartStore.setState({
       lines: [
@@ -221,16 +225,93 @@ describe('CartDrawer', () => {
     await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
 
     const dialog = await screen.findByRole('dialog')
-    expect(await within(dialog).findByText(/^Precio sin impuestos nacionales:/)).toBeVisible()
-    expect(within(dialog).getAllByText(/^Precio sin impuestos nacionales:/)).toHaveLength(1)
+    await within(dialog).findByText('Ahorrás $7.900')
+    const nets = within(dialog).getAllByText(/^Precio sin impuestos nacionales:/)
+    // Por unidad, sobre el precio efectivo (el kit, ya con el descuento); y el del subtotal, que
+    // el back calcula aparte y puede diferir unos pesos de la suma (2 × 8.264 + 58.758 = 75.286).
+    expect(nets.map((net) => net.textContent)).toEqual([
+      'Precio sin impuestos nacionales: $8.264',
+      'Precio sin impuestos nacionales: $58.758',
+      'Precio sin impuestos nacionales: $75.285',
+    ])
+    // "c/u" solo en la línea de 2 unidades.
+    expect(within(dialog).getAllByText('c/u')).toHaveLength(1)
     cleanup()
 
     db.settings.priceDisplay.showNetPrice = false
     renderCart(api)
     await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
     const closed = await screen.findByRole('dialog')
-    await within(closed).findByText('Kit ronda completa')
+    await within(closed).findByText('Ahorrás $7.900')
     expect(within(closed).queryByText(/Precio sin impuestos nacionales/)).not.toBeInTheDocument()
+    expect(within(closed).queryByText('c/u')).not.toBeInTheDocument()
+  })
+
+  it('cotiza todo el carrito con una sola llamada y sin mandar precios', async () => {
+    const { api, requests } = createTestApi()
+    useCartStore.setState({
+      lines: [
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 2 },
+        {
+          type: 'kit',
+          mateId: 'prd-imperial-premium',
+          bombillaId: 'prd-bombillon-premium-curvo',
+          yerbaId: 'prd-yerba-canarias',
+          leather: 'Negro',
+          quantity: 1,
+        },
+      ],
+      seen: { prices: { 'prd-yerba-canarias': 9999 }, kitDiscountPercent: null },
+      hasHydrated: true,
+    })
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findByText('Ahorrás $7.900')
+
+    const quotes = requests.filter(
+      (request) =>
+        request.method === 'POST' && new URL(request.url).pathname.endsWith('/cart/quote'),
+    )
+    expect(quotes).toHaveLength(1)
+    const body: unknown = await quotes[0]?.json()
+    expect(body).toEqual({
+      items: [
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 2, options: null },
+        {
+          type: 'kit',
+          mateId: 'prd-imperial-premium',
+          bombillaId: 'prd-bombillon-premium-curvo',
+          yerbaId: 'prd-yerba-canarias',
+          leather: 'Negro',
+          quantity: 1,
+        },
+      ],
+    })
+  })
+
+  it('una línea que la cotización marca sin stock no muestra importes ni precio sin impuestos en $0', async () => {
+    const { api, db } = createTestApi()
+    const galleta = db.products.find((product) => product.id === 'prd-galleta')
+    expect(galleta?.stock).toBe(0)
+    useCartStore.setState({
+      lines: [
+        { type: 'product', productId: 'prd-galleta', quantity: 1, options: OPTIONS },
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 1 },
+      ],
+      hasHydrated: true,
+    })
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findByText('Sin stock')
+    await within(dialog).findByText('Yerba Canarias 1 kg')
+    expect(within(dialog).queryByText(/\$0(?!\d)/)).not.toBeInTheDocument()
+    // El neto solo aparece en la línea con stock y en el subtotal, que no suma la agotada.
+    expect(within(dialog).getAllByText(/^Precio sin impuestos nacionales:/)).toHaveLength(2)
   })
 
   it('cambiar la cantidad actualiza la línea y "−" en 1 la quita', async () => {

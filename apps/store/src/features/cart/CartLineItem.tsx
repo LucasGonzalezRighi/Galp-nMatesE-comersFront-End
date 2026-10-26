@@ -3,7 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { TrashIcon } from '@phosphor-icons/react/Trash'
 import Image from 'next/image'
-import { formatPesos } from '@galpon/domain'
+import { formatPesos, pesos } from '@galpon/domain'
 import type { CartLineView } from './cart-view'
 import { Reveal } from '../../components/motion'
 import {
@@ -60,15 +60,17 @@ function LineImage({ line }: CartLineItemProps): ReactNode {
 
 /**
  * Una línea del panel del carrito (spec 9.5): foto, nombre, detalle, "Ahorrás $…" en los kits,
- * "Precio sin impuestos nacionales" por unidad en un producto suelto si el ajuste está activo,
- * cantidad ("−" en 1 quita la línea), botón de quitar y total de la línea. Una línea sin stock
- * muestra "Sin stock" y solo se puede quitar. Aparece desde la izquierda con `Reveal`.
+ * "Precio sin impuestos nacionales" por unidad (con "c/u" si hay más de una; también en los kits)
+ * si el ajuste está activo, el aviso de la cotización (menos stock o cambio de precio), cantidad
+ * ("−" en 1 quita la línea), botón de quitar y total de la línea. Una línea sin stock muestra
+ * "Sin stock" (o "No disponible" si ya no está a la venta) y solo se puede quitar. Aparece desde
+ * la izquierda con `Reveal`.
  *
  * @param props - Ver {@link CartLineItemProps}.
  */
 export function CartLineItem({ line }: CartLineItemProps): ReactNode {
   const { setLineQuantity, removeLine } = useCartStore.getState()
-  const savings = line.amounts?.savingsArs
+  const savings = line.kitSavingsArs
   const remove = (): void => {
     removeLine(line.key)
   }
@@ -91,15 +93,27 @@ export function CartLineItem({ line }: CartLineItemProps): ReactNode {
           {line.detail === '' ? null : (
             <span className="text-[12px] text-neutral-400">{line.detail}</span>
           )}
-          {savings !== undefined && savings > 0 ? (
+          {savings > 0 ? (
             <span className="text-accent-300 text-[12px]">
-              {CART_COPY.youSave} {formatPesos(savings)}
+              {CART_COPY.youSave} {formatPesos(pesos(savings))}
             </span>
           ) : null}
-          <NetPrice amount={line.netPriceArs} />
+          {line.netUnitPriceArs === null ? null : (
+            <div className="flex flex-wrap gap-x-1">
+              <NetPrice amount={line.netUnitPriceArs} />
+              {line.quantity > 1 ? (
+                <span className="text-[12px] text-neutral-400">{CART_COPY.perUnit}</span>
+              ) : null}
+            </div>
+          )}
+          {line.notice === null ? null : (
+            <span className="text-[12px] text-neutral-300">{line.notice}</span>
+          )}
           <div className="mt-auto flex items-center justify-between gap-[10px]">
             {line.status === 'sold-out' ? (
-              <Tag variant="neutral">{CART_COPY.soldOut}</Tag>
+              <Tag variant="neutral">
+                {line.issue === 'unavailable' ? CART_COPY.unavailable : CART_COPY.soldOut}
+              </Tag>
             ) : (
               <QuantityStepper
                 size="sm"
@@ -111,7 +125,7 @@ export function CartLineItem({ line }: CartLineItemProps): ReactNode {
                 onRemove={remove}
               />
             )}
-            {line.amounts === null ? null : <Price amount={line.amounts.totalArs} size="sm" />}
+            {line.totalArs === null ? null : <Price amount={line.totalArs} size="sm" />}
           </div>
         </div>
       </div>

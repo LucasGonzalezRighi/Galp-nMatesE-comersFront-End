@@ -16,6 +16,10 @@ export const CART_COPY = {
   youSave: 'Ahorrás',
   /** Etiqueta de una línea cuyo producto se quedó sin stock. */
   soldOut: 'Sin stock',
+  /** Etiqueta de una línea cuyo producto ya no está a la venta (la cotización la marca `unavailable`). */
+  unavailable: 'No disponible',
+  /** Se agrega tras "Precio sin impuestos nacionales: $X" cuando la línea tiene más de una unidad: el importe es por unidad. */
+  perUnit: 'c/u',
   /** Nombre de una línea cuyos datos todavía no llegaron. */
   loadingLine: 'Cargando…',
   /** Resumen: ahorro de los kits (informativo). */
