@@ -37,6 +37,8 @@ export const PENDING_OPERATIONS: readonly PendingOperation[] = [
     ['GET', '/orders/{number}'],
     ['POST', '/orders/{number}/payments/mercadopago/preference'],
     ['POST', '/orders/{number}/payments/mercadopago/card'],
+    ['POST', '/orders/{number}/payments/mercadopago/installments'],
+    ['POST', '/orders/{number}/cancel-payment'],
     ['POST', '/webhooks/mercadopago'],
     ['GET', '/auth/csrf'],
     ['POST', '/auth/register'],

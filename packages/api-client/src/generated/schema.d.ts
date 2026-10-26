@@ -1034,10 +1034,34 @@ export interface paths {
         /**
          * Obtener un pedido
          * @description Devuelve el pedido a quien presenta su `X-Order-Token` o a la sesión del cliente dueño del pedido. Si el pedido no existe, o el token falta o no corresponde, responde `404` igual en todos los casos, para no revelar si el número existe. Es lo que consulta la pantalla `/checkout/resultado`.
+         *
+         *     **Vencimiento**: el pedido vence en `reservedUntil`, 30 minutos después de crearlo. Si pasa ese momento sin pago, el back lo marca `expired` y libera el stock reservado (la respuesta ya lo informa así).
          */
         get: operations["getOrder"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{number}/cancel-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar el intento de pago activo
+         * @description Cancela el intento de pago activo del pedido (la preferencia de Mercado Pago o el pago pendiente) para que el cliente pueda probar con otro medio. Hay **un solo intento activo por pedido**: el front la llama antes de iniciar uno nuevo. El intento queda `cancelled`; el pedido sigue en `pending_payment` y conserva la reserva de stock, así que `reservedUntil` no cambia.
+         *
+         *     Si no hay un intento activo, responde `204` igual, así que repetirla no hace daño. No lleva `Idempotency-Key`. Si el pedido ya está pagado o venció, responde `409`.
+         */
+        post: operations["cancelPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1064,6 +1088,28 @@ export interface paths {
          *     **El estado definitivo llega por webhook**: `paymentStatus` es el estado en este momento, no el final. Si trae `challenge` (verificación 3-D Secure), el front abre esa dirección en un diálogo y después consulta el pedido. El pedido pasa a pagado solo cuando el back recibe la notificación de Mercado Pago (ver `POST /webhooks/mercadopago`).
          */
         post: operations["payWithCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{number}/payments/mercadopago/installments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consultar las cuotas de una tarjeta
+         * @description Devuelve las opciones de cuotas que Mercado Pago ofrece para la tarjeta que empieza con `bin`, con el costo financiero de cada una. Las calcula sobre el total del pedido (`Order.totalArs`), nunca sobre un monto que mande el front, así que lo que se muestra es siempre lo que después se cobra. El front la usa en lugar de llamar a Mercado Pago directamente, y en el modo de prueba el simulador la responde con la tabla de ajustes.
+         *
+         *     Solo manda los primeros dígitos de la tarjeta (`bin`), que no alcanzan para usarla. No lleva `Idempotency-Key` porque no cobra ni cambia nada. Con `debit_card` devuelve una sola opción, de 1 pago.
+         */
+        post: operations["getInstallments"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1720,6 +1766,7 @@ export interface components {
          *           "name": "Mate Imperial Premium",
          *           "detail": "Cuero Negro · Virola Alpaca cincelada",
          *           "unitPriceArs": 39999,
+         *           "netUnitPriceArs": 33057,
          *           "kitSavingsArs": 0,
          *           "totalArs": 39999,
          *           "maxQuantity": 12,
@@ -1728,7 +1775,8 @@ export interface components {
          *       ],
          *       "itemsGrossArs": 39999,
          *       "kitSavingsArs": 0,
-         *       "subtotalArs": 39999
+         *       "subtotalArs": 39999,
+         *       "netSubtotalArs": 33057
          *     }
          */
         CartQuote: {
@@ -1738,6 +1786,8 @@ export interface components {
             kitSavingsArs: components["schemas"]["TotalArs"];
             /** @description Líneas cotizadas, en el mismo orden que el carrito enviado. */
             lines: components["schemas"]["CartQuoteLine"][];
+            /** @description Precio sin impuestos nacionales (Ley 27.743) del subtotal, calculado por el back sobre `subtotalArs` con la alícuota configurada en los ajustes. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado. */
+            netSubtotalArs: components["schemas"]["TotalArs"] | null;
             /** @description Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit. */
             subtotalArs: components["schemas"]["TotalArs"];
         };
@@ -1791,6 +1841,8 @@ export interface components {
              * @example Mate Imperial Premium
              */
             name: string;
+            /** @description Precio sin impuestos nacionales (Ley 27.743) de una unidad, calculado por el back sobre `unitPriceArs` con la alícuota configurada en los ajustes (sin el ahorro por kit). Sirve para mostrar "Precio sin impuestos nacionales" también en los kits, sin que la tienda lo recalcule. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado; en las líneas `unavailable` y `sold_out` vale 0, como los demás importes. */
+            netUnitPriceArs: components["schemas"]["TotalArs"] | null;
             /** @description Importe de la línea, ya sin el ahorro. */
             totalArs: components["schemas"]["TotalArs"];
             type: components["schemas"]["LineType"];
@@ -2445,6 +2497,63 @@ export interface components {
              */
             width: number;
         };
+        /**
+         * @description Opción de cuotas para una tarjeta. `totalArs` es lo que se paga en total con esa cantidad de cuotas: es igual al total del pedido si `cftPercent` es 0 y mayor si hay costo financiero. La tienda solo dice "sin interés" cuando `cftPercent` es 0.
+         * @example {
+         *       "installments": 6,
+         *       "installmentAmountArs": 8317,
+         *       "totalArs": 49902,
+         *       "cftPercent": 45.9,
+         *       "teaPercent": 38,
+         *       "label": "6 cuotas de $8.317 (CFT 45,90 %)"
+         *     }
+         */
+        InstallmentOption: {
+            /**
+             * @description Costo financiero total (CFT) de la opción, en porcentaje con dos decimales. 0 si no tiene interés.
+             * @example 45.9
+             */
+            cftPercent: number;
+            /** @description Importe de cada cuota, en pesos enteros. */
+            installmentAmountArs: components["schemas"]["TotalArs"];
+            /**
+             * @description Cantidad de cuotas; 1 es el pago en un solo pago.
+             * @example 6
+             */
+            installments: number;
+            /**
+             * @description Texto de la opción tal como lo informa el back (en el modo vivo, el mensaje recomendado de Mercado Pago). Es informativo, porque la tienda arma lo que muestra con los números.
+             * @example 6 cuotas de $8.317 (CFT 45,90 %)
+             */
+            label: string;
+            /**
+             * @description Tasa efectiva anual (TEA) de la opción, en porcentaje con dos decimales. 0 si no tiene interés.
+             * @example 38
+             */
+            teaPercent: number;
+            /** @description Total que se paga con esta cantidad de cuotas, con el costo financiero incluido. */
+            totalArs: components["schemas"]["TotalArs"];
+        };
+        /**
+         * @description Tarjeta para la que se consultan las cuotas. Solo lleva los primeros dígitos (el BIN), que identifican la marca y el banco pero no alcanzan para usar la tarjeta.
+         * @example {
+         *       "bin": "45031234",
+         *       "paymentTypeId": "credit_card"
+         *     }
+         */
+        InstallmentsInput: {
+            /**
+             * @description Primeros 6 a 8 dígitos del número de la tarjeta.
+             * @example 45031234
+             */
+            bin: string;
+            /**
+             * @description Tipo de tarjeta según Mercado Pago. Con `debit_card` solo hay 1 pago.
+             * @example credit_card
+             * @enum {string}
+             */
+            paymentTypeId: "credit_card" | "debit_card";
+        };
         /** @description Kit de mate, bombilla y yerba, con el descuento del kit. */
         KitCartItemInput: {
             /**
@@ -2681,7 +2790,7 @@ export interface components {
             paymentStatus: components["schemas"]["PaymentStatus"];
             /**
              * Format: date-time
-             * @description Hasta cuándo se reserva el stock mientras se espera el pago (30 minutos desde la creación), en UTC. El valor no cambia cuando el pedido se paga.
+             * @description Hasta cuándo se reserva el stock mientras se espera el pago (30 minutos desde la creación), en UTC. Es también el vencimiento del pedido. Pasado ese momento sin pago, `status` pasa a `expired`. El valor no cambia cuando el pedido se paga.
              * @example 2026-10-20T15:30:00Z
              */
             reservedUntil: string;
@@ -3846,6 +3955,8 @@ export type HomeContent = components['schemas']['HomeContent'];
 export type Honeypot = components['schemas']['Honeypot'];
 export type Image = components['schemas']['Image'];
 export type ImageInput = components['schemas']['ImageInput'];
+export type InstallmentOption = components['schemas']['InstallmentOption'];
+export type InstallmentsInput = components['schemas']['InstallmentsInput'];
 export type KitCartItemInput = components['schemas']['KitCartItemInput'];
 export type Leather = components['schemas']['Leather'];
 export type LegalContent = components['schemas']['LegalContent'];
@@ -5783,6 +5894,51 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    cancelPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Número del pedido, `GLP-` y cinco dígitos.
+                 * @example GLP-12345
+                 */
+                number: components["parameters"]["OrderNumber"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Intento cancelado, o no había ninguno activo. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            /** @description El pedido ya está pagado o venció, así que no hay un intento para cancelar. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "order_not_payable",
+                     *       "title": "El pedido no admite un pago nuevo",
+                     *       "status": 409,
+                     *       "detail": "El pedido ya está pagado o venció."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     payWithCard: {
         parameters: {
             query?: never;
@@ -5815,6 +5971,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CardPaymentResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description El pedido ya está pagado o venció, así que no admite un pago nuevo. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "order_not_payable",
+                     *       "title": "El pedido no admite un pago nuevo",
+                     *       "status": 409,
+                     *       "detail": "El pedido ya está pagado o venció."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getInstallments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Número del pedido, `GLP-` y cinco dígitos.
+                 * @example GLP-12345
+                 */
+                number: components["parameters"]["OrderNumber"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstallmentsInput"];
+            };
+        };
+        responses: {
+            /** @description Opciones de cuotas, de menos a más cuotas. La primera es siempre de 1 pago. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallmentOption"][];
                 };
             };
             404: components["responses"]["NotFound"];

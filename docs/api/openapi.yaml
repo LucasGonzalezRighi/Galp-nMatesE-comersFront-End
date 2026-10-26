@@ -528,6 +528,11 @@ paths:
         pedido. Si el pedido no existe, o el token falta o no corresponde, responde `404` igual en
         todos los casos, para no revelar si el número existe. Es lo que consulta la pantalla
         `/checkout/resultado`.
+
+
+        **Vencimiento**: el pedido vence en `reservedUntil`, 30 minutos después de crearlo. Si
+        pasa ese momento sin pago, el back lo marca `expired` y libera el stock reservado (la
+        respuesta ya lo informa así).
       security:
         - orderToken: []
         - customerSession: []
@@ -647,6 +652,104 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: El pedido ya está pagado o venció, así que no admite un pago nuevo.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: order_not_payable
+                title: El pedido no admite un pago nuevo
+                status: 409
+                detail: El pedido ya está pagado o venció.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders/{number}/payments/mercadopago/installments:
+    post:
+      operationId: getInstallments
+      tags: [payments]
+      summary: Consultar las cuotas de una tarjeta
+      description: >-
+        Devuelve las opciones de cuotas que Mercado Pago ofrece para la tarjeta que empieza con
+        `bin`, con el costo financiero de cada una. Las calcula sobre el total del pedido
+        (`Order.totalArs`), nunca sobre un monto que mande el front, así que lo que se muestra es
+        siempre lo que después se cobra. El front la usa en lugar de llamar a Mercado Pago
+        directamente, y en el modo de prueba el simulador la responde con la tabla de ajustes.
+
+
+        Solo manda los primeros dígitos de la tarjeta (`bin`), que no alcanzan para usarla. No
+        lleva `Idempotency-Key` porque no cobra ni cambia nada. Con `debit_card` devuelve una sola
+        opción, de 1 pago.
+      security:
+        - orderToken: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallmentsInput'
+      responses:
+        '200':
+          description: Opciones de cuotas, de menos a más cuotas. La primera es siempre de 1 pago.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Opciones de cuotas para la tarjeta.
+                minItems: 1
+                maxItems: 24
+                items:
+                  $ref: '#/components/schemas/InstallmentOption'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El pedido ya está pagado o venció, así que no admite un pago nuevo.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: order_not_payable
+                title: El pedido no admite un pago nuevo
+                status: 409
+                detail: El pedido ya está pagado o venció.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /orders/{number}/cancel-payment:
+    post:
+      operationId: cancelPayment
+      tags: [payments]
+      summary: Cancelar el intento de pago activo
+      description: >-
+        Cancela el intento de pago activo del pedido (la preferencia de Mercado Pago o el pago
+        pendiente) para que el cliente pueda probar con otro medio. Hay **un solo intento activo
+        por pedido**: el front la llama antes de iniciar uno nuevo. El intento queda `cancelled`;
+        el pedido sigue en `pending_payment` y conserva la reserva de stock, así que `reservedUntil`
+        no cambia.
+
+
+        Si no hay un intento activo, responde `204` igual, así que repetirla no hace daño. No
+        lleva `Idempotency-Key`. Si el pedido ya está pagado o venció, responde `409`.
+      security:
+        - orderToken: []
+      parameters:
+        - $ref: '#/components/parameters/OrderNumber'
+      responses:
+        '204':
+          description: Intento cancelado, o no había ninguno activo.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El pedido ya está pagado o venció, así que no hay un intento para cancelar.
           content:
             application/problem+json:
               schema:
@@ -3940,6 +4043,7 @@ components:
         - name
         - detail
         - unitPriceArs
+        - netUnitPriceArs
         - kitSavingsArs
         - totalArs
         - maxQuantity
@@ -3964,6 +4068,16 @@ components:
         unitPriceArs:
           description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
           $ref: '#/components/schemas/TotalArs'
+        netUnitPriceArs:
+          description: >-
+            Precio sin impuestos nacionales (Ley 27.743) de una unidad, calculado por el back sobre
+            `unitPriceArs` con la alícuota configurada en los ajustes (sin el ahorro por kit).
+            Sirve para mostrar "Precio sin impuestos nacionales" también en los kits, sin que la
+            tienda lo recalcule. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está
+            apagado; en las líneas `unavailable` y `sold_out` vale 0, como los demás importes.
+          oneOf:
+            - $ref: '#/components/schemas/TotalArs'
+            - type: 'null'
         kitSavingsArs:
           description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
           $ref: '#/components/schemas/TotalArs'
@@ -3991,7 +4105,7 @@ components:
       description: >-
         Cotización del carrito. `subtotalArs = itemsGrossArs − kitSavingsArs`. No incluye el
         envío.
-      required: [lines, itemsGrossArs, kitSavingsArs, subtotalArs]
+      required: [lines, itemsGrossArs, kitSavingsArs, subtotalArs, netSubtotalArs]
       properties:
         lines:
           type: array
@@ -4007,6 +4121,14 @@ components:
         subtotalArs:
           description: Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit.
           $ref: '#/components/schemas/TotalArs'
+        netSubtotalArs:
+          description: >-
+            Precio sin impuestos nacionales (Ley 27.743) del subtotal, calculado por el back sobre
+            `subtotalArs` con la alícuota configurada en los ajustes. Vale `null` si
+            `PublicSettings.priceDisplay.showNetPrice` está apagado.
+          oneOf:
+            - $ref: '#/components/schemas/TotalArs'
+            - type: 'null'
       example:
         lines:
           - key: product:prd-imperial-premium:Negro:Alpaca cincelada
@@ -4014,6 +4136,7 @@ components:
             name: Mate Imperial Premium
             detail: Cuero Negro · Virola Alpaca cincelada
             unitPriceArs: 39999
+            netUnitPriceArs: 33057
             kitSavingsArs: 0
             totalArs: 39999
             maxQuantity: 12
@@ -4021,6 +4144,7 @@ components:
         itemsGrossArs: 39999
         kitSavingsArs: 0
         subtotalArs: 39999
+        netSubtotalArs: 33057
     ShippingQuoteInput:
       type: object
       description: Datos para cotizar un envío.
@@ -4412,7 +4536,7 @@ components:
         reservedUntil:
           type: string
           format: date-time
-          description: Hasta cuándo se reserva el stock mientras se espera el pago (30 minutos desde la creación), en UTC. El valor no cambia cuando el pedido se paga.
+          description: Hasta cuándo se reserva el stock mientras se espera el pago (30 minutos desde la creación), en UTC. Es también el vencimiento del pedido. Pasado ese momento sin pago, `status` pasa a `expired`. El valor no cambia cuando el pedido se paga.
           example: '2026-10-20T15:30:00Z'
         createdAt:
           type: string
@@ -4626,6 +4750,71 @@ components:
                   description: Dirección que se abre en un diálogo para que el cliente verifique la compra.
                   example: https://www.mercadopago.com.ar/3ds/challenge?id=abc123
             - type: 'null'
+    InstallmentsInput:
+      type: object
+      description: >-
+        Tarjeta para la que se consultan las cuotas. Solo lleva los primeros dígitos (el BIN), que
+        identifican la marca y el banco pero no alcanzan para usar la tarjeta.
+      required: [bin, paymentTypeId]
+      properties:
+        bin:
+          type: string
+          pattern: '^[0-9]{6,8}$'
+          description: Primeros 6 a 8 dígitos del número de la tarjeta.
+          example: '45031234'
+        paymentTypeId:
+          type: string
+          enum: [credit_card, debit_card]
+          description: Tipo de tarjeta según Mercado Pago. Con `debit_card` solo hay 1 pago.
+          example: credit_card
+      example:
+        bin: '45031234'
+        paymentTypeId: credit_card
+    InstallmentOption:
+      type: object
+      description: >-
+        Opción de cuotas para una tarjeta. `totalArs` es lo que se paga en total con esa cantidad
+        de cuotas: es igual al total del pedido si `cftPercent` es 0 y mayor si hay costo
+        financiero. La tienda solo dice "sin interés" cuando `cftPercent` es 0.
+      required: [installments, installmentAmountArs, totalArs, cftPercent, teaPercent, label]
+      properties:
+        installments:
+          type: integer
+          minimum: 1
+          maximum: 24
+          description: Cantidad de cuotas; 1 es el pago en un solo pago.
+          example: 6
+        installmentAmountArs:
+          description: Importe de cada cuota, en pesos enteros.
+          $ref: '#/components/schemas/TotalArs'
+        totalArs:
+          description: Total que se paga con esta cantidad de cuotas, con el costo financiero incluido.
+          $ref: '#/components/schemas/TotalArs'
+        cftPercent:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Costo financiero total (CFT) de la opción, en porcentaje con dos decimales. 0 si no tiene interés.
+          example: 45.9
+        teaPercent:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Tasa efectiva anual (TEA) de la opción, en porcentaje con dos decimales. 0 si no tiene interés.
+          example: 38
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Texto de la opción tal como lo informa el back (en el modo vivo, el mensaje recomendado de Mercado Pago). Es informativo, porque la tienda arma lo que muestra con los números.
+          example: 6 cuotas de $8.317 (CFT 45,90 %)
+      example:
+        installments: 6
+        installmentAmountArs: 8317
+        totalArs: 49902
+        cftPercent: 45.9
+        teaPercent: 38
+        label: 6 cuotas de $8.317 (CFT 45,90 %)
     ReviewInput:
       type: object
       description: Reseña que envía un visitante.
