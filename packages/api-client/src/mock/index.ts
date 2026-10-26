@@ -9,6 +9,11 @@ export type {
   MockMercadoPagoResolveInput,
   MockMercadoPagoResolveResult,
 } from './handlers/mercadopago-simulator'
+export type {
+  MockExpireOrderResult,
+  MockProductChangeInput,
+  MockProductChangeResult,
+} from './handlers/mock-controls'
 export type { HttpMethod } from './http'
 export type { MockFetchOptions } from './mock-fetch'
 export type { MockPlan, PendingOperation } from './pending'
@@ -45,6 +50,11 @@ export {
   MOCK_MERCADOPAGO_RESOLVE_PATH,
   MOCK_MERCADOPAGO_RESULTS,
 } from './handlers/mercadopago-simulator'
+export {
+  MOCK_CONTROL_ROUTES,
+  MOCK_EXPIRE_ORDER_PATH,
+  MOCK_PRODUCT_PATH,
+} from './handlers/mock-controls'
 export { createMockFetch } from './mock-fetch'
 export { PENDING_OPERATIONS } from './pending'
 export { createPersistentMockDb, safeSessionStorage } from './storage'

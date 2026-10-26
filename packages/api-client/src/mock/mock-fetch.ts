@@ -4,6 +4,7 @@ import type { MockDb } from './types'
 import { IMPLEMENTED_ROUTES } from './handlers'
 import { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
 import { INTERNAL_ROUTES } from './handlers/mercadopago-simulator'
+import { MOCK_CONTROL_ROUTES } from './handlers/mock-controls'
 import { isHttpMethod, notFound, problem, ResponseError } from './http'
 import { PENDING_OPERATIONS } from './pending'
 import { matchRoute } from './router'
@@ -39,12 +40,14 @@ export interface MockFetchOptions {
 }
 
 /**
- * Rutas atendidas: las implementadas, las internas del modo de prueba (fuera del contrato) y las
- * pendientes, que responden 501 con su plan.
+ * Rutas atendidas: las implementadas, las internas del modo de prueba (el simulador de Mercado
+ * Pago y los controles de escenarios, fuera del contrato) y las pendientes, que responden 501 con
+ * su plan.
  */
 const ALL_ROUTES: readonly MockRoute[] = [
   ...IMPLEMENTED_ROUTES,
   ...INTERNAL_ROUTES,
+  ...MOCK_CONTROL_ROUTES,
   ...PENDING_OPERATIONS.map(({ method, path, plan }) => ({
     method,
     path,

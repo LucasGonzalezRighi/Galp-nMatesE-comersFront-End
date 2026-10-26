@@ -3964,6 +3964,13 @@ components:
           oneOf:
             - $ref: '#/components/schemas/CartItemOptions'
             - type: 'null'
+        expectedUnitPriceArs:
+          description: >-
+            Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no
+            coincide con el vigente, la línea de `POST /cart/quote` sale con `issue`
+            `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea
+            nada. Sin este campo, un cambio de precio solo se nota como `total_changed`.
+          $ref: '#/components/schemas/Pesos'
     KitCartItemInput:
       type: object
       description: Kit de mate, bombilla y yerba, con el descuento del kit.
@@ -4000,6 +4007,14 @@ components:
           maximum: 20
           description: Cantidad de kits, de 1 a 20 (y no más que el stock de cada pieza).
           example: 1
+        expectedUnitPriceArs:
+          description: >-
+            Precio de lista por unidad que la tienda tenía cotizado (la suma de las tres piezas,
+            sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la
+            línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde
+            `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio
+            solo se nota como `total_changed`.
+          $ref: '#/components/schemas/TotalArs'
     CartItemInput:
       description: Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto o un kit.
       oneOf:
@@ -4100,8 +4115,8 @@ components:
             Problema de la línea, o `null` si está bien. `unavailable`: el producto ya no está
             publicado o no tiene precio. `sold_out`: no queda stock. `quantity_reduced`: había
             menos stock que lo pedido y la línea se cotizó con `maxQuantity` unidades.
-            `price_changed`: el precio cambió desde la cotización anterior y los importes ya son
-            los vigentes.
+            `price_changed`: el precio cambió respecto de `expectedUnitPriceArs`, que la tienda
+            mandó en la línea, y los importes ya son los vigentes.
           type: [string, 'null']
           enum: [unavailable, sold_out, quantity_reduced, price_changed, null]
           example: null

@@ -120,7 +120,7 @@ describe('POST /cart/quote', () => {
 
   it('avisa price_changed si el precio no es el que la tienda esperaba', async () => {
     const mock = createCheckoutApi()
-    const item = { ...MATE, expectedUnitPriceArs: 35999 } as CartItemInput
+    const item: CartItemInput = { ...MATE, expectedUnitPriceArs: 35999 }
     const quote = await quoteCart(mock.api, { items: [item, MATE] })
     expect(quote.lines.map((line) => line.issue)).toEqual(['price_changed', null])
   })

@@ -13,7 +13,7 @@ const MATE = {
 } satisfies CartItemInput
 
 describe('POST /orders', () => {
-  it('crea el pedido pendiente de pago, reserva 30 minutos y guarda solo el hash del token', async () => {
+  it('crea el pedido pendiente de pago y reserva 30 minutos; el acceso se valida contra tokenHash y el token en claro queda en creation para repetir la respuesta', async () => {
     const mock = createCheckoutApi()
     const response = await postOrder(mock, orderInput())
     expect(response.status).toBe(201)
@@ -48,7 +48,8 @@ describe('POST /orders', () => {
       kitItems: null,
     })
     expect(orderToken.length).toBeGreaterThan(20)
-    expect(JSON.stringify(mock.db.orders[0]?.tokenHash)).not.toContain(orderToken)
+    expect(mock.db.orders[0]?.tokenHash).toMatch(/^[0-9a-f]{64}$/)
+    expect(mock.db.orders[0]?.creation.orderToken).toBe(orderToken)
   })
 
   it('arma la línea de un kit con sus tres piezas y la virola fija', async () => {
@@ -165,7 +166,7 @@ describe('POST /orders', () => {
     const mock = createCheckoutApi()
     const response = await postOrder(
       mock,
-      orderInput({ items: [{ ...MATE, expectedUnitPriceArs: 35999 } as CartItemInput] }),
+      orderInput({ items: [{ ...MATE, expectedUnitPriceArs: 35999 }] }),
     )
     expect(response.status).toBe(409)
     await expect(response.json()).resolves.toMatchObject({

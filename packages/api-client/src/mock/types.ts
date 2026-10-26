@@ -193,7 +193,11 @@ export interface MockOrderCreation {
   idempotencyKey: string
   /** Cuerpo del pedido, en JSON con las claves ordenadas. */
   fingerprint: string
-  /** Token entregado en la respuesta (el back también guarda la respuesta de la clave). */
+  /**
+   * Token entregado en la respuesta, en claro: se guarda solo para repetir el mismo `201` con la
+   * misma clave (el back también guarda la respuesta de la clave). El acceso al pedido no lo usa:
+   * se valida contra `MockOrder.tokenHash`.
+   */
   orderToken: string
   /** Hasta cuándo se recuerda la clave (24 horas), ISO 8601 con hora y zona. */
   expiresAt: string

@@ -1819,7 +1819,7 @@ export interface components {
              */
             detail: string;
             /**
-             * @description Problema de la línea, o `null` si está bien. `unavailable`: el producto ya no está publicado o no tiene precio. `sold_out`: no queda stock. `quantity_reduced`: había menos stock que lo pedido y la línea se cotizó con `maxQuantity` unidades. `price_changed`: el precio cambió desde la cotización anterior y los importes ya son los vigentes.
+             * @description Problema de la línea, o `null` si está bien. `unavailable`: el producto ya no está publicado o no tiene precio. `sold_out`: no queda stock. `quantity_reduced`: había menos stock que lo pedido y la línea se cotizó con `maxQuantity` unidades. `price_changed`: el precio cambió respecto de `expectedUnitPriceArs`, que la tienda mandó en la línea, y los importes ya son los vigentes.
              * @example null
              * @enum {string|null}
              */
@@ -2561,6 +2561,8 @@ export interface components {
              * @example prd-bombillon-premium-curvo
              */
             bombillaId: string;
+            /** @description Precio de lista por unidad que la tienda tenía cotizado (la suma de las tres piezas, sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. */
+            expectedUnitPriceArs?: components["schemas"]["TotalArs"];
             leather: components["schemas"]["Leather"];
             /**
              * @description Identificador del mate del kit.
@@ -3067,6 +3069,8 @@ export interface components {
         };
         /** @description Producto suelto en el carrito. */
         ProductCartItemInput: {
+            /** @description Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. */
+            expectedUnitPriceArs?: components["schemas"]["Pesos"];
             /** @description Cuero y virola elegidos; `null` en los productos que no son mates. */
             options: components["schemas"]["CartItemOptions"] | null;
             /**

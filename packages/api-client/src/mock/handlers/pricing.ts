@@ -45,8 +45,8 @@ const quantitySchema = z
   )
 
 /**
- * Precio por unidad que la tienda tenía cotizado. No está en el contrato: si viene, una
- * diferencia se avisa con `price_changed`.
+ * Precio de lista por unidad que la tienda tenía cotizado (`expectedUnitPriceArs` del contrato):
+ * si viene, una diferencia se avisa con `price_changed`.
  */
 const expectedPriceSchema = z.int().min(0).optional()
 
