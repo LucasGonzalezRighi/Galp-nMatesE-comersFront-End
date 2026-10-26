@@ -60,7 +60,7 @@ describe('CartButton', () => {
     renderCart(api)
 
     const button = await screen.findByRole('button', { name: 'Abrir carrito, 3 productos' })
-    expect(button).toHaveTextContent('Carrito3')
+    expect(button).toHaveTextContent('Carrito 3')
     expect(button).toHaveAttribute('data-cart-button')
     expect(button.querySelector('[data-cart-badge]')).toHaveTextContent('3')
   })
@@ -78,6 +78,22 @@ describe('CartButton', () => {
 
     expect(badge).not.toHaveClass('invisible')
   })
+
+  it('el nombre accesible contiene el texto visible ("Carrito" y el contador), también con el carrito vacío (WCAG 2.5.3)', () => {
+    render(<CartButton />)
+    const button = screen.getByRole('button', { name: 'Abrir carrito' })
+
+    // Antes de leer localStorage el contador no se ve: el nombre no lo menciona.
+    expect(button).toHaveAccessibleName('Abrir carrito')
+
+    act(() => {
+      ensureCartHydrated()
+    })
+
+    expect(button).toHaveAccessibleName('Abrir carrito, 0 productos')
+    // Un espacio separa "Carrito" del contador: el texto visible son dos palabras, no "Carrito0".
+    expect(button.textContent).toBe('Carrito 0')
+  })
 })
 
 describe('CartDrawer', () => {
@@ -85,7 +101,7 @@ describe('CartDrawer', () => {
     const { api } = createTestApi()
     renderCart(api)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Abrir carrito' }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
 
     const dialog = await screen.findByRole('dialog', { name: 'Carrito (0)' })
     expect(within(dialog).getByText('Tu carrito está vacío')).toBeVisible()
@@ -228,7 +244,7 @@ describe('CartDrawer', () => {
       isPurchasable: true,
     }
     renderCart(api)
-    await screen.findByRole('button', { name: 'Abrir carrito' })
+    await screen.findByRole('button', { name: /^Abrir carrito/ })
     addProductToCart({ product: yerba })
 
     await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
@@ -249,7 +265,7 @@ describe('CartDrawer', () => {
   it('Escape y "Seguir comprando" lo cierran', async () => {
     const { api } = createTestApi()
     renderCart(api)
-    await userEvent.click(await screen.findByRole('button', { name: 'Abrir carrito' }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
     expect(await screen.findByRole('dialog')).toBeVisible()
 
     await userEvent.keyboard('{Escape}')

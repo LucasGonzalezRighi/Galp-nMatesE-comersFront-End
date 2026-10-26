@@ -15,6 +15,11 @@ export interface MagneticProps {
   strength?: number
   /** Píxeles de margen alrededor del contenido donde ya se siente el imán. Por omisión 12. */
   reach?: number
+  /**
+   * El contenido ocupa todo el ancho de su contenedor (un `<Button fullWidth>`): el imán se
+   * estira como un bloque en lugar de ajustarse al contenido. Por omisión `false`.
+   */
+  fullWidth?: boolean
   /** Clase del contenedor externo. */
   className?: string
   /** El contenido que se mueve (un botón o un enlace). */
@@ -36,6 +41,7 @@ export interface MagneticProps {
 export function Magnetic({
   strength = 0.3,
   reach = 12,
+  fullWidth = false,
   className,
   children,
 }: MagneticProps): ReactNode {
@@ -47,11 +53,14 @@ export function Magnetic({
   const x = useSpring(targetX, MAGNET_SPRING)
   const y = useSpring(targetY, MAGNET_SPRING)
   const wrapperStyle = {
-    display: 'inline-flex',
-    alignSelf: 'flex-start',
+    display: fullWidth ? 'flex' : 'inline-flex',
+    alignSelf: fullWidth ? 'stretch' : 'flex-start',
     padding: reach,
     margin: -reach,
   } as const
+  const innerStyle = fullWidth
+    ? ({ display: 'flex', flex: '1 1 auto', minWidth: 0, x, y } as const)
+    : ({ display: 'inline-flex', x, y } as const)
 
   if (reduced) {
     return (
@@ -81,7 +90,7 @@ export function Magnetic({
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
       >
-        <m.span style={{ display: 'inline-flex', x, y }}>{children}</m.span>
+        <m.span style={innerStyle}>{children}</m.span>
       </span>
     </MotionFeatures>
   )

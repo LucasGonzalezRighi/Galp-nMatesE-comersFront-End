@@ -106,7 +106,7 @@ export function KitSummary({
       {view.isComplete ? null : (
         <p className="text-[12.5px] text-neutral-500">{missingText(view.missing)}</p>
       )}
-      <Magnetic strength={0.15} reach={8} className="flex! self-stretch!">
+      <Magnetic strength={0.15} reach={8} fullWidth>
         <Button
           size="lg"
           fullWidth

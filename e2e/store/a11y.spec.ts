@@ -18,26 +18,11 @@ function describeViolation(violation: Violation): string {
   return `${violation.id} [${violation.impact ?? '?'}] x${String(violation.nodes.length)}: ${violation.help} (${first})`
 }
 
-/**
- * Hallazgo conocido, a corregir en la tarea de ajuste visual: el botón "Carrito 0" del encabezado
- * lleva el nombre accesible "Abrir carrito, N productos", y axe (`label-content-name-mismatch`)
- * pide que el texto visible sea una parte literal del nombre; el texto visible es "Carrito" más el
- * contador, que el DOM junta sin espacio ("Carrito0"). Se ve igual que en el diseño y el nombre
- * contiene la palabra "carrito", así que solo se tolera esa regla en ese botón.
- */
-function isKnownCartButtonFinding(violation: Violation): boolean {
-  return (
-    violation.id === 'label-content-name-mismatch' &&
-    violation.nodes.every((node) => node.html.includes('data-cart-button'))
-  )
-}
-
-/** Lo que axe encuentra en la página y es serio o crítico, salvo el hallazgo conocido. */
+/** Lo que axe encuentra en la página y es serio o crítico. */
 async function seriousViolations(page: Page): Promise<string[]> {
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
   return results.violations
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
-    .filter((violation) => !isKnownCartButtonFinding(violation))
     .map(describeViolation)
 }
 

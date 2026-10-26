@@ -80,6 +80,42 @@ describe('Magnetic', () => {
     expect(() => Magnetic({ reach: -1 })).toThrow(RangeError)
   })
 
+  it('con fullWidth el imán y su contenido se estiran a todo el ancho; sin él se ajustan al contenido', () => {
+    mockReducedMotion(false)
+    const { rerender } = render(
+      <Magnetic fullWidth>
+        <button type="button">Comprar</button>
+      </Magnetic>,
+    )
+    const inner = screen.getByRole('button').parentElement
+    const wrapper = inner?.parentElement
+    expect(wrapper).toHaveStyle({ display: 'flex', alignSelf: 'stretch' })
+    expect(inner).toHaveStyle({ display: 'flex', flexGrow: '1' })
+
+    rerender(
+      <Magnetic>
+        <button type="button">Comprar</button>
+      </Magnetic>,
+    )
+    expect(screen.getByRole('button').parentElement?.parentElement).toHaveStyle({
+      display: 'inline-flex',
+      alignSelf: 'flex-start',
+    })
+  })
+
+  it('con prefers-reduced-motion y fullWidth el contenedor también se estira', () => {
+    mockReducedMotion(true)
+    render(
+      <Magnetic fullWidth>
+        <button type="button">Comprar</button>
+      </Magnetic>,
+    )
+    expect(screen.getByRole('button').parentElement).toHaveStyle({
+      display: 'flex',
+      alignSelf: 'stretch',
+    })
+  })
+
   it('con el dedo o con prefers-reduced-motion no se mueve', () => {
     mockReducedMotion(false)
     render(

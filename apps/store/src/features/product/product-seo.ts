@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import type { ProductDetail } from '@galpon/api-client'
+import { DEFAULT_OG_IMAGE, OPEN_GRAPH_LOCALE, SITE_NAME } from '@/lib/seo'
 
 /** Marca que figura en los datos estructurados. */
 const BRAND_NAME = 'Galpón Mates'
@@ -28,7 +29,10 @@ function shorten(text: string, max: number): string {
 
 /**
  * Metadatos de la ficha: título (la plantilla del layout agrega "· Galpón Mates"), descripción,
- * dirección canónica y datos para compartir (Open Graph y Twitter) con la foto principal.
+ * dirección canónica y datos para compartir (Open Graph y Twitter) con la foto principal. Un
+ * producto sin foto comparte la imagen por omisión de la tienda ({@link DEFAULT_OG_IMAGE}): el
+ * `openGraph` de la ficha reemplaza al del layout, así que la imagen, el nombre del sitio y el
+ * idioma se declaran acá. La tarjeta de Twitter es siempre la grande.
  *
  * @param product - La ficha del producto.
  * @param siteUrl - Origen público de la tienda, sin barra final (`NEXT_PUBLIC_SITE_URL`).
@@ -42,13 +46,23 @@ export function buildProductMetadata(product: ProductDetail, siteUrl: string): M
   const description = shorten(product.description, DESCRIPTION_MAX_LENGTH)
   const image = product.images[0]
   const images =
-    image === undefined ? [] : [{ url: absoluteUrl(image.url, siteUrl), alt: image.alt }]
+    image === undefined
+      ? [DEFAULT_OG_IMAGE]
+      : [{ url: absoluteUrl(image.url, siteUrl), alt: image.alt }]
   return {
     title: product.name,
     description,
     alternates: { canonical: url },
-    openGraph: { type: 'website', url, title: product.name, description, images },
-    twitter: { card: images.length > 0 ? 'summary_large_image' : 'summary', images },
+    openGraph: {
+      type: 'website',
+      url,
+      title: product.name,
+      description,
+      siteName: SITE_NAME,
+      locale: OPEN_GRAPH_LOCALE,
+      images,
+    },
+    twitter: { card: 'summary_large_image', images },
   }
 }
 

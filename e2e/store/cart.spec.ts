@@ -20,7 +20,7 @@ test.describe('tienda: carrito', () => {
     page,
   }) => {
     await gotoStore(page, '/tienda')
-    await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito')
+    await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 0 productos')
     await page.getByRole('button', { name: 'Agregar al carrito' }).first().click()
     await expect(page.getByText('Agregado al carrito. Mate Imperial Premium')).toBeAttached()
     await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 1 producto')
@@ -76,6 +76,30 @@ test.describe('tienda: carrito', () => {
     await expect(drawer.getByRole('button', { name: 'Sumar' }).first()).toBeDisabled()
     await drawer.getByRole('button', { name: 'Cerrar carrito' }).first().click()
     await expect(cartButton(page)).toHaveAttribute('aria-label', label ?? '')
+  })
+
+  test('el botón "Agregar kit al carrito" ocupa todo el ancho de la tarjeta del resumen', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/kit')
+    const summary = page.getByRole('complementary', { name: 'Resumen del kit' })
+    const addKit = summary.getByRole('button', { name: 'Agregar kit al carrito' })
+    await expect(addKit).toBeVisible()
+
+    // El imán (`Magnetic`) rodea al botón con un margen negativo: el botón tiene que medir lo mismo
+    // que el interior de la tarjeta (su ancho menos el relleno y el borde), no lo que mide su texto.
+    const { button, inner } = await addKit.evaluate((element: HTMLElement) => {
+      const card = element.closest('aside')
+      if (card === null) throw new Error('Falta la tarjeta del resumen.')
+      const style = getComputedStyle(card)
+      const edges = ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth'] as const
+      const spacing = edges.reduce((total, edge) => total + parseFloat(style[edge]), 0)
+      return {
+        button: element.getBoundingClientRect().width,
+        inner: card.getBoundingClientRect().width - spacing,
+      }
+    })
+    expect(Math.abs(button - inner)).toBeLessThan(1)
   })
 
   test('arma un kit paso a paso y lo ve en el carrito con el mismo total', async ({ page }) => {

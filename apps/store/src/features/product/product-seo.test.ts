@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_OG_IMAGE } from '@/lib/seo'
 import {
   buildMissingProductMetadata,
   buildProductJsonLd,
@@ -31,11 +32,24 @@ describe('buildProductMetadata', () => {
     expect(metadata.twitter).toMatchObject({ card: 'summary_large_image' })
   })
 
-  it('sin fotos comparte la tarjeta chica y sin imágenes', () => {
+  it('declara el nombre del sitio y el idioma, porque el openGraph de la ficha reemplaza al del layout', () => {
+    const metadata = buildProductMetadata(detail({ images: [photo] }), SITE_URL)
+
+    expect(metadata.openGraph).toMatchObject({ siteName: 'Galpón Mates', locale: 'es_AR' })
+  })
+
+  it('sin fotos comparte la imagen por omisión de la tienda y la tarjeta grande', () => {
     const metadata = buildProductMetadata(detail({ images: [] }), SITE_URL)
 
-    expect(metadata.openGraph).toMatchObject({ images: [] })
-    expect(metadata.twitter).toMatchObject({ card: 'summary' })
+    expect(metadata.openGraph).toMatchObject({
+      siteName: 'Galpón Mates',
+      locale: 'es_AR',
+      images: [DEFAULT_OG_IMAGE],
+    })
+    expect(metadata.twitter).toMatchObject({
+      card: 'summary_large_image',
+      images: [DEFAULT_OG_IMAGE],
+    })
   })
 
   it('acorta una descripción larga cortando en una palabra y cerrando con "…"', () => {

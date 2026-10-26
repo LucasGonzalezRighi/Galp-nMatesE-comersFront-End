@@ -14,7 +14,7 @@ export function WithdrawalPage(): ReactNode {
         <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
           {WITHDRAWAL_COPY.eyebrow}
         </span>
-        <h1 className="text-[clamp(40px,6vw,84px)] leading-none tracking-[-0.035em]">
+        <h1 className="text-[clamp(36px,4.4vw,64px)] leading-none tracking-[-0.035em]">
           <Reveal kind="rise" as="span">
             {WITHDRAWAL_COPY.title}
           </Reveal>

@@ -32,14 +32,14 @@ Aparecen en las tablas como ✅ con su nota.
 | Tienda (`shop`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1, 3 | ✅ |
 | Línea (`shop-bombillones`) 1440 y 390 | ✅ | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1 | ✅ |
 | Producto (`product-imperial-premium`, `product-galleta`) 1440 y 390 | ✅ A5 | ✅ A4 | ✅ | ✅ | ✅ | ❌ 1, 3 | ✅ |
-| Armá tu kit (`kit`) 1440 y 390 | ❌ 2 | ✅ A7 | ✅ | ✅ | ❌ 2 | ❌ 1 | ✅ |
+| Armá tu kit (`kit`) 1440 y 390 | ✅ | ✅ A7 | ✅ | ✅ | ✅ | ❌ 1 | ✅ |
 | Nosotros (`about`) 1440 y 390 | ✅ A8 | ✅ | ✅ | ✅ | ✅ | ✅ A9 | ✅ |
 | Preguntas frecuentes (`faq`) 1440 y 390 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Contacto (`contact`) 1440 y 390 | ✅ A6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Carrito abierto (`cart`) 1440 y 390 | ✅ | ✅ A4 A7 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Buscador abierto y con resultados (`search`, `search-results`) 1440 y 390 | ✅ | ✅ A7 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Menú del celular (`menu`) 390 | ✅ A1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cabecera y pie (en todas) | ✅ A1 A5 | ✅ | ✅ | ✅ | ✅ | ❌ 5 | ✅ |
+| Cabecera y pie (en todas) | ✅ A1 A5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Pantallas sin referencia (el diseño no las tiene)
 
@@ -47,19 +47,22 @@ Se revisaron solo por coherencia con el resto de la tienda.
 
 | Pantalla | Estructura | Textos | Colores | Tipografía | Espacios | Estados | Animaciones |
 |---|---|---|---|---|---|---|---|
-| Arrepentimiento (`withdrawal`) 1440 | ❌ 4 | ✅ | ✅ | ❌ 4 | ✅ | ✅ | ✅ |
+| Arrepentimiento (`withdrawal`) 1440 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Arrepentimiento (`withdrawal`) 390 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Términos (`terms`) y Privacidad (`privacy`) 1440 y 390 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-## Desvíos a corregir (para la tarea de ajuste)
+## Desvíos a corregir
 
-No se corrigieron en la Task 11 (solo se anotan).
+Siguen abiertos (1 y 3). El plan termina en la Task 11 y ninguna tarea los tiene a su cargo: hay que asignarlos o aceptarlos de forma explícita.
 
 1. **Placeholder de producto sin foto.** El diseño dibuja una tarjeta con borde punteado, un ícono de imagen chico y el nombre del producto ("Foto · Mate Torpedo Premium"). La tienda dibuja un mate grande sin borde punteado ni nombre. Se ve en las tarjetas del inicio, de la tienda, de las líneas, de "Más para la ronda", del kit y en la galería de la ficha sin foto. Los placeholders sin foto son un desvío aceptado, pero su aspecto no es el del diseño; en cambio los de Nosotros sí coinciden. Hay que decidir si se iguala o se acepta.
-2. **Botón "Agregar kit al carrito" del resumen del kit.** En el diseño ocupa todo el ancho de la tarjeta; en la tienda mide lo que su texto y queda pegado a la izquierda (1440 y 390 px). "Empezar de nuevo" queda bien.
 3. **Estrellas de la valoración.** Con 4,7 el diseño muestra cuatro estrellas llenas y una vacía; la tienda muestra la quinta llena a medias. Se ve en las tarjetas y en la ficha.
-4. **Título de Arrepentimiento a 1440 px.** "Botón de arrepentimiento" se corta: se lee "arrepentimien" porque la segunda línea es más ancha que su columna y la recorta (`overflow: hidden`). A 390 px se ve completo. El texto sigue en el DOM, por eso las pruebas lo ven.
-5. **Botón "Carrito 0" del encabezado.** Se ve igual que el diseño, pero axe (`label-content-name-mismatch`, grave) marca que el texto visible ("Carrito" y el contador, que el DOM junta sin espacio) no es una parte literal del nombre accesible "Abrir carrito, N productos". El E2E `a11y.spec.ts` tolera solo esa regla en ese botón (`isKnownCartButtonFinding`); al corregirlo hay que quitar la excepción.
+
+## Desvíos corregidos en la ola de la revisión (2026-10-26)
+
+2. **Botón "Agregar kit al carrito" del resumen del kit.** Ahora ocupa todo el ancho de la tarjeta (1440 y 390 px). Causa: el imán (`Magnetic`) se estiraba pero su contenido seguía midiendo lo que su texto; el imán tiene la opción `fullWidth`. Lo cubre un E2E (`cart.spec.ts`) que compara el ancho del botón con el interior de la tarjeta.
+4. **Título de Arrepentimiento a 1440 px.** Se bajó el tope del título a `clamp(36px, 4.4vw, 64px)`: ya no se corta "arrepentimiento" en ningún ancho de 360 a 1920 px. Lo cubre un E2E (`withdrawal.spec.ts`) que falla si algún elemento del título desborda su caja.
+5. **Botón "Carrito 0" del encabezado.** El nombre accesible ahora contiene el texto visible ("Abrir carrito, 0 productos", también con el carrito vacío) y un espacio separa "Carrito" del contador en el DOM. Se quitó la excepción de `a11y.spec.ts`: axe no encuentra violaciones serias en ninguna pantalla.
 
 ## Otras observaciones
 

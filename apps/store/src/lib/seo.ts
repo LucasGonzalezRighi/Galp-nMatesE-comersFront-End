@@ -8,7 +8,7 @@ export const SITE_NAME = 'Galpón Mates'
 export const SITE_DESCRIPTION = 'Mates, bombillones y yerba con envío a todo el país.'
 
 /** Idioma de los datos para compartir (formato Open Graph). */
-const OPEN_GRAPH_LOCALE = 'es_AR'
+export const OPEN_GRAPH_LOCALE = 'es_AR'
 
 /**
  * Imagen para compartir por omisión (`app/opengraph-image.png`). Se declara a mano en cada página

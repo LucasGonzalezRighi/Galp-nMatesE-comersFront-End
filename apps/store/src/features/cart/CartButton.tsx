@@ -15,13 +15,16 @@ import { useCart } from './cart.store'
  * el panel del carrito. El contador rebota cuando se agrega algo (`flyToCart`) y queda invisible
  * hasta que se lee `localStorage` (`hasHydrated`), reservando su lugar para que el encabezado no
  * salte. Se acerca al mouse como un imán.
+ *
+ * Nombre accesible (WCAG 2.5.3, "Etiqueta en el nombre"): una vez leído el carrito incluye el
+ * texto visible, "Carrito" y el contador ("Abrir carrito, 2 productos"; vacío, "Abrir carrito, 0
+ * productos"). Un espacio separa las dos partes en el DOM para que se lean como dos palabras.
  */
 export function CartButton(): ReactNode {
   const { count, hasHydrated } = useCart()
-  const label =
-    hasHydrated && count > 0
-      ? `${CART_COPY.openCart}, ${pluralize(count, 'producto', 'productos')}`
-      : CART_COPY.openCart
+  const label = hasHydrated
+    ? `${CART_COPY.openCart}, ${pluralize(count, 'producto', 'productos')}`
+    : CART_COPY.openCart
 
   return (
     <Magnetic strength={0.3}>
@@ -34,7 +37,7 @@ export function CartButton(): ReactNode {
         data-cart-button=""
       >
         <HandbagIcon size={18} aria-hidden="true" />
-        <span>{CART_COPY.title}</span>
+        <span>{CART_COPY.title}</span>{' '}
         <span
           aria-hidden="true"
           className={cx(
