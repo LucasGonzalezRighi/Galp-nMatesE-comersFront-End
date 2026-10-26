@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { ApiClient } from './client'
 import { createApiClient } from './client'
 import { ApiError, isApiError } from './errors'
 import { adminLogout, listCategories } from './services'
@@ -96,6 +97,47 @@ describe('createApiClient', () => {
     const api = createApiClient({ baseUrl: BASE_URL, fetch })
     const error = await listCategories(api).catch((caught: unknown) => caught)
     expect(error).toMatchObject({ kind: 'not_found', status: 404, problem })
+  })
+})
+
+describe('createApiClient con getOrderToken', () => {
+  const number = 'GLP-12345'
+  it.each<[string, (api: ApiClient) => Promise<unknown>, boolean]>([
+    [
+      'GET /orders/{number}',
+      (api) => api.GET('/orders/{number}', { params: { path: { number } } }),
+      true,
+    ],
+    [
+      'POST /orders/{number}/cancel-payment',
+      (api) => api.POST('/orders/{number}/cancel-payment', { params: { path: { number } } }),
+      true,
+    ],
+    [
+      'GET /me/orders/{number}',
+      (api) => api.GET('/me/orders/{number}', { params: { path: { number } } }),
+      false,
+    ],
+    [
+      'GET /admin/orders/{number}',
+      (api) => api.GET('/admin/orders/{number}', { params: { path: { number } } }),
+      false,
+    ],
+    ['GET /categories', (api) => api.GET('/categories'), false],
+  ])('%s manda X-Order-Token: %s', async (_ruta, call, sends) => {
+    const { fetch, requests } = createFakeFetch(() => jsonResponse({}))
+    const api = createApiClient({ baseUrl: BASE_URL, fetch, getOrderToken: () => 'tok-pedido' })
+    await call(api)
+    expect(requests[0]?.headers.get('X-Order-Token')).toBe(sends ? 'tok-pedido' : null)
+  })
+
+  it('no manda X-Order-Token si el token falta o está vacío', async () => {
+    for (const token of [undefined, '']) {
+      const { fetch, requests } = createFakeFetch(() => jsonResponse({}))
+      const api = createApiClient({ baseUrl: BASE_URL, fetch, getOrderToken: () => token })
+      await api.GET('/orders/{number}', { params: { path: { number: 'GLP-12345' } } })
+      expect(requests[0]?.headers.has('X-Order-Token')).toBe(false)
+    }
   })
 })
 

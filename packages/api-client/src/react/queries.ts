@@ -1,12 +1,21 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { ApiClient } from '../client'
+import type { CartQuoteInput, InstallmentsInput } from '../generated/schema'
 import type { AdminProductQuery } from '../services'
 import { isApiError } from '../errors'
 import {
   getAdminCsrfToken,
   getAdminSession,
+  getCustomerCsrfToken,
+  getInstallments,
+  getMe,
+  getMyOrder,
+  getOrder,
   getPublicSettings,
   listAdminProducts,
+  listMyAddresses,
+  listMyOrders,
+  quoteCart,
 } from '../services'
 import { queryKeys } from './query-keys'
 
@@ -78,6 +87,116 @@ export function adminProductsQuery(api: ApiClient, query: AdminProductQuery) {
   return queryOptions({
     queryKey: queryKeys.adminProducts(query),
     queryFn: () => listAdminProducts(api, query),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de la cotización de un carrito (importes, ahorro por kit y problemas por línea).
+ *
+ * @param api - Cliente de la API.
+ * @param input - Líneas del carrito.
+ */
+export function cartQuoteQuery(api: ApiClient, input: CartQuoteInput) {
+  return queryOptions({
+    queryKey: queryKeys.cartQuote(input),
+    queryFn: () => quoteCart(api, input),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de un pedido, con el token del cliente (`getOrderToken`) o la sesión del dueño.
+ *
+ * @param api - Cliente de la API.
+ * @param number - Número del pedido.
+ */
+export function orderQuery(api: ApiClient, number: string) {
+  return queryOptions({
+    queryKey: queryKeys.order(number),
+    queryFn: () => getOrder(api, number),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de las cuotas de una tarjeta, calculadas por el back sobre el total del pedido.
+ *
+ * @param api - Cliente de la API.
+ * @param number - Número del pedido.
+ * @param input - Primeros dígitos de la tarjeta y su tipo.
+ */
+export function installmentsQuery(api: ApiClient, number: string, input: InstallmentsInput) {
+  return queryOptions({
+    queryKey: queryKeys.installments(number, input),
+    queryFn: () => getInstallments(api, number, input),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta del token anti-CSRF de la tienda (abre una sesión anónima si no hay).
+ *
+ * @param api - Cliente de la API.
+ */
+export function customerCsrfQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.customerCsrf(),
+    queryFn: () => getCustomerCsrfToken(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de los datos del cliente; falla con `ApiError` `unauthorized` si no hay sesión.
+ *
+ * @param api - Cliente de la API.
+ */
+export function meQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.me(),
+    queryFn: () => getMe(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de una página de "Mis pedidos".
+ *
+ * @param api - Cliente de la API.
+ * @param page - Número de página, empezando en 1.
+ */
+export function myOrdersQuery(api: ApiClient, page = 1) {
+  return queryOptions({
+    queryKey: queryKeys.myOrders(page),
+    queryFn: () => listMyOrders(api, page),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de uno de los pedidos del cliente.
+ *
+ * @param api - Cliente de la API.
+ * @param number - Número del pedido.
+ */
+export function myOrderQuery(api: ApiClient, number: string) {
+  return queryOptions({
+    queryKey: queryKeys.myOrder(number),
+    queryFn: () => getMyOrder(api, number),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de la libreta de direcciones del cliente.
+ *
+ * @param api - Cliente de la API.
+ */
+export function myAddressesQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.myAddresses(),
+    queryFn: () => listMyAddresses(api),
     retry: shouldRetryQuery,
   })
 }

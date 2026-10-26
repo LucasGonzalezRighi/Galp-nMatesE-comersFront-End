@@ -1,4 +1,5 @@
 import type { z } from 'zod'
+import { isOrderNumber } from '@galpon/domain'
 import type { FieldError } from '../generated/schema'
 import { ResponseError, validationProblem } from './http'
 
@@ -54,6 +55,59 @@ export function slugParam(params: Readonly<Record<string, string>>): string {
     )
   }
   return slug
+}
+
+/**
+ * Devuelve el número de pedido de la ruta (`{number}`) si tiene el formato del contrato.
+ *
+ * @param params - Parámetros de la ruta.
+ * @throws {ResponseError} Con un `422` si no es `GLP-` y cinco dígitos.
+ */
+export function orderNumberParam(params: Readonly<Record<string, string>>): string {
+  const number = params.number ?? ''
+  if (!isOrderNumber(number)) {
+    throw new ResponseError(
+      validationProblem([
+        {
+          field: 'number',
+          code: 'invalid_format',
+          message: 'El número de pedido tiene que ser GLP- y cinco dígitos.',
+        },
+      ]),
+    )
+  }
+  return number
+}
+
+/**
+ * Copia un cuerpo JSON sin los campos en `null`, a cualquier profundidad.
+ *
+ * El contrato manda `null` en los opcionales (`phone`, `apartment`, `label`, `options`…), pero
+ * los schemas de `@galpon/schemas` esperan que falten.
+ *
+ * @param value - Cuerpo recibido.
+ */
+export function withoutNulls(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutNulls)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, field]) => field !== null)
+      .map(([key, field]) => [key, withoutNulls(field)]),
+  )
+}
+
+/**
+ * Valida un valor con un schema de Zod y devuelve los datos normalizados.
+ *
+ * @param schema - Schema a aplicar.
+ * @param value - Valor recibido.
+ * @throws {ResponseError} Con un `422` y un error por campo si no es válido.
+ */
+export function parseOrFail<S extends z.ZodType>(schema: S, value: unknown): z.output<S> {
+  const result = schema.safeParse(value)
+  if (!result.success) throw new ResponseError(validationProblem(zodFieldErrors(result.error)))
+  return result.data
 }
 
 /**

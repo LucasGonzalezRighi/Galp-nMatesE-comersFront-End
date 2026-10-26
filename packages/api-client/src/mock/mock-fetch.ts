@@ -2,6 +2,8 @@ import type { ApiFetch } from '../client'
 import type { MockRoute } from './router'
 import type { MockDb } from './types'
 import { IMPLEMENTED_ROUTES } from './handlers'
+import { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
+import { INTERNAL_ROUTES } from './handlers/mercadopago-simulator'
 import { isHttpMethod, notFound, problem, ResponseError } from './http'
 import { PENDING_OPERATIONS } from './pending'
 import { matchRoute } from './router'
@@ -29,11 +31,20 @@ export interface MockFetchOptions {
   onInvalidate?: (tags: readonly string[]) => void
   /** Se llama después de cada pedido que no es `GET` y responde 2xx (por ejemplo, para guardar la base). */
   onMutation?: () => void
+  /**
+   * Nombre de la cookie de sesión de la tienda; por omisión `galpon_session`. En vivo el back usa
+   * `__Host-galpon_session`, que un navegador no acepta en `http://localhost`.
+   */
+  customerSessionCookie?: string
 }
 
-/** Rutas atendidas: las implementadas y las pendientes, que responden 501 con su plan. */
+/**
+ * Rutas atendidas: las implementadas, las internas del modo de prueba (fuera del contrato) y las
+ * pendientes, que responden 501 con su plan.
+ */
 const ALL_ROUTES: readonly MockRoute[] = [
   ...IMPLEMENTED_ROUTES,
+  ...INTERNAL_ROUTES,
   ...PENDING_OPERATIONS.map(({ method, path, plan }) => ({
     method,
     path,
@@ -83,6 +94,19 @@ function stripBasePath(pathname: string, basePaths: readonly string[]): string |
   return null
 }
 
+/** Caracteres que admite el nombre de una cookie (`token` de RFC 9110). */
+const COOKIE_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
+
+/** Valida el nombre de la cookie de sesión. */
+function parseCookieName(name: string): string {
+  if (!COOKIE_NAME_PATTERN.test(name)) {
+    throw new RangeError(
+      `customerSessionCookie tiene que ser un nombre de cookie válido; se recibió ${JSON.stringify(name)}.`,
+    )
+  }
+  return name
+}
+
 /** Espera `ms` milisegundos; con 0 no usa temporizadores. */
 async function wait(ms: number): Promise<void> {
   if (ms <= 0) return
@@ -98,12 +122,15 @@ async function wait(ms: number): Promise<void> {
  *
  * @param options - Ver {@link MockFetchOptions}.
  * @returns Un {@link ApiFetch} para `createApiClient({ fetch })`.
- * @throws {RangeError} Si `latencyMs` o `basePaths` no sirven.
+ * @throws {RangeError} Si `latencyMs`, `basePaths` o `customerSessionCookie` no sirven.
  */
 export function createMockFetch(options: MockFetchOptions): ApiFetch {
   const [minLatency, maxLatency] = parseLatency(options.latencyMs ?? DEFAULT_LATENCY_MS)
   const basePaths = parseBasePaths(options.basePaths ?? DEFAULT_BASE_PATHS)
   const now = options.now ?? (() => new Date())
+  const customerSessionCookie = parseCookieName(
+    options.customerSessionCookie ?? DEFAULT_CUSTOMER_SESSION_COOKIE,
+  )
 
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url)
@@ -126,6 +153,7 @@ export function createMockFetch(options: MockFetchOptions): ApiFetch {
         query: url.searchParams,
         db: options.getDb(),
         now: now(),
+        customerSessionCookie,
         body: async <T>() => {
           try {
             return (await request.json()) as T

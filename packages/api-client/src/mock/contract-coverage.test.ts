@@ -51,12 +51,30 @@ describe('cobertura del contrato', () => {
     }
   })
 
+  it('atiende el checkout y la cuenta de P3', () => {
+    for (const operation of [
+      'POST /cart/quote',
+      'POST /shipping/quote',
+      'POST /orders',
+      'GET /orders/{number}',
+      'POST /orders/{number}/payments/mercadopago/preference',
+      'POST /orders/{number}/payments/mercadopago/card',
+      'POST /orders/{number}/payments/mercadopago/installments',
+      'POST /orders/{number}/cancel-payment',
+      'GET /auth/csrf',
+      'POST /auth/register',
+      'GET /me',
+      'DELETE /me/addresses/{id}',
+    ]) {
+      expect(implemented).toContain(operation)
+      expect(pending).not.toContain(operation)
+    }
+  })
+
   it('reparte las pendientes según el plan', () => {
     const planOf = (operation: string) =>
       PENDING_OPERATIONS.find((pendingOperation) => key(pendingOperation) === operation)?.plan
-    expect(planOf('POST /orders')).toBe('P3')
     expect(planOf('POST /webhooks/mercadopago')).toBe('P3')
-    expect(planOf('GET /me')).toBe('P3')
     expect(planOf('POST /admin/products')).toBe('P4')
   })
 })

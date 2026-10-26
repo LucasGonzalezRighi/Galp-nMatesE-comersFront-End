@@ -4,6 +4,11 @@
  *
  * @packageDocumentation
  */
+export type { MockCardHolder, MockCardToken, MockCardTokenInput } from './card-token'
+export type {
+  MockMercadoPagoResolveInput,
+  MockMercadoPagoResolveResult,
+} from './handlers/mercadopago-simulator'
 export type { HttpMethod } from './http'
 export type { MockFetchOptions } from './mock-fetch'
 export type { MockPlan, PendingOperation } from './pending'
@@ -13,11 +18,18 @@ export type {
   MockAdminSession,
   MockCategory,
   MockContent,
+  MockCustomer,
+  MockCustomerSession,
   MockDb,
   MockMessage,
+  MockOrder,
+  MockOrderCreation,
+  MockPaymentIntent,
   MockProduct,
+  MockReservation,
   MockReview,
 } from './types'
+export { createMockCardToken, MOCK_CARD_HOLDERS, parseMockCardToken } from './card-token'
 export {
   createMockDb,
   DEFAULT_MOCK_DB_OPTIONS,
@@ -26,6 +38,13 @@ export {
   resetGlobalMockDb,
 } from './db'
 export { IMPLEMENTED_ROUTES } from './handlers'
+export { MOCK_PASSWORD_RESET_TOKEN } from './handlers/account'
+export { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
+export {
+  INTERNAL_ROUTES,
+  MOCK_MERCADOPAGO_RESOLVE_PATH,
+  MOCK_MERCADOPAGO_RESULTS,
+} from './handlers/mercadopago-simulator'
 export { createMockFetch } from './mock-fetch'
 export { PENDING_OPERATIONS } from './pending'
 export { createPersistentMockDb, safeSessionStorage } from './storage'

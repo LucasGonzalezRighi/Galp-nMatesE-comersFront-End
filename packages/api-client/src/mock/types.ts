@@ -1,13 +1,23 @@
 import type {
   AboutContent,
+  Address,
   AdminSettings,
+  CardPaymentResult,
   ContactMessageKind,
   ContactReason,
+  Customer,
   FaqContent,
   FooterContent,
   HomeContent,
   Image,
   LegalContent,
+  OrderHistoryEntry,
+  OrderLine,
+  OrderShipping,
+  OrderStatus,
+  OrderTracking,
+  PaymentMethod,
+  PaymentStatus,
   ProductGroup,
   ProductStatus,
   ProductTabsContent,
@@ -141,16 +151,139 @@ export interface MockAdminSession {
   expiresAt: string
 }
 
+/** Unidades de un producto que un pedido tiene reservadas mientras espera el pago. */
+export interface MockReservation {
+  /** Identificador del producto. */
+  productId: string
+  /** Unidades reservadas. */
+  quantity: number
+}
+
+/** Intento de pago de un pedido: una preferencia de Mercado Pago o un pago con tarjeta. */
+export interface MockPaymentIntent {
+  /** Identificador del intento, por ejemplo `int-…`. */
+  id: string
+  /** Si es una preferencia (`mp_redirect`) o un pago con tarjeta (`card`). */
+  method: PaymentMethod
+  /** `Idempotency-Key` con la que se creó. */
+  idempotencyKey: string
+  /** Cuerpo del pedido que lo creó, en JSON con las claves ordenadas, para comparar repeticiones. */
+  fingerprint: string
+  /** Estado del intento; `none` es una preferencia que todavía no se pagó. */
+  status: PaymentStatus
+  /** Detalle del estado como lo informa Mercado Pago, o `null`. */
+  statusDetail: string | null
+  /** Cuotas elegidas, o `null` si no corresponde. */
+  installments: number | null
+  /** Tipo de medio de pago según Mercado Pago, o `null`. */
+  paymentTypeId: string | null
+  /** Últimos 4 dígitos de la tarjeta, o `null`. */
+  lastFour: string | null
+  /** Identificador del pago en Mercado Pago, o `null` mientras no hay pago. */
+  mpPaymentId: string | null
+  /** Respuesta del pago con tarjeta, que se repite tal cual con la misma clave; `null` en una preferencia. */
+  result: CardPaymentResult | null
+  /** Momento en que se creó, ISO 8601 con hora y zona. */
+  createdAt: string
+}
+
+/** Respuesta recordada de la creación de un pedido, para repetirla con la misma clave. */
+export interface MockOrderCreation {
+  /** `Idempotency-Key` con la que se creó. */
+  idempotencyKey: string
+  /** Cuerpo del pedido, en JSON con las claves ordenadas. */
+  fingerprint: string
+  /** Token entregado en la respuesta (el back también guarda la respuesta de la clave). */
+  orderToken: string
+  /** Hasta cuándo se recuerda la clave (24 horas), ISO 8601 con hora y zona. */
+  expiresAt: string
+}
+
+/** Pedido de la base simulada. */
+export interface MockOrder {
+  /** Número del pedido, `GLP-` y cinco dígitos. */
+  number: string
+  /** SHA-256 en hexadecimal del token del pedido: el acceso se valida contra el hash. */
+  tokenHash: string
+  /** Respuesta recordada de la creación, para la idempotencia. */
+  creation: MockOrderCreation
+  /** Identificador del cliente dueño, o `null` si es de un invitado. */
+  ownerId: string | null
+  /** Estado del pedido. */
+  status: OrderStatus
+  /** Datos de quien compra. */
+  customer: Customer
+  /** Envío, con el costo y el plazo del momento de la compra. */
+  shipping: OrderShipping
+  /** Líneas, copiadas con los nombres y precios del momento de la compra. */
+  lines: OrderLine[]
+  /** Suma de los precios de lista. */
+  itemsGrossArs: number
+  /** Suma de los ahorros por kit. */
+  kitSavingsArs: number
+  /** Importe de las líneas sin envío. */
+  subtotalArs: number
+  /** Costo del envío. */
+  shippingArs: number
+  /** Total con el envío. */
+  totalArs: number
+  /** Forma de pago elegida en el checkout. */
+  paymentMethod: PaymentMethod
+  /** Intentos de pago, del más viejo al más nuevo; solo uno puede estar activo. */
+  intents: MockPaymentIntent[]
+  /** Stock reservado; se vacía al pagarse (se descuenta) o al vencer (se libera). */
+  reservation: MockReservation[]
+  /** Datos del despacho, o `null`. */
+  tracking: OrderTracking | null
+  /** Cambios de estado, del más viejo al más nuevo. */
+  history: OrderHistoryEntry[]
+  /** Vencimiento de la reserva y del pedido, ISO 8601 con hora y zona. */
+  reservedUntil: string
+  /** Momento de creación, ISO 8601 con hora y zona. */
+  createdAt: string
+}
+
+/** Cliente con cuenta de la base simulada. */
+export interface MockCustomer {
+  /** Identificador del cliente, por ejemplo `cus-0001`. */
+  id: string
+  /** Email, en minúsculas; es único. */
+  email: string
+  /** Nombre. */
+  firstName: string
+  /** Apellido. */
+  lastName: string
+  /** Teléfono de 10 dígitos, o `null`. */
+  phone: string | null
+  /** Contraseña de prueba, en claro: es una base simulada. */
+  password: string
+  /** Libreta de direcciones; a lo sumo una es la predeterminada. */
+  addresses: Address[]
+  /** Último pedido de cambio de contraseña, ISO 8601 con hora y zona, o `null`. */
+  passwordResetRequestedAt: string | null
+  /** Momento del alta, ISO 8601 con hora y zona. */
+  createdAt: string
+}
+
+/** Sesión de la tienda: anónima (solo para el token CSRF) o de un cliente. */
+export interface MockCustomerSession {
+  /** Valor de la cookie de sesión. */
+  id: string
+  /** Cliente con la sesión iniciada, o `null` si es anónima. */
+  customerId: string | null
+  /** Token CSRF ligado a esta sesión. */
+  csrfToken: string
+  /** Vencimiento, ISO 8601 con hora y zona. */
+  expiresAt: string
+}
+
 /**
  * Base de datos simulada del modo de prueba: se siembra con los fixtures del diseño y se puede
  * guardar entera en un almacenamiento como JSON.
- *
- * Los pedidos y los clientes se tipan en las fases siguientes, cuando aparecen las pantallas
- * que los usan.
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
-  version: 1
+  version: 2
   /** Líneas de productos. */
   categories: MockCategory[]
   /** Productos. */
@@ -170,10 +303,12 @@ export interface MockDb {
   }
   /** Sesión abierta del administrador, o `null` si no hay. */
   adminSession: MockAdminSession | null
-  /** Pedidos (se tipan en la fase de pedidos). */
-  orders: unknown[]
+  /** Pedidos, del más viejo al más nuevo. */
+  orders: MockOrder[]
   /** Mensajes de contacto y de arrepentimiento, del más viejo al más nuevo. */
   messages: MockMessage[]
-  /** Clientes con cuenta (se tipan en la fase de clientes). */
-  customers: unknown[]
+  /** Clientes con cuenta. */
+  customers: MockCustomer[]
+  /** Sesiones de la tienda (anónimas y de clientes). */
+  customerSessions: MockCustomerSession[]
 }

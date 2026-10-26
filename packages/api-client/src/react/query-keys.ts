@@ -1,3 +1,4 @@
+import type { CartQuoteInput, InstallmentsInput } from '../generated/schema'
 import type { AdminProductQuery } from '../services'
 
 /**
@@ -17,4 +18,23 @@ export const queryKeys = {
   adminCsrf: () => ['admin', 'csrf'] as const,
   /** Una página del listado de productos del dashboard, según los filtros. */
   adminProducts: (query: AdminProductQuery) => ['admin', 'products', query] as const,
+  /** Cotización de un carrito. */
+  cartQuote: (input: CartQuoteInput) => ['cart', 'quote', input] as const,
+  /** Un pedido, consultado con su token o con la sesión del dueño. */
+  order: (number: string) => ['orders', number] as const,
+  /** Cuotas de una tarjeta para un pedido. */
+  installments: (number: string, input: InstallmentsInput) =>
+    ['orders', number, 'installments', input] as const,
+  /** Todo lo de la cuenta del cliente: se invalida entero después de iniciar o cerrar sesión. */
+  account: () => ['account'] as const,
+  /** Token anti-CSRF de la tienda. */
+  customerCsrf: () => ['account', 'csrf'] as const,
+  /** Datos del cliente con la sesión iniciada. */
+  me: () => ['account', 'me'] as const,
+  /** Una página de "Mis pedidos". */
+  myOrders: (page: number) => ['account', 'orders', page] as const,
+  /** Uno de los pedidos del cliente. */
+  myOrder: (number: string) => ['account', 'order', number] as const,
+  /** Libreta de direcciones del cliente. */
+  myAddresses: () => ['account', 'addresses'] as const,
 }

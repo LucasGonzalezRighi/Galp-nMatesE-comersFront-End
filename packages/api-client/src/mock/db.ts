@@ -8,7 +8,7 @@ import {
 } from './fixtures'
 
 /** Versión actual del formato de la base simulada. */
-export const MOCK_DB_VERSION = 1
+export const MOCK_DB_VERSION = 2
 
 /** Cuenta del administrador con la que se siembra la base simulada. */
 export interface MockDbOptions {
@@ -41,7 +41,7 @@ function globalHolder(): typeof globalThis & GlobalMockDbHolder {
  * Modificarla no cambia los fixtures ni otras bases.
  *
  * @param options - Cuenta del administrador con la que se siembra.
- * @returns La base, sin sesión abierta y sin pedidos, mensajes ni clientes.
+ * @returns La base, sin sesiones abiertas y sin pedidos, mensajes ni clientes.
  * @throws {RangeError} Si el email o la contraseña del administrador están vacíos.
  */
 export function createMockDb(options: MockDbOptions): MockDb {
@@ -63,6 +63,7 @@ export function createMockDb(options: MockDbOptions): MockDb {
     orders: [],
     messages: [],
     customers: [],
+    customerSessions: [],
   }
 }
 

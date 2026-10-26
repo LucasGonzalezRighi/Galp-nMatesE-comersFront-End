@@ -33,7 +33,7 @@ afterEach(() => {
 describe('createMockDb', () => {
   it('siembra los fixtures, la cuenta del admin y las listas vacías', () => {
     const db = createMockDb(OPTIONS)
-    expect(db.version).toBe(1)
+    expect(db.version).toBe(2)
     expect(db.categories).toHaveLength(6)
     expect(db.products).toHaveLength(27)
     expect(db.reviews).toHaveLength(13)
@@ -44,6 +44,7 @@ describe('createMockDb', () => {
     expect(db.orders).toEqual([])
     expect(db.messages).toEqual([])
     expect(db.customers).toEqual([])
+    expect(db.customerSessions).toEqual([])
   })
 
   it('las opciones de fábrica son las que usan la tienda y el admin', () => {
@@ -165,7 +166,7 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), version: 0, products: [] }))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.isPersistent).toBe(true)
-    expect(handle.db.version).toBe(1)
+    expect(handle.db.version).toBe(2)
     expect(handle.db.products).toHaveLength(27)
   })
 

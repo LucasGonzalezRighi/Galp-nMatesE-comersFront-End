@@ -1,4 +1,4 @@
-import type { FieldError } from '../generated/schema'
+import type { ChangeNotice, FieldError } from '../generated/schema'
 
 /** Métodos HTTP que usa el contrato. */
 export type HttpMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT'
@@ -52,13 +52,14 @@ export function noContent(): Response {
  *
  * @param status - Estado HTTP.
  * @param title - Resumen corto del error, en español.
- * @param extras - `detail` (explicación), `errors` (un error por campo) y `type`; si falta `type`
- *   se deduce del estado (`not_found` para 404, `validation_error` para 422…).
+ * @param extras - `detail` (explicación), `errors` (un error por campo), `changes` (qué cambió, en
+ *   los conflictos de pedido) y `type`; si falta `type` se deduce del estado (`not_found` para 404,
+ *   `validation_error` para 422…).
  */
 export function problem(
   status: number,
   title: string,
-  extras: { detail?: string; errors?: FieldError[]; type?: string } = {},
+  extras: { detail?: string; errors?: FieldError[]; changes?: ChangeNotice[]; type?: string } = {},
 ): Response {
   const body = {
     type: extras.type ?? PROBLEM_TYPES[status] ?? 'error',
@@ -66,6 +67,7 @@ export function problem(
     status,
     ...(extras.detail === undefined ? {} : { detail: extras.detail }),
     ...(extras.errors === undefined ? {} : { errors: extras.errors }),
+    ...(extras.changes === undefined ? {} : { changes: extras.changes }),
   }
   return new Response(JSON.stringify(body), {
     status,

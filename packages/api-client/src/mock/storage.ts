@@ -76,9 +76,15 @@ function isMockDb(value: unknown): value is MockDb {
   if (!isRecord(value)) return false
   return (
     value.version === MOCK_DB_VERSION &&
-    ['categories', 'products', 'reviews', 'orders', 'messages', 'customers'].every((name) =>
-      Array.isArray(value[name]),
-    ) &&
+    [
+      'categories',
+      'products',
+      'reviews',
+      'orders',
+      'messages',
+      'customers',
+      'customerSessions',
+    ].every((name) => Array.isArray(value[name])) &&
     ['content', 'settings'].every((name) => isRecord(value[name])) &&
     hasTextFields(value.adminAccount, ['email', 'password']) &&
     (value.adminSession === null || isAdminSession(value.adminSession))

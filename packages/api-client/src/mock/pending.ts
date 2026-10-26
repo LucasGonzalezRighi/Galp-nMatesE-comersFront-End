@@ -29,32 +29,9 @@ function pending(plan: MockPlan, operations: readonly Operation[]): PendingOpera
  * una operación del YAML no está en alguna de las dos listas o está en las dos.
  */
 export const PENDING_OPERATIONS: readonly PendingOperation[] = [
-  // P3: carrito, envío, pedidos, pagos, webhooks y cuenta de clientes.
-  ...pending('P3', [
-    ['POST', '/cart/quote'],
-    ['POST', '/shipping/quote'],
-    ['POST', '/orders'],
-    ['GET', '/orders/{number}'],
-    ['POST', '/orders/{number}/payments/mercadopago/preference'],
-    ['POST', '/orders/{number}/payments/mercadopago/card'],
-    ['POST', '/orders/{number}/payments/mercadopago/installments'],
-    ['POST', '/orders/{number}/cancel-payment'],
-    ['POST', '/webhooks/mercadopago'],
-    ['GET', '/auth/csrf'],
-    ['POST', '/auth/register'],
-    ['POST', '/auth/login'],
-    ['POST', '/auth/logout'],
-    ['POST', '/auth/password/forgot'],
-    ['POST', '/auth/password/reset'],
-    ['GET', '/me'],
-    ['PATCH', '/me'],
-    ['GET', '/me/orders'],
-    ['GET', '/me/orders/{number}'],
-    ['GET', '/me/addresses'],
-    ['POST', '/me/addresses'],
-    ['PATCH', '/me/addresses/{id}'],
-    ['DELETE', '/me/addresses/{id}'],
-  ]),
+  // P3: el aviso de Mercado Pago solo lo llama Mercado Pago; en el modo de prueba lo reemplaza el
+  // simulador (`POST /__mock/mercadopago/resolve`).
+  ...pending('P3', [['POST', '/webhooks/mercadopago']]),
   // P4: el resto del dashboard.
   ...pending('P4', [
     ['POST', '/admin/auth/password'],

@@ -13,6 +13,14 @@ import {
   adminCsrfQuery,
   adminProductsQuery,
   adminSessionQuery,
+  cartQuoteQuery,
+  customerCsrfQuery,
+  installmentsQuery,
+  meQuery,
+  myAddressesQuery,
+  myOrderQuery,
+  myOrdersQuery,
+  orderQuery,
   publicSettingsQuery,
   shouldRetryQuery,
 } from './queries'
@@ -92,6 +100,78 @@ describe('queryOptions', () => {
     await expect(run(new QueryClient(), api)).resolves.toEqual({ marker: 'respuesta' })
     expect(requests).toHaveLength(1)
     expect(new URL(requests[0]?.url ?? '').pathname).toBe(`/api/v1${path}`)
+  })
+})
+
+describe('consultas de checkout y cuenta', () => {
+  const number = 'GLP-12345'
+  const card = { bin: '450995', paymentTypeId: 'credit_card' } as const
+  const cart = {
+    items: [{ type: 'product' as const, productId: 'prd-a', quantity: 1, options: null }],
+  }
+
+  it.each<[string, (client: QueryClient, api: ApiClient) => Promise<unknown>, string, unknown[]]>([
+    [
+      'cartQuoteQuery',
+      (client, api) => client.query(cartQuoteQuery(api, cart)),
+      '/cart/quote',
+      [...queryKeys.cartQuote(cart)],
+    ],
+    [
+      'orderQuery',
+      (client, api) => client.query(orderQuery(api, number)),
+      `/orders/${number}`,
+      [...queryKeys.order(number)],
+    ],
+    [
+      'installmentsQuery',
+      (client, api) => client.query(installmentsQuery(api, number, card)),
+      `/orders/${number}/payments/mercadopago/installments`,
+      [...queryKeys.installments(number, card)],
+    ],
+    [
+      'customerCsrfQuery',
+      (client, api) => client.query(customerCsrfQuery(api)),
+      '/auth/csrf',
+      [...queryKeys.customerCsrf()],
+    ],
+    ['meQuery', (client, api) => client.query(meQuery(api)), '/me', [...queryKeys.me()]],
+    [
+      'myOrdersQuery',
+      (client, api) => client.query(myOrdersQuery(api)),
+      '/me/orders',
+      [...queryKeys.myOrders(1)],
+    ],
+    [
+      'myOrderQuery',
+      (client, api) => client.query(myOrderQuery(api, number)),
+      `/me/orders/${number}`,
+      [...queryKeys.myOrder(number)],
+    ],
+    [
+      'myAddressesQuery',
+      (client, api) => client.query(myAddressesQuery(api)),
+      '/me/addresses',
+      [...queryKeys.myAddresses()],
+    ],
+  ])('%s pide %s y guarda los datos con su clave', async (_name, run, path, key) => {
+    const { api, requests } = setup()
+    const client = new QueryClient()
+    await expect(run(client, api)).resolves.toEqual({ marker: 'respuesta' })
+    expect(new URL(requests[0]?.url ?? '').pathname).toBe(`/api/v1${path}`)
+    expect(client.getQueryData(key)).toEqual({ marker: 'respuesta' })
+  })
+
+  it('las claves de la cuenta cuelgan de queryKeys.account(), para invalidarlas juntas', () => {
+    for (const key of [
+      queryKeys.customerCsrf(),
+      queryKeys.me(),
+      queryKeys.myOrders(2),
+      queryKeys.myOrder(number),
+      queryKeys.myAddresses(),
+    ]) {
+      expect(key[0]).toBe(queryKeys.account()[0])
+    }
   })
 })
 

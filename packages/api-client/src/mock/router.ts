@@ -15,6 +15,8 @@ export interface MockContext {
   db: MockDb
   /** Momento del pedido, para vencimientos y fechas de alta. */
   now: Date
+  /** Nombre de la cookie de sesión de la tienda (`galpon_session` por omisión). */
+  customerSessionCookie: string
   /**
    * Lee el cuerpo como JSON.
    *

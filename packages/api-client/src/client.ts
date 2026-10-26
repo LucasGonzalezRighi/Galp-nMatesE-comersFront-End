@@ -18,10 +18,30 @@ export interface ApiClientOptions {
   credentials?: RequestCredentials
   /** Devuelve el token anti-CSRF vigente (se llama en cada pedido) o `undefined` si no hay sesión. */
   getCsrfToken?: () => string | undefined
+  /**
+   * Devuelve el token del pedido en curso (se llama en cada pedido) o `undefined` si no hay. Va en
+   * `X-Order-Token`, solo en las rutas de un pedido (`/orders/{number}…`), nunca en la URL.
+   */
+  getOrderToken?: () => string | undefined
 }
 
 /** Cliente tipado de `openapi-fetch` para las rutas del contrato (`docs/api/openapi.yaml`). */
 export type ApiClient = Client<paths>
+
+/**
+ * Indica si la ruta es la de un pedido público (`/orders/{number}` y sus pagos), que es la única
+ * que lleva el token del pedido; `/me/orders/…` y `/admin/orders/…` usan la sesión.
+ */
+function isOrderPath(pathname: string): boolean {
+  const segments = pathname.split('/')
+  return segments.some(
+    (segment, index) =>
+      segment === 'orders' &&
+      (segments[index + 1] ?? '') !== '' &&
+      segments[index - 1] !== 'me' &&
+      segments[index - 1] !== 'admin',
+  )
+}
 
 /** Valida y devuelve el `baseUrl`. */
 function parseBaseUrl(baseUrl: string): string {
@@ -42,8 +62,9 @@ function parseBaseUrl(baseUrl: string): string {
 /**
  * Crea el cliente de la API.
  *
- * Agrega `Accept: application/json` a todos los pedidos y, cuando `getCsrfToken` devuelve un
- * token, `X-CSRF-Token` a los que no son `GET` ni `HEAD`.
+ * Agrega `Accept: application/json` a todos los pedidos; cuando `getCsrfToken` devuelve un token,
+ * `X-CSRF-Token` a los que no son `GET` ni `HEAD`, y cuando `getOrderToken` devuelve uno,
+ * `X-Order-Token` a los de `/orders/{number}…`.
  *
  * Los métodos devuelven `{ data, error, response }`; para obtener los datos o un
  * {@link ApiError} usá `unwrap` (los servicios ya lo hacen).
@@ -52,7 +73,7 @@ function parseBaseUrl(baseUrl: string): string {
  * @throws {RangeError} Si `baseUrl` no es una URL absoluta con `http` o `https`.
  */
 export function createApiClient(options: ApiClientOptions): ApiClient {
-  const { fetch, credentials, getCsrfToken } = options
+  const { fetch, credentials, getCsrfToken, getOrderToken } = options
   const client = createClient<paths>({
     baseUrl: parseBaseUrl(options.baseUrl),
     ...(fetch === undefined ? {} : { fetch }),
@@ -61,6 +82,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   client.use({
     onRequest({ request }) {
       request.headers.set('Accept', 'application/json')
+      const orderToken = getOrderToken?.()
+      if (orderToken && isOrderPath(new URL(request.url).pathname)) {
+        request.headers.set('X-Order-Token', orderToken)
+      }
       if (request.method === 'GET' || request.method === 'HEAD') return
       const token = getCsrfToken?.()
       if (token) request.headers.set('X-CSRF-Token', token)

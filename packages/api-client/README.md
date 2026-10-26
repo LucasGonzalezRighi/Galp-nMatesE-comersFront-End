@@ -28,10 +28,11 @@ const api = createApiClient({
   baseUrl: 'http://localhost:4000/api/v1', // absoluta, con el prefijo de versión
   credentials: 'include', // el admin, cuando la API está en otro origen
   getCsrfToken: () => session.csrfToken, // se lee en cada pedido
+  getOrderToken: () => savedOrder?.orderToken, // la tienda, durante el checkout
 })
 ```
 
-`createApiClient` devuelve un cliente de [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) tipado con `paths`. Agrega `Accept: application/json` a todo pedido y, si `getCsrfToken` devuelve un token, `X-CSRF-Token` a los que no son `GET` ni `HEAD`. `baseUrl` tiene que ser absoluta (`http` o `https`): en Node una relativa falla, y con otra cosa `createApiClient` lanza `RangeError`. `fetch` es opcional (por omisión, el global) y los tests pasan uno falso que recibe el `Request`.
+`createApiClient` devuelve un cliente de [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) tipado con `paths`. Agrega `Accept: application/json` a todo pedido y, si `getCsrfToken` devuelve un token, `X-CSRF-Token` a los que no son `GET` ni `HEAD`. Si `getOrderToken` devuelve un token, lo manda en `X-Order-Token` solo a las rutas de un pedido (`/orders/{number}` y sus pagos), nunca a `/me/orders` ni al admin, y nunca en la URL. `baseUrl` tiene que ser absoluta (`http` o `https`): en Node una relativa falla, y con otra cosa `createApiClient` lanza `RangeError`. `fetch` es opcional (por omisión, el global) y los tests pasan uno falso que recibe el `Request`.
 
 ## Errores
 
@@ -52,14 +53,20 @@ Todo lo que falla llega como `ApiError`:
 
 Cada servicio recibe el `ApiClient` como primer argumento y devuelve los datos ya tipados o lanza `ApiError`. Los que reciben un slug, una página o un documento lanzan `RangeError` si el valor no sirve para armar la ruta; el formato del slug lo valida el servidor. Lo mismo pasa con `page` y `pageSize` de `listProducts`: el cliente los manda tal cual y el servidor responde `422` si no sirven.
 
-| Archivo          | Servicios                                                                                                                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `catalog`        | `listCategories`, `listProducts(api, query?)`, `listAllProducts(api, query?)` (junta las páginas de 100), `getProduct`, `listRelatedProducts`   |
-| `reviews`        | `listProductReviews(api, slug, page?)`, `listFeaturedReviews`                                                                                   |
-| `content`        | `getHomeContent`, `getAboutContent`, `getFaqContent`, `getFooterContent`, `getProductTabsContent`, `getLegalContent(api, 'terms' \| 'privacy')` |
-| `settings`       | `getPublicSettings`                                                                                                                             |
-| `admin-auth`     | `adminLogin`, `adminLogout`, `getAdminSession`, `getAdminCsrfToken`                                                                             |
-| `admin-products` | `listAdminProducts(api, query?)`                                                                                                                |
+| Archivo          | Servicios                                                                                                                                                                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`        | `listCategories`, `listProducts(api, query?)`, `listAllProducts(api, query?)` (junta las páginas de 100), `getProduct`, `listRelatedProducts`                                                                                       |
+| `reviews`        | `listProductReviews(api, slug, page?)`, `listFeaturedReviews`                                                                                                                                                                       |
+| `content`        | `getHomeContent`, `getAboutContent`, `getFaqContent`, `getFooterContent`, `getProductTabsContent`, `getLegalContent(api, 'terms' \| 'privacy')`                                                                                     |
+| `settings`       | `getPublicSettings`                                                                                                                                                                                                                 |
+| `admin-auth`     | `adminLogin`, `adminLogout`, `getAdminSession`, `getAdminCsrfToken`                                                                                                                                                                 |
+| `admin-products` | `listAdminProducts(api, query?)`                                                                                                                                                                                                    |
+| `cart`           | `quoteCart`, `quoteShipping`                                                                                                                                                                                                        |
+| `orders`         | `createOrder(api, input, idempotencyKey)`, `getOrder(api, number)`                                                                                                                                                                  |
+| `payments`       | `createMercadoPagoPreference(api, number, key)`, `payWithCard(api, number, input, key)`, `getInstallments`, `cancelPayment`                                                                                                         |
+| `account`        | `getCustomerCsrfToken`, `register`, `login`, `logout`, `forgotPassword`, `resetPassword`, `getMe`, `updateMe`, `listMyOrders(api, page?)`, `getMyOrder`, `listMyAddresses`, `createMyAddress`, `updateMyAddress`, `deleteMyAddress` |
+
+Los que reciben un número de pedido, una `Idempotency-Key` o el id de una dirección lanzan `RangeError` si no tienen formato (`GLP-` y cinco dígitos, un UUID, letras/números/guiones). La `Idempotency-Key` la genera la tienda una vez por intento y la reutiliza en los reintentos de red: con la misma clave el back devuelve el mismo pedido o el mismo resultado de pago.
 
 `ProductQuery` y `AdminProductQuery` son los parámetros de `GET /products` y `GET /admin/products` según el contrato.
 
@@ -80,7 +87,8 @@ function Settings() {
 ```
 
 - `queryKeys`: `categories()`, `publicSettings()`, `adminSession()`, `adminCsrf()` y `adminProducts(query)`. Sirven para consultar y para invalidar.
-- `publicSettingsQuery`, `adminSessionQuery`, `adminCsrfQuery` y `adminProductsQuery(api, query)`: `queryOptions` listas para `useQuery`, `useSuspenseQuery` o `queryClient.query`. Reintentan hasta dos veces solo los errores de red y de servidor (`shouldRetryQuery`): un 401 no hace esperar al admin.
+- Del checkout y la cuenta: `cartQuote(input)`, `order(number)`, `installments(number, input)` y, bajo `account()` (para invalidar todo junto al iniciar o cerrar sesión), `customerCsrf()`, `me()`, `myOrders(page)`, `myOrder(number)` y `myAddresses()`.
+- `publicSettingsQuery`, `adminSessionQuery`, `adminCsrfQuery` y `adminProductsQuery(api, query)`: `queryOptions` listas para `useQuery`, `useSuspenseQuery` o `queryClient.query`. Reintentan hasta dos veces solo los errores de red y de servidor (`shouldRetryQuery`): un 401 no hace esperar al admin. Con la misma política: `cartQuoteQuery`, `orderQuery`, `installmentsQuery`, `customerCsrfQuery`, `meQuery`, `myOrdersQuery`, `myOrderQuery` y `myAddressesQuery`. Las escrituras (crear el pedido, pagar, la cuenta) se usan con `useMutation` y los servicios.
 
 ## Modo de prueba
 
@@ -111,14 +119,25 @@ const api = createApiClient({
 
 El login usa el email y la contraseña de `DEFAULT_MOCK_DB_OPTIONS`, abre una sesión de 8 horas y devuelve un `csrfToken` que las escrituras mandan en `X-CSRF-Token`.
 
-**Pendientes.** Toda otra operación del contrato (`PENDING_OPERATIONS`) responde `501` con `title: 'No implementado en el modo de prueba'` y `detail: 'Llega en P2'` (reseñas nuevas, contacto y arrepentimiento), `P3` (carrito, envío, pedidos, pagos, webhooks y cuenta de clientes) o `P4` (el resto del admin). Una ruta desconocida responde `404` y un método que la ruta no admite, `405`, siempre como `application/problem+json`. `contract-coverage.test.ts` falla si una operación de `docs/api/openapi.yaml` no está en `IMPLEMENTED_ROUTES` ni en `PENDING_OPERATIONS`.
+**Checkout y cuenta (P3).** Los importes salen siempre de `@galpon/domain` (`productLineAmounts`, `kitLineAmounts`, `cartTotals`, `netPrice`, `remainingQuantityFor`, `installmentAmount`).
 
-**Base.** `createMockDb` crea una base nueva; `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin). La base no se guarda sola: quien llama a `onMutation` es `createMockFetch`, después de cada pedido que no es `GET` y responde 2xx, así que se le pasa `onMutation: handle.persist` (con `handle` lo que devuelve `createPersistentMockDb`). `onInvalidate` se llama cuando un handler avisa, con `ctx.invalidate`, que cambió algo que la tienda tiene en caché.
+| Grupo   | Rutas y comportamiento                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carrito | `POST /cart/quote`: `issue` por línea (`unavailable`, `sold_out`, `quantity_reduced` y `price_changed` si la línea trae `expectedUnitPriceArs`, que no está en el contrato), netos con la alícuota de los ajustes. `POST /shipping/quote`: costo y plazo fijos del método.                                                                                                                                  |
+| Pedidos | `POST /orders` exige `Idempotency-Key` (misma clave y cuerpo → la misma respuesta `201`; otro cuerpo → `422`), recalcula todo, responde `409` `stock_changed`, `price_changed` o `total_changed` con `changes`, reserva el stock 30 minutos y guarda solo el SHA-256 del token. `GET /orders/{number}`: con `X-Order-Token` o la sesión del dueño; si venció la reserva, `expired` y libera el stock.       |
+| Pagos   | Un intento activo por pedido. La preferencia devuelve `initPoint = /checkout/mp-simulado?pedido=…&intent=…`. La tarjeta decide por el titular (`APRO`, `CONT`, `OTHE`, `FUND`, `SECU`, `EXPI`, `CALL` y `3DS`, que pide el desafío); aprobado → `paid` y descuenta el stock. Cuotas: las sin interés de los ajustes más 6 y 12 con CFT 45,90 % / TEA 38,00 %. `cancel-payment` cancela el intento activo.   |
+| Cuenta  | Cookie `galpon_session` (`customerSessionCookie` de `createMockFetch` la cambia) y token CSRF ligado a la sesión: `GET /auth/csrf` abre una sesión anónima; registrarse o iniciar sesión la cambia (hay que pedir otro token). Los pedidos de invitado con el mismo email pasan a la cuenta al registrarse. `RESET-OK` (`MOCK_PASSWORD_RESET_TOKEN`) cambia la contraseña de la cuenta que la pidió último. |
+
+Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardholderName, lastFour })`: lleva el titular de prueba (un nombre que no es de prueba cuenta como `OTHE`, como en el sandbox) y los últimos 4 dígitos, nunca el número entero. El simulador de Mercado Pago es una ruta interna, fuera del contrato: `POST /api/v1/__mock/mercadopago/resolve` (`MOCK_MERCADOPAGO_RESOLVE_PATH`) con `{ number, intent, result }` (`intent: null` es el intento activo, por ejemplo el desafío 3-D Secure; `result`: `approved`, `pending` o `rejected`) aplica el resultado y devuelve `{ returnUrl: '/checkout/resultado?pedido=GLP-…' }`.
+
+**Pendientes.** Toda otra operación del contrato (`PENDING_OPERATIONS`) responde `501` con `title: 'No implementado en el modo de prueba'` y `detail: 'Llega en P3'` (el aviso de Mercado Pago, que reemplaza el simulador) o `P4` (el resto del admin). Una ruta desconocida responde `404` y un método que la ruta no admite, `405`, siempre como `application/problem+json`. `contract-coverage.test.ts` falla si una operación de `docs/api/openapi.yaml` no está en `IMPLEMENTED_ROUTES` ni en `PENDING_OPERATIONS`.
+
+**Base.** La base tiene versión (`MOCK_DB_VERSION`, hoy 2, con pedidos, clientes y sesiones tipados): una guardada con otra versión se descarta y se vuelve a sembrar. `createMockDb` crea una base nueva; `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin). La base no se guarda sola: quien llama a `onMutation` es `createMockFetch`, después de cada pedido que no es `GET` y responde 2xx, así que se le pasa `onMutation: handle.persist` (con `handle` lo que devuelve `createPersistentMockDb`). `onInvalidate` se llama cuando un handler avisa, con `ctx.invalidate`, que cambió algo que la tienda tiene en caché.
 
 ## Exports
 
-`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia y los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers).
+`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers, `createMockCardToken`, `MOCK_MERCADOPAGO_RESOLVE_PATH`, `MOCK_PASSWORD_RESET_TOKEN` y `DEFAULT_CUSTOMER_SESSION_COOKIE`).
 
 ## Tests
 
-Los tests usan un `fetch` falso (`src/test/fake-fetch.ts`) que registra cada `Request` y devuelve la respuesta que se le indique. El de los hooks (`react/queries.test.ts`) corre en jsdom.
+Los tests usan un `fetch` falso (`src/test/fake-fetch.ts`) que registra cada `Request` y devuelve la respuesta que se le indique. Los del checkout y la cuenta usan `src/mock/test/checkout-api.ts`: la API simulada con cookies, token del pedido, token CSRF y un reloj que se adelanta. El de los hooks (`react/queries.test.ts`) corre en jsdom.
