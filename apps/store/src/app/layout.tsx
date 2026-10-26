@@ -6,6 +6,7 @@ import { Footer, Header, TopBar } from '@/components/layout'
 import { PageCurtain, PageEnter } from '@/components/motion'
 import { cx } from '@/components/ui/cx'
 import { CartDrawer, CartHydrator } from '@/features/cart'
+import { SearchModal } from '@/features/search'
 import { Toaster } from '@/features/toast'
 import { inter } from './fonts'
 import './globals.css'
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: RootLayoutProps): ReactNode {
           </Suspense>
           <CartDrawer />
           <Toaster />
+          <SearchModal />
           <CartHydrator />
         </Providers>
       </body>
