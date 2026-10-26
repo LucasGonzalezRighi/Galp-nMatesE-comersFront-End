@@ -1,3 +1,4 @@
+import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
 
 /** Las seis líneas de productos, como las muestra la página de inicio. */
@@ -12,19 +13,29 @@ const CATEGORY_NAMES = [
 
 test.describe('tienda: humo', () => {
   test('la página de inicio muestra el título y las seis líneas', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Galpón Mates' })).toBeVisible()
-    await expect(page.getByRole('listitem')).toHaveCount(CATEGORY_NAMES.length)
+    await gotoStore(page, '/')
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Encontrá\s*tu mate\./ }),
+    ).toBeVisible()
+    const main = page.getByRole('main')
     for (const name of CATEGORY_NAMES) {
-      await expect(page.getByRole('listitem').filter({ hasText: name })).toBeVisible()
+      await expect(main.getByRole('link', { name: new RegExp(name) }).first()).toBeAttached()
     }
   })
 
-  test('el navegador lee los ajustes por /api/v1 y muestra el descuento del kit', async ({
-    page,
-  }) => {
-    await page.goto('/')
-    await expect(page.getByText('Descuento del kit: 10%')).toBeVisible()
+  test('el navegador lee el catálogo por /api/v1 al abrir el buscador', async ({ page }) => {
+    await gotoStore(page, '/')
+    const catalog = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/products') && response.status() === 200,
+    )
+    await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+    await catalog
+    await expect(page.getByRole('searchbox', { name: 'Buscar' })).toBeVisible()
+  })
+
+  test('la página del kit muestra el descuento que viene de los ajustes', async ({ page }) => {
+    await gotoStore(page, '/kit')
+    await expect(page.getByText('el kit tiene −10% sobre el total')).toBeVisible()
   })
 
   test('GET /api/v1/categories responde 200 con seis líneas', async ({ request }) => {

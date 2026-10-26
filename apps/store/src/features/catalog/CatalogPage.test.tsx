@@ -14,6 +14,7 @@ import { CatalogPage } from './CatalogPage'
 vi.mock('../../lib/data/catalog', () => ({ getCategories: vi.fn() }))
 vi.mock('../../lib/data/settings', () => ({ getPublicSettings: vi.fn() }))
 vi.mock('./catalog.data', () => ({ getCatalogProducts: vi.fn() }))
+vi.mock('../../lib/env', () => ({ getStoreEnv: () => ({ siteUrl: 'https://galponmates.com.ar' }) }))
 
 // `notFound` es el de Next.js; el catálogo del navegador necesita la dirección y el router.
 vi.mock('next/navigation', async (importOriginal) => ({
@@ -137,10 +138,14 @@ describe('generateStaticParams y metadatos', () => {
   })
 
   it('el título es "Tienda" o el de la línea, con su bajada', async () => {
-    expect(await getCatalogMetadata(null)).toMatchObject({ title: 'Tienda' })
-    expect(await getCatalogMetadata('imperiales')).toEqual({
+    expect(await getCatalogMetadata(null)).toMatchObject({
+      title: 'Tienda',
+      alternates: { canonical: 'https://galponmates.com.ar/tienda' },
+    })
+    expect(await getCatalogMetadata('imperiales')).toMatchObject({
       title: 'Imperiales · Tienda',
       description: 'El mate de ceremonia.',
+      alternates: { canonical: 'https://galponmates.com.ar/tienda/imperiales' },
     })
     expect((await getCatalogMetadata('yerbas')).description).toBe(
       'Mates, bombillones y yerba. Elegí, sumá al carrito y pagá online.',

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { getCategories } from '../../lib/data/catalog'
+import { getStoreEnv } from '../../lib/env'
+import { buildPageMetadata } from '../../lib/seo'
 import { catalogLineParams } from './catalog-scope'
 import { CATALOG_COPY } from './catalog.copy'
 
@@ -21,13 +23,21 @@ export async function getCatalogLineParams(): Promise<{ linea: string }[]> {
  * @throws {ApiError} Si la API falla.
  */
 export async function getCatalogMetadata(lineSlug: string | null): Promise<Metadata> {
+  const { siteUrl } = getStoreEnv()
   if (lineSlug === null) {
-    return { title: CATALOG_COPY.eyebrow, description: CATALOG_COPY.allBlurb }
+    return buildPageMetadata({
+      title: CATALOG_COPY.eyebrow,
+      description: CATALOG_COPY.allBlurb,
+      path: '/tienda',
+      siteUrl,
+    })
   }
   const line = (await getCategories()).find((item) => item.slug === lineSlug)
   if (line === undefined) return {}
-  return {
+  return buildPageMetadata({
     title: `${line.name} · ${CATALOG_COPY.eyebrow}`,
     description: line.blurb === '' ? CATALOG_COPY.allBlurb : line.blurb,
-  }
+    path: `/tienda/${encodeURIComponent(line.slug)}`,
+    siteUrl,
+  })
 }

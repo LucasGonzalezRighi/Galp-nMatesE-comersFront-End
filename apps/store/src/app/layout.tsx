@@ -8,14 +8,21 @@ import { cx } from '@/components/ui/cx'
 import { CartDrawer, CartHydrator } from '@/features/cart'
 import { SearchModal } from '@/features/search'
 import { Toaster } from '@/features/toast'
+import { getStoreEnv } from '@/lib/env'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo'
 import { inter } from './fonts'
 import './globals.css'
 import { Providers } from './providers'
 
-/** Título (con plantilla "· Galpón Mates") y descripción por omisión de todas las páginas. */
+/**
+ * Título (con plantilla "· Galpón Mates") y descripción por omisión de todas las páginas, y el
+ * origen público de la tienda (`metadataBase`), con el que Next arma las direcciones absolutas de
+ * los íconos y de la imagen para compartir.
+ */
 export const metadata: Metadata = {
-  title: { default: 'Galpón Mates', template: '%s · Galpón Mates' },
-  description: 'Mates, bombillones y yerba con envío a todo el país.',
+  metadataBase: new URL(getStoreEnv().siteUrl),
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
 }
 
 /** Color de la barra del navegador en el celular, el del fondo de la tienda. */
