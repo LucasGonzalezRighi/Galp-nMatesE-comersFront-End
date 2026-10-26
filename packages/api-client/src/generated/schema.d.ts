@@ -1786,7 +1786,7 @@ export interface components {
             kitSavingsArs: components["schemas"]["TotalArs"];
             /** @description Líneas cotizadas, en el mismo orden que el carrito enviado. */
             lines: components["schemas"]["CartQuoteLine"][];
-            /** @description Precio sin impuestos nacionales (Ley 27.743) del subtotal, calculado por el back sobre `subtotalArs` con la alícuota configurada en los ajustes. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado. */
+            /** @description Precio sin impuestos nacionales (Ley 27.743) del subtotal, calculado por el back sobre `subtotalArs` (ya con el ahorro por kit) con la alícuota configurada en los ajustes. Puede diferir en algunos pesos de la suma de `netUnitPriceArs × cantidad` por el redondeo de cada neto. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado. */
             netSubtotalArs: components["schemas"]["TotalArs"] | null;
             /** @description Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit. */
             subtotalArs: components["schemas"]["TotalArs"];
@@ -1841,7 +1841,7 @@ export interface components {
              * @example Mate Imperial Premium
              */
             name: string;
-            /** @description Precio sin impuestos nacionales (Ley 27.743) de una unidad, calculado por el back sobre `unitPriceArs` con la alícuota configurada en los ajustes (sin el ahorro por kit). Sirve para mostrar "Precio sin impuestos nacionales" también en los kits, sin que la tienda lo recalcule. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado; en las líneas `unavailable` y `sold_out` vale 0, como los demás importes. */
+            /** @description Precio sin impuestos nacionales (Ley 27.743) de una unidad, calculado por el back con la alícuota configurada en los ajustes sobre el precio de venta efectivo por unidad, es decir `(unitPriceArs × cantidad − kitSavingsArs) / cantidad`, que es lo mismo que `totalArs / cantidad` (la división es exacta porque el ahorro por kit es proporcional a la cantidad). En un kit con descuento es el neto de lo que paga el cliente y no el del precio de lista; en los productos sueltos coincide con el neto de `unitPriceArs`. Sirve para mostrar "Precio sin impuestos nacionales" también en los kits, junto a `totalArs`, sin que la tienda lo recalcule. Vale `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado; en las líneas `unavailable` y `sold_out` vale 0, como los demás importes. */
             netUnitPriceArs: components["schemas"]["TotalArs"] | null;
             /** @description Importe de la línea, ya sin el ahorro. */
             totalArs: components["schemas"]["TotalArs"];
