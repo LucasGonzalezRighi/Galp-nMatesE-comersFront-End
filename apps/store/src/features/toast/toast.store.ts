@@ -27,10 +27,16 @@ interface ToastState {
   current: ToastInput | null
   /** Si el aviso está a la vista. */
   visible: boolean
+  /** Cuántos avisos se mostraron; cambia con cada `showToast`, aunque el texto sea el mismo. */
+  serial: number
 }
 
 /** Store del aviso. Lo lee `Toaster`; el resto de la tienda usa {@link showToast} y {@link hideToast}. */
-export const useToastStore = create<ToastState>(() => ({ current: null, visible: false }))
+export const useToastStore = create<ToastState>(() => ({
+  current: null,
+  visible: false,
+  serial: 0,
+}))
 
 /** Temporizador que oculta el aviso; hay uno solo porque se muestra un aviso a la vez. */
 let hideTimer: ReturnType<typeof setTimeout> | undefined
@@ -70,7 +76,7 @@ export function showToast(input: ToastInput): void {
     throw new RangeError('El botón del aviso necesita un texto.')
   }
   clearHideTimer()
-  useToastStore.setState({ current: input, visible: true })
+  useToastStore.setState((state) => ({ current: input, visible: true, serial: state.serial + 1 }))
   hideTimer = setTimeout(hideToast, TOAST_DURATION_MS)
 }
 

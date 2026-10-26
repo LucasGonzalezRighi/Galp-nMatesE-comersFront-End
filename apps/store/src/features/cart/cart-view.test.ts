@@ -58,6 +58,46 @@ describe('buildCartView', () => {
     expect(view.canCheckout).toBe(true)
   })
 
+  it('el precio sin impuestos nacionales es el del producto, por unidad, y solo con el ajuste activo', () => {
+    const input = {
+      lines: [mateLine, kitLine],
+      products: [mate, bombilla, yerba],
+      kitDiscountPercent: 10,
+    }
+
+    const on = buildCartView({ ...input, showNetPrice: true })
+    const off = buildCartView(input)
+
+    // Un producto suelto trae el netPriceArs de su resumen; el kit no tiene dato público.
+    expect(on.lines.map((line) => line.netPriceArs)).toEqual([8264, null])
+    expect(off.lines.map((line) => line.netPriceArs)).toEqual([null, null])
+  })
+
+  it('sin stock, sin cargar o sin dato no hay precio sin impuestos nacionales', () => {
+    const soldOut = buildCartView({
+      lines: [mateLine],
+      products: [{ ...mate, maxQuantity: 0, isSoldOut: true, isPurchasable: false }],
+      kitDiscountPercent: null,
+      showNetPrice: true,
+    })
+    const loading = buildCartView({
+      lines: [mateLine],
+      products: [],
+      kitDiscountPercent: null,
+      showNetPrice: true,
+    })
+    const noData = buildCartView({
+      lines: [mateLine],
+      products: [{ ...mate, netPriceArs: null }],
+      kitDiscountPercent: null,
+      showNetPrice: true,
+    })
+
+    expect(soldOut.lines[0]?.netPriceArs).toBeNull()
+    expect(loading.lines[0]?.netPriceArs).toBeNull()
+    expect(noData.lines[0]?.netPriceArs).toBeNull()
+  })
+
   it('una línea sin stock no suma al total y bloquea la compra', () => {
     const view = buildCartView({
       lines: [mateLine, kitLine],

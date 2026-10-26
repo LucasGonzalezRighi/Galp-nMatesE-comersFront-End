@@ -9,7 +9,7 @@ import {
   remainingQuantityFor,
 } from '@galpon/domain'
 import { cartUnitCount, lineProductIds } from './cart-lines'
-import { CART_COPY } from './cart.copy'
+import { CART_COPY, leatherLabel } from './cart.copy'
 
 /**
  * Estado de una línea en el panel:
@@ -39,6 +39,12 @@ export interface CartLineView {
   status: CartLineStatus
   /** Importes de la línea; `null` si no está `ready`. */
   amounts: LineAmounts | null
+  /**
+   * "Precio sin impuestos nacionales" por unidad (`netPriceArs` del producto, Ley 27.743, spec 14.5).
+   * `null` si el ajuste está apagado, la línea no está `ready`, el producto no lo trae o es un kit:
+   * el dato público del kit no existe (el IVA es solo del admin), queda para la cotización.
+   */
+  netPriceArs: number | null
 }
 
 /** El carrito listo para dibujar. */
@@ -61,11 +67,8 @@ export interface CartViewInput {
   products: readonly ProductSummary[]
   /** Descuento actual del kit, o `null` si todavía no se conoce. */
   kitDiscountPercent: number | null
-}
-
-/** "Cuero negro" o "Cuero marrón": el cuero se escribe en minúscula tras la palabra. */
-function leatherLabel(leather: string): string {
-  return `Cuero ${leather.toLowerCase()}`
+  /** Si se muestra "Precio sin impuestos nacionales" (`PublicSettings.priceDisplay.showNetPrice`); por omisión no. */
+  showNetPrice?: boolean
 }
 
 /**
@@ -105,6 +108,7 @@ function buildLineView(
   byId: ReadonlyMap<string, ProductSummary>,
   lines: readonly CartLine[],
   kitDiscountPercent: number | null,
+  showNetPrice: boolean,
 ): CartLineView {
   const key = cartLineKey(line)
   const ids = lineProductIds(line)
@@ -138,6 +142,7 @@ function buildLineView(
       maxQuantity,
       status,
       amounts,
+      netPriceArs: null,
     }
   }
   const options = line.options
@@ -152,6 +157,7 @@ function buildLineView(
     maxQuantity,
     status,
     amounts,
+    netPriceArs: showNetPrice && status === 'ready' ? (first?.netPriceArs ?? null) : null,
   }
 }
 
@@ -163,9 +169,16 @@ function buildLineView(
  * @param input - Ver {@link CartViewInput}.
  * @returns Las líneas con su estado y sus importes, los totales sin envío y si se puede finalizar.
  */
-export function buildCartView({ lines, products, kitDiscountPercent }: CartViewInput): CartView {
+export function buildCartView({
+  lines,
+  products,
+  kitDiscountPercent,
+  showNetPrice = false,
+}: CartViewInput): CartView {
   const byId = new Map(products.map((product) => [product.id, product]))
-  const views = lines.map((line) => buildLineView(line, byId, lines, kitDiscountPercent))
+  const views = lines.map((line) =>
+    buildLineView(line, byId, lines, kitDiscountPercent, showNetPrice),
+  )
   const amounts = views.flatMap((view) => (view.amounts === null ? [] : [view.amounts]))
   return {
     lines: views,

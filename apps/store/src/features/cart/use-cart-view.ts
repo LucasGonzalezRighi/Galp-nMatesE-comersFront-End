@@ -19,8 +19,9 @@ export interface CartViewState {
 
 /**
  * Datos del carrito listos para dibujar: las líneas guardadas, los productos del catálogo
- * (`GET /products?ids=`) y el descuento del kit (`GET /settings/public`) combinados con
- * `buildCartView`, que calcula los importes con `@galpon/domain`.
+ * (`GET /products?ids=`) y los ajustes públicos (`GET /settings/public`: descuento del kit y
+ * "precio sin impuestos nacionales") combinados con `buildCartView`, que calcula los importes con
+ * `@galpon/domain`.
  *
  * @param options - `enabled`: si hay que pedir los datos (por ejemplo, solo con el panel abierto).
  *   Con `false` se usa lo que ya haya en la caché.
@@ -29,7 +30,6 @@ export function useCartView({ enabled }: { enabled: boolean }): CartViewState {
   const api = useApiClient()
   const { lines, hasHydrated } = useCart()
   const ids = useMemo(() => cartProductIds(lines), [lines])
-  const hasKit = lines.some((line) => line.type === 'kit')
   const products = useQuery({
     queryKey: cartProductsKey(ids),
     queryFn: () => fetchCartProducts(api, ids),
@@ -39,7 +39,7 @@ export function useCartView({ enabled }: { enabled: boolean }): CartViewState {
   })
   const settings = useQuery({
     ...publicSettingsQuery(api),
-    enabled: enabled && hasHydrated && hasKit,
+    enabled: enabled && hasHydrated && ids.length > 0,
   })
   const view = useMemo(
     () =>
@@ -47,8 +47,14 @@ export function useCartView({ enabled }: { enabled: boolean }): CartViewState {
         lines,
         products: products.data ?? [],
         kitDiscountPercent: settings.data?.kitDiscountPercent ?? null,
+        showNetPrice: settings.data?.priceDisplay.showNetPrice ?? false,
       }),
-    [lines, products.data, settings.data?.kitDiscountPercent],
+    [
+      lines,
+      products.data,
+      settings.data?.kitDiscountPercent,
+      settings.data?.priceDisplay.showNetPrice,
+    ],
   )
   return { view, isError: products.isError || settings.isError }
 }

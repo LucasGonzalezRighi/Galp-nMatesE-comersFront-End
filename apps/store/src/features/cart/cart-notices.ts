@@ -1,20 +1,24 @@
-import { pluralize } from '@galpon/domain'
 import type { CartNotice } from './reconcile'
-import { CART_COPY } from './cart.copy'
+import {
+  CART_COPY,
+  itemsRemovedNotice,
+  kitDiscountChangedNotice,
+  moreChangesSuffix,
+  priceChangedNotice,
+  quantityReducedNotice,
+} from './cart.copy'
 
 /** Texto de un solo cambio, en una línea. */
 function describeNotice(notice: CartNotice): string {
   switch (notice.kind) {
     case 'removed':
-      return notice.count === 1
-        ? 'Quitamos un producto que ya no está disponible'
-        : `Quitamos ${pluralize(notice.count, 'producto', 'productos')} que ya no están disponibles`
+      return itemsRemovedNotice(notice.count)
     case 'reduced':
-      return `${notice.name}: bajamos la cantidad a ${String(notice.quantity)} por el stock`
+      return quantityReducedNotice(notice.name, notice.quantity)
     case 'price-changed':
-      return `Cambió el precio de ${notice.name}`
+      return priceChangedNotice(notice.name)
     case 'kit-discount-changed':
-      return `El descuento del kit ahora es de ${String(notice.percent)}%`
+      return kitDiscountChangedNotice(notice.percent)
   }
 }
 
@@ -32,6 +36,6 @@ export function describeCartNotices(
 ): { title: string; subtitle: string } | null {
   const [first, ...rest] = notices
   if (first === undefined) return null
-  const more = rest.length === 0 ? '' : ` · y ${pluralize(rest.length, 'cambio', 'cambios')} más`
+  const more = rest.length === 0 ? '' : moreChangesSuffix(rest.length)
   return { title: CART_COPY.updated, subtitle: `${describeNotice(first)}${more}` }
 }

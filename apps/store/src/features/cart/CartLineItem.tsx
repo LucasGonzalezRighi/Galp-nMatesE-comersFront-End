@@ -6,7 +6,14 @@ import Image from 'next/image'
 import { formatPesos } from '@galpon/domain'
 import type { CartLineView } from './cart-view'
 import { Reveal } from '../../components/motion'
-import { IconButton, ImageWithPlaceholder, Price, QuantityStepper, Tag } from '../../components/ui'
+import {
+  IconButton,
+  ImageWithPlaceholder,
+  NetPrice,
+  Price,
+  QuantityStepper,
+  Tag,
+} from '../../components/ui'
 import { CART_COPY } from './cart.copy'
 import { useCartStore } from './cart.store'
 
@@ -53,6 +60,7 @@ function LineImage({ line }: CartLineItemProps): ReactNode {
 
 /**
  * Una línea del panel del carrito (spec 9.5): foto, nombre, detalle, "Ahorrás $…" en los kits,
+ * "Precio sin impuestos nacionales" por unidad en un producto suelto si el ajuste está activo,
  * cantidad ("−" en 1 quita la línea), botón de quitar y total de la línea. Una línea sin stock
  * muestra "Sin stock" y solo se puede quitar. Aparece desde la izquierda con `Reveal`.
  *
@@ -88,6 +96,7 @@ export function CartLineItem({ line }: CartLineItemProps): ReactNode {
               {CART_COPY.youSave} {formatPesos(savings)}
             </span>
           ) : null}
+          <NetPrice amount={line.netPriceArs} />
           <div className="mt-auto flex items-center justify-between gap-[10px]">
             {line.status === 'sold-out' ? (
               <Tag variant="neutral">{CART_COPY.soldOut}</Tag>

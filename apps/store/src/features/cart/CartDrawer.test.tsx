@@ -184,6 +184,39 @@ describe('CartDrawer', () => {
     expect(within(dialog).getAllByText('$71.097')).toHaveLength(2)
   })
 
+  it('muestra "Precio sin impuestos nacionales" en un producto suelto pero no en el kit, y se apaga con el ajuste', async () => {
+    const { api, db } = createTestApi()
+    useCartStore.setState({
+      lines: [
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 2 },
+        {
+          type: 'kit',
+          mateId: 'prd-imperial-premium',
+          bombillaId: 'prd-bombillon-premium-curvo',
+          yerbaId: 'prd-yerba-canarias',
+          leather: 'Negro',
+          quantity: 1,
+        },
+      ],
+      hasHydrated: true,
+    })
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText(/^Precio sin impuestos nacionales:/)).toBeVisible()
+    expect(within(dialog).getAllByText(/^Precio sin impuestos nacionales:/)).toHaveLength(1)
+    cleanup()
+
+    db.settings.priceDisplay.showNetPrice = false
+    renderCart(api)
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+    const closed = await screen.findByRole('dialog')
+    await within(closed).findByText('Kit ronda completa')
+    expect(within(closed).queryByText(/Precio sin impuestos nacionales/)).not.toBeInTheDocument()
+  })
+
   it('cambiar la cantidad actualiza la línea y "−" en 1 la quita', async () => {
     const { api } = createTestApi()
     const yerba: CartableProduct = {

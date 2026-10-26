@@ -20,7 +20,7 @@ afterEach(() => {
 
 /** El contenedor del aviso, que lleva si está a la vista. */
 function container(): HTMLElement {
-  const element = screen.getByRole('status', { hidden: true }).closest('[data-visible]')
+  const element = document.querySelector('[data-visible]')
   if (!(element instanceof HTMLElement)) throw new Error('No se encontró el aviso')
   return element
 }
@@ -46,6 +46,38 @@ describe('Toaster', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Agregado al carrito. Mate Imperial Premium',
     )
+  })
+
+  it('la región viva está siempre montada y fuera del bloque inert (si no, no se anuncia)', () => {
+    render(<Toaster />)
+    const region = screen.getByRole('status', { hidden: true })
+
+    act(() => {
+      showToast({ title: 'Agregado al carrito' })
+    })
+
+    expect(screen.getByRole('status')).toBe(region)
+    expect(container().contains(region)).toBe(false)
+    expect(region.closest('[inert]')).toBeNull()
+  })
+
+  it('el mismo aviso dos veces seguidas se vuelve a anunciar (cambia el nodo con el texto)', () => {
+    render(<Toaster />)
+    act(() => {
+      showToast({ title: 'Agregado al carrito', subtitle: 'Mate Galleta' })
+    })
+    const first = screen.getByRole('status').firstElementChild
+
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    act(() => {
+      showToast({ title: 'Agregado al carrito', subtitle: 'Mate Galleta' })
+    })
+    const second = screen.getByRole('status').firstElementChild
+
+    expect(second).toHaveTextContent('Agregado al carrito. Mate Galleta')
+    expect(second).not.toBe(first)
   })
 
   it('se oculta a los 2,8 segundos', () => {
