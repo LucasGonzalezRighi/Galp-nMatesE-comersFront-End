@@ -46,9 +46,11 @@ const quantitySchema = z
 
 /**
  * Precio de lista por unidad que la tienda tenía cotizado (`expectedUnitPriceArs` del contrato):
- * si viene, una diferencia se avisa con `price_changed`.
+ * si viene, una diferencia se avisa con `price_changed`. Un producto suelto usa el tope de
+ * `Pesos` y un kit el de `TotalArs` (suma de las tres piezas), como en el contrato.
  */
-const expectedPriceSchema = z.int().min(0).optional()
+const expectedPesosSchema = z.int().min(0).max(99_999_999).optional()
+const expectedTotalSchema = z.int().min(0).max(2_147_483_647).optional()
 
 /** Cuero y virola de un mate. */
 const optionsSchema = z.object({ leather: z.enum(LEATHERS), ferrule: z.enum(FERRULES) })
@@ -63,7 +65,7 @@ const cartItemSchema = z.discriminatedUnion('type', [
     productId: idSchema,
     quantity: quantitySchema,
     options: optionsSchema.optional(),
-    expectedUnitPriceArs: expectedPriceSchema,
+    expectedUnitPriceArs: expectedPesosSchema,
   }),
   z.object({
     type: z.literal('kit'),
@@ -72,7 +74,7 @@ const cartItemSchema = z.discriminatedUnion('type', [
     yerbaId: idSchema,
     leather: z.enum(LEATHERS),
     quantity: quantitySchema,
-    expectedUnitPriceArs: expectedPriceSchema,
+    expectedUnitPriceArs: expectedTotalSchema,
   }),
 ])
 

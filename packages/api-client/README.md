@@ -155,7 +155,7 @@ Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardho
 
 ## Exports
 
-`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers, `createMockCardToken`, `MOCK_MERCADOPAGO_RESOLVE_PATH`, `MOCK_PASSWORD_RESET_TOKEN` y `DEFAULT_CUSTOMER_SESSION_COOKIE`).
+`package.json` declara tres puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia, los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers, `createMockCardToken`, `MOCK_MERCADOPAGO_RESOLVE_PATH`, `MOCK_PASSWORD_RESET_TOKEN`, `DEFAULT_CUSTOMER_SESSION_COOKIE` y las rutas de control `MOCK_CONTROL_ROUTES`, `MOCK_EXPIRE_ORDER_PATH` y `MOCK_PRODUCT_PATH`).
 
 ## Tests
 
