@@ -33,6 +33,10 @@ export const CONTACT_COPY = {
   reason: 'Motivo',
   message: 'Mensaje',
   messagePlaceholder: 'Contanos qué pasó o qué necesitás',
+  /** Aviso de privacidad (spec 9.5 y 14.6): lo que se hace con los datos, antes del link. */
+  privacyBefore: 'Usamos tus datos solo para responderte. Más en nuestra',
+  /** Texto del link a la política de privacidad. */
+  privacyLink: 'Política de privacidad',
   /** Texto del botón de envío. */
   submit: 'Enviar mensaje',
   /** Texto del botón mientras se envía. */

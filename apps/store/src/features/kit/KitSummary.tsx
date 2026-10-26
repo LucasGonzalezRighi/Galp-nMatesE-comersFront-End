@@ -38,7 +38,7 @@ const DIVIDER_STYLE: CSSProperties = {
 
 /**
  * Panel "Resumen del kit": las tres piezas, el cuero del mate (con sus muestras), subtotal,
- * descuento y total, lo que falta elegir y los botones "Agregar kit al carrito" (deshabilitado
+ * descuento (si el kit tiene) y total, lo que falta elegir y los botones "Agregar kit al carrito" (deshabilitado
  * hasta tener las tres piezas) y "Empezar de nuevo". Los importes vienen ya calculados en `view`
  * con `kitLineAmounts`.
  *
@@ -93,10 +93,12 @@ export function KitSummary({
         <span className="text-neutral-400">{KIT_COPY.subtotal}</span>
         <span>{formatPesos(view.amounts.grossArs)}</span>
       </div>
-      <div className="text-accent-300 flex justify-between text-[14px] tabular-nums">
-        <span>{discountLabel(discountPercent)}</span>
-        <span>{formatDiscountPesos(view.amounts.savingsArs)}</span>
-      </div>
+      {discountPercent === 0 ? null : (
+        <div className="text-accent-300 flex justify-between text-[14px] tabular-nums">
+          <span>{discountLabel(discountPercent)}</span>
+          <span>{formatDiscountPesos(view.amounts.savingsArs)}</span>
+        </div>
+      )}
       <div className="flex items-baseline justify-between text-[22px] tabular-nums">
         <span>{KIT_COPY.total}</span>
         <span>{formatPesos(view.amounts.totalArs)}</span>

@@ -2,11 +2,13 @@
 
 import type { ReactNode } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { ContactSubmission } from '@galpon/api-client'
 import type { ContactReason } from '@galpon/schemas'
 import { DrawCheck } from '@/components/motion'
 import { Button, Field, Input, Textarea } from '@/components/ui'
+import { asRoute } from '@/lib/routes'
 import { sendContactMessage } from '@galpon/api-client'
 import { useApiClient } from '@galpon/api-client/react'
 import { contactSchema, toFieldErrors } from '@galpon/schemas'
@@ -220,6 +222,13 @@ function ContactFormBody({ reason, reasonField }: ContactFormProps): ReactNode {
           }}
         />
       </div>
+      <p className="m-0 text-[12px] text-neutral-400">
+        {CONTACT_COPY.privacyBefore}{' '}
+        <Link href={asRoute('/privacidad')} className="text-accent underline">
+          {CONTACT_COPY.privacyLink}
+        </Link>
+        .
+      </p>
       {formError === null ? null : (
         <p role="alert" className="text-danger m-0 text-[13px]">
           {formError}

@@ -110,6 +110,19 @@ describe('WithdrawalForm', () => {
     expect(screen.getByRole('textbox', { name: WITHDRAWAL_COPY.name })).toHaveValue('')
   })
 
+  it('muestra el aviso de privacidad con el link a /privacidad (spec 14.6)', () => {
+    const api = createTestApi()
+    render(api.wrap(<WithdrawalForm />))
+
+    expect(
+      screen.getByText(/Usamos tus datos solo para gestionar tu solicitud/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: WITHDRAWAL_COPY.privacyLink })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    )
+  })
+
   it('muestra lo que se le pasa en `leading` mientras no se envió', async () => {
     const api = createTestApi()
     const user = userEvent.setup()

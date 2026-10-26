@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Category, ProductSummary } from '@galpon/api-client'
 import type { CatalogSettings } from './CatalogView'
 import { buildCatalogScope } from './catalog-scope'
-import { CatalogBrowser, URL_SYNC_DELAY_MS } from './CatalogBrowser'
+import { CatalogBrowser } from './CatalogBrowser'
 
 /** Búsqueda de la dirección que ve el catálogo (la de `useSearchParams`): cada prueba la cambia. */
 const navigation = vi.hoisted(() => ({ search: '' }))
@@ -338,52 +338,19 @@ describe('CatalogBrowser: la dirección', () => {
     )
   })
 
-  it('refleja lo que se escribe en la dirección recién al dejar de escribir', () => {
+  it('no escribe en la dirección mientras se busca (si cambiara, PageEnter animaría toda la página)', () => {
     vi.useFakeTimers()
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     renderCatalog()
-    fireEvent.change(searchBox(), { target: { value: 'té y jengibre' } })
+    fireEvent.change(searchBox(), { target: { value: 'yerba' } })
     fireEvent.change(sortSelect(), { target: { value: 'az' } })
+    act(() => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(replaceState).not.toHaveBeenCalled()
     expect(window.location.search).toBe('')
-    act(() => {
-      vi.advanceTimersByTime(URL_SYNC_DELAY_MS - 1)
-    })
-    expect(window.location.search).toBe('')
-    act(() => {
-      vi.advanceTimersByTime(1)
-    })
-    expect(window.location.pathname).toBe('/tienda')
-    expect(window.location.search).toBe('?q=t%C3%A9+y+jengibre&orden=az')
-    fireEvent.change(searchBox(), { target: { value: '' } })
-    fireEvent.change(sortSelect(), { target: { value: 'destacados' } })
-    act(() => {
-      vi.advanceTimersByTime(URL_SYNC_DELAY_MS)
-    })
-    expect(window.location.search).toBe('')
-  })
-
-  it('no suma entradas al historial', () => {
-    vi.useFakeTimers()
-    const before = window.history.length
-    renderCatalog()
-    fireEvent.change(searchBox(), { target: { value: 'mate' } })
-    act(() => {
-      vi.advanceTimersByTime(URL_SYNC_DELAY_MS)
-    })
-    expect(window.history.length).toBe(before)
-  })
-
-  it('el eco de su propia escritura no pisa lo que se siguió escribiendo', () => {
-    vi.useFakeTimers()
-    const { rerender } = renderCatalog()
-    fireEvent.change(searchBox(), { target: { value: 'ab' } })
-    act(() => {
-      vi.advanceTimersByTime(URL_SYNC_DELAY_MS)
-    })
-    fireEvent.change(searchBox(), { target: { value: 'abc' } })
-    // Next.js recién ahora avisa del cambio de dirección que hizo `replaceState` con "ab".
-    navigation.search = '?q=ab'
-    rerender(catalogElement())
-    expect(searchBox()).toHaveValue('abc')
+    expect(shownNames()).toEqual(['Yerba Canarias Serena 1 kg'])
+    replaceState.mockRestore()
   })
 
   it('un cambio de dirección de afuera (la búsqueda del encabezado) reemplaza lo que se ve', async () => {

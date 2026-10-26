@@ -2,10 +2,12 @@
 
 import type { ReactNode } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { WithdrawalReceipt, WithdrawalSubmission } from '@galpon/api-client'
 import { DrawCheck } from '@/components/motion'
 import { Button, Field, Input, Textarea } from '@/components/ui'
+import { asRoute } from '@/lib/routes'
 import { requestWithdrawal } from '@galpon/api-client'
 import { useApiClient } from '@galpon/api-client/react'
 import { toFieldErrors, withdrawalSchema } from '@galpon/schemas'
@@ -219,6 +221,13 @@ function WithdrawalFormBody({ leading }: WithdrawalFormProps): ReactNode {
           }}
         />
       </div>
+      <p className="m-0 text-[12px] text-neutral-400">
+        {WITHDRAWAL_COPY.privacyBefore}{' '}
+        <Link href={asRoute('/privacidad')} className="text-accent underline">
+          {WITHDRAWAL_COPY.privacyLink}
+        </Link>
+        .
+      </p>
       {formError === null ? null : (
         <p role="alert" className="text-danger m-0 text-[13px]">
           {formError}

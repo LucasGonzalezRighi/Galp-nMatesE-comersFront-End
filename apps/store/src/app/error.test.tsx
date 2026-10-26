@@ -9,9 +9,9 @@ afterEach(cleanup)
 
 describe('error.tsx', () => {
   it('avisa que no se pudo cargar la página y "Reintentar" vuelve a intentarlo', async () => {
-    const reset = vi.fn<() => void>()
+    const retry = vi.fn<() => void>()
     const user = userEvent.setup()
-    render(<ErrorPage error={new Error('boom')} reset={reset} />)
+    render(<ErrorPage error={new Error('boom')} retry={retry} />)
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'No pudimos cargar esta página' }),
@@ -20,11 +20,11 @@ describe('error.tsx', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(reset).toHaveBeenCalledTimes(1)
+    expect(retry).toHaveBeenCalledTimes(1)
   })
 
   it('no muestra el mensaje técnico del error', () => {
-    render(<ErrorPage error={new Error('secreto interno')} reset={() => undefined} />)
+    render(<ErrorPage error={new Error('secreto interno')} retry={() => undefined} />)
 
     expect(screen.queryByText(/secreto interno/)).not.toBeInTheDocument()
   })

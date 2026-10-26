@@ -43,6 +43,17 @@ describe('Contacto: formulario', () => {
     })
   })
 
+  it('muestra el aviso de privacidad con el link a /privacidad (spec 14.6)', () => {
+    const api = createTestApi()
+    render(api.wrap(<ContactPanel />))
+
+    expect(screen.getByText(/Usamos tus datos solo para responderte/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: CONTACT_COPY.privacyLink })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    )
+  })
+
   it('"Escribir otro mensaje" vuelve al formulario vacío', async () => {
     const api = createTestApi()
     const user = userEvent.setup()

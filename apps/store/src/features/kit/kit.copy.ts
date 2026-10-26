@@ -147,12 +147,18 @@ export function discountLabel(percent: number): string {
 }
 
 /**
- * Frase de la bajada de la página con el descuento del kit.
+ * Frase de la bajada de la página con el descuento del kit. Sin descuento (0%) se omite la frase
+ * del descuento, como hacen el inicio, el catálogo y la ficha.
  *
  * @param percent - Descuento del kit, un entero entre 0 y 100.
- * @returns Por ejemplo "Elegí mate, bombilla y yerba. Con las tres piezas, el kit tiene −10% sobre el total.".
+ * @returns Por ejemplo "Elegí mate, bombilla y yerba. Con las tres piezas, el kit tiene −10% sobre el total."; con 0%, "Elegí mate, bombilla y yerba.".
  * @throws {RangeError} Si el porcentaje no es un entero entre 0 y 100.
  */
 export function introText(percent: number): string {
-  return `Elegí mate, bombilla y yerba. Con las tres piezas, el kit tiene ${formatDiscountPercent(percent)} sobre el total.`
+  const base = 'Elegí mate, bombilla y yerba.'
+  // `formatDiscountPercent` valida el porcentaje también cuando es 0.
+  const discount = formatDiscountPercent(percent)
+  return percent === 0
+    ? base
+    : `${base} Con las tres piezas, el kit tiene ${discount} sobre el total.`
 }

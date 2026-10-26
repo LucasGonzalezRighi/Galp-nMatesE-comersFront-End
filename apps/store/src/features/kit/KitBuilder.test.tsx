@@ -406,6 +406,17 @@ describe('KitBuilder: descuento y datos', () => {
     )
   })
 
+  it('sin descuento (0%) el panel no muestra la fila "Descuento kit" ni "−$0"', () => {
+    renderKit(CATALOG, 0)
+    buildFullKit()
+
+    const panel = screen.getByRole('complementary', { name: 'Resumen del kit' })
+    expect(within(panel).queryByText(/Descuento kit/)).toBeNull()
+    expect(within(panel).queryByText(/−\$0/)).toBeNull()
+    expect(within(panel).getByText('Subtotal')).toBeVisible()
+    expect(within(panel).getByText('Total')).toBeVisible()
+  })
+
   it('una pieza elegida que ya no se puede comprar vuelve a faltar', () => {
     const { rerender } = render(<KitBuilder products={CATALOG} discountPercent={10} />)
     buildFullKit()

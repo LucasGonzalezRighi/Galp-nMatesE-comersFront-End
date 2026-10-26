@@ -17,17 +17,18 @@ const ERROR_COPY = {
 interface ErrorPageProps {
   /** El error que se produjo (con `digest` si ocurrió en el servidor). */
   error: Error & { digest?: string }
-  /** Vuelve a intentar renderizar el segmento que falló. */
-  reset: () => void
+  /** Vuelve a pedir los datos al servidor y a renderizar el segmento que falló (Next 16.3+). */
+  retry: () => void
 }
 
 /**
  * Página de error de la tienda (spec 9.7): "No pudimos cargar esta página", con un botón para
- * reintentar y otro para volver al inicio.
+ * reintentar y otro para volver al inicio. "Reintentar" usa `retry`, que vuelve a pedir los datos
+ * a la API (con `reset` solo se limpiaría el error y no se re-leería nada del servidor).
  *
  * @param props - Ver {@link ErrorPageProps}.
  */
-export default function ErrorPage({ reset }: ErrorPageProps): ReactNode {
+export default function ErrorPage({ retry }: ErrorPageProps): ReactNode {
   return (
     <main className="mx-auto flex max-w-[1280px] flex-col items-start gap-[22px] px-[clamp(20px,5vw,64px)] pt-[clamp(72px,10vw,140px)] pb-[clamp(96px,12vw,180px)]">
       <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
@@ -40,7 +41,7 @@ export default function ErrorPage({ reset }: ErrorPageProps): ReactNode {
         {ERROR_COPY.text}
       </p>
       <div className="mt-2 flex flex-wrap gap-3">
-        <Button size="lg" onClick={reset}>
+        <Button size="lg" onClick={retry}>
           {ERROR_COPY.retry}
         </Button>
         <Button asChild size="lg" variant="secondary">
