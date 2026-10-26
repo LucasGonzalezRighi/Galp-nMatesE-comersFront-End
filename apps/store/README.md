@@ -1,6 +1,6 @@
 # @galpon/store
 
-La tienda de Galpón Mates: Next.js (App Router) con Cache Components, Tailwind v4 y TanStack Query. En esta etapa (P1) es un esqueleto conectado a la API simulada; las pantallas reales llegan en P2.
+La tienda de Galpón Mates: Next.js (App Router) con Cache Components, Tailwind v4 y TanStack Query. Con P2 es la tienda pública, conectada a la API simulada: inicio, tienda y líneas, ficha de producto, armá tu kit, carrito, buscador, nosotros, preguntas frecuentes, contacto, arrepentimiento, términos y privacidad. El checkout y la cuenta de cliente llegan en P3.
 
 ## Scripts
 
@@ -29,8 +29,6 @@ npm run build -w @galpon/store && npm run start -w @galpon/store
 curl -s localhost:3000/api/v1/categories   # las 6 líneas, en JSON
 ```
 
-La página de inicio (<http://localhost:3000>) es provisoria: lista las líneas con su cantidad de productos (lectura del servidor) y muestra "Descuento del kit: 10%" (lectura del navegador, a través del _rewrite_).
-
 ## Variables de entorno
 
 `apps/store/.env.example` documenta cada variable. Se validan con `parseStoreEnv` (`src/lib/env.ts`) al cargar `next.config.ts`, así que `dev`, `build`, `start` y `typegen` fallan con un mensaje en español si algo no cierra, por ejemplo `API_MODE=live` sin `API_BASE_URL`. Para configurar algo, copiá el archivo a `apps/store/.env.local`.
@@ -58,7 +56,7 @@ En vivo, `/api/v1/*` se reescribe hacia `API_BASE_URL/api/v1/*` (mismo dominio p
 
 ## Caché y revalidación
 
-Las lecturas del servidor están en `src/lib/data/` como funciones `'use cache'` con `cacheTag` y `cacheLife`. El backend avisa qué regenerar con `POST /api/revalidate`, con el secreto en la cabecera `x-revalidate-secret`:
+Las lecturas del servidor son funciones `'use cache'` con `cacheTag` y `cacheLife`. Las que comparte toda la tienda (líneas, ajustes, pie) están en `src/lib/data/`; las de cada pantalla viven junto a su feature: los `features/*/*.data.ts` (inicio, tienda y producto), los `get-*-content.ts` (nosotros, preguntas frecuentes y legales) y `app/(tienda)/kit/kit-data.ts`. El backend avisa qué regenerar con `POST /api/revalidate`, con el secreto en la cabecera `x-revalidate-secret`:
 
 ```bash
 curl -X POST localhost:3000/api/revalidate \
@@ -80,8 +78,17 @@ curl -X POST localhost:3000/api/revalidate \
 
 ```
 src/
-├─ app/            Rutas (layout, página de inicio provisoria, not-found) y los route handlers de /api
-├─ lib/            Entorno, CSP, revalidación, clientes de la API y lecturas cacheadas (lib/data)
+├─ app/            Layout, not-found, error, SEO (sitemap, robots, manifest) y los route handlers de /api
+│  └─ (tienda)/    Las rutas públicas: inicio, tienda, tienda/[linea], producto/[slug], kit, nosotros,
+│                  preguntas-frecuentes, contacto, arrepentimiento, terminos y privacidad
+├─ features/       Una carpeta por pantalla o función (home, catalog, product, kit, cart, search, about,
+│                  faq, contact, withdrawal, legal, reviews, toast, product-card), con sus textos
+│                  (*.copy.ts), sus lecturas cacheadas (*.data.ts) y sus tests. Una feature importa a
+│                  otra solo por su index.ts (lo exige el lint)
+├─ components/     Piezas compartidas: layout (cabecera, pie, menú), motion (animaciones) y ui (botones,
+│                  campos, precios, estrellas, diálogo)
+├─ lib/            Entorno, CSP, SEO, revalidación, clientes de la API y lecturas cacheadas (lib/data)
+├─ test/           Preparación de los tests
 ├─ types/          Declaraciones de tipos (css.d.ts)
 └─ instrumentation.ts   Valida el entorno al arrancar el servidor
 ```

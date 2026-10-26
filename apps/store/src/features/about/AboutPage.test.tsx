@@ -62,9 +62,16 @@ describe('AboutPage', () => {
 
     const steps = screen
       .getAllByRole('listitem')
-      .filter((item) => item.querySelector('h3') !== null)
+      .filter((item) => item.querySelector('h2') !== null)
     expect(steps.map((step) => step.querySelector('span')?.textContent)).toEqual(['01', '02'])
-    expect(screen.getByRole('heading', { level: 3, name: 'Alpaca y bronce' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Alpaca y bronce' })).toBeInTheDocument()
+  })
+
+  it('los títulos de los pasos son h2: la jerarquía no salta de h1 a h3', () => {
+    render(<AboutPage content={CONTENT} />)
+
+    const levels = screen.getAllByRole('heading').map((heading) => heading.tagName)
+    expect(levels).toEqual(['H1', 'H2', 'H2'])
   })
 
   it('la frase está completa en el documento aunque se ilumine con el scroll', () => {

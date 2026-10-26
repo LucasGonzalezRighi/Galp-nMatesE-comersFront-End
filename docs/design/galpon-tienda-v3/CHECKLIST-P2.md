@@ -4,7 +4,7 @@ Compara cada pantalla de la tienda compilada con las capturas de referencia de `
 
 - **Cómo se generan las capturas**: `npm run build && npm run test:e2e -- e2e/store/visual.spec.ts --project=store-desktop`. Guarda en `test-results/visual/<pantalla>-<1440|390>.png` (página completa; el carrito, el buscador y el menú, lo que se ve en la ventana). Playwright vacía `test-results/` al empezar cada corrida.
 - **Cómo se comparó**: lado a lado, diseño a la izquierda y tienda a la derecha, en tramos de la página, más recortes ampliados de los casos dudosos. Las animaciones se verificaron por E2E (`reduced-motion.spec.ts`: con `prefers-reduced-motion` todo queda visible y nada tapa la página) y no cuadro por cuadro.
-- **Fecha**: 2026-10-26, sobre el commit de la Task 11.
+- **Fecha**: 2026-10-26. Las capturas se rehicieron con el árbol de la Task 11b (commit 78db310).
 
 Leyenda: ✅ coincide (o la diferencia es un desvío aceptado); ❌ desvío que hay que revisar (el número remite a "Desvíos a corregir").
 
@@ -18,9 +18,9 @@ Aparecen en las tablas como ✅ con su nota.
 | A2 | Inicio sin mate 3D (P2): en su lugar va la foto del producto. En el celular la foto queda detrás del título. | Inicio |
 | A3 | Rutas reales (`/producto/mate-imperial-premium`, `/tienda/bombillones`) en lugar de los hashes del diseño. | Todas |
 | A4 | Precio sin impuestos nacionales, cuotas con CFT/TEA ("o 3 cuotas sin interés de $13.333 · CFT 0,00 % (TEA 0,00 %)") en lugar de "3 cuotas de $13.333". | Tarjetas, ficha, carrito |
-| A5 | Cuarta garantía "Arrepentimiento" en la ficha y columna "Legales" en el pie. | Ficha, pie |
+| A5 | Cuarta garantía "Arrepentimiento" en la ficha y columna "Legales" en el pie. Además, la tercera garantía dice "Cambios / 10 días, sin uso" en lugar de "10 días / Para cambios" del diseño: el spec 14.6 pide Cambios y Arrepentimiento por separado. | Ficha, pie |
 | A6 | Aviso de privacidad bajo los formularios (spec 14.6). | Contacto, arrepentimiento, reseñas |
-| A7 | Datos distintos porque salen del catálogo de prueba: 14 mates en el kit (el diseño decía 16), reseñas en otro orden, resultados de búsqueda en otro orden, total del kit y del carrito según las piezas elegidas. | Kit, inicio, búsqueda, carrito |
+| A7 | Datos distintos porque salen del catálogo de prueba: 14 mates en el kit (el diseño decía 16), reseñas en otro orden, resultados de búsqueda en otro orden, total del kit y del carrito según las piezas elegidas. Las opciones de mate del kit van en el orden del catálogo (primero los destacados, después el resto) y no agrupadas por línea como en el diseño. | Kit, inicio, búsqueda, carrito |
 | A8 | "Cómo trabajamos" a 390 px: en el diseño la descripción queda apretada en una columna de ~20 px (error de la captura); la tienda la apila bajo el título, así que la página es más corta. | Nosotros 390 |
 | A9 | Las palabras del texto que se ilumina con el scroll (manifiesto de Inicio, frase de Nosotros) salen apagadas en la captura completa porque la tienda no las fuerza a encendidas; es un efecto del scroll, no de la maquetación. | Inicio, Nosotros |
 

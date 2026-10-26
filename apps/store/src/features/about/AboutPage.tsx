@@ -130,7 +130,7 @@ export function AboutPage({ content }: AboutPageProps): ReactNode {
               className={`${STEP_DIVIDER} grid grid-cols-[48px_minmax(0,1fr)] items-baseline gap-x-5 gap-y-3 py-8 sm:grid-cols-[minmax(48px,120px)_minmax(0,360px)_minmax(0,1fr)] sm:gap-x-[clamp(20px,4vw,64px)]`}
             >
               <span className="text-accent tabular-nums">{stepNumber(index)}</span>
-              <h3 className="text-[24px] tracking-[-0.01em]">{step.title}</h3>
+              <h2 className="text-[24px] tracking-[-0.01em]">{step.title}</h2>
               <p className="col-span-2 text-[15.5px] leading-[1.7] text-neutral-300 sm:col-span-1">
                 {step.text}
               </p>

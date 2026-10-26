@@ -793,7 +793,7 @@ Ver `docs/superpowers/specs/2026-10-20-galpon-backend-design.md`: NestJS hexagon
 | Riesgo o supuesto | Mitigación |
 |---|---|
 | El contrato cambia al diseñar el back | Cambio en el YAML → `api:generate` → TypeScript marca cada lugar afectado |
-| Solo un producto (Mate Imperial Premium) tiene foto real en el diseño; los otros 26 no | Placeholder con la silueta del mate hasta que se carguen desde el admin |
+| Solo un producto (Mate Imperial Premium) tiene foto real en el diseño; los otros 26 no | Placeholder del diseño (marco con borde punteado, ícono de imagen y el nombre del producto) hasta que se carguen desde el admin |
 | Datos simulados de tienda y admin no compartidos | Documentado; se resuelve con el back real |
 | La escena 3D pesa en celulares viejos | Carga diferida, reemplazo por foto, objetivo de rendimiento propio |
 | Normativa (arrepentimiento, precios, cuotas, datos del vendedor, privacidad) | Implementado según Disp. 954/2025, Ley 27.743 y Res. SIyC 4/2025; todo editable y marcado para revisión profesional |
