@@ -68,7 +68,13 @@ src/
     _authenticated.tsx  protege lo que cuelga de él: sin sesión, va a /login
     _authenticated/index.tsx  / (provisorio)
   features/auth/      LoginForm y ensureAdminSession (ver su README)
-  lib/                env.ts, api.ts, csp.ts, redirect.ts
+  lib/                env.ts, api.ts (createAdminApi: API real o simulada con la demo), csp.ts, redirect.ts
+  components/ui/      kit de interfaz (cx, buttonClass, Button, Spinner, …)
+  test/               setup.ts (polyfills de jsdom y cleanup) y render.tsx (createTestApp, renderWithApp)
 ```
+
+## Tests de pantallas
+
+`createTestApp({ loggedIn, demo, now })` (`src/test/render.tsx`) arma la API simulada sin latencia, con la sesión iniciada y los datos de demostración, y devuelve `{ api, mockDb, queryClient, context, session }`. `renderWithApp(ui, { app, path, routePath })` dibuja la pantalla dentro de los proveedores y de un router en memoria que la muestra en `path`; cualquier otra dirección muestra "Ruta de prueba: {pathname}", así se afirma adónde navegó un `Link`. El reloj de la API es fijo (`TEST_NOW`) salvo que el test pase otro.
 
 Toda ruta nueva que necesite sesión va dentro de `routes/_authenticated/`.

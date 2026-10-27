@@ -9,11 +9,19 @@ const env = parseAdminEnv({ VITE_MOCK_LATENCY_MS: '0' })
 
 /** Contexto del router sobre la API de prueba, con el `setCsrfToken` espiado. */
 function setup() {
-  const { api, mockStatus, setCsrfToken } = createAdminApi(env, null)
+  const { api, mockStatus, setCsrfToken, registerMockImage } = createAdminApi(env, null)
   const spy = vi.fn(setCsrfToken)
   return {
     api,
-    context: { queryClient: new QueryClient(), api, setCsrfToken: spy, mockStatus },
+    context: {
+      queryClient: new QueryClient(),
+      api,
+      apiMode: env.apiMode,
+      storeUrl: env.storeUrl,
+      setCsrfToken: spy,
+      mockStatus,
+      registerMockImage,
+    },
     spy,
   }
 }

@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach } from 'vitest'
 
 /** Cuenta las URL `blob:` falsas para que cada una sea distinta. */
 let blobCounter = 0
@@ -155,3 +157,7 @@ function installPolyfills(): void {
 
 // Los tests que piden `@vitest-environment node` no tienen `window`: no hay nada que completar.
 if (typeof window !== 'undefined') installPolyfills()
+
+// Desmonta lo que cada test dibujó (Vitest no lo hace solo sin `globals`), así ningún test ve
+// la pantalla de otro.
+afterEach(cleanup)

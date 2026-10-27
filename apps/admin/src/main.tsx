@@ -12,14 +12,23 @@ import { routeTree } from './routeTree.gen'
 
 /** Crea el router con la API, la caché de consultas y el estado del modo de prueba. */
 function createAppRouter() {
-  const { api, mockStatus, setCsrfToken } = createAdminApi(
-    parseAdminEnv(import.meta.env),
+  const env = parseAdminEnv(import.meta.env)
+  const { api, mockStatus, setCsrfToken, registerMockImage } = createAdminApi(
+    env,
     safeSessionStorage(),
   )
   const queryClient = new QueryClient()
   const router = createRouter({
     routeTree,
-    context: { queryClient, api, setCsrfToken, mockStatus },
+    context: {
+      queryClient,
+      api,
+      apiMode: env.apiMode,
+      storeUrl: env.storeUrl,
+      setCsrfToken,
+      mockStatus,
+      registerMockImage,
+    },
     defaultPreload: 'intent',
   })
   return { router, queryClient, api }

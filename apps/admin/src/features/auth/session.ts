@@ -1,6 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { AdminSession, ApiClient } from '@galpon/api-client'
 import { adminCsrfQuery, adminSessionQuery } from '@galpon/api-client/react'
+import type { MockStatus, RegisterMockImage } from '../../lib/api'
+import type { AdminEnv } from '../../lib/env'
 
 /** Contexto que el router le da a cada ruta (`beforeLoad`, `loader` y componentes). */
 export interface RouterContext {
@@ -8,10 +10,16 @@ export interface RouterContext {
   queryClient: QueryClient
   /** Cliente de la API: el simulado o el real, según el modo. */
   api: ApiClient
+  /** `mock` trabaja sin backend; `live` llama a la API real. Decide, por ejemplo, cómo se suben las fotos. */
+  apiMode: AdminEnv['apiMode']
+  /** URL de la tienda, sin barra final: el dashboard enlaza a ella (ver un producto, el sitio). */
+  storeUrl: string
   /** Guarda (o borra con `undefined`) el token anti-CSRF que el cliente manda en las escrituras. */
   setCsrfToken: (token: string | undefined) => void
   /** Estado del modo de prueba, o `null` cuando la API es la real. */
-  mockStatus: { isPersistent: boolean } | null
+  mockStatus: MockStatus | null
+  /** En modo de prueba registra una foto reducida en la base simulada; en vivo es `null`. */
+  registerMockImage: RegisterMockImage | null
 }
 
 /**
