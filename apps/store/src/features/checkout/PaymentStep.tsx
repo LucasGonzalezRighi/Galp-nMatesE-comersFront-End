@@ -314,10 +314,20 @@ export function PaymentStep({
   )
 
   const total = order === null ? '' : formatPesos(pesos(order.totalArs))
+  // Como en el diseño, la línea del candado va siempre justo antes de los botones del paso.
+  const processedBy = (
+    <span className="flex items-center gap-2 text-[12.5px] text-neutral-500">
+      <LockSimpleIcon size={14} aria-hidden="true" />
+      {CHECKOUT_COPY.processedBy}
+    </span>
+  )
   const backOnly = (
-    <Button variant="secondary" size="lg" className="min-h-[48px] self-start" onClick={onBack}>
-      {CHECKOUT_COPY.back}
-    </Button>
+    <>
+      {processedBy}
+      <Button variant="secondary" size="lg" className="min-h-[48px] self-start" onClick={onBack}>
+        {CHECKOUT_COPY.back}
+      </Button>
+    </>
   )
 
   // El pedido dejó de valer (cambió el carrito, el contacto o el envío) con el medio ya elegido: el
@@ -326,11 +336,14 @@ export function PaymentStep({
   let body: ReactNode = backOnly
   if (checkout.status === 'creating') {
     body = (
-      <StepActions onBack={onBack}>
-        <Button size="lg" fullWidth loading className={PAY_BUTTON}>
-          {CHECKOUT_COPY.creatingOrder}
-        </Button>
-      </StepActions>
+      <>
+        {processedBy}
+        <StepActions onBack={onBack}>
+          <Button size="lg" fullWidth loading className={PAY_BUTTON}>
+            {CHECKOUT_COPY.creatingOrder}
+          </Button>
+        </StepActions>
+      </>
     )
   } else if (checkout.status === 'conflict' || checkout.status === 'error' || changed) {
     const conflict = checkout.status === 'conflict'
@@ -356,6 +369,7 @@ export function PaymentStep({
                 : checkout.error}
           </p>
         </div>
+        {processedBy}
         <StepActions onBack={onBack}>
           <Button
             size="lg"
@@ -376,6 +390,7 @@ export function PaymentStep({
       <>
         <p className="m-0 text-[14px] leading-[1.6] text-neutral-300">{CHECKOUT_COPY.mpNote}</p>
         <LegalNotice />
+        {processedBy}
         <StepActions onBack={onBack}>
           <Button
             size="lg"
@@ -405,6 +420,7 @@ export function PaymentStep({
         onSubmit={(submission) => payWithCardForm(order, submission)}
       >
         <LegalNotice />
+        {processedBy}
         <StepActions onBack={onBack}>
           <Button
             size="lg"
@@ -446,10 +462,6 @@ export function PaymentStep({
         </p>
       )}
       {body}
-      <span className="flex items-center gap-2 text-[12.5px] text-neutral-500">
-        <LockSimpleIcon size={14} aria-hidden="true" />
-        {CHECKOUT_COPY.processedBy}
-      </span>
       <ChallengeDialog
         url={challenge?.url ?? null}
         onClose={() => {

@@ -2561,7 +2561,7 @@ export interface components {
              * @example prd-bombillon-premium-curvo
              */
             bombillaId: string;
-            /** @description Precio de lista por unidad que la tienda tenía cotizado (la suma de las tres piezas, sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. */
+            /** @description Precio de lista por unidad que la tienda tenía cotizado (la suma de las tres piezas, sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea sale con `quantity_reduced` y `POST /orders` responde `stock_changed`. */
             expectedUnitPriceArs?: components["schemas"]["TotalArs"];
             leather: components["schemas"]["Leather"];
             /**
@@ -3069,7 +3069,7 @@ export interface components {
         };
         /** @description Producto suelto en el carrito. */
         ProductCartItemInput: {
-            /** @description Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. */
+            /** @description Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea sale con `quantity_reduced` y `POST /orders` responde `stock_changed`. */
             expectedUnitPriceArs?: components["schemas"]["Pesos"];
             /** @description Cuero y virola elegidos; `null` en los productos que no son mates. */
             options: components["schemas"]["CartItemOptions"] | null;
@@ -3869,7 +3869,7 @@ export interface components {
          */
         AdminProductId: string;
         /**
-         * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro.
+         * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro. Repetirla con otro cuerpo responde `422` con `type` `idempotency_key_reused`: cada intento distinto lleva una clave nueva.
          * @example 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
          */
         IdempotencyKey: string;
@@ -5839,7 +5839,7 @@ export interface operations {
             query?: never;
             header: {
                 /**
-                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro.
+                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro. Repetirla con otro cuerpo responde `422` con `type` `idempotency_key_reused`: cada intento distinto lleva una clave nueva.
                  * @example 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
                  */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
@@ -5948,7 +5948,7 @@ export interface operations {
             query?: never;
             header: {
                 /**
-                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro.
+                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro. Repetirla con otro cuerpo responde `422` con `type` `idempotency_key_reused`: cada intento distinto lleva una clave nueva.
                  * @example 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
                  */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
@@ -6056,7 +6056,7 @@ export interface operations {
             query?: never;
             header: {
                 /**
-                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro.
+                 * @description UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado del primer intento en lugar de crear otro pedido o cobro. Repetirla con otro cuerpo responde `422` con `type` `idempotency_key_reused`: cada intento distinto lleva una clave nueva.
                  * @example 3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b
                  */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];

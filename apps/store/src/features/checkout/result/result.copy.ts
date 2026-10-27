@@ -23,8 +23,11 @@ export const RESULT_COPY = {
   /** Pago aprobado. */
   approved: {
     title: (firstName: string) => `¡Gracias, ${firstName}!`,
-    text: (number: string, email: string) =>
-      `Tu pedido ${number} está confirmado. Te enviamos el detalle a ${email}.`,
+    /** Texto antes y después del número de pedido, que la pantalla marca en negrita. */
+    text: (email: string) => ({
+      before: 'Tu pedido ',
+      after: ` está confirmado. Te enviamos el detalle a ${email}.`,
+    }),
     help: 'Si hay algún problema, escribinos desde',
     contact: 'Contacto',
     keepShopping: 'Seguir comprando',

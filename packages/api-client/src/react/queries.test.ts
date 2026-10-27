@@ -173,6 +173,12 @@ describe('consultas de checkout y cuenta', () => {
       expect(key[0]).toBe(queryKeys.account()[0])
     }
   })
+
+  it('queryKeys.cartQuotes() es el prefijo de toda cotización, para invalidarlas juntas', () => {
+    expect(queryKeys.cartQuotes()).toEqual(['cart', 'quote'])
+    const quote = queryKeys.cartQuote({ items: [] })
+    expect(quote.slice(0, queryKeys.cartQuotes().length)).toEqual(queryKeys.cartQuotes())
+  })
 })
 
 describe('shouldRetryQuery', () => {

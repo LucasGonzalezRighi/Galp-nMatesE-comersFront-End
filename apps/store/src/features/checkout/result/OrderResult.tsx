@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import type { ApiMode } from '@/lib/env'
 import type { ApiErrorKind, Order } from '@galpon/api-client'
-import { DrawCheck } from '@/components/motion'
+import { DrawCheck, Reveal } from '@/components/motion'
 import { Button, Spinner, Tag } from '@/components/ui'
 import { cartHash, clearCart, openCart, useCart } from '@/features/cart'
 import { ChallengeDialog } from '@/features/payments'
@@ -34,6 +34,12 @@ const SHELL =
 
 /** Título principal. */
 const TITLE = 'm-0 text-[clamp(38px,5vw,64px)] leading-none tracking-[-0.035em]'
+
+/** Retardo del texto del pago aprobado, después del título (diseño: 120 ms). */
+const APPROVED_TEXT_DELAY_MS = 120
+
+/** Retardo del detalle del pedido y "Seguir comprando" del pago aprobado (diseño: 220 ms). */
+const APPROVED_ACTIONS_DELAY_MS = 220
 
 /** Texto de apoyo. */
 const LEAD = 'm-0 text-[16px] leading-[1.65] text-neutral-300'
@@ -179,23 +185,35 @@ interface PanelProps {
   refresh: () => void
 }
 
-/** Pago aprobado: check dibujado, "¡Gracias, {nombre}!" y el aviso del mail. */
+/**
+ * Pago aprobado: check dibujado, "¡Gracias, {nombre}!" y el aviso del mail con el número en
+ * negrita. El título entra sin retardo y el texto a los 120 ms, como el `data-reveal` del diseño.
+ */
 function ApprovedPanel({ order }: Pick<PanelProps, 'order'>): ReactNode {
+  const text = RESULT_COPY.approved.text(order.customer.email)
   return (
     <>
       <DrawCheck size={72} />
-      <h1 className={TITLE}>{RESULT_COPY.approved.title(order.customer.firstName)}</h1>
-      <p className={LEAD}>{RESULT_COPY.approved.text(order.number, order.customer.email)}</p>
-      <p className="m-0 text-[14px] text-neutral-400">
-        {RESULT_COPY.approved.help}{' '}
-        <Link
-          href={asRoute('/contacto')}
-          className="text-accent underline-offset-4 hover:underline"
-        >
-          {RESULT_COPY.approved.contact}
-        </Link>
-        .
-      </p>
+      <Reveal kind="up" as="h1" className={TITLE}>
+        {RESULT_COPY.approved.title(order.customer.firstName)}
+      </Reveal>
+      <Reveal kind="up" delay={APPROVED_TEXT_DELAY_MS} className="flex flex-col gap-[22px]">
+        <p className={LEAD}>
+          {text.before}
+          <strong className="text-foreground">{order.number}</strong>
+          {text.after}
+        </p>
+        <p className="m-0 text-[14px] text-neutral-400">
+          {RESULT_COPY.approved.help}{' '}
+          <Link
+            href={asRoute('/contacto')}
+            className="text-accent underline-offset-4 hover:underline"
+          >
+            {RESULT_COPY.approved.contact}
+          </Link>
+          .
+        </p>
+      </Reveal>
     </>
   )
 }
@@ -492,12 +510,20 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
       {kind === 'rejected' ? <RejectedPanel order={order} refresh={refresh} /> : null}
       {kind === 'unpaid' ? <UnpaidPanel order={order} refresh={refresh} /> : null}
       {kind === 'expired' ? <ExpiredPanel /> : null}
-      <OrderSummary order={order} />
       {kind === 'approved' && variant === 'result' ? (
-        <Button asChild size="lg">
-          <Link href={asRoute('/tienda')}>{RESULT_COPY.approved.keepShopping}</Link>
-        </Button>
-      ) : null}
+        <Reveal
+          kind="up"
+          delay={APPROVED_ACTIONS_DELAY_MS}
+          className="flex w-full flex-col items-start gap-[22px]"
+        >
+          <OrderSummary order={order} />
+          <Button asChild size="lg">
+            <Link href={asRoute('/tienda')}>{RESULT_COPY.approved.keepShopping}</Link>
+          </Button>
+        </Reveal>
+      ) : (
+        <OrderSummary order={order} />
+      )}
     </div>
   )
 }

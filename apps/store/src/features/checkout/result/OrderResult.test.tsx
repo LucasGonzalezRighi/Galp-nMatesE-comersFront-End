@@ -112,9 +112,10 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(
       await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(RESULT_COPY.approved.text(order.number, 'lucia@ejemplo.com')),
-    ).toBeInTheDocument()
+    // El número de pedido va en negrita, dentro del texto de la confirmación.
+    const { before, after } = RESULT_COPY.approved.text('lucia@ejemplo.com')
+    const number = screen.getByText(order.number, { selector: 'strong' })
+    expect(number.closest('p')).toHaveTextContent(`${before}${order.number}${after}`)
     expect(screen.getByText('Mate Imperial Premium')).toBeInTheDocument()
     expect(screen.getByText('$46.499')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: RESULT_COPY.approved.keepShopping })).toHaveAttribute(

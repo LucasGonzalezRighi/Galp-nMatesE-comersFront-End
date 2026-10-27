@@ -122,6 +122,17 @@ describe('SearchModal: abrir y cerrar', () => {
 
     await expectClosed()
   })
+
+  it('al cerrarlo se limpia lo escrito: al reabrir el campo está vacío', async () => {
+    const { user } = renderSearch()
+    openSearch()
+    await user.type(await searchbox(), 'imperial')
+    await user.keyboard('{Escape}')
+    await expectClosed()
+
+    openSearch()
+    expect(await searchbox()).toHaveValue('')
+  })
 })
 
 describe('SearchModal: contenido', () => {

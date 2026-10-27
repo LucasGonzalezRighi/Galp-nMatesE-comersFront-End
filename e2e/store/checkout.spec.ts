@@ -1,4 +1,5 @@
 import type { Request } from '@playwright/test'
+import { formatPesos, pesos } from '@galpon/domain'
 import {
   addToCart,
   buyerFor,
@@ -145,7 +146,7 @@ test.describe('tienda: el pedido cambia o vence', () => {
       await expect(payWithMpButton(page)).toHaveCount(0)
 
       await page.getByRole('button', { name: 'Confirmar de nuevo' }).click()
-      const total = `$${newPrice.toLocaleString('es-AR')}`
+      const total = formatPesos(pesos(newPrice))
       await expect(
         page.getByRole('button', { name: `Pagar ${total} con Mercado Pago` }),
       ).toBeVisible()

@@ -8,27 +8,16 @@ import { cx } from '@/components/ui/cx'
 import { CartDrawer, CartHydrator } from '@/features/cart'
 import { SearchModal } from '@/features/search'
 import { Toaster } from '@/features/toast'
-import { getStoreEnv } from '@/lib/env'
-import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo'
-import { inter } from './fonts'
-import './globals.css'
-import { Providers } from './providers'
+import { inter } from '../fonts'
+import '../globals.css'
+import { Providers } from '../providers'
+import { PAGE_BACKGROUND, SITE_METADATA, SITE_VIEWPORT } from '../site-shell'
 
-/**
- * Título (con plantilla "· Galpón Mates") y descripción por omisión de todas las páginas, y el
- * origen público de la tienda (`metadataBase`), con el que Next arma las direcciones absolutas de
- * los íconos y de la imagen para compartir.
- */
-export const metadata: Metadata = {
-  metadataBase: new URL(getStoreEnv().siteUrl),
-  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
-  description: SITE_DESCRIPTION,
-}
+/** Título, descripción y `metadataBase` comunes (ver {@link SITE_METADATA}). */
+export const metadata: Metadata = SITE_METADATA
 
-/** Color de la barra del navegador en el celular, el del fondo de la tienda. */
-export const viewport: Viewport = {
-  themeColor: '#1a1210',
-}
+/** Color de la barra del navegador en el celular (ver {@link SITE_VIEWPORT}). */
+export const viewport: Viewport = SITE_VIEWPORT
 
 /** Props de {@link RootLayout}. */
 interface RootLayoutProps {
@@ -36,14 +25,11 @@ interface RootLayoutProps {
   children: ReactNode
 }
 
-/** Fondo de la tienda (el del diseño): un resplandor cobrizo arriba a la derecha sobre el fondo liso. */
-const PAGE_BACKGROUND =
-  'bg-background bg-[radial-gradient(1200px_720px_at_82%_-160px,color-mix(in_srgb,var(--color-accent-900)_75%,transparent),transparent_60%)]'
-
 /**
- * Estructura común de todas las páginas de la tienda (spec 9.5): idioma, tipografía, proveedores
+ * Root layout de la tienda, el grupo `(tienda)` (spec 9.5): idioma, tipografía, proveedores
  * del cliente, barra superior de arrepentimiento, encabezado, la página (que entra con
  * `PageEnter`), pie, cortina entre secciones, panel del carrito, avisos e hidratación del carrito.
+ * El simulador de Mercado Pago tiene su propio root layout, sin nada de esto (`(simulador)`).
  *
  * @param props - Ver {@link RootLayoutProps}.
  */

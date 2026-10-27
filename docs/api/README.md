@@ -19,7 +19,7 @@ Salen de la sección 12 del [diseño del front](../superpowers/specs/2026-10-19-
 - **Errores**: `application/problem+json` (`Problem`), con `errors` para el detalle por campo y `changes` para los conflictos de pedido. Los errores comunes están en `components.responses` (`ValidationError`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `RateLimited`, `ServerError`); se referencian, no se repiten.
 - **Límite de uso**: `429` siempre trae la cabecera `Retry-After`.
 - **Seguridad**: la sesión, el token CSRF (`X-CSRF-Token`) y el token de pedido (`X-Order-Token`) son esquemas de seguridad (`components.securitySchemes`), no parámetros. Así el middleware del cliente los agrega y las llamadas no los piden una por una. Las rutas públicas declaran `security: []`.
-- **Idempotencia**: las escrituras de pedidos y pagos llevan `Idempotency-Key` (un UUID por intento), que es el parámetro `IdempotencyKey`.
+- **Idempotencia**: las escrituras de pedidos y pagos llevan `Idempotency-Key` (un UUID por intento), que es el parámetro `IdempotencyKey`. La misma clave con otro cuerpo responde `422` con `type` `idempotency_key_reused`.
 - **Operaciones**: cada una tiene `operationId` en `camelCase`, `summary` en español, `tags` y `responses`.
 - **Enums**: `ProductGroup`, `ProductStatus`, `Leather`, `Ferrule`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod` y `Province` copian literalmente los valores de `packages/domain`; `ContactReason` los de `packages/schemas`. Si se cambia uno hay que cambiar el otro; la alineación se comprueba con tipos en `packages/api-client`.
 

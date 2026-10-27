@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PageCurtain } from './PageCurtain'
 import { PageEnter } from './PageEnter'
@@ -29,28 +29,34 @@ describe('PageEnter', () => {
   })
 
   it('vuelve a entrar (oculto y luego visible) al cambiar el pathname, sin remontar el contenido', async () => {
-    mockReducedMotion(false)
-    const { rerender } = render(
-      <PageEnter>
-        <input aria-label="Buscar" />
-      </PageEnter>,
-    )
-    const input = screen.getByLabelText('Buscar')
-    const box = input.parentElement
-    route.pathname = '/tienda'
-    rerender(
-      <PageEnter>
-        <input aria-label="Buscar" />
-      </PageEnter>,
-    )
-    // El contenido sigue siendo el mismo nodo: no se volvió a montar.
-    expect(screen.getByLabelText('Buscar')).toBe(input)
-    await waitFor(() => {
+    // Temporizadores falsos (también `requestAnimationFrame` y `performance`): la entrada dura
+    // 0,98 s y con el reloj real dependía de la carga de la máquina.
+    vi.useFakeTimers()
+    try {
+      mockReducedMotion(false)
+      const { rerender } = render(
+        <PageEnter>
+          <input aria-label="Buscar" />
+        </PageEnter>,
+      )
+      const input = screen.getByLabelText('Buscar')
+      const box = input.parentElement
+      route.pathname = '/tienda'
+      rerender(
+        <PageEnter>
+          <input aria-label="Buscar" />
+        </PageEnter>,
+      )
+      // El contenido sigue siendo el mismo nodo: no se volvió a montar.
+      expect(screen.getByLabelText('Buscar')).toBe(input)
+      // Dentro del retardo de 180 ms queda oculto; al terminar, visible.
+      await act(() => vi.advanceTimersByTimeAsync(100))
       expect(box?.style.opacity).toBe('0')
-    })
-    await waitFor(() => {
+      await act(() => vi.advanceTimersByTimeAsync(1500))
       expect(box).toHaveStyle({ opacity: '1' })
-    })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('también entra de nuevo si cambia solo un parámetro de la URL', async () => {

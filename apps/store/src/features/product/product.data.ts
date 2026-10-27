@@ -10,11 +10,11 @@ import {
   getProduct,
   getProductTabsContent,
   isApiError,
-  listAllProducts,
   listProductReviews,
   listRelatedProducts,
 } from '@galpon/api-client'
 import { getServerApi } from '../../lib/api.server'
+import { getPublishedProducts } from '../../lib/data/catalog'
 
 /** Largo máximo de un slug (el del contrato): también el de las etiquetas de caché `product:{slug}`. */
 const SLUG_MAX_LENGTH = 80
@@ -33,15 +33,13 @@ function isSlugShaped(slug: string): boolean {
 
 /**
  * Slugs de todos los productos publicados, para que Next arme una página estática por producto
- * (`generateStaticParams`). Cacheada por horas y con la etiqueta `products`.
+ * (`generateStaticParams`). Sale de la lectura cacheada compartida (`getPublishedProducts`,
+ * etiqueta `products`).
  *
  * @throws {ApiError} Si la API falla.
  */
 export async function listProductSlugs(): Promise<string[]> {
-  'use cache'
-  cacheLife('hours')
-  cacheTag('products')
-  const products = await listAllProducts(getServerApi())
+  const products = await getPublishedProducts()
   return products.map((product) => product.slug)
 }
 

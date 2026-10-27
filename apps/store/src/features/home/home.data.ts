@@ -1,10 +1,10 @@
 import 'server-only'
 import { cacheLife, cacheTag } from 'next/cache'
-import type { FeaturedReview, HomeContent, ProductSummary } from '@galpon/api-client'
-import { getHomeContent, listAllProducts, listFeaturedReviews } from '@galpon/api-client'
+import type { FeaturedReview, HomeContent } from '@galpon/api-client'
+import { getHomeContent, listFeaturedReviews } from '@galpon/api-client'
 import type { HomeData } from './home-data'
 import { getServerApi } from '../../lib/api.server'
-import { getCategories } from '../../lib/data/catalog'
+import { getCategories, getPublishedProducts } from '../../lib/data/catalog'
 import { getPublicSettings } from '../../lib/data/settings'
 import { buildHomeData } from './home-data'
 
@@ -17,17 +17,6 @@ async function readHomeContent(): Promise<HomeContent> {
   cacheLife('hours')
   cacheTag('content:home')
   return await getHomeContent(getServerApi())
-}
-
-/**
- * Todos los productos publicados, en el orden del listado. Cacheada por horas y con la etiqueta
- * `products`.
- */
-async function readPublishedProducts(): Promise<ProductSummary[]> {
-  'use cache'
-  cacheLife('hours')
-  cacheTag('products')
-  return await listAllProducts(getServerApi())
 }
 
 /**
@@ -49,7 +38,7 @@ async function readFeaturedReviews(): Promise<FeaturedReview[]> {
 export async function getHomeData(): Promise<HomeData> {
   const [content, products, categories, settings, reviews] = await Promise.all([
     readHomeContent(),
-    readPublishedProducts(),
+    getPublishedProducts(),
     getCategories(),
     getPublicSettings(),
     readFeaturedReviews(),

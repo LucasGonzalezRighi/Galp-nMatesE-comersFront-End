@@ -43,7 +43,7 @@ const ROW_DIVIDER: CSSProperties = {
  * líneas; al escribir, hasta 6 productos (nombre, descripción y línea, sin acentos), o "Sin
  * resultados para “…”." y el link "Ver todos los resultados en la tienda". Enter abre la ficha si
  * hay un solo resultado y, si no, va a `/tienda?q=` con el texto codificado. Se cierra con Escape,
- * con un clic afuera o al elegir un resultado.
+ * con un clic afuera o al elegir un resultado, y al cerrarse se limpia lo escrito.
  *
  * El catálogo se pide al abrir por primera vez (con un indicador de carga) y queda en caché. Se
  * monta una sola vez en el layout de la tienda.
@@ -54,7 +54,15 @@ export function SearchModal(): ReactNode {
   const api = useApiClient()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
+  const [wasOpen, setWasOpen] = useState(open)
   useSearchShortcut()
+
+  // Al cerrarse (Escape, clic afuera, "Cerrar búsqueda" o un resultado) se olvida lo escrito: al
+  // reabrir, el campo empieza vacío. Se ajusta durante el render, sin efecto, al cambiar `open`.
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (!open) setQuery('')
+  }
 
   const catalog = useQuery({ ...searchCatalogQuery(api), enabled: open })
   const lines = useQuery({ ...searchLinesQuery(api), enabled: open })

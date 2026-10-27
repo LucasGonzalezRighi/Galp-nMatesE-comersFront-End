@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiMode } from '@/lib/env'
 import type { ShippingOption } from '@galpon/api-client'
 import type { ShippingMethod } from '@galpon/domain'
-import { Float, useScrollTopOnStep } from '@/components/motion'
+import { Float, Reveal, useScrollTopOnStep } from '@/components/motion'
 import { Button } from '@/components/ui'
 import { useSession } from '@/features/account'
 import {
@@ -44,6 +44,12 @@ export interface CheckoutProps {
   /** Opciones de envío de los ajustes públicos (`PublicSettings.shippingOptions`). */
   shippingOptions: readonly ShippingOption[]
 }
+
+/** Retardo con el que entra el contenido de cada paso, después del título (diseño: 120 ms). */
+const STEP_REVEAL_DELAY_MS = 120
+
+/** Duración de la entrada del contenido de cada paso (diseño: `data-dur="700"`). */
+const STEP_REVEAL_MS = 700
 
 /** Props de {@link Bone}. */
 interface BoneProps {
@@ -166,6 +172,7 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
       : (options[0]?.method ?? null)
   const method = step === 0 ? null : step === 1 ? (draftMethod ?? savedMethod) : savedMethod
   const shippingArs = shippingCost(options, method)
+  const shippingLabel = options.find((option) => option.method === method)?.label ?? null
   const loading = view.lines.some((line) => line.status === 'loading')
   const totalArs = sumPesos([pesos(view.totals.subtotalArs), pesos(shippingArs ?? 0)])
   const expectedTotalArs =
@@ -190,55 +197,63 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
             <span aria-hidden="true" className="bg-accent h-px w-7" />
             {CHECKOUT_COPY.eyebrow}
           </span>
-          <h1 className="m-0 text-[clamp(36px,4.6vw,60px)] leading-none tracking-[-0.035em]">
+          <Reveal
+            kind="up"
+            as="h1"
+            className="m-0 text-[clamp(36px,4.6vw,60px)] leading-none tracking-[-0.035em]"
+          >
             {CHECKOUT_COPY.title}
-          </h1>
+          </Reveal>
         </div>
         <CheckoutSteps step={step} onSelect={goToStep} />
-        {step === 0 ? (
-          <ContactStep
-            saved={contact}
-            customer={session.customer}
-            onSubmit={(values) => {
-              useCheckoutStore.getState().saveContact(values)
-            }}
-          />
-        ) : null}
-        {step === 1 ? (
-          <ShippingStep
-            saved={shipping}
-            options={options}
-            email={contact?.email.trim() ?? ''}
-            addresses={addresses.data ?? []}
-            onMethodChange={setDraftMethod}
-            onBack={() => {
-              goToStep(0)
-            }}
-            onSubmit={(values) => {
-              setDraftMethod(null)
-              useCheckoutStore.getState().saveShipping(values)
-            }}
-          />
-        ) : null}
-        {step === 2 ? (
-          <PaymentStep
-            apiMode={apiMode}
-            mpPublicKey={mpPublicKey}
-            checkout={checkout}
-            canConfirm={expectedTotalArs !== null}
-            blocked={view.lines.some((line) => line.status === 'sold-out')}
-            onViewCart={openCart}
-            onBack={() => {
-              goToStep(1)
-            }}
-          />
-        ) : null}
+        {/* Cada paso entra con su propio Reveal (`key`), como el `data-reveal="up"` del diseño. */}
+        <Reveal key={step} kind="up" delay={STEP_REVEAL_DELAY_MS} duration={STEP_REVEAL_MS}>
+          {step === 0 ? (
+            <ContactStep
+              saved={contact}
+              customer={session.customer}
+              onSubmit={(values) => {
+                useCheckoutStore.getState().saveContact(values)
+              }}
+            />
+          ) : null}
+          {step === 1 ? (
+            <ShippingStep
+              saved={shipping}
+              options={options}
+              email={contact?.email.trim() ?? ''}
+              addresses={addresses.data ?? []}
+              onMethodChange={setDraftMethod}
+              onBack={() => {
+                goToStep(0)
+              }}
+              onSubmit={(values) => {
+                setDraftMethod(null)
+                useCheckoutStore.getState().saveShipping(values)
+              }}
+            />
+          ) : null}
+          {step === 2 ? (
+            <PaymentStep
+              apiMode={apiMode}
+              mpPublicKey={mpPublicKey}
+              checkout={checkout}
+              canConfirm={expectedTotalArs !== null}
+              blocked={view.lines.some((line) => line.status === 'sold-out')}
+              onViewCart={openCart}
+              onBack={() => {
+                goToStep(1)
+              }}
+            />
+          ) : null}
+        </Reveal>
       </div>
       <CheckoutSummary
         view={view}
         loading={loading}
         error={isError}
         shippingArs={method === null ? null : shippingArs}
+        shippingLabel={shippingLabel}
         totalArs={totalArs}
       />
     </section>

@@ -28,6 +28,11 @@ export interface CheckoutSummaryProps {
   error: boolean
   /** Costo del envío elegido, o `null` antes de elegirlo (paso 1). */
   shippingArs: number | null
+  /**
+   * Nombre de la opción de envío elegida ("Envío a domicilio"), o `null` antes de elegirla (paso 1):
+   * entonces la fila dice "Envío".
+   */
+  shippingLabel: string | null
   /** Total: el subtotal de la cotización más el envío. */
   totalArs: number
 }
@@ -53,8 +58,9 @@ function shippingText(shippingArs: number | null): string {
 
 /**
  * Resumen lateral "Tu pedido" (spec 14.1 y 14.5): líneas (nombre × cantidad, detalle, total y
- * precio sin impuestos nacionales), ahorro por kit, subtotal (con su neto), envío y total. Los
- * importes vienen de `POST /cart/quote`; el resumen no calcula nada.
+ * precio sin impuestos nacionales), ahorro por kit, subtotal (con su neto), envío (con el nombre de
+ * la opción elegida) y total. Los importes vienen de `POST /cart/quote`; el resumen no calcula
+ * nada.
  *
  * @param props - Ver {@link CheckoutSummaryProps}.
  */
@@ -63,6 +69,7 @@ export function CheckoutSummary({
   loading,
   error,
   shippingArs,
+  shippingLabel,
   totalArs,
 }: CheckoutSummaryProps): ReactNode {
   const { totals } = view
@@ -118,7 +125,7 @@ export function CheckoutSummary({
         </span>
       </div>
       <div className="flex justify-between gap-3 text-[13.5px]">
-        <span className="text-neutral-400">{CHECKOUT_COPY.shipping}</span>
+        <span className="text-neutral-400">{shippingLabel ?? CHECKOUT_COPY.shipping}</span>
         <span className="text-right tabular-nums">{shippingText(shippingArs)}</span>
       </div>
       <div aria-hidden="true" className="h-px" style={DIVIDER_STYLE} />

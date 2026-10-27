@@ -29,6 +29,9 @@ export default function nextConfig(phase: string): NextConfig {
     partialPrefetching: true,
     typedRoutes: true,
     agentRules: false,
+    // Con dos root layouts (`(tienda)` y `(simulador)`), la 404 de las rutas desconocidas la arma
+    // `app/global-not-found.tsx`.
+    experimental: { globalNotFound: true },
     turbopack: {
       rules: { '*.css': { loaders: ['@tailwindcss/turbopack'], as: '*.css' } },
     },

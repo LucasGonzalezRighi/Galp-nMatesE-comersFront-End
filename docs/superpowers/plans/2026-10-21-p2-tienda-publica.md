@@ -58,7 +58,7 @@
 - `Tag` (`accent` | `accent2` | `neutral` | `outline`), `Stars` (valor 0–5 con medias, solo lectura, `aria-label` "4,7 de 5")
 - `Price` (usa `formatPesos`; `null` → "Consultar"), `NetPrice` ("Precio sin impuestos nacionales: $X", spec §14.5), `InstallmentsNote` (spec §14.4: "o N cuotas sin interés de $X · CFT 0,00 % (TEA 0,00 %)", con el CFT destacado; no se muestra si `showOnProduct` es falso o `max ≤ 1`)
 - `QuantityStepper` (mínimo 1, máximo por prop, "−" deshabilitado en 1 salvo que `onRemove` exista), `Swatch` (cuero con anillo de selección)
-- `ImageWithPlaceholder` (`next/image`; sin imagen, la silueta del mate), `Spinner`, `Dialog` (modal accesible: trampa de foco, Escape, scroll bloqueado)
+- `ImageWithPlaceholder` (`next/image`; sin imagen, el placeholder del diseño: marco punteado con el ícono de imagen y el nombre del producto), `Spinner`, `Dialog` (modal accesible: trampa de foco, Escape, scroll bloqueado)
 
 Medidas de la sección 7 del spec (botón 14 px, input con alto mínimo 36, label 12 px al 70%, etc.). Tests de componentes para Field (error accesible), QuantityStepper (límites), Price/NetPrice/InstallmentsNote (formatos exactos), Stars (`aria-label`) y Dialog (Escape y foco).
 

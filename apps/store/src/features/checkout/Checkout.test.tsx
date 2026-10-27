@@ -688,8 +688,35 @@ describe('Checkout', () => {
       expectBefore(withdrawal, payButton)
       expectBefore(terms, payButton)
       expectBefore(privacy, payButton)
+      // La línea del candado va entre la nota del medio y los botones, como en el diseño.
+      const processedBy = screen.getByText(CHECKOUT_COPY.processedBy)
+      expectBefore(withdrawal, processedBy)
+      expectBefore(processedBy, screen.getByRole('button', { name: CHECKOUT_COPY.back }))
+      expectBefore(processedBy, payButton)
     },
   )
+
+  it('la fila del envío del resumen dice "Envío" en el paso 1 y el método elegido en los pasos 2 y 3', async () => {
+    const user = userEvent.setup()
+    const testApi = createCheckoutApi()
+    addYerba(testApi.db)
+    renderCheckout(testApi)
+    const summary = await screen.findByRole('complementary', { name: CHECKOUT_COPY.summaryTitle })
+    expect(within(summary).getByText(CHECKOUT_COPY.shipping)).toBeInTheDocument()
+    expect(within(summary).getByText(CHECKOUT_COPY.shippingPending)).toBeInTheDocument()
+
+    await fillContact(user)
+    await user.click(await screen.findByRole('radio', { name: /Envío a sucursal/ }))
+    expect(within(summary).getByText('Envío a sucursal')).toBeInTheDocument()
+    expect(within(summary).queryByText(CHECKOUT_COPY.shipping)).not.toBeInTheDocument()
+
+    await choosePickup(user)
+    expect(
+      await screen.findByRole('group', { name: CHECKOUT_COPY.paymentMethod }),
+    ).toBeInTheDocument()
+    expect(within(summary).getByText('Retiro en persona')).toBeInTheDocument()
+    expect(within(summary).getByText(CHECKOUT_COPY.free)).toBeInTheDocument()
+  })
 
   it('si la persona vuelve con Atrás desde Mercado Pago (bfcache), el botón deja de decir "Conectando…"', async () => {
     const user = userEvent.setup()

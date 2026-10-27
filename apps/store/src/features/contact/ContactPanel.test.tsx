@@ -188,4 +188,34 @@ describe('Contacto: motivo "Arrepentimiento"', () => {
     expect(screen.getByRole('textbox', { name: CONTACT_COPY.name })).toHaveValue('Paula')
     expect(screen.getByRole('radio', { name: 'Envío' })).toHaveFocus()
   })
+
+  it('el motivo vuelve a "Pedido" cuando la página se oculta y vuelve (Cache Components con Activity)', async () => {
+    const api = createTestApi()
+    const user = userEvent.setup()
+    const { rerender } = render(
+      api.wrap(
+        <Activity mode="visible">
+          <ContactPanel />
+        </Activity>,
+      ),
+    )
+    await user.click(screen.getByRole('radio', { name: 'Arrepentimiento' }))
+    expect(screen.queryByRole('button', { name: CONTACT_COPY.submit })).toBeNull()
+
+    for (const mode of ['hidden', 'visible'] as const) {
+      await act(async () => {
+        rerender(
+          api.wrap(
+            <Activity mode={mode}>
+              <ContactPanel />
+            </Activity>,
+          ),
+        )
+        await Promise.resolve()
+      })
+    }
+
+    expect(screen.getByRole('radio', { name: 'Pedido' })).toBeChecked()
+    expect(screen.getByRole('button', { name: CONTACT_COPY.submit })).toBeInTheDocument()
+  })
 })

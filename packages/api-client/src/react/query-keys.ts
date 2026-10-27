@@ -18,6 +18,8 @@ export const queryKeys = {
   adminCsrf: () => ['admin', 'csrf'] as const,
   /** Una página del listado de productos del dashboard, según los filtros. */
   adminProducts: (query: AdminProductQuery) => ['admin', 'products', query] as const,
+  /** Todas las cotizaciones de carrito: el prefijo de {@link queryKeys.cartQuote}, para invalidarlas. */
+  cartQuotes: () => ['cart', 'quote'] as const,
   /** Cotización de un carrito. */
   cartQuote: (input: CartQuoteInput) => ['cart', 'quote', input] as const,
   /** Un pedido, consultado con su token o con la sesión del dueño. */

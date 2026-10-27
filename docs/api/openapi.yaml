@@ -2596,7 +2596,9 @@ components:
       required: true
       description: >-
         UUID que genera el cliente para cada intento. Repetir la misma clave devuelve el resultado
-        del primer intento en lugar de crear otro pedido o cobro.
+        del primer intento en lugar de crear otro pedido o cobro. Repetirla con otro cuerpo
+        responde `422` con `type` `idempotency_key_reused`: cada intento distinto lleva una clave
+        nueva.
       schema:
         type: string
         format: uuid
@@ -3969,7 +3971,9 @@ components:
             Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no
             coincide con el vigente, la línea de `POST /cart/quote` sale con `issue`
             `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea
-            nada. Sin este campo, un cambio de precio solo se nota como `total_changed`.
+            nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. Si a la
+            vez bajó el stock, gana el stock: la línea sale con `quantity_reduced` y `POST /orders`
+            responde `stock_changed`.
           $ref: '#/components/schemas/Pesos'
     KitCartItemInput:
       type: object
@@ -4013,7 +4017,8 @@ components:
             sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la
             línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde
             `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio
-            solo se nota como `total_changed`.
+            solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea
+            sale con `quantity_reduced` y `POST /orders` responde `stock_changed`.
           $ref: '#/components/schemas/TotalArs'
     CartItemInput:
       description: Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto o un kit.
