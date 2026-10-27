@@ -133,9 +133,11 @@ export function useCheckoutOrder({
       }
       useCheckoutStore.getState().setAttempt(null)
       if (isApiError(error) && error.kind === 'conflict') {
-        setPhase({ status: 'conflict', changes: error.problem?.changes ?? [] })
+        // "Confirmar de nuevo" aparece recién con el carrito y el resumen al día: antes mandaría
+        // los precios viejos y volvería a chocar con el mismo `409`.
         await syncCart()
         await queryClient.invalidateQueries({ queryKey: ['cart', 'quote'] })
+        setPhase({ status: 'conflict', changes: error.problem?.changes ?? [] })
         return null
       }
       setPhase({

@@ -18,6 +18,7 @@ import { Checkout } from './Checkout'
 import { CHECKOUT_COPY, payWithMpLabel } from './checkout.copy'
 import { CHECKOUT_STORAGE_KEY, resetCheckoutStore } from './checkout.store'
 import { readOrderSession, readOrderToken } from './order-session'
+import { CHALLENGE_DONE_MESSAGE } from './result/mp-simulator'
 
 const navigation = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), search: '' }))
 
@@ -401,6 +402,39 @@ describe('Checkout', () => {
     expect(navigation.push).not.toHaveBeenCalled()
 
     await user.click(within(dialog).getByRole('button', { name: /Ya terminé/ }))
+    expect(navigation.push).toHaveBeenCalledWith(`/checkout/resultado?pedido=${number}`)
+  })
+
+  it('cuando el desafío avisa que terminó va al resultado sin esperar "Ya terminé"', async () => {
+    const user = userEvent.setup()
+    const testApi = createCheckoutApi()
+    addYerba(testApi.db)
+    renderCheckout(testApi)
+    await fillContact(user)
+    await choosePickup(user)
+    await choosePayment(user, /Tarjeta de crédito o débito/)
+    await user.type(await screen.findByLabelText('Número de tarjeta'), '4509953566233704')
+    await user.type(screen.getByLabelText('Nombre del titular'), '3DS')
+    await user.type(screen.getByLabelText('Vencimiento'), '1130')
+    await user.type(screen.getByLabelText('CVC'), '123')
+    await user.type(screen.getByLabelText('Número de documento'), '12345678')
+    await waitFor(() => {
+      expect(requestsTo(testApi.requests, 'POST', '/installments').length).toBeGreaterThan(0)
+    })
+    const total = formatPesos(pesos(yerbaPrice(testApi.db)))
+    await user.click(screen.getByRole('button', { name: `Pagar ${total}` }))
+    await screen.findByRole('dialog')
+    const number = testApi.db.orders[0]?.number ?? ''
+
+    // Un aviso de otro origen no cuenta.
+    window.dispatchEvent(
+      new MessageEvent('message', { data: CHALLENGE_DONE_MESSAGE, origin: 'https://otro.example' }),
+    )
+    expect(navigation.push).not.toHaveBeenCalled()
+
+    window.dispatchEvent(
+      new MessageEvent('message', { data: CHALLENGE_DONE_MESSAGE, origin: window.location.origin }),
+    )
     expect(navigation.push).toHaveBeenCalledWith(`/checkout/resultado?pedido=${number}`)
   })
 

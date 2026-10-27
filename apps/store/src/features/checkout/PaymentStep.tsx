@@ -5,7 +5,7 @@ import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr/LockSimple'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CardPaymentFormHandle, CardPaymentSubmission } from '@/features/payments'
 import type { ApiMode } from '@/lib/env'
 import type { InstallmentsInput, Order } from '@galpon/api-client'
@@ -21,6 +21,7 @@ import { CHECKOUT_COPY, payLabel, payWithMpLabel, reservationNote } from './chec
 import { newIdempotencyKey } from './idempotency-key'
 import { OptionCard } from './OptionCard'
 import { saveChallengeUrl } from './order-session'
+import { isChallengeDoneMessage } from './result/mp-simulator'
 import { StepActions } from './StepActions'
 
 /** Cuotas sin tarjeta: solo para armar la consulta deshabilitada. */
@@ -151,6 +152,20 @@ export function PaymentStep({
     ...installmentsQuery(api, order?.number ?? '', bin ?? NO_BIN),
     enabled: order !== null && bin !== null,
   })
+
+  // El desafío avisa que terminó (`postMessage` del mismo origen): se va al resultado sin esperar
+  // a que toquen "Ya terminé", igual que en `/checkout/resultado`.
+  useEffect(() => {
+    if (challenge === null) return
+    const { number } = challenge
+    function onMessage(event: MessageEvent): void {
+      if (isChallengeDoneMessage(event, window.location.origin)) router.push(resultRoute(number))
+    }
+    window.addEventListener('message', onMessage)
+    return () => {
+      window.removeEventListener('message', onMessage)
+    }
+  }, [challenge, router])
 
   const choose = (next: PaymentMethod): void => {
     setMethod(next)

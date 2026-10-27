@@ -17,11 +17,26 @@ import { RESULT_COPY } from './result.copy'
 
 const COPY = RESULT_COPY.simulator
 
-/** Celeste de Mercado Pago, solo para que el simulador se reconozca como tal. */
-const MP_HEADER_STYLE: CSSProperties = { background: '#009ee3', color: '#ffffff' }
+/**
+ * Azul de Mercado Pago, solo para que el simulador se reconozca como tal. Es el tono oscuro de la
+ * marca: con el celeste (`#009ee3`) el texto blanco no llega al contraste AA (3:1 en lugar de 4,5:1).
+ */
+const MP_BLUE = '#0070b3'
 
-/** Tarjeta clara, como la página de Mercado Pago. */
-const MP_CARD_STYLE: CSSProperties = { background: '#ffffff', color: '#333333' }
+/** Encabezado azul con texto blanco (5,3:1). */
+const MP_HEADER_STYLE: CSSProperties = { background: MP_BLUE, color: '#ffffff' }
+
+/**
+ * Tarjeta clara, como la página de Mercado Pago. Los botones de la tienda toman sus colores de
+ * `--color-foreground` y `--color-accent`, pensados para el fondo oscuro: adentro de la tarjeta se
+ * redefinen para que se lean sobre blanco.
+ */
+const MP_CARD_STYLE: CSSProperties & Record<`--${string}`, string> = {
+  background: '#ffffff',
+  color: '#333333',
+  '--color-foreground': '#333333',
+  '--color-accent': MP_BLUE,
+}
 
 /** Props de {@link SimulatorPanel}. */
 interface SimulatorPanelProps {

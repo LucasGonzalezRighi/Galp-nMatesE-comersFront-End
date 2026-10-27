@@ -1,6 +1,6 @@
 # @galpon/store
 
-La tienda de Galpón Mates: Next.js (App Router) con Cache Components, Tailwind v4 y TanStack Query. Con P2 es la tienda pública, conectada a la API simulada: inicio, tienda y líneas, ficha de producto, armá tu kit, carrito, buscador, nosotros, preguntas frecuentes, contacto, arrepentimiento, términos y privacidad. El checkout y la cuenta de cliente llegan en P3.
+La tienda de Galpón Mates: Next.js (App Router) con Cache Components, Tailwind v4 y TanStack Query. Con P2 es la tienda pública, conectada a la API simulada: inicio, tienda y líneas, ficha de producto, armá tu kit, carrito, buscador, nosotros, preguntas frecuentes, contacto, arrepentimiento, términos y privacidad. Con P3 suma el checkout de tres pasos, el resultado del pago, el seguimiento del pedido de invitado (`/pedido/{numero}`) y la cuenta de cliente (`/cuenta`).
 
 ## Scripts
 
@@ -28,6 +28,49 @@ Para probarlo:
 npm run build -w @galpon/store && npm run start -w @galpon/store
 curl -s localhost:3000/api/v1/categories   # las 6 líneas, en JSON
 ```
+
+## Comprar en modo de prueba
+
+En modo de prueba se compra de punta a punta sin Mercado Pago ni backend. Agregá algo al carrito y entrá a `/checkout`: Contacto, Envío y Pago. Al elegir el medio de pago en el paso 3 se confirma el pedido (`GLP-12345`) y se reserva por 30 minutos; "Pagar" solo inicia el pago. Cada camino termina en `/checkout/resultado?pedido=GLP-…`.
+
+**Mercado Pago.** "Pagar $X con Mercado Pago" lleva al simulador `/checkout/mp-simulado` (solo existe en modo de prueba; en vivo responde 404), que muestra el pedido y el total y ofrece tres botones: **Aprobar**, **Dejar pendiente** y **Rechazar**. Cualquiera vuelve al resultado.
+
+**Tarjeta.** Los campos de la tarjeta son simulados (nada de lo que se escribe sale del navegador) y se cargan unos instantes después de elegir la tarjeta.
+
+| Campo              | Qué poner                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Número de tarjeta  | Cualquiera con el largo justo: 16 dígitos con 4 (Visa) o 5 (Mastercard), 15 con 34 o 37 (Amex) |
+| Vencimiento        | Un mes que no pasó, `MM/AA` (por ejemplo `11/30`)                                              |
+| CVC                | 3 dígitos (4 en Amex)                                                                          |
+| Documento          | DNI `12345678`                                                                                 |
+| Nombre del titular | Decide el resultado, como en el sandbox de Mercado Pago (tabla de abajo)                       |
+
+| Titular | Resultado                                                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APRO`  | Aprobado                                                                                                                                      |
+| `CONT`  | Pendiente                                                                                                                                     |
+| `OTHE`  | Rechazado ("La tarjeta no aprobó el pago."). Cualquier otro nombre también se rechaza así                                                     |
+| `FUND`  | Rechazado por fondos insuficientes                                                                                                            |
+| `SECU`  | Rechazado por el código de seguridad                                                                                                          |
+| `EXPI`  | Rechazado por la fecha de vencimiento                                                                                                         |
+| `CALL`  | Rechazado: hay que autorizarlo con el banco                                                                                                   |
+| `3DS`   | Pide la verificación 3-D Secure: el diálogo "Verificá tu compra con tu banco" abre el simulador; **Confirmar** aprueba y **Cancelar** rechaza |
+
+Las cuotas también son simuladas: hasta 3 sin interés (CFT 0,00 %) y, además, 6 y 12 con un CFT de ejemplo de 45,90 % (TEA 38,00 %).
+
+**Cuenta de cliente.** No hay una cuenta sembrada: registrate en `/cuenta/registro` con cualquier email (la cuenta vive en la memoria del servidor y se pierde al reiniciarlo). Con la sesión iniciada, el checkout completa el contacto y ofrece las direcciones guardadas, y el pedido aparece en `/cuenta/pedidos`. Para probar "¿Olvidaste tu contraseña?" no se manda ningún mail: pedí el enlace en `/cuenta/recuperar` y abrí `/cuenta/restablecer?token=RESET-OK` (cambia la contraseña de la última cuenta que lo pidió).
+
+**Rutas de control.** Para armar escenarios difíciles de provocar a mano (las usan los E2E). Solo existen en modo de prueba:
+
+```bash
+# Vence ya la reserva de un pedido pendiente (libera el stock): el resultado dice "El pedido venció".
+curl -X POST localhost:3000/api/v1/__mock/orders/GLP-10001/expire
+# Cambia el precio o el stock de un producto: si cambia antes de elegir el medio de pago, el
+# checkout responde con "Algo cambió en tu carrito" y "Confirmar de nuevo".
+curl -X POST localhost:3000/api/v1/__mock/products/prd-imperial-calabaza   -H 'Content-Type: application/json' -d '{"priceArs": 26999, "stock": 20}'
+```
+
+Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren todos estos caminos: `npm run build && npm run test:e2e`.
 
 ## Variables de entorno
 

@@ -1,6 +1,17 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  addToCart,
+  choosePayment,
+  DEFAULT_PRODUCT,
+  fillContact,
+  fillShipping,
+  payWithMpButton,
+  readStoredOrder,
+  stepForm,
+  waitForResult,
+} from '../support/checkout'
 import { gotoStore, STORE_SCREENS } from '../support/store'
 import { expect, test } from '../support/test'
 
@@ -84,6 +95,16 @@ async function saveFullPage(page: Page, name: string, label: string): Promise<vo
   await page.screenshot({ path: join(OUTPUT_DIR, `${name}-${label}.png`), fullPage: true })
 }
 
+/**
+ * Espera las fuentes y a que termine la aparición del paso (o de la pantalla), y recorre la página
+ * para que aparezca también el pie, antes de capturar.
+ */
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => document.fonts.ready)
+  await page.waitForTimeout(1200)
+  await revealAll(page)
+}
+
 /** Guarda la captura de lo que se ve en la ventana (para los paneles abiertos). */
 async function saveViewport(page: Page, name: string, label: string): Promise<void> {
   mkdirSync(OUTPUT_DIR, { recursive: true })
@@ -135,6 +156,41 @@ test.describe('tienda: control visual (capturas)', () => {
       await context.close()
     })
 
+    test(`captura el checkout en sus tres pasos y el resultado aprobado a ${viewport.label} px`, async ({
+      browser,
+      baseURL,
+    }) => {
+      test.slow()
+      const context = await openContext(browser, baseURL, viewport)
+      const page = await context.newPage()
+      await addToCart(page, DEFAULT_PRODUCT)
+      await gotoStore(page, '/checkout')
+      await expect(stepForm(page, 'Contacto')).toBeVisible()
+      await settle(page)
+      await saveFullPage(page, 'checkout-contact', viewport.label)
+
+      // Los mismos datos que `scripts/capture-design.mjs`, para comparar las capturas.
+      await fillContact(page, { email: 'lucia@ejemplo.com', firstName: 'Lucía', lastName: 'Pérez' })
+      await expect(stepForm(page, 'Envío')).toBeVisible()
+      await settle(page)
+      await saveFullPage(page, 'checkout-shipping', viewport.label)
+
+      await fillShipping(page, 'Envío a domicilio')
+      await choosePayment(page, 'Mercado Pago')
+      await expect(payWithMpButton(page)).toBeVisible()
+      await settle(page)
+      await saveFullPage(page, 'checkout-payment', viewport.label)
+
+      const { number } = await readStoredOrder(page)
+      await payWithMpButton(page).click()
+      await page.getByRole('button', { name: 'Aprobar' }).click()
+      await waitForResult(page, number)
+      await expect(page.getByRole('heading', { level: 1, name: /^¡Gracias/ })).toBeVisible()
+      await settle(page)
+      await saveFullPage(page, 'checkout-result', viewport.label)
+      await context.close()
+    })
+
     test(`captura el buscador vacío y con resultados a ${viewport.label} px`, async ({
       browser,
       baseURL,
@@ -165,7 +221,11 @@ test.describe('tienda: control visual (capturas)', () => {
     const context = await openContext(browser, baseURL, { width: 390, height: 844 })
     const page = await context.newPage()
     await gotoStore(page, '/')
-    await page.getByRole('button', { name: 'Menú', exact: true }).click()
+    const menu = page.getByRole('button', { name: 'Menú', exact: true })
+    // El botón entra entero en la ventana (con el acceso a la cuenta de P3 se salía por la derecha).
+    const box = await menu.boundingBox()
+    expect(box === null ? Infinity : box.x + box.width).toBeLessThanOrEqual(390)
+    await menu.click()
     await expect(page.getByRole('dialog', { name: 'Menú' })).toBeVisible()
     await page.waitForTimeout(900)
     await saveViewport(page, 'menu', '390')

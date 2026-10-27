@@ -78,7 +78,9 @@ export function Header(): ReactNode {
         >
           <div className="absolute inset-x-0 bottom-0 h-px" style={GLASS_LINE} />
         </div>
-        <div className="relative mx-auto grid h-16 max-w-[1280px] grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-5 px-[clamp(20px,5vw,64px)]">
+        {/* Por debajo de 1040 px la navegación está oculta: sin los huecos de su columna y con
+            menos aire entre los íconos, la fila entra en 390 px junto con el acceso a la cuenta. */}
+        <div className="relative mx-auto grid h-16 max-w-[1280px] grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center px-[clamp(20px,5vw,64px)] min-[1040px]:gap-5">
           <Link
             href={asRoute('/')}
             aria-label={LAYOUT_COPY.homeLink}
@@ -94,7 +96,7 @@ export function Header(): ReactNode {
               <NavLinks />
             </Suspense>
           </nav>
-          <div className="col-start-3 flex items-center gap-[6px] justify-self-end">
+          <div className="col-start-3 flex items-center gap-1 justify-self-end min-[1040px]:gap-[6px]">
             <IconButton aria-label={LAYOUT_COPY.search} aria-haspopup="dialog" onClick={openSearch}>
               <MagnifyingGlassIcon size={19} aria-hidden="true" />
             </IconButton>

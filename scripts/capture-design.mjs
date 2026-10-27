@@ -6,7 +6,8 @@
  * Abre el bundle original del diseño por `file://` con Chromium (Playwright), recorre cada pantalla,
  * dispara las apariciones con scroll y guarda PNG en `docs/design/galpon-tienda-v3/screens/`:
  * página completa a 1440 × 900 y a 390 × 844 (`<pantalla>-<1440|390>.png`), el inicio por escena
- * (`home-scene-<0..6>-1440.png`) y los paneles abiertos (carrito, búsqueda y menú móvil).
+ * (`home-scene-<0..6>-1440.png`), los paneles abiertos (carrito, búsqueda y menú móvil) y el
+ * checkout en sus tres pasos más la pantalla de gracias (`checkout-<paso>-<1440|390>.png`).
  *
  * Uso: `npm run design:capture` (todo) o `npm run design:capture -- cart home-scene` (solo las
  * capturas cuyo nombre contenga alguno de esos textos). No corre en CI.
@@ -54,6 +55,18 @@ const HOME_SCENES = [0, 1, 2, 3, 4, 5, 6]
 
 /** Texto de la búsqueda de ejemplo. */
 const SEARCH_QUERY = 'mate'
+
+/** Datos del checkout de ejemplo: los mismos nombres que usa `e2e/store/visual.spec.ts`. */
+const CHECKOUT_DATA = {
+  email: 'lucia@ejemplo.com',
+  firstName: 'Lucía',
+  lastName: 'Pérez',
+  street: 'Av. Corrientes',
+  number: '1234',
+  postalCode: '1414',
+  city: 'Buenos Aires',
+  province: 'CABA',
+}
 
 /** Nombres pedidos por línea de comandos para capturar solo algunos archivos. */
 const FILTERS = process.argv.slice(2)
@@ -348,6 +361,82 @@ async function captureCart(browser, viewport) {
 }
 
 /**
+ * Control de un campo del checkout del diseño por el texto de su `<label>` (el diseño no asocia
+ * la etiqueta con `for`, así que no sirve `getByLabel`).
+ *
+ * @param {import('@playwright/test').Page} page - Página del diseño.
+ * @param {string} label - Texto exacto de la etiqueta.
+ * @returns {import('@playwright/test').Locator} El `input` o `select` del campo.
+ */
+function designField(page, label) {
+  return page
+    .locator('main .field')
+    .filter({ has: page.locator('label', { hasText: new RegExp(`^${label}$`) }) })
+    .locator('input, select')
+    .first()
+}
+
+/**
+ * Captura el paso del checkout que se ve, en página completa.
+ *
+ * @param {import('@playwright/test').Page} page - Página del diseño.
+ * @param {(typeof VIEWPORTS)[number]} viewport - Tamaño de la ventana.
+ * @param {string} name - Nombre base del archivo.
+ */
+async function captureCheckoutStep(page, viewport, name) {
+  await page.waitForTimeout(1200)
+  await settleAnimations(page)
+  await revealAll(page, viewport.height)
+  await prepareFullPage(page)
+  await save(page, `${name}-${viewport.label}`, true)
+}
+
+/**
+ * Captura el checkout con un producto (Mate Imperial de Calabaza, el mismo que usa la tienda):
+ * Contacto, Envío (a domicilio) y Pago (Mercado Pago, la opción elegida de entrada) vacíos al
+ * llegar, y la pantalla de gracias después de pagar.
+ *
+ * @param {import('@playwright/test').Browser} browser - Navegador compartido.
+ * @param {(typeof VIEWPORTS)[number]} viewport - Tamaño de la ventana.
+ */
+async function captureCheckout(browser, viewport) {
+  const { page, close } = await openDesign(browser, viewport, '#/producto/imperial-calabaza')
+  try {
+    await page.getByRole('button', { name: 'Agregar al carrito' }).first().click()
+    await page.waitForTimeout(1200)
+    await page.evaluate(() => {
+      window.location.hash = '#/checkout'
+    })
+    await page.waitForTimeout(1500)
+    await captureCheckoutStep(page, viewport, 'checkout-contact')
+
+    await designField(page, 'Email').fill(CHECKOUT_DATA.email)
+    await designField(page, 'Nombre').fill(CHECKOUT_DATA.firstName)
+    await designField(page, 'Apellido').fill(CHECKOUT_DATA.lastName)
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    await captureCheckoutStep(page, viewport, 'checkout-shipping')
+
+    await designField(page, 'Calle').fill(CHECKOUT_DATA.street)
+    await designField(page, 'Número').fill(CHECKOUT_DATA.number)
+    await designField(page, 'Código postal').fill(CHECKOUT_DATA.postalCode)
+    await designField(page, 'Ciudad').fill(CHECKOUT_DATA.city)
+    await designField(page, 'Provincia').selectOption(CHECKOUT_DATA.province)
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    await captureCheckoutStep(page, viewport, 'checkout-payment')
+
+    // El diseño simula el pago: unos 2,2 s después muestra la pantalla de gracias.
+    await page.getByRole('button', { name: /^Pagar / }).click()
+    await page
+      .getByText(/Gracias/)
+      .first()
+      .waitFor({ state: 'visible', timeout: 10000 })
+    await captureCheckoutStep(page, viewport, 'checkout-result')
+  } finally {
+    await close()
+  }
+}
+
+/**
  * Corre todas las capturas pedidas.
  */
 async function main() {
@@ -363,6 +452,7 @@ async function main() {
       if (wanted('search')) await captureSearch(browser, viewport)
       if (viewport.label === '390' && wanted('menu')) await captureMenu(browser, viewport)
       if (wanted('cart')) await captureCart(browser, viewport)
+      if (wanted('checkout')) await captureCheckout(browser, viewport)
     }
   } finally {
     await browser.close()
