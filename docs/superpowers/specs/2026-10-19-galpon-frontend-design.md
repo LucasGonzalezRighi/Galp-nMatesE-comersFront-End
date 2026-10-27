@@ -578,13 +578,16 @@ Título "Finalizá tu compra". Barra de pasos 01 Contacto · 02 Envío · 03 Pag
 ### 14.2 Flujo
 
 ```
-"Pagar"
+Paso 3: el cliente elige el medio de pago (Mercado Pago o tarjeta)
   │
   ▼
 POST /orders { …, expectedTotalArs }  (Idempotency-Key)
   │   el back valida, recalcula precios/stock/kit/envío, reserva stock 30 min
   │   ├─ 409 stock/price/total_changed → se muestra qué cambió, se actualiza el resumen, se confirma de nuevo (sin cobrar)
   │   └─ 201 { order, orderToken } → sessionStorage { number, orderToken, cartHash }
+  │
+  ▼
+"Pagar"  (solo crea la preferencia de MP, o el token de la tarjeta y el pago)
   │
   ├── Mercado Pago ─► POST …/preference ─► redirección a initPoint ─► el cliente paga en MP
   │                                                  └─► vuelve a /checkout/resultado?pedido=GLP-12345
@@ -593,6 +596,8 @@ POST /orders { …, expectedTotalArs }  (Idempotency-Key)
                                                                          └─► challenge.url → 3-D Secure (14.4)
                                                                                 └─► /checkout/resultado
 ```
+
+- **El pedido se crea al elegir el medio de pago, no al tocar "Pagar"** (Ruling P3-5): las cuotas necesitan el total confirmado por el back y el número del pedido, y así la reserva de 30 minutos cubre tanto Mercado Pago como la tarjeta. Mientras `cartHash` y los datos de los pasos 1 y 2 no cambien se reutiliza el pedido; si cambian, se crea uno nuevo con otra `Idempotency-Key`.
 
 - **El pedido solo pasa a pagado cuando el back lo confirma con la notificación de Mercado Pago.** Los parámetros de la redirección no prueban nada.
 - El token del pedido viaja en la cabecera `X-Order-Token`, nunca en la URL; la URL de regreso lleva solo el número.
@@ -607,8 +612,8 @@ POST /orders { …, expectedTotalArs }  (Idempotency-Key)
 | `pending` | "Estamos esperando la confirmación del pago" (consulta cada 5 s); a los 2 min: "Te avisamos por mail apenas se acredite" + número de pedido |
 | `action_required` | Retoma la verificación 3-D Secure (con la dirección del desafío que el checkout dejó en `sessionStorage` de la pestaña, porque `Order.payment` no la trae; sin ella ofrece "Pagar de nuevo") |
 | `rejected` | Motivo legible en español (según `statusDetail`) + "Probar con otro medio" |
-| `none` | "No completaste el pago" + "Pagar" |
-| `cancelled` / pedido `expired` | "El pedido venció" + "Volver al carrito" |
+| `none` / `cancelled` (pedido pendiente) | "No completaste el pago" + "Pagar" (vuelve al paso 3 reutilizando el pedido, que sigue reservado) |
+| pedido `expired` (`status: expired`, con cualquier `paymentStatus`) | "El pedido venció" + "Volver al carrito" (Ruling P3-6: solo con `status: expired`) |
 | sin token o inválido | "No encontramos ese pedido" (sin revelar si existe) |
 
 ### 14.3 Estados de pago (normalizados en el contrato)

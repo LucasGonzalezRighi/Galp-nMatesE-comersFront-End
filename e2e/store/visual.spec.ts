@@ -217,6 +217,30 @@ test.describe('tienda: control visual (capturas)', () => {
     })
   }
 
+  // Reflow (WCAG 1.4.10): la hamburguesa es la única entrada a la navegación del celular, así que
+  // tiene que quedar entera dentro de la ventana, sin desborde horizontal, desde 320 px.
+  for (const width of [320, 360, 375, 390]) {
+    test(`el botón Menú entra entero en la ventana a ${String(width)} px`, async ({
+      browser,
+      baseURL,
+    }) => {
+      const context = await openContext(browser, baseURL, { width, height: 844 })
+      const page = await context.newPage()
+      await gotoStore(page, '/')
+      const menu = await page.getByRole('button', { name: 'Menú', exact: true }).boundingBox()
+      const cart = await page.getByRole('button', { name: /^Abrir carrito/ }).boundingBox()
+      if (menu === null || cart === null) throw new Error('Faltan el botón Menú o el del carrito.')
+      expect(menu.x + menu.width).toBeLessThanOrEqual(width)
+      // El carrito queda entero y a la izquierda del menú.
+      expect(cart.x + cart.width).toBeLessThanOrEqual(menu.x)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      )
+      expect(overflow).toBeLessThanOrEqual(0)
+      await context.close()
+    })
+  }
+
   test('captura el menú abierto del celular a 390 px', async ({ browser, baseURL }) => {
     const context = await openContext(browser, baseURL, { width: 390, height: 844 })
     const page = await context.newPage()

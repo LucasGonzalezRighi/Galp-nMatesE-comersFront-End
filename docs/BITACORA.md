@@ -109,13 +109,13 @@ Todo el 2026-10-26: plan a las 19:06 y rama desde `1ef9630`. Cuatro olas con el 
 ### Lecciones: qué haríamos distinto
 
 1. **Los E2E contra la API simulada encontraron lo que las pruebas de componentes no veían**: un "Confirmar de nuevo" que aparecía antes de que el carrito se pusiera al día (y volvía a chocar con el mismo `409`), el diálogo de 3-D Secure que no se cerraba solo y el contraste del simulador. Conviene escribir los E2E de un flujo junto con el flujo, no al final.
-2. **La emulación del celular esconde desbordes.** Con el acceso a la cuenta, el botón "Menú" quedó fuera de la pantalla a 390 px y los E2E del Pixel 7 no lo vieron (Playwright toca la parte visible). Lo delataron la captura del menú a 390 px y la comparación visual, y se arregló en la Task 8; ahora una prueba verifica que el botón entra entero en la ventana.
+2. **La emulación del celular esconde desbordes.** Con el acceso a la cuenta, el botón "Menú" quedó fuera de la pantalla a 390 px y los E2E del Pixel 7 no lo vieron (Playwright toca la parte visible). Lo delataron la captura del menú a 390 px y la comparación visual, y se arregló en la Task 8; ahora una prueba verifica que el botón entra entero en la ventana, y desde el fix de la ola también a 375, 360 y 320 px (por debajo de 410 px el carrito queda solo con el ícono y el contador).
 3. **Una base simulada compartida entre pruebas paralelas pide aislamiento explícito**: stock de sobra antes de cada compra y un producto propio por proyecto cuando la prueba cambia precios.
 4. **El límite de uso sigue cortando olas enteras.** Relanzar con los mismos argumentos funcionó porque el árbol quedó limpio; los commits por paso siguen siendo la mejor defensa.
 
 ### Pendientes que quedaron anotados
 
-- Los desvíos abiertos de [`CHECKLIST-P3.md`](design/galpon-tienda-v3/CHECKLIST-P3.md): el botón "Menú" que todavía se corta por debajo de 386 px (viene de P2 y pide una decisión de diseño), la fila del envío del resumen, la línea "Pago procesado por Mercado Pago" y el número de pedido en negrita.
+- Los desvíos abiertos de [`CHECKLIST-P3.md`](design/galpon-tienda-v3/CHECKLIST-P3.md): la fila del envío del resumen, la línea "Pago procesado por Mercado Pago" y el número de pedido en negrita.
 - Detalles menores juntados para la revisión final de P3: "Conectando…" que queda al volver con Atrás (bfcache), `Idempotency-Key` que solo se reutiliza ante errores de red, `clearCart()` del resultado sin comparar el `cartHash`, `cancelPayment` dos veces en "Probar con otro medio", el iframe del desafío con el layout completo y el aviso de `Math.random()` en el log de `/cuenta`.
 - **Con el back**: aceptar `expectedUnitPriceArs`, sumar `challenge` a `OrderPayment` si se quiere retomar el 3-D Secure desde otra pestaña, y probar a mano Mercado Pago con credenciales de prueba.
 
