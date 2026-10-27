@@ -186,6 +186,25 @@ export class QueryReader {
   }
 
   /**
+   * Lee un parámetro que se puede repetir (`?status=paid&status=preparing`), con valores de una
+   * lista cerrada.
+   *
+   * @param name - Nombre del parámetro.
+   * @param label - Cómo se llama en los mensajes ("El estado").
+   * @param values - Valores permitidos.
+   * @returns Los valores pedidos, sin vacíos ni repetidos y en el orden de `values`; vacío si no
+   *   vino ninguno o alguno no sirve (en ese caso anota el error).
+   */
+  manyOf<T extends string>(name: string, label: string, values: readonly T[]): T[] {
+    const raw = this.query.getAll(name).filter((value) => value !== '')
+    if (raw.some((value) => !values.some((allowed) => allowed === value))) {
+      this.fail(name, 'invalid_value', `${label} tiene que ser ${values.join(', ')}.`)
+      return []
+    }
+    return values.filter((value) => raw.includes(value))
+  }
+
+  /**
    * Lee un booleano escrito como `true` o `false`.
    *
    * @param name - Nombre del parámetro.

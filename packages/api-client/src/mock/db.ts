@@ -5,17 +5,32 @@ import {
   FIXTURE_PRODUCTS,
   FIXTURE_REVIEWS,
   FIXTURE_SETTINGS,
+  seedAdminDemo,
 } from './fixtures'
 
 /** Versión actual del formato de la base simulada. */
 export const MOCK_DB_VERSION = 3
 
-/** Cuenta del administrador con la que se siembra la base simulada. */
+/** Datos de demostración que se pueden sembrar: hoy solo los del admin. */
+export type MockDemo = 'admin'
+
+/** Valores válidos de {@link MockDemo}, para revisar lo que llega sin tipos. */
+const MOCK_DEMOS: readonly string[] = ['admin']
+
+/** Cuenta del administrador con la que se siembra la base simulada y datos de demostración. */
 export interface MockDbOptions {
   /** Email de inicio de sesión del administrador. */
   adminEmail: string
   /** Contraseña de prueba del administrador. */
   adminPassword: string
+  /**
+   * Con `'admin'` siembra los datos de demostración del dashboard (`FIXTURE_ADMIN_DEMO`: 12
+   * pedidos, 8 mensajes y 5 reseñas a moderar). Sin él la base no trae pedidos ni mensajes, como
+   * la de la tienda.
+   */
+  demo?: MockDemo
+  /** Momento de referencia de las fechas de la demostración; por omisión, el de la llamada. */
+  now?: Date
 }
 
 /** Cuenta de fábrica del modo de prueba: la misma que usan por defecto la tienda y el admin. */
@@ -40,10 +55,13 @@ function globalHolder(): typeof globalThis & GlobalMockDbHolder {
  *
  * Modificarla no cambia los fixtures ni otras bases.
  *
- * @param options - Cuenta del administrador con la que se siembra.
- * @returns La base, sin sesiones abiertas y sin pedidos, mensajes, clientes ni fotos subidas.
- *   Cada producto sale con `updatedAt` igual a `createdAt`.
- * @throws {RangeError} Si el email o la contraseña del administrador están vacíos.
+ * @param options - Cuenta del administrador con la que se siembra y, si hace falta, los datos de
+ *   demostración (`demo`) con su fecha de referencia (`now`).
+ * @returns La base, sin sesiones abiertas, clientes ni fotos subidas. Sin `demo` tampoco tiene
+ *   pedidos ni mensajes; con `demo: 'admin'` trae los de la demostración, con fechas relativas a
+ *   `now`. Cada producto sale con `updatedAt` igual a `createdAt`.
+ * @throws {RangeError} Si el email o la contraseña del administrador están vacíos, si `demo` no es
+ *   `'admin'` o si `now` no es una fecha válida.
  */
 export function createMockDb(options: MockDbOptions): MockDb {
   if (options.adminEmail.trim() === '') {
@@ -52,7 +70,12 @@ export function createMockDb(options: MockDbOptions): MockDb {
   if (options.adminPassword === '') {
     throw new RangeError('La contraseña del administrador no puede estar vacía.')
   }
-  return {
+  if (options.demo !== undefined && !MOCK_DEMOS.includes(options.demo)) {
+    throw new RangeError(
+      `Los datos de demostración tienen que ser "admin"; se recibió ${JSON.stringify(options.demo)}.`,
+    )
+  }
+  const db: MockDb = {
     version: MOCK_DB_VERSION,
     categories: structuredClone([...FIXTURE_CATEGORIES]),
     products: structuredClone([...FIXTURE_PRODUCTS]),
@@ -67,6 +90,8 @@ export function createMockDb(options: MockDbOptions): MockDb {
     customerSessions: [],
     media: {},
   }
+  if (options.demo === 'admin') seedAdminDemo(db, options.now ?? new Date())
+  return db
 }
 
 /**

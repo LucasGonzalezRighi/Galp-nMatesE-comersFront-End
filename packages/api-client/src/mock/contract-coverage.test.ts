@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { IMPLEMENTED_ROUTES } from './handlers'
-import { PENDING_OPERATIONS } from './pending'
+import { BACKEND_ONLY_OPERATIONS, PENDING_OPERATIONS } from './pending'
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const
 
@@ -23,21 +23,24 @@ describe('cobertura del contrato', () => {
   const contract = contractOperations()
   const implemented = IMPLEMENTED_ROUTES.map(key)
   const pending = PENDING_OPERATIONS.map(key)
+  const backendOnly = BACKEND_ONLY_OPERATIONS.map(key)
+  const all = [...implemented, ...pending, ...backendOnly]
 
-  it('cada operación del contrato está implementada o pendiente', () => {
-    expect(new Set([...implemented, ...pending])).toEqual(new Set(contract))
+  it('cada operación del contrato está implementada, pendiente o es solo del back', () => {
+    expect(new Set(all)).toEqual(new Set(contract))
   })
 
-  it('no repite operaciones ni mezcla implementadas con pendientes', () => {
-    expect(new Set(implemented).size).toBe(implemented.length)
-    expect(new Set(pending).size).toBe(pending.length)
-    expect(implemented.filter((operation) => pending.includes(operation))).toEqual([])
+  it('no repite operaciones ni las pone en dos listas', () => {
+    expect(new Set(all).size).toBe(all.length)
   })
 
   it('no tiene rutas que no estén en el contrato', () => {
-    expect(
-      [...implemented, ...pending].filter((operation) => !contract.includes(operation)),
-    ).toEqual([])
+    expect(all.filter((operation) => !contract.includes(operation))).toEqual([])
+  })
+
+  it('no quedan operaciones pendientes y el aviso de Mercado Pago lo atiende solo el back', () => {
+    expect(pending).toEqual([])
+    expect(backendOnly).toEqual(['POST /webhooks/mercadopago'])
   })
 
   it('atiende los formularios públicos de P2', () => {
@@ -90,10 +93,23 @@ describe('cobertura del contrato', () => {
     }
   })
 
-  it('reparte las pendientes según el plan', () => {
-    const planOf = (operation: string) =>
-      PENDING_OPERATIONS.find((pendingOperation) => key(pendingOperation) === operation)?.plan
-    expect(planOf('POST /webhooks/mercadopago')).toBe('P3')
-    expect(planOf('GET /admin/orders')).toBe('P4')
+  it('atiende los pedidos, el resumen, el contenido, los ajustes y la moderación de P4', () => {
+    for (const operation of [
+      'GET /admin/dashboard/summary',
+      'GET /admin/orders',
+      'GET /admin/orders/{number}',
+      'POST /admin/orders/{number}/status',
+      'GET /admin/content/home',
+      'PUT /admin/content/about',
+      'PUT /admin/content/legal/{document}',
+      'GET /admin/settings',
+      'PUT /admin/settings',
+      'GET /admin/reviews',
+      'PATCH /admin/reviews/{id}',
+      'GET /admin/messages',
+      'PATCH /admin/messages/{id}',
+    ]) {
+      expect(implemented).toContain(operation)
+    }
   })
 })

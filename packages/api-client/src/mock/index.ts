@@ -17,7 +17,7 @@ export type {
 } from './handlers/mock-controls'
 export type { HttpMethod } from './http'
 export type { MockFetchOptions } from './mock-fetch'
-export type { MockPlan, PendingOperation } from './pending'
+export type { PendingOperation } from './pending'
 export type { MockContext, MockRoute } from './router'
 export type { PersistentMockDb, PersistentMockDbOptions, StorageLike } from './storage'
 export type {
@@ -42,8 +42,10 @@ export {
   DEFAULT_MOCK_DB_OPTIONS,
   getGlobalMockDb,
   type MockDbOptions,
+  type MockDemo,
   resetGlobalMockDb,
 } from './db'
+export { FIXTURE_ADMIN_DEMO } from './fixtures'
 export { IMPLEMENTED_ROUTES } from './handlers'
 export {
   MAX_MOCK_MEDIA,
@@ -64,5 +66,5 @@ export {
   MOCK_PRODUCT_PATH,
 } from './handlers/mock-controls'
 export { createMockFetch } from './mock-fetch'
-export { PENDING_OPERATIONS } from './pending'
+export { BACKEND_ONLY_OPERATIONS, PENDING_OPERATIONS } from './pending'
 export { createPersistentMockDb, safeSessionStorage } from './storage'

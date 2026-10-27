@@ -94,26 +94,18 @@ describe('respuestas genéricas del router', () => {
     expect(await response.json()).toMatchObject({ type: 'method_not_allowed', status: 405 })
   })
 
-  it('responde 501 con el plan en que llega una operación pendiente', async () => {
-    const mock = createMockApi()
-    const cases = [
-      { path: '/webhooks/mercadopago', method: 'POST', plan: 'P3' },
-      { path: '/admin/orders', method: 'GET', plan: 'P4' },
-    ]
-    for (const { path, method, plan } of cases) {
-      const response = await rawRequest(
-        mock,
-        path,
-        method === 'GET' ? { method } : { method, body: '{}' },
-      )
-      expect(response.status).toBe(501)
-      expect(response.headers.get('Content-Type')).toBe('application/problem+json')
-      expect(await response.json()).toEqual({
-        type: 'not_implemented',
-        title: 'No implementado en el modo de prueba',
-        status: 501,
-        detail: `Llega en ${plan}`,
-      })
-    }
+  it('responde 501 a una operación que atiende solo el back', async () => {
+    const response = await rawRequest(createMockApi(), '/webhooks/mercadopago', {
+      method: 'POST',
+      body: '{}',
+    })
+    expect(response.status).toBe(501)
+    expect(response.headers.get('Content-Type')).toBe('application/problem+json')
+    expect(await response.json()).toEqual({
+      type: 'not_implemented',
+      title: 'No implementado en el modo de prueba',
+      status: 501,
+      detail: 'Lo atiende solo el back',
+    })
   })
 })

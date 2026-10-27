@@ -124,12 +124,15 @@ function readSavedDb(storage: StorageLike, key: string): MockDb | null {
  * Crea la base simulada con persistencia opcional en un almacenamiento (en general `sessionStorage`).
  *
  * Si hay una base guardada con la misma versión, se usa tal cual (con la cuenta de administrador
- * que tenía); si no, o si está rota o es de otra versión, se siembra de nuevo con los fixtures.
+ * que tenía); si no, o si está rota o es de otra versión, se siembra de nuevo con los fixtures y,
+ * con `demo: 'admin'`, con los datos de demostración (también al reiniciar).
  * Nunca falla por culpa del almacenamiento y no escribe en la consola: avisa con `isPersistent`.
  *
- * @param options - Cuenta del administrador para sembrar, almacenamiento y clave.
+ * @param options - Cuenta del administrador y datos de demostración para sembrar, almacenamiento y
+ *   clave.
  * @returns La base, si se guarda, y las operaciones para guardarla y reiniciarla.
- * @throws {RangeError} Si la clave está vacía o la cuenta del administrador es inválida.
+ * @throws {RangeError} Si la clave está vacía, la cuenta del administrador es inválida o `demo` o
+ *   `now` no sirven.
  */
 export function createPersistentMockDb(options: PersistentMockDbOptions): PersistentMockDb {
   const { storage, key } = options
@@ -139,6 +142,8 @@ export function createPersistentMockDb(options: PersistentMockDbOptions): Persis
   const dbOptions: MockDbOptions = {
     adminEmail: options.adminEmail,
     adminPassword: options.adminPassword,
+    ...(options.demo === undefined ? {} : { demo: options.demo }),
+    ...(options.now === undefined ? {} : { now: options.now }),
   }
 
   let persistent = storage !== null

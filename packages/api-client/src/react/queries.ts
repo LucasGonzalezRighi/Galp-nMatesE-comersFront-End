@@ -1,18 +1,41 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { ApiClient } from '../client'
 import type { CartQuoteInput, InstallmentsInput } from '../generated/schema'
-import type { AdminProductQuery } from '../services'
+import type {
+  AdminContentByPage,
+  AdminContentPage,
+  AdminMessageQuery,
+  AdminOrderQuery,
+  AdminProductQuery,
+  AdminReviewQuery,
+  LegalDocument,
+} from '../services'
 import { isApiError } from '../errors'
 import {
+  ADMIN_CONTENT_PAGES,
+  getAdminAboutContent,
   getAdminCsrfToken,
+  getAdminFaqContent,
+  getAdminFooterContent,
+  getAdminHomeContent,
+  getAdminLegalContent,
+  getAdminOrder,
+  getAdminProduct,
+  getAdminProductTabsContent,
   getAdminSession,
+  getAdminSettings,
+  getDashboardSummary,
   getCustomerCsrfToken,
   getInstallments,
   getMe,
   getMyOrder,
   getOrder,
   getPublicSettings,
+  listAdminCategories,
+  listAdminMessages,
+  listAdminOrders,
   listAdminProducts,
+  listAdminReviews,
   listMyAddresses,
   listMyOrders,
   quoteCart,
@@ -87,6 +110,161 @@ export function adminProductsQuery(api: ApiClient, query: AdminProductQuery) {
   return queryOptions({
     queryKey: queryKeys.adminProducts(query),
     queryFn: () => listAdminProducts(api, query),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta del resumen del inicio del dashboard (cifras, poco stock y alertas de pago).
+ *
+ * @param api - Cliente de la API.
+ */
+export function adminDashboardQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.adminDashboard(),
+    queryFn: () => getDashboardSummary(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de un producto del dashboard, en cualquier estado.
+ *
+ * @param api - Cliente de la API.
+ * @param id - Identificador del producto (`prd-…`).
+ */
+export function adminProductQuery(api: ApiClient, id: string) {
+  return queryOptions({
+    queryKey: queryKeys.adminProduct(id),
+    queryFn: () => getAdminProduct(api, id),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de las líneas de producto del dashboard, con la cantidad de productos de cada una.
+ *
+ * @param api - Cliente de la API.
+ */
+export function adminCategoriesQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.adminCategories(),
+    queryFn: () => listAdminCategories(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de una página del listado de pedidos del dashboard.
+ *
+ * @param api - Cliente de la API.
+ * @param query - Estados, estado del pago, texto y página.
+ */
+export function adminOrdersQuery(api: ApiClient, query: AdminOrderQuery) {
+  return queryOptions({
+    queryKey: queryKeys.adminOrders(query),
+    queryFn: () => listAdminOrders(api, query),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de un pedido del dashboard.
+ *
+ * @param api - Cliente de la API.
+ * @param number - Número del pedido.
+ */
+export function adminOrderQuery(api: ApiClient, number: string) {
+  return queryOptions({
+    queryKey: queryKeys.adminOrder(number),
+    queryFn: () => getAdminOrder(api, number),
+    retry: shouldRetryQuery,
+  })
+}
+
+/** Servicio que trae cada página de contenido. */
+const ADMIN_CONTENT_FETCHERS: {
+  [P in AdminContentPage]: (api: ApiClient) => Promise<AdminContentByPage[P]>
+} = {
+  home: getAdminHomeContent,
+  about: getAdminAboutContent,
+  faq: getAdminFaqContent,
+  footer: getAdminFooterContent,
+  'product-tabs': getAdminProductTabsContent,
+}
+
+/**
+ * Consulta de una página de contenido del dashboard; los datos tienen el tipo de esa página.
+ *
+ * @param api - Cliente de la API.
+ * @param page - `home`, `about`, `faq`, `footer` o `product-tabs`.
+ * @throws {RangeError} Si la página no es ninguna de esas.
+ */
+export function adminContentQuery<P extends AdminContentPage>(api: ApiClient, page: P) {
+  if (!(ADMIN_CONTENT_PAGES as readonly string[]).includes(page)) {
+    throw new RangeError(
+      `La página de contenido tiene que ser ${ADMIN_CONTENT_PAGES.join(', ')}, y recibió ${JSON.stringify(page)}`,
+    )
+  }
+  const fetchPage: (api: ApiClient) => Promise<AdminContentByPage[P]> = ADMIN_CONTENT_FETCHERS[page]
+  return queryOptions({
+    queryKey: queryKeys.adminContent(page),
+    queryFn: () => fetchPage(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de un documento legal para editarlo.
+ *
+ * @param api - Cliente de la API.
+ * @param document - `terms` o `privacy`.
+ */
+export function adminLegalContentQuery(api: ApiClient, document: LegalDocument) {
+  return queryOptions({
+    queryKey: queryKeys.adminLegalContent(document),
+    queryFn: () => getAdminLegalContent(api, document),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de los ajustes del dashboard.
+ *
+ * @param api - Cliente de la API.
+ */
+export function adminSettingsQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.adminSettings(),
+    queryFn: () => getAdminSettings(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de una página de reseñas del dashboard.
+ *
+ * @param api - Cliente de la API.
+ * @param query - Estado y página.
+ */
+export function adminReviewsQuery(api: ApiClient, query: AdminReviewQuery) {
+  return queryOptions({
+    queryKey: queryKeys.adminReviews(query),
+    queryFn: () => listAdminReviews(api, query),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de una página de la bandeja de mensajes.
+ *
+ * @param api - Cliente de la API.
+ * @param query - Tipo, leído y página.
+ */
+export function adminMessagesQuery(api: ApiClient, query: AdminMessageQuery) {
+  return queryOptions({
+    queryKey: queryKeys.adminMessages(query),
+    queryFn: () => listAdminMessages(api, query),
     retry: shouldRetryQuery,
   })
 }

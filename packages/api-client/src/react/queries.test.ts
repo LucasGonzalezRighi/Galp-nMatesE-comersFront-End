@@ -10,9 +10,19 @@ import { ApiError } from '../errors'
 import { createFakeFetch, jsonResponse } from '../test/fake-fetch'
 import { ApiClientProvider, useApiClient } from './ApiClientProvider'
 import {
+  adminCategoriesQuery,
+  adminContentQuery,
   adminCsrfQuery,
+  adminDashboardQuery,
+  adminLegalContentQuery,
+  adminMessagesQuery,
+  adminOrderQuery,
+  adminOrdersQuery,
+  adminProductQuery,
   adminProductsQuery,
+  adminReviewsQuery,
   adminSessionQuery,
+  adminSettingsQuery,
   cartQuoteQuery,
   customerCsrfQuery,
   installmentsQuery,
@@ -178,6 +188,126 @@ describe('consultas de checkout y cuenta', () => {
     expect(queryKeys.cartQuotes()).toEqual(['cart', 'quote'])
     const quote = queryKeys.cartQuote({ items: [] })
     expect(quote.slice(0, queryKeys.cartQuotes().length)).toEqual(queryKeys.cartQuotes())
+  })
+})
+
+describe('consultas del admin', () => {
+  const number = 'GLP-09001'
+  const orders = { status: ['paid', 'preparing'] as ('paid' | 'preparing')[], page: 2 }
+
+  it.each<[string, (client: QueryClient, api: ApiClient) => Promise<unknown>, string, unknown[]]>([
+    [
+      'adminDashboardQuery',
+      (client, api) => client.query(adminDashboardQuery(api)),
+      '/admin/dashboard/summary',
+      [...queryKeys.adminDashboard()],
+    ],
+    [
+      'adminProductQuery',
+      (client, api) => client.query(adminProductQuery(api, 'prd-galleta')),
+      '/admin/products/prd-galleta',
+      [...queryKeys.adminProduct('prd-galleta')],
+    ],
+    [
+      'adminCategoriesQuery',
+      (client, api) => client.query(adminCategoriesQuery(api)),
+      '/admin/categories',
+      [...queryKeys.adminCategories()],
+    ],
+    [
+      'adminOrdersQuery',
+      (client, api) => client.query(adminOrdersQuery(api, orders)),
+      '/admin/orders',
+      [...queryKeys.adminOrders(orders)],
+    ],
+    [
+      'adminOrderQuery',
+      (client, api) => client.query(adminOrderQuery(api, number)),
+      `/admin/orders/${number}`,
+      [...queryKeys.adminOrder(number)],
+    ],
+    [
+      'adminContentQuery',
+      (client, api) => client.query(adminContentQuery(api, 'product-tabs')),
+      '/admin/content/product-tabs',
+      [...queryKeys.adminContent('product-tabs')],
+    ],
+    [
+      'adminLegalContentQuery',
+      (client, api) => client.query(adminLegalContentQuery(api, 'privacy')),
+      '/admin/content/legal/privacy',
+      [...queryKeys.adminLegalContent('privacy')],
+    ],
+    [
+      'adminSettingsQuery',
+      (client, api) => client.query(adminSettingsQuery(api)),
+      '/admin/settings',
+      [...queryKeys.adminSettings()],
+    ],
+    [
+      'adminReviewsQuery',
+      (client, api) => client.query(adminReviewsQuery(api, { status: 'pending' })),
+      '/admin/reviews',
+      [...queryKeys.adminReviews({ status: 'pending' })],
+    ],
+    [
+      'adminMessagesQuery',
+      (client, api) => client.query(adminMessagesQuery(api, { read: false })),
+      '/admin/messages',
+      [...queryKeys.adminMessages({ read: false })],
+    ],
+  ])('%s pide %s y guarda los datos con su clave', async (_name, run, path, key) => {
+    const { api, requests } = setup()
+    const client = new QueryClient()
+    await expect(run(client, api)).resolves.toEqual({ marker: 'respuesta' })
+    expect(new URL(requests[0]?.url ?? '').pathname).toBe(`/api/v1${path}`)
+    expect(client.getQueryData(key)).toEqual({ marker: 'respuesta' })
+  })
+
+  it('cada página de contenido pide su ruta', async () => {
+    for (const page of ['home', 'about', 'faq', 'footer', 'product-tabs'] as const) {
+      const { api, requests } = setup()
+      await new QueryClient().query(adminContentQuery(api, page))
+      expect(new URL(requests[0]?.url ?? '').pathname).toBe(`/api/v1/admin/content/${page}`)
+    }
+  })
+
+  it('manda los estados de pedidos repetidos en la URL', async () => {
+    const { api, requests } = setup()
+    await new QueryClient().query(adminOrdersQuery(api, orders))
+    const url = new URL(requests[0]?.url ?? '')
+    expect(url.searchParams.getAll('status')).toEqual(['paid', 'preparing'])
+    expect(url.searchParams.get('page')).toBe('2')
+  })
+
+  it('todas las claves del admin empiezan con "admin" y cuelgan de sus prefijos', () => {
+    const groups: [readonly unknown[], (readonly unknown[])[]][] = [
+      [queryKeys.adminProductsAll(), [queryKeys.adminProducts({}), queryKeys.adminProduct('p')]],
+      [queryKeys.adminOrdersAll(), [queryKeys.adminOrders({}), queryKeys.adminOrder(number)]],
+      [queryKeys.adminReviewsAll(), [queryKeys.adminReviews({})]],
+      [queryKeys.adminMessagesAll(), [queryKeys.adminMessages({})]],
+      [
+        queryKeys.adminContentAll(),
+        [queryKeys.adminContent('home'), queryKeys.adminLegalContent('terms')],
+      ],
+    ]
+    for (const [prefix, keys] of groups) {
+      expect(prefix[0]).toBe('admin')
+      for (const key of keys) expect(key.slice(0, prefix.length)).toEqual(prefix)
+    }
+    for (const key of [
+      queryKeys.adminDashboard(),
+      queryKeys.adminCategories(),
+      queryKeys.adminSettings(),
+    ]) {
+      expect(key[0]).toBe('admin')
+    }
+    expect(queryKeys.adminDashboard()).toEqual(['admin', 'dashboard'])
+  })
+
+  it('una página de contenido desconocida falla antes de pedir', () => {
+    const { api } = setup()
+    expect(() => adminContentQuery(api, 'legal' as never)).toThrow(RangeError)
   })
 })
 

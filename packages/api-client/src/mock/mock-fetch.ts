@@ -1,4 +1,5 @@
 import type { ApiFetch } from '../client'
+import type { PendingOperation } from './pending'
 import type { MockRoute } from './router'
 import type { MockDb } from './types'
 import { IMPLEMENTED_ROUTES } from './handlers'
@@ -6,7 +7,7 @@ import { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
 import { INTERNAL_ROUTES } from './handlers/mercadopago-simulator'
 import { MOCK_CONTROL_ROUTES } from './handlers/mock-controls'
 import { isHttpMethod, notFound, problem, ResponseError } from './http'
-import { PENDING_OPERATIONS } from './pending'
+import { BACKEND_ONLY_OPERATIONS, PENDING_OPERATIONS } from './pending'
 import { matchRoute } from './router'
 
 /** Latencia por omisión: se sortea entre 150 y 400 ms, como una API real. */
@@ -39,24 +40,31 @@ export interface MockFetchOptions {
   customerSessionCookie?: string
 }
 
+/** Ruta del contrato que el modo de prueba responde con `501` y el motivo en `detail`. */
+function notImplemented(operation: PendingOperation, detail: string): MockRoute {
+  return {
+    method: operation.method,
+    path: operation.path,
+    handler: () =>
+      problem(501, 'No implementado en el modo de prueba', { detail, type: 'not_implemented' }),
+  }
+}
+
 /**
  * Rutas atendidas: las implementadas, las internas del modo de prueba (el simulador de Mercado
- * Pago y los controles de escenarios, fuera del contrato) y las pendientes, que responden 501 con
- * su plan.
+ * Pago, los controles de escenarios y las fotos simuladas, fuera del contrato) y las que responden
+ * `501`: las pendientes y las que atiende solo el back.
  */
 const ALL_ROUTES: readonly MockRoute[] = [
   ...IMPLEMENTED_ROUTES,
   ...INTERNAL_ROUTES,
   ...MOCK_CONTROL_ROUTES,
-  ...PENDING_OPERATIONS.map(({ method, path, plan }) => ({
-    method,
-    path,
-    handler: () =>
-      problem(501, 'No implementado en el modo de prueba', {
-        detail: `Llega en ${plan}`,
-        type: 'not_implemented',
-      }),
-  })),
+  ...PENDING_OPERATIONS.map((operation) =>
+    notImplemented(operation, 'Todavía no está en el modo de prueba'),
+  ),
+  ...BACKEND_ONLY_OPERATIONS.map((operation) =>
+    notImplemented(operation, 'Lo atiende solo el back'),
+  ),
 ]
 
 /** Valida la latencia y la devuelve como rango. */
@@ -119,7 +127,7 @@ async function wait(ms: number): Promise<void> {
 /**
  * Crea un `fetch` que responde con la API simulada en memoria, sin red.
  *
- * Quita el prefijo de la API, busca la ruta (las del contrato que todavía no existen responden
+ * Quita el prefijo de la API, busca la ruta (las del contrato que atiende solo el back responden
  * `501`), corre el handler contra la base de `getDb()` y devuelve su respuesta. Un handler que
  * falla responde `500` en vez de lanzar, como un servidor real.
  *
