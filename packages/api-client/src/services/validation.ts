@@ -43,6 +43,9 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** Identificador de una dirección de la libreta: letras, números, guiones y guiones bajos. */
 const ADDRESS_ID_PATTERN = /^[A-Za-z0-9_-]{1,80}$/
 
+/** Identificador de un recurso del dashboard (`prd-…`, `cat-…`): el mismo formato. */
+const RESOURCE_ID_PATTERN = ADDRESS_ID_PATTERN
+
 /**
  * Comprueba que un número de pedido tenga el formato del contrato (`GLP-` y cinco dígitos).
  *
@@ -78,6 +81,22 @@ export function assertAddressId(id: string): void {
   if (!ADDRESS_ID_PATTERN.test(id)) {
     throw new RangeError(
       'El identificador de la dirección tiene que tener letras, números o guiones, hasta 80 caracteres',
+    )
+  }
+}
+
+/**
+ * Comprueba que el identificador de un producto o una línea sirva para armar la ruta.
+ *
+ * @param id - Identificador (`prd-imperial-premium`, `cat-imperiales`).
+ * @param owner - De qué es, para el mensaje: `del producto`, `de la línea`.
+ * @throws {RangeError} Si está vacío, pasa de 80 caracteres o tiene algo que no sea letras,
+ *   números, guiones o guiones bajos.
+ */
+export function assertResourceId(id: string, owner: string): void {
+  if (!RESOURCE_ID_PATTERN.test(id)) {
+    throw new RangeError(
+      `El identificador ${owner} tiene que tener letras, números o guiones, hasta 80 caracteres`,
     )
   }
 }

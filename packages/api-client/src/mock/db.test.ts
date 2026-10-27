@@ -33,7 +33,9 @@ afterEach(() => {
 describe('createMockDb', () => {
   it('siembra los fixtures, la cuenta del admin y las listas vacías', () => {
     const db = createMockDb(OPTIONS)
-    expect(db.version).toBe(2)
+    expect(db.version).toBe(3)
+    expect(db.media).toEqual({})
+    expect(db.products.every((product) => product.updatedAt === product.createdAt)).toBe(true)
     expect(db.categories).toHaveLength(6)
     expect(db.products).toHaveLength(27)
     expect(db.reviews).toHaveLength(13)
@@ -166,8 +168,31 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), version: 0, products: [] }))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.isPersistent).toBe(true)
-    expect(handle.db.version).toBe(2)
+    expect(handle.db.version).toBe(3)
     expect(handle.db.products).toHaveLength(27)
+  })
+
+  it('con una base guardada de la versión 2 (sin fotos) vuelve a sembrar los datos', () => {
+    const { storage } = memoryStorage()
+    const previous: Record<string, unknown> = { ...createMockDb(OPTIONS), version: 2, products: [] }
+    delete previous.media
+    storage.setItem(KEY, JSON.stringify(previous))
+    const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    expect(handle.db).toEqual(createMockDb(OPTIONS))
+  })
+
+  it('recupera las fotos simuladas guardadas', () => {
+    const { storage } = memoryStorage()
+    const first = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    first.db.media['galpon/productos/mock-1'] = {
+      url: 'data:image/webp;base64,AA==',
+      width: 900,
+      height: 1200,
+      createdAt: SESSION_EXPIRES,
+    }
+    first.persist()
+    const second = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    expect(second.db.media).toEqual(first.db.media)
   })
 
   it('con un texto roto o de otra forma vuelve a sembrar los datos', () => {
@@ -195,6 +220,24 @@ describe('createPersistentMockDb', () => {
       { adminSession: { email: 'a@b.c', csrfToken: 'token', expiresAt: 'mañana' } },
     ],
     ['una sesión que es un arreglo', { adminSession: [] }],
+    ['fotos que son un arreglo', { media: [] }],
+    [
+      'una foto sin su data URL',
+      { media: { 'galpon/productos/mock-1': { width: 1, height: 1, createdAt: SESSION_EXPIRES } } },
+    ],
+    [
+      'una foto con medidas que no son números',
+      {
+        media: {
+          'galpon/productos/mock-1': {
+            url: 'data:image/webp;base64,AA==',
+            width: '1',
+            height: 1,
+            createdAt: SESSION_EXPIRES,
+          },
+        },
+      },
+    ],
   ])('con %s guardada vuelve a sembrar los datos', (_description, broken) => {
     const { storage } = memoryStorage()
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), ...broken }))

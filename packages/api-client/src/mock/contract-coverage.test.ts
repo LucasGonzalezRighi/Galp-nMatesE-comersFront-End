@@ -71,10 +71,29 @@ describe('cobertura del contrato', () => {
     }
   })
 
+  it('atiende la sesión, los productos, las líneas y las fotos del dashboard de P4', () => {
+    for (const operation of [
+      'POST /admin/auth/password',
+      'POST /admin/products',
+      'GET /admin/products/{id}',
+      'PATCH /admin/products/{id}',
+      'POST /admin/products/{id}/archive',
+      'GET /admin/categories',
+      'POST /admin/categories',
+      'PUT /admin/categories/order',
+      'PATCH /admin/categories/{id}',
+      'DELETE /admin/categories/{id}',
+      'POST /admin/media/signature',
+    ]) {
+      expect(implemented).toContain(operation)
+      expect(pending).not.toContain(operation)
+    }
+  })
+
   it('reparte las pendientes según el plan', () => {
     const planOf = (operation: string) =>
       PENDING_OPERATIONS.find((pendingOperation) => key(pendingOperation) === operation)?.plan
     expect(planOf('POST /webhooks/mercadopago')).toBe('P3')
-    expect(planOf('POST /admin/products')).toBe('P4')
+    expect(planOf('GET /admin/orders')).toBe('P4')
   })
 })

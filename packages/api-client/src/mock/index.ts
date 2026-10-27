@@ -9,6 +9,7 @@ export type {
   MockMercadoPagoResolveInput,
   MockMercadoPagoResolveResult,
 } from './handlers/mercadopago-simulator'
+export type { MockMediaInput, MockMediaResult } from './handlers/admin-media'
 export type {
   MockExpireOrderResult,
   MockProductChangeInput,
@@ -26,6 +27,7 @@ export type {
   MockCustomer,
   MockCustomerSession,
   MockDb,
+  MockMedia,
   MockMessage,
   MockOrder,
   MockOrderCreation,
@@ -43,6 +45,12 @@ export {
   resetGlobalMockDb,
 } from './db'
 export { IMPLEMENTED_ROUTES } from './handlers'
+export {
+  MAX_MOCK_MEDIA,
+  MAX_MOCK_MEDIA_LENGTH,
+  MOCK_MEDIA_PATH,
+  postMockMedia,
+} from './handlers/admin-media'
 export { MOCK_PASSWORD_RESET_TOKEN } from './handlers/account'
 export { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
 export {

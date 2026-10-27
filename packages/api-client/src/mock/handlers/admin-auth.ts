@@ -1,10 +1,10 @@
-import { adminLoginSchema } from '@galpon/schemas'
+import { adminLoginSchema, adminPasswordChangeSchema } from '@galpon/schemas'
 import type { MockContext, MockRoute } from '../router'
 import type { MockAdminSession } from '../types'
 import { json, noContent, problem, ResponseError, validationProblem } from '../http'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
-import { zodFieldErrors } from '../validation'
+import { parseOrFail, zodFieldErrors } from '../validation'
 
 /** Duración de la sesión del administrador: 8 horas. */
 export const ADMIN_SESSION_MS = 8 * 60 * 60 * 1000
@@ -19,8 +19,8 @@ const CSRF_HEADER = 'X-CSRF-Token'
  * @param options - Con `csrf: true` (las escrituras) también exige que `X-CSRF-Token` sea el de
  *   la sesión.
  * @returns La sesión vigente.
- * @throws {ResponseError} Con `401` si no hay sesión o venció, y con `403` si falta el token CSRF
- *   o no coincide.
+ * @throws {ResponseError} Con `401` si no hay sesión o venció, y con `403` `csrf_invalid` si falta
+ *   el token CSRF o no coincide (por ejemplo, porque otro inicio de sesión lo rotó).
  */
 export function requireAdmin(ctx: MockContext, options: { csrf: boolean }): MockAdminSession {
   const session = ctx.db.adminSession
@@ -31,13 +31,19 @@ export function requireAdmin(ctx: MockContext, options: { csrf: boolean }): Mock
   }
   if (options.csrf && ctx.request.headers.get(CSRF_HEADER) !== session.csrfToken) {
     throw new ResponseError(
-      problem(403, 'Acceso denegado', { detail: 'El token CSRF falta o no es válido.' }),
+      problem(403, 'Token CSRF inválido', {
+        type: 'csrf_invalid',
+        detail: 'El token CSRF falta o no es válido.',
+      }),
     )
   }
   return session
 }
 
-/** Rutas de la sesión del administrador: iniciar y cerrar sesión, consultarla y pedir el token CSRF. */
+/**
+ * Rutas de la sesión del administrador: iniciar y cerrar sesión, consultarla, pedir el token CSRF y
+ * cambiar la contraseña.
+ */
 export const adminAuthRoutes: readonly MockRoute[] = [
   route('POST', '/admin/auth/login', async (ctx) => {
     const result = adminLoginSchema.safeParse(await ctx.body())
@@ -75,5 +81,22 @@ export const adminAuthRoutes: readonly MockRoute[] = [
   route('GET', '/admin/auth/csrf', (ctx) => {
     const { csrfToken } = requireAdmin(ctx, { csrf: false })
     return json({ csrfToken })
+  }),
+
+  // Cambia la contraseña de la cuenta; la sesión abierta sigue valiendo.
+  route('POST', '/admin/auth/password', async (ctx) => {
+    requireAdmin(ctx, { csrf: true })
+    const input = parseOrFail(adminPasswordChangeSchema, await ctx.body())
+    if (input.currentPassword !== ctx.db.adminAccount.password) {
+      return validationProblem([
+        {
+          field: 'currentPassword',
+          code: 'invalid_password',
+          message: 'La contraseña actual no es correcta',
+        },
+      ])
+    }
+    ctx.db.adminAccount.password = input.newPassword
+    return noContent()
   }),
 ]

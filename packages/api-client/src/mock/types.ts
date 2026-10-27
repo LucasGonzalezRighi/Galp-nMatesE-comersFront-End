@@ -72,6 +72,23 @@ export interface MockProduct {
   previousSlugs: string[]
   /** Fecha de alta, ISO 8601 con hora y zona. */
   createdAt: string
+  /** Fecha de la última modificación, ISO 8601 con hora y zona; al sembrar es la de alta. */
+  updatedAt: string
+}
+
+/**
+ * Foto subida en el modo de prueba (`POST /__mock/media`): un data URL reducido que reemplaza a
+ * Cloudinary y sobrevive a las recargas junto con la base.
+ */
+export interface MockMedia {
+  /** Data URL de la foto reducida (`data:image/webp;base64,…`). */
+  url: string
+  /** Ancho en píxeles de la foto original. */
+  width: number
+  /** Alto en píxeles de la foto original. */
+  height: number
+  /** Momento de la subida, ISO 8601 con hora y zona; las más viejas sin usar se borran primero. */
+  createdAt: string
 }
 
 /** Reseña de la base simulada. */
@@ -287,7 +304,7 @@ export interface MockCustomerSession {
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
-  version: 2
+  version: 3
   /** Líneas de productos. */
   categories: MockCategory[]
   /** Productos. */
@@ -315,4 +332,6 @@ export interface MockDb {
   customers: MockCustomer[]
   /** Sesiones de la tienda (anónimas y de clientes). */
   customerSessions: MockCustomerSession[]
+  /** Fotos subidas en el modo de prueba, por `publicId` (`galpon/productos/mock-…`). */
+  media: Record<string, MockMedia>
 }

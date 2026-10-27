@@ -267,4 +267,5 @@ export const FIXTURE_PRODUCTS: readonly MockProduct[] = DESIGN_PRODUCTS.map((pro
   tabsOverride: null,
   previousSlugs: [],
   createdAt: CREATED_AT,
+  updatedAt: CREATED_AT,
 }))

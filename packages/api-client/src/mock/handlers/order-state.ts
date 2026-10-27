@@ -211,6 +211,10 @@ export function assertPayable(order: MockOrder): void {
 /**
  * Arma el pedido como lo devuelve la API: el estado y los datos del pago salen del último intento.
  *
+ * `payment.challenge` es el desafío 3-D Secure de ese intento (la misma dirección que devolvió el
+ * pago con tarjeta) mientras está en `action_required`, para retomarlo desde cualquier pestaña; en
+ * cualquier otro estado es `null`.
+ *
  * @param order - Pedido de la base.
  */
 export function toOrder(order: MockOrder): Order {
@@ -234,7 +238,7 @@ export function toOrder(order: MockOrder): Order {
       lastFour: intent?.lastFour ?? null,
       statusDetail: intent?.statusDetail ?? null,
       mpPaymentId: intent?.mpPaymentId ?? null,
-      challenge: null,
+      challenge: intent?.status === 'action_required' ? (intent.result?.challenge ?? null) : null,
     },
     tracking: order.tracking,
     history: order.history,

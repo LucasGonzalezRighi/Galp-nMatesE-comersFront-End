@@ -270,11 +270,18 @@ describe('simulador de Mercado Pago', () => {
     const mock = createCheckoutApi()
     const { order } = await placeOrder(mock)
     await payWithCard(mock.api, order.number, card('3DS'), randomUuid())
+    await expect(getOrder(mock.api, order.number)).resolves.toMatchObject({
+      paymentStatus: 'action_required',
+      payment: {
+        challenge: { url: `/checkout/mp-simulado?pedido=${order.number}&challenge=1` },
+      },
+    })
     const response = await resolve(mock, { number: order.number, intent: null, result: 'approved' })
     expect(response.status).toBe(200)
     await expect(getOrder(mock.api, order.number)).resolves.toMatchObject({
       status: 'paid',
       paymentStatus: 'approved',
+      payment: { challenge: null },
     })
   })
 

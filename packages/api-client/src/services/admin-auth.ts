@@ -2,6 +2,7 @@ import type { ApiClient } from '../client'
 import type {
   AdminLoginInput,
   AdminLoginResult,
+  AdminPasswordChange,
   AdminSession,
   CsrfToken,
 } from '../generated/schema'
@@ -48,4 +49,18 @@ export function getAdminSession(api: ApiClient): Promise<AdminSession> {
  */
 export function getAdminCsrfToken(api: ApiClient): Promise<CsrfToken> {
   return unwrap(api.GET('/admin/auth/csrf'))
+}
+
+/**
+ * Cambia la contraseña del administrador. La sesión abierta sigue valiendo.
+ *
+ * @param api - Cliente de la API (con `getCsrfToken`, porque es una escritura).
+ * @param input - Contraseña actual, la nueva y su repetición.
+ * @throws {ApiError} Con `validation` si la actual no es correcta (en `currentPassword`), si la
+ *   nueva no cumple las reglas (en `newPassword`) o si la repetición no coincide (en
+ *   `confirmation`); `unauthorized` si la sesión venció y `forbidden` (`csrf_invalid`) si el
+ *   token CSRF falta o no es el de la sesión.
+ */
+export function changeAdminPassword(api: ApiClient, input: AdminPasswordChange): Promise<void> {
+  return unwrapVoid(api.POST('/admin/auth/password', { body: input }))
 }

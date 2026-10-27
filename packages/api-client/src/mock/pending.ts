@@ -32,20 +32,9 @@ export const PENDING_OPERATIONS: readonly PendingOperation[] = [
   // P3: el aviso de Mercado Pago solo lo llama Mercado Pago; en el modo de prueba lo reemplaza el
   // simulador (`POST /__mock/mercadopago/resolve`).
   ...pending('P3', [['POST', '/webhooks/mercadopago']]),
-  // P4: el resto del dashboard.
+  // P4: el resto del dashboard (pedidos, resumen, contenido, ajustes y moderación).
   ...pending('P4', [
-    ['POST', '/admin/auth/password'],
     ['GET', '/admin/dashboard/summary'],
-    ['POST', '/admin/products'],
-    ['GET', '/admin/products/{id}'],
-    ['PATCH', '/admin/products/{id}'],
-    ['POST', '/admin/products/{id}/archive'],
-    ['GET', '/admin/categories'],
-    ['POST', '/admin/categories'],
-    ['PUT', '/admin/categories/order'],
-    ['PATCH', '/admin/categories/{id}'],
-    ['DELETE', '/admin/categories/{id}'],
-    ['POST', '/admin/media/signature'],
     ['GET', '/admin/orders'],
     ['GET', '/admin/orders/{number}'],
     ['POST', '/admin/orders/{number}/status'],

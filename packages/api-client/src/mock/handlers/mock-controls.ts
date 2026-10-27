@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { MockRoute } from '../router'
 import { json, notFound, problem, ResponseError } from '../http'
 import { orderNumberParam, parseOrFail } from '../validation'
+import { MOCK_MEDIA_ROUTE } from './admin-media'
 import { expireOrders, orderNotFound } from './order-state'
 
 /**
@@ -67,6 +68,8 @@ export interface MockExpireOrderResult {
  *   y cancela su intento de pago activo; `409` si el pedido ya no está pendiente de pago.
  * - `POST /__mock/products/{id}` con `{ priceArs?, stock? }`: cambia el precio o el stock del
  *   producto y avisa que cambió el catálogo.
+ * - `POST /__mock/media` con `{ folder, dataUrl, width, height }`: registra una foto reducida del
+ *   dashboard en lugar de subirla a Cloudinary (ver `MOCK_MEDIA_ROUTE`).
  */
 export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
   {
@@ -115,4 +118,5 @@ export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
       return json(result)
     },
   },
+  MOCK_MEDIA_ROUTE,
 ]

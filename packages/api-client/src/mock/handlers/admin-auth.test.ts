@@ -1,5 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adminLogin, adminLogout, getAdminCsrfToken, getAdminSession } from '../../services'
+import type { ApiClient } from '../../client'
+import type { AdminProductInput } from '../../generated/schema'
+import {
+  adminLogin,
+  adminLogout,
+  archiveAdminProduct,
+  changeAdminPassword,
+  createAdminCategory,
+  createAdminProduct,
+  createMediaSignature,
+  deleteAdminCategory,
+  getAdminCsrfToken,
+  getAdminSession,
+  reorderAdminCategories,
+  updateAdminCategory,
+  updateAdminProduct,
+} from '../../services'
 import { createMockApi, loginAsAdmin, rawRequest } from '../../test/mock-api'
 import { DEFAULT_MOCK_DB_OPTIONS } from '../db'
 
@@ -86,7 +102,12 @@ describe('sesión del admin', () => {
     await loginAsAdmin(mock)
     const withoutCsrf = await rawRequest(mock, '/admin/auth/logout', { method: 'POST' })
     expect(withoutCsrf.status).toBe(403)
-    expect(await withoutCsrf.json()).toMatchObject({ type: 'forbidden', status: 403 })
+    expect(await withoutCsrf.json()).toMatchObject({
+      type: 'csrf_invalid',
+      title: 'Token CSRF inválido',
+      status: 403,
+      detail: 'El token CSRF falta o no es válido.',
+    })
 
     const wrongCsrf = await rawRequest(mock, '/admin/auth/logout', {
       method: 'POST',
@@ -121,4 +142,132 @@ describe('sesión del admin', () => {
       problem: { type: 'unauthorized' },
     })
   })
+})
+
+describe('POST /admin/auth/password', () => {
+  const NEW_PASSWORD = 'mate-con-yerba-2027'
+
+  it('con la contraseña actual correcta la cambia y la sesión sigue abierta', async () => {
+    const mock = createMockApi()
+    await loginAsAdmin(mock)
+    await changeAdminPassword(mock.api, {
+      currentPassword: DEFAULT_MOCK_DB_OPTIONS.adminPassword,
+      newPassword: NEW_PASSWORD,
+      confirmation: NEW_PASSWORD,
+    })
+    expect(mock.db.adminAccount.password).toBe(NEW_PASSWORD)
+    await expect(getAdminSession(mock.api)).resolves.toMatchObject({
+      email: DEFAULT_MOCK_DB_OPTIONS.adminEmail,
+    })
+    await expect(
+      adminLogin(mock.api, { email: DEFAULT_MOCK_DB_OPTIONS.adminEmail, password: NEW_PASSWORD }),
+    ).resolves.toMatchObject({ email: DEFAULT_MOCK_DB_OPTIONS.adminEmail })
+  })
+
+  it('responde 422 en currentPassword si la actual no es correcta', async () => {
+    const mock = createMockApi()
+    await loginAsAdmin(mock)
+    await expect(
+      changeAdminPassword(mock.api, {
+        currentPassword: 'otra-clave',
+        newPassword: NEW_PASSWORD,
+        confirmation: NEW_PASSWORD,
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { currentPassword: 'La contraseña actual no es correcta' },
+    })
+    expect(mock.db.adminAccount.password).toBe(DEFAULT_MOCK_DB_OPTIONS.adminPassword)
+  })
+
+  it('responde 422 en confirmation si no coincide con la nueva', async () => {
+    const mock = createMockApi()
+    await loginAsAdmin(mock)
+    await expect(
+      changeAdminPassword(mock.api, {
+        currentPassword: DEFAULT_MOCK_DB_OPTIONS.adminPassword,
+        newPassword: NEW_PASSWORD,
+        confirmation: 'otra-cosa-2027',
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { confirmation: expect.any(String) as unknown },
+    })
+  })
+})
+
+/** Producto válido para las escrituras de la tabla de guardias. */
+const PRODUCT: AdminProductInput = {
+  categoryId: 'cat-torpedos',
+  name: 'Mate de Prueba',
+  slug: 'mate-de-prueba',
+  description: 'Un mate de prueba para las guardias.',
+  priceArs: 1000,
+  stock: 1,
+  featured: false,
+  status: 'draft',
+  images: [],
+}
+
+/** Cada escritura del admin de la API simulada I, con datos que de otro modo serían válidos. */
+const WRITES: readonly [string, (api: ApiClient) => Promise<unknown>][] = [
+  [
+    'POST /admin/auth/password',
+    (api) =>
+      changeAdminPassword(api, {
+        currentPassword: DEFAULT_MOCK_DB_OPTIONS.adminPassword,
+        newPassword: 'mate-con-yerba-2027',
+        confirmation: 'mate-con-yerba-2027',
+      }),
+  ],
+  ['POST /admin/products', (api) => createAdminProduct(api, PRODUCT)],
+  ['PATCH /admin/products/{id}', (api) => updateAdminProduct(api, 'prd-imperial-premium', PRODUCT)],
+  ['POST /admin/products/{id}/archive', (api) => archiveAdminProduct(api, 'prd-imperial-premium')],
+  [
+    'POST /admin/categories',
+    (api) =>
+      createAdminCategory(api, {
+        name: 'Nueva',
+        slug: 'nueva',
+        group: 'mate',
+        blurb: '',
+        image: null,
+      }),
+  ],
+  [
+    'PATCH /admin/categories/{id}',
+    (api) =>
+      updateAdminCategory(api, 'cat-yerbas', {
+        name: 'Yerbas',
+        slug: 'yerbas',
+        group: 'yerba',
+        blurb: '',
+        image: null,
+      }),
+  ],
+  ['DELETE /admin/categories/{id}', (api) => deleteAdminCategory(api, 'cat-yerbas')],
+  ['PUT /admin/categories/order', (api) => reorderAdminCategories(api, ['cat-yerbas'])],
+  ['POST /admin/media/signature', (api) => createMediaSignature(api, 'product')],
+]
+
+describe('guardias de las escrituras del admin', () => {
+  it.each(WRITES)('%s sin sesión responde 401', async (_operation, write) => {
+    await expect(write(createMockApi().api)).rejects.toMatchObject({ status: 401 })
+  })
+
+  it.each(WRITES)(
+    '%s con un token CSRF que no es el de la sesión responde 403',
+    async (_operation, write) => {
+      const mock = createMockApi()
+      await loginAsAdmin(mock)
+      mock.setCsrfToken('otro-token')
+      await expect(write(mock.api)).rejects.toMatchObject({
+        status: 403,
+        problem: { type: 'csrf_invalid' },
+      })
+      expect(mock.db.products).toHaveLength(27)
+      expect(mock.db.categories).toHaveLength(6)
+      expect(mock.db.adminAccount.password).toBe(DEFAULT_MOCK_DB_OPTIONS.adminPassword)
+    },
+  )
 })

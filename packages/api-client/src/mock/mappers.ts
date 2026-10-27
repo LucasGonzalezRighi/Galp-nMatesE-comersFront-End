@@ -14,12 +14,30 @@ import type {
   AdminProduct,
   AdminSettings,
   Category,
+  Image,
+  ImageInput,
   ProductDetail,
   ProductSummary,
   PublicSettings,
   Review,
 } from '../generated/schema'
 import type { MockCategory, MockDb, MockProduct, MockReview } from './types'
+import { FIXTURE_CATEGORIES, FIXTURE_CONTENT, FIXTURE_PRODUCTS } from './fixtures'
+import { ResponseError, validationProblem } from './http'
+
+/**
+ * Fotos de los fixtures del diseño, por `publicId`: se pueden volver a usar aunque el producto, la
+ * línea o el socio que las tenía ya no las use.
+ */
+const FIXTURE_IMAGES: ReadonlyMap<string, Image> = new Map(
+  [
+    ...FIXTURE_PRODUCTS.flatMap((product) => product.images),
+    ...FIXTURE_CATEGORIES.flatMap((category) => (category.image === null ? [] : [category.image])),
+    ...FIXTURE_CONTENT.about.partners.flatMap((partner) =>
+      partner.photo === null ? [] : [partner.photo],
+    ),
+  ].map((image) => [image.publicId, image]),
+)
 
 /** Convierte el precio de un producto en un monto, o `null` si es "a consultar". */
 function toPesos(priceArs: number | null): Pesos | null {
@@ -201,8 +219,7 @@ export function toPublicSettings(settings: AdminSettings): PublicSettings {
 /**
  * Arma un producto como lo ve el dashboard: la ficha más estado, stock, slugs anteriores y fechas.
  *
- * Los textos propios de las pestañas faltantes salen como `null`. La base no guarda la fecha de
- * última modificación, así que `updatedAt` es la de alta.
+ * Los textos propios de las pestañas faltantes salen como `null`.
  *
  * @param product - Producto de la base.
  * @param db - Base simulada.
@@ -222,6 +239,51 @@ export function toAdminProduct(product: MockProduct, db: MockDb): AdminProduct {
           },
     previousSlugs: [...product.previousSlugs],
     createdAt: product.createdAt,
-    updatedAt: product.createdAt,
+    updatedAt: product.updatedAt,
+  }
+}
+
+/**
+ * Arma la foto que se guarda a partir de la que manda el dashboard (`ImageInput` → `Image`).
+ *
+ * La `url` sale, en este orden, de la foto con el mismo `publicId` que ya tenía el producto, la
+ * línea o el socio; de una foto subida en el modo de prueba (`db.media`, su data URL); o de una
+ * foto de los fixtures del diseño. Las medidas y el texto alternativo son los que vienen.
+ *
+ * @param input - Foto ya validada (con el `publicId` y el `alt` recortados).
+ * @param db - Base simulada.
+ * @param current - Fotos que ya tenía lo que se guarda (vacío al crear).
+ * @param field - Ruta de la foto en el cuerpo (`images.2`, `image`, `partners.0.photo`).
+ * @returns La foto con su `url`.
+ * @throws {ResponseError} Con `422` en `{field}.publicId` ("La foto no existe: subila de nuevo")
+ *   si ninguna de las tres fuentes conoce el `publicId`.
+ */
+export function resolveImage(
+  input: ImageInput,
+  db: MockDb,
+  current: readonly Image[],
+  field: string,
+): Image {
+  const url =
+    current.find((image) => image.publicId === input.publicId)?.url ??
+    (Object.hasOwn(db.media, input.publicId) ? db.media[input.publicId]?.url : undefined) ??
+    FIXTURE_IMAGES.get(input.publicId)?.url
+  if (url === undefined) {
+    throw new ResponseError(
+      validationProblem([
+        {
+          field: `${field}.publicId`,
+          code: 'unknown_image',
+          message: 'La foto no existe: subila de nuevo',
+        },
+      ]),
+    )
+  }
+  return {
+    publicId: input.publicId,
+    url,
+    width: input.width,
+    height: input.height,
+    alt: input.alt,
   }
 }

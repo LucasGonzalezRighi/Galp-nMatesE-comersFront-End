@@ -1,5 +1,5 @@
 import type { MockDbOptions } from './db'
-import type { MockAdminSession, MockDb } from './types'
+import type { MockAdminSession, MockDb, MockMedia } from './types'
 import { createMockDb, MOCK_DB_VERSION } from './db'
 
 /** Lo mínimo que se le pide a un almacenamiento: leer, escribir y borrar un texto por clave. */
@@ -68,9 +68,19 @@ function isAdminSession(value: unknown): value is MockAdminSession {
   )
 }
 
+/** Indica si `value` es una foto simulada: data URL, medidas numéricas y fecha de subida. */
+function isMockMedia(value: unknown): value is MockMedia {
+  return (
+    hasTextFields(value, ['url', 'createdAt']) &&
+    typeof value.width === 'number' &&
+    typeof value.height === 'number'
+  )
+}
+
 /**
- * Revisa la forma de una base guardada: la versión, cada lista o grupo y, a fondo, la cuenta y la
- * sesión del administrador (si no tuvieran sus textos, el login o el guardián de rutas fallarían).
+ * Revisa la forma de una base guardada: la versión, cada lista o grupo, cada foto simulada y, a
+ * fondo, la cuenta y la sesión del administrador (si no tuvieran sus textos, el login o el
+ * guardián de rutas fallarían).
  */
 function isMockDb(value: unknown): value is MockDb {
   if (!isRecord(value)) return false
@@ -86,6 +96,8 @@ function isMockDb(value: unknown): value is MockDb {
       'customerSessions',
     ].every((name) => Array.isArray(value[name])) &&
     ['content', 'settings'].every((name) => isRecord(value[name])) &&
+    isRecord(value.media) &&
+    Object.values(value.media).every(isMockMedia) &&
     hasTextFields(value.adminAccount, ['email', 'password']) &&
     (value.adminSession === null || isAdminSession(value.adminSession))
   )
