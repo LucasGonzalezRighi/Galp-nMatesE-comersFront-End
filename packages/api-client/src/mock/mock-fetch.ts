@@ -179,7 +179,9 @@ export function createMockFetch(options: MockFetchOptions): ApiFetch {
   }
 
   return async (request) => {
-    await wait(Math.round(minLatency + Math.random() * (maxLatency - minLatency)))
+    // Sin rango no se toca `Math.random()`: Next lo marca como valor inestable al prerenderizar.
+    const jitter = maxLatency > minLatency ? Math.random() * (maxLatency - minLatency) : 0
+    await wait(Math.round(minLatency + jitter))
     const response = await handle(request)
     if (request.method.toUpperCase() !== 'GET' && response.ok) options.onMutation?.()
     return response

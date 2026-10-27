@@ -14,6 +14,8 @@ import { getStoreMockFetch } from './mock.server'
 
 vi.mock('server-only', () => ({}))
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
+// `requireAccountData` marca el pedido como dinámico; fuera de Next no hay nada que marcar.
+vi.mock('next/server', () => ({ connection: () => Promise.resolve() }))
 
 beforeAll(() => {
   vi.stubEnv('API_MODE', 'mock')

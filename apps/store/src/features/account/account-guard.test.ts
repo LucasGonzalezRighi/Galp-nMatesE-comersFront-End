@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@galpon/api-client'
 import { requireAccountData } from './account-guard'
+
+// Fuera de un pedido de Next, `connection()` no tiene nada que marcar.
+vi.mock('next/server', () => ({ connection: () => Promise.resolve() }))
 
 /** Error de la API de la clase indicada. */
 function apiError(kind: 'unauthorized' | 'not_found' | 'server', status: number): ApiError {

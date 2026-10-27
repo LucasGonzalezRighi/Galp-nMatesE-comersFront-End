@@ -19,7 +19,7 @@ Sin ninguna variable de entorno la tienda arranca en modo de prueba (`API_MODE=m
 
 - **Servidor.** Los Server Components y las funciones `'use cache'` hablan con la API simulada de `@galpon/api-client/mock` en el mismo proceso (`src/lib/mock.server.ts`). Esas funciones corren también durante el build, por eso la base simulada vive en el mismo proceso y no detrás de una red.
 - **Navegador.** Siempre habla con `/api/v1` de su propio dominio (`src/lib/api.browser.ts`). Un _rewrite_ lleva `/api/v1/*` a `/api/mock/v1/*`, un route handler que responde con la misma base simulada.
-- **Latencia.** La API simulada demora entre 150 y 400 ms por pedido, como una real. `MOCK_LATENCY_MS=0` la quita.
+- **Latencia.** La API simulada demora 150 ms por pedido (el mínimo de `MOCK_LATENCY_MS`, fija en el proceso de Next porque `Math.random()` es un valor inestable para el prerender de Cache Components; el admin sí usa el rango). `MOCK_LATENCY_MS=0` la quita.
 - **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos).
 
 Para probarlo:
