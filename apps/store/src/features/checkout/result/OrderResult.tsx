@@ -393,7 +393,10 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
             : false,
   })
   const { refetch } = query
-  const order = query.isFetchedAfterMount ? query.data : undefined
+  // El pedido sembrado al crearlo (pending_payment/none) no se muestra hasta que la consulta de
+  // montaje trae el estado real; si esa consulta falla, `isFetchedAfterMount` también es true,
+  // así que se exige además que no haya error (y la rama `isError` ofrece reintentar).
+  const order = query.isFetchedAfterMount && !query.isError ? query.data : undefined
   const kind = order === undefined ? null : resultKind(order)
   const isPending = kind === 'pending'
   const clearsCart = kind === 'approved' && variant === 'result'

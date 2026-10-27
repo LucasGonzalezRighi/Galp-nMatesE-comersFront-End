@@ -78,14 +78,15 @@ function resultRoute(number: string) {
 
 /**
  * Recuerda el desafío 3-D Secure del pago para retomarlo en el resultado (spec 14.2). El pago ya
- * está hecho: si la dirección no sirve no se guarda y el resultado ofrece pagar de nuevo, pero
- * nunca se muestra un error de pago.
+ * está hecho: si la dirección no sirve o `sessionStorage` no deja escribir (cuota llena, modo
+ * privado) no se guarda y el resultado ofrece pagar de nuevo, pero nunca se muestra un error de
+ * pago.
  */
 function rememberChallenge(number: string, url: string | null): void {
   try {
     saveChallengeUrl(number, url)
-  } catch (error) {
-    if (!(error instanceof RangeError)) throw error
+  } catch {
+    // El pago ya se hizo: un desafío que no se pudo recordar no es un error de pago.
   }
 }
 
