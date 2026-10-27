@@ -96,7 +96,11 @@ export const adminModerationRoutes: readonly MockRoute[] = [
     const update = parseOrFail(adminReviewUpdateSchema, body)
     if (update.status !== undefined) review.status = update.status
     if (update.featured !== undefined) review.featured = update.featured
-    ctx.invalidate(['reviews:featured', `product:${adminReview.product.slug}`])
+    ctx.invalidate([
+      'reviews:featured',
+      `reviews:${adminReview.product.slug}`,
+      `product:${adminReview.product.slug}`,
+    ])
     return json({ ...adminReview, status: review.status, featured: review.featured })
   }),
 

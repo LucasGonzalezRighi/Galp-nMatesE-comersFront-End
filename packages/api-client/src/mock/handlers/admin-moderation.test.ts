@@ -54,7 +54,9 @@ describe('PATCH /admin/reviews/{id}', () => {
     expect(updated).toMatchObject({ id: review.id, status: 'approved', featured: true })
     const featured = await listFeaturedReviews(mock.api)
     expect(featured.map((candidate) => candidate.id)).toContain(review.id)
-    expect(mock.invalidated).toEqual([['reviews:featured', `product:${review.product.slug}`]])
+    expect(mock.invalidated).toEqual([
+      ['reviews:featured', `reviews:${review.product.slug}`, `product:${review.product.slug}`],
+    ])
     expect((await getDashboardSummary(mock.api)).pendingReviews).toBe(3)
   })
 
