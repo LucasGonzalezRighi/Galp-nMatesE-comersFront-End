@@ -1,0 +1,85 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { ConfirmDialog } from './ConfirmDialog'
+
+interface HarnessProps {
+  isPending?: boolean
+  onConfirm?: () => void
+  error?: string
+}
+
+function Harness({ isPending = false, onConfirm = vi.fn(), error }: HarnessProps) {
+  const [open, setOpen] = useState(true)
+  return (
+    <>
+      <p>{open ? 'abierto' : 'cerrado'}</p>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="¿Archivar «Mate imperial»?"
+        description="Deja de verse en la tienda."
+        confirmLabel="Archivar"
+        tone="danger"
+        isPending={isPending}
+        onConfirm={onConfirm}
+      >
+        {error}
+      </ConfirmDialog>
+    </>
+  )
+}
+
+describe('ConfirmDialog', () => {
+  it('es un alertdialog con su título y descripción, y el foco arranca en "Cancelar"', async () => {
+    render(<Harness />)
+
+    const dialog = await screen.findByRole('alertdialog', { name: '¿Archivar «Mate imperial»?' })
+    expect(dialog).toHaveAccessibleDescription('Deja de verse en la tienda.')
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus()
+  })
+
+  it('Escape cierra el diálogo', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+    await screen.findByRole('alertdialog')
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByText('cerrado')).toBeInTheDocument()
+  })
+
+  it('confirmar llama a onConfirm sin cerrar el diálogo', async () => {
+    const user = userEvent.setup()
+    const onConfirm = vi.fn()
+    render(<Harness onConfirm={onConfirm} />)
+
+    await user.click(await screen.findByRole('button', { name: 'Archivar' }))
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  })
+
+  it('con isPending deshabilita los dos botones, muestra el spinner y no se cierra con Escape', async () => {
+    const user = userEvent.setup()
+    render(<Harness isPending />)
+    await screen.findByRole('alertdialog')
+
+    const confirm = screen.getByRole('button', { name: 'Archivar' })
+    expect(confirm).toBeDisabled()
+    expect(confirm).toHaveAttribute('aria-busy', 'true')
+    expect(confirm.querySelector('svg')).toHaveClass('animate-spin')
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  })
+
+  it('muestra el error en línea con role="alert"', async () => {
+    render(<Harness error="La línea tiene productos." />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('La línea tiene productos.')
+  })
+})

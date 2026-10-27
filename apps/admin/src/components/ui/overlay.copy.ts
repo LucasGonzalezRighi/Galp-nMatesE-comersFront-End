@@ -34,6 +34,8 @@ export const OVERLAY_COPY = {
   removePhoto: 'Quitar foto',
   remove: 'Quitar',
   cancelUpload: 'Cancelar',
+  /** Error de una subida cuando quien la maneja no da un motivo. */
+  uploadFailed: 'No se pudo subir la foto.',
   /** Campo de una sola foto. */
   changePhoto: 'Cambiar foto',
 } as const
