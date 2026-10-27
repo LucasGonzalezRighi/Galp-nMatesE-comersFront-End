@@ -1,5 +1,6 @@
 import type { ApiClient } from '@galpon/api-client'
 import { readCsrfToken } from '@/features/account'
+import { readOrderToken } from '@/features/checkout'
 import { createApiClient } from '@galpon/api-client'
 import { DEFAULT_SITE_URL, parseHttpOrigin } from './env'
 
@@ -43,6 +44,7 @@ export function getBrowserApi(): ApiClient {
     ),
     credentials: 'same-origin',
     getCsrfToken: readCsrfToken,
+    getOrderToken: readOrderToken,
   })
   return browserApi
 }

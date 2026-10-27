@@ -1,3 +1,6 @@
+'use client'
+// El contexto es de cliente: con la directiva, un Server Component de la tienda puede importar
+// el barril `./react` (por ejemplo para `queryKeys`) sin arrastrar `createContext` al servidor.
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import type { ApiClient } from '../client'
