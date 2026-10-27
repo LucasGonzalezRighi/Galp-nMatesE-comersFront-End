@@ -59,6 +59,8 @@ export const CHECKOUT_COPY = {
   conflictText:
     'Actualizamos el resumen con los valores de ahora. Revisalo y confirmá de nuevo: todavía no te cobramos nada.',
   confirmAgain: 'Confirmar de nuevo',
+  orderChanged:
+    'Cambió algo de tu pedido (el carrito, tus datos o el envío). Confirmalo de nuevo con el medio de pago elegido: todavía no te cobramos nada.',
   retry: 'Probar de nuevo',
   orderError: 'No pudimos confirmar tu pedido. Probá de nuevo.',
   networkError: 'No pudimos conectar, probá de nuevo',

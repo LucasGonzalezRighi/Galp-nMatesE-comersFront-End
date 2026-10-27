@@ -240,14 +240,16 @@ function PendingPanel({ order, timedOut }: PendingPanelProps): ReactNode {
 
 /** Props de {@link ActionRequiredPanel}. */
 interface ActionRequiredPanelProps extends PanelProps {
-  /** Dirección del desafío, o `null` si no se puede retomar (en vivo). */
+  /** Dirección del desafío que guardó el checkout, o `null` si no se puede retomar. */
   challengeUrl: string | null
 }
 
 /**
  * Falta la verificación 3-D Secure: abre el desafío en el diálogo y, al cerrarlo o cuando el
- * desafío avisa que terminó (`postMessage` del mismo origen), consulta el pedido. Sin la
- * dirección del desafío (en vivo el pedido no la trae) ofrece pagar de nuevo.
+ * desafío avisa que terminó (`postMessage` del mismo origen), consulta el pedido. Si lo cierra sin
+ * terminar, "Verificar con mi banco" lo vuelve a abrir. La dirección del desafío la guardó el checkout
+ * (el pedido no la trae); sin ella, por ejemplo si la pestaña no hizo el pago, ofrece pagar de
+ * nuevo.
  */
 function ActionRequiredPanel({
   order,
@@ -370,12 +372,19 @@ interface KnownOrderProps {
   variant: 'result' | 'tracking'
 }
 
-/** Lee el pedido de la pestaña y muestra la pantalla de su estado, con el detalle debajo. */
+/**
+ * Lee el pedido de la pestaña y muestra la pantalla de su estado, con el detalle debajo. Siempre
+ * consulta el pedido al abrir la pantalla: el checkout sembró la cache con el pedido recién creado
+ * (sin pagar) y la cache de la tienda lo da por fresco un minuto, así que sin esto un pago aprobado
+ * se vería como "No completaste el pago". Hasta que llega esa consulta no se muestra el pedido
+ * sembrado.
+ */
 function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
   const api = useApiClient()
   const [timedOut, setTimedOut] = useState(false)
   const query = useQuery({
     ...orderQuery(api, number),
+    refetchOnMount: 'always',
     refetchInterval: timedOut
       ? false
       : (current) =>
@@ -383,7 +392,8 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
             ? PENDING_POLL_INTERVAL_MS
             : false,
   })
-  const { data: order, refetch } = query
+  const { refetch } = query
+  const order = query.isFetchedAfterMount ? query.data : undefined
   const kind = order === undefined ? null : resultKind(order)
   const isPending = kind === 'pending'
   const clearsCart = kind === 'approved' && variant === 'result'
@@ -432,7 +442,10 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
         <ActionRequiredPanel
           order={order}
           refresh={refresh}
-          challengeUrl={apiMode === 'mock' ? mercadoPagoSimulatorChallengeUrl(number) : null}
+          challengeUrl={
+            readOrderSession()?.challengeUrl ??
+            (apiMode === 'mock' ? mercadoPagoSimulatorChallengeUrl(number) : null)
+          }
         />
       ) : null}
       {kind === 'rejected' ? <RejectedPanel order={order} refresh={refresh} /> : null}

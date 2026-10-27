@@ -3,8 +3,16 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Order } from '@galpon/api-client'
 import { cancelPayment, createMercadoPagoPreference } from '@galpon/api-client'
-import { clearOrderSession, readOrderSession, saveOrderSession } from '../order-session'
+import { queryKeys } from '@galpon/api-client/react'
+import type { ResultTestApi } from './test/support'
+import {
+  clearOrderSession,
+  readOrderSession,
+  saveChallengeUrl,
+  saveOrderSession,
+} from '../order-session'
 import { CHALLENGE_DONE_MESSAGE } from './mp-simulator'
 import { OrderResult } from './OrderResult'
 import { RESULT_COPY } from './result.copy'
@@ -297,6 +305,31 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('action_required en vivo con la dirección que guardó el checkout: retoma el desafío', async () => {
+    const testApi = createResultTestApi()
+    const order = await placeGuestOrder(testApi)
+    await payWithTestCard(testApi, order.number, '3DS')
+    const challengeUrl = 'https://www.mercadopago.com.ar/3ds/challenge?id=abc123'
+    saveChallengeUrl(order.number, challengeUrl)
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="live" />))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.querySelector('iframe')).toHaveAttribute('src', challengeUrl)
+    expect(
+      screen.queryByRole('button', { name: RESULT_COPY.actionRequired.payAgain }),
+    ).not.toBeInTheDocument()
+
+    // Si lo cierra sin terminar, puede volver a abrirlo.
+    await userEvent.click(screen.getByRole('button', { name: /Ya terminé/ }))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: RESULT_COPY.actionRequired.verify }),
+    )
+    expect(screen.getByRole('dialog').querySelector('iframe')).toHaveAttribute('src', challengeUrl)
+  })
+
   it('action_required en vivo (sin la dirección del desafío): ofrece pagar de nuevo', async () => {
     const testApi = createResultTestApi()
     const order = await placeGuestOrder(testApi)
@@ -311,5 +344,45 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
       expect(mocks.push).toHaveBeenCalledWith(`/checkout?pedido=${order.number}`)
     })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('OrderResult: pedido sembrado en la cache al crearlo (la cache dura un minuto)', () => {
+  /** Como `Providers`: los datos son frescos por un minuto, y el checkout sembró el pedido. */
+  async function placeSeededOrder(testApi: ResultTestApi): Promise<Order> {
+    testApi.queryClient.setDefaultOptions({ queries: { retry: false, staleTime: 60_000 } })
+    const order = await placeGuestOrder(testApi)
+    testApi.queryClient.setQueryData(queryKeys.order(order.number), order)
+    return order
+  }
+
+  it('después de un pago aprobado consulta el pedido y agradece, sin pasar por "No completaste el pago"', async () => {
+    const testApi = createResultTestApi()
+    const order = await placeSeededOrder(testApi)
+    await payWithTestCard(testApi, order.number, 'APRO')
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
+
+    // El pedido sembrado (sin pagar) no se muestra como si fuera el actual.
+    expect(screen.getByText(RESULT_COPY.loading)).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: RESULT_COPY.unpaid.title }),
+    ).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') }),
+    ).toBeInTheDocument()
+    expect(orderReads(testApi)).toHaveLength(1)
+    expect(mocks.clearCart).toHaveBeenCalledTimes(1)
+  })
+
+  it('después de un pago rechazado muestra el motivo', async () => {
+    const testApi = createResultTestApi()
+    const order = await placeSeededOrder(testApi)
+    await payWithTestCard(testApi, order.number, 'FUND')
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
+
+    expect(await screen.findByText('La tarjeta no tiene fondos suficientes.')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: RESULT_COPY.unpaid.title }),
+    ).not.toBeInTheDocument()
   })
 })

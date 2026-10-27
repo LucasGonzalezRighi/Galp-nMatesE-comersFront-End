@@ -11,6 +11,25 @@ export interface OrderSession {
   orderToken: string
   /** Resumen del carrito (`cartHash`) al crear el pedido, para saber si cambió después. */
   cartHash: string
+  /**
+   * Dirección del desafío 3-D Secure del último pago con tarjeta, si lo pidió. El pedido no la
+   * trae (solo la respuesta del pago), así que se recuerda acá para retomar la verificación en
+   * `/checkout/resultado` (spec 14.2). Es https o una ruta de la tienda; nunca datos de tarjeta.
+   */
+  challengeUrl?: string
+}
+
+/**
+ * Si una dirección de desafío se puede abrir en el diálogo: una ruta de la tienda (el simulador
+ * del modo de prueba) o una dirección https (el banco).
+ */
+function isChallengeUrl(value: string): boolean {
+  if (value.startsWith('/')) return !value.startsWith('//') && !value.startsWith('/\\')
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
 }
 
 /** Si un valor leído de `sessionStorage` tiene la forma de {@link OrderSession}. */
@@ -49,7 +68,41 @@ export function saveOrderSession(session: OrderSession): void {
     )
   }
   if (session.orderToken.length === 0) throw new RangeError('orderToken no puede estar vacío')
+  if (session.challengeUrl !== undefined && !isChallengeUrl(session.challengeUrl)) {
+    throw new RangeError(
+      `challengeUrl tiene que ser https o una ruta de la tienda, y recibió ${JSON.stringify(session.challengeUrl)}`,
+    )
+  }
   storage()?.setItem(ORDER_SESSION_KEY, JSON.stringify(session))
+}
+
+/**
+ * Recuerda (o, con `null`, olvida) la dirección del desafío 3-D Secure del pedido en curso. No
+ * hace nada si la pestaña no tiene ese pedido.
+ *
+ * @param number - Número del pedido al que pertenece el desafío.
+ * @param url - `challenge.url` de la respuesta del pago, o `null` si el pago no pidió desafío.
+ * @throws {RangeError} Si el número no tiene formato o la dirección no es https ni una ruta de la tienda.
+ */
+export function saveChallengeUrl(number: string, url: string | null): void {
+  if (!isOrderNumber(number)) {
+    throw new RangeError(
+      `number tiene que ser un número de pedido (GLP- y cinco dígitos), y recibió ${JSON.stringify(number)}`,
+    )
+  }
+  if (url !== null && !isChallengeUrl(url)) {
+    throw new RangeError(
+      `url tiene que ser https o una ruta de la tienda, y recibió ${JSON.stringify(url)}`,
+    )
+  }
+  const session = readOrderSession()
+  if (session?.number !== number) return
+  const { orderToken, cartHash } = session
+  saveOrderSession(
+    url === null
+      ? { number, orderToken, cartHash }
+      : { number, orderToken, cartHash, challengeUrl: url },
+  )
 }
 
 /**
@@ -62,7 +115,12 @@ export function readOrderSession(): OrderSession | null {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!isOrderSession(parsed)) return null
-    return { number: parsed.number, orderToken: parsed.orderToken, cartHash: parsed.cartHash }
+    const { number, orderToken, cartHash } = parsed
+    const challengeUrl: unknown = parsed.challengeUrl
+    // Una dirección de desafío que no sirve se descarta sin perder el pedido.
+    return typeof challengeUrl === 'string' && isChallengeUrl(challengeUrl)
+      ? { number, orderToken, cartHash, challengeUrl }
+      : { number, orderToken, cartHash }
   } catch {
     return null
   }

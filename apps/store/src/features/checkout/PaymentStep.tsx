@@ -20,6 +20,7 @@ import type { CheckoutOrder } from './use-checkout-order'
 import { CHECKOUT_COPY, payLabel, payWithMpLabel, reservationNote } from './checkout.copy'
 import { newIdempotencyKey } from './idempotency-key'
 import { OptionCard } from './OptionCard'
+import { saveChallengeUrl } from './order-session'
 import { StepActions } from './StepActions'
 
 /** Cuotas sin tarjeta: solo para armar la consulta deshabilitada. */
@@ -73,6 +74,19 @@ export interface PaymentStepProps {
 /** Dirección de `/checkout/resultado` de un pedido (solo con el número, nunca el token). */
 function resultRoute(number: string) {
   return asRoute(`/checkout/resultado?pedido=${encodeURIComponent(number)}`)
+}
+
+/**
+ * Recuerda el desafío 3-D Secure del pago para retomarlo en el resultado (spec 14.2). El pago ya
+ * está hecho: si la dirección no sirve no se guarda y el resultado ofrece pagar de nuevo, pero
+ * nunca se muestra un error de pago.
+ */
+function rememberChallenge(number: string, url: string | null): void {
+  try {
+    saveChallengeUrl(number, url)
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error
+  }
 }
 
 /**
@@ -209,6 +223,7 @@ export function PaymentStep({
         payKey.current,
       )
       payKey.current = null
+      rememberChallenge(current.number, result.challenge?.url ?? null)
       if (result.challenge === null) router.push(resultRoute(current.number))
       else setChallenge({ url: result.challenge.url, number: current.number })
     } catch (error) {
@@ -243,6 +258,9 @@ export function PaymentStep({
     </Button>
   )
 
+  // El pedido dejó de valer (cambió el carrito, el contacto o el envío) con el medio ya elegido: el
+  // radio marcado no vuelve a avisar, así que se pide confirmar de nuevo en lugar de dejar sin salida.
+  const changed = method !== null && order === null && checkout.status === 'idle'
   let body: ReactNode = backOnly
   if (checkout.status === 'creating') {
     body = (
@@ -252,7 +270,7 @@ export function PaymentStep({
         </Button>
       </StepActions>
     )
-  } else if (checkout.status === 'conflict' || checkout.status === 'error') {
+  } else if (checkout.status === 'conflict' || checkout.status === 'error' || changed) {
     const conflict = checkout.status === 'conflict'
     body = (
       <>
@@ -269,7 +287,11 @@ export function PaymentStep({
             </ul>
           ) : null}
           <p className="m-0 text-neutral-300">
-            {conflict ? CHECKOUT_COPY.conflictText : checkout.error}
+            {conflict
+              ? CHECKOUT_COPY.conflictText
+              : changed
+                ? CHECKOUT_COPY.orderChanged
+                : checkout.error}
           </p>
         </div>
         <StepActions onBack={onBack}>
@@ -282,7 +304,7 @@ export function PaymentStep({
               if (method !== null) void checkout.confirm(method)
             }}
           >
-            {conflict ? CHECKOUT_COPY.confirmAgain : CHECKOUT_COPY.retry}
+            {conflict || changed ? CHECKOUT_COPY.confirmAgain : CHECKOUT_COPY.retry}
           </Button>
         </StepActions>
       </>

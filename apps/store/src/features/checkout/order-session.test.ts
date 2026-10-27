@@ -5,6 +5,7 @@ import {
   ORDER_SESSION_KEY,
   readOrderSession,
   readOrderToken,
+  saveChallengeUrl,
   saveOrderSession,
 } from './order-session'
 
@@ -37,6 +38,54 @@ describe('order-session', () => {
     saveOrderSession(SESSION)
     clearOrderSession()
     expect(readOrderSession()).toBeNull()
+  })
+
+  it('recuerda la dirección del desafío 3-D Secure del pedido y la olvida con null', () => {
+    saveOrderSession(SESSION)
+    saveChallengeUrl('GLP-10001', 'https://www.mercadopago.com.ar/3ds/challenge?id=abc123')
+    expect(readOrderSession()).toEqual({
+      ...SESSION,
+      challengeUrl: 'https://www.mercadopago.com.ar/3ds/challenge?id=abc123',
+    })
+
+    saveChallengeUrl('GLP-10001', '/checkout/mp-simulado?pedido=GLP-10001&challenge=1')
+    expect(readOrderSession()?.challengeUrl).toBe(
+      '/checkout/mp-simulado?pedido=GLP-10001&challenge=1',
+    )
+
+    saveChallengeUrl('GLP-10001', null)
+    expect(readOrderSession()).toEqual(SESSION)
+  })
+
+  it('no guarda el desafío de otro pedido ni si no hay pedido en curso', () => {
+    saveChallengeUrl('GLP-10001', 'https://www.mercadopago.com.ar/3ds/challenge?id=abc123')
+    expect(readOrderSession()).toBeNull()
+
+    saveOrderSession(SESSION)
+    saveChallengeUrl('GLP-99999', 'https://www.mercadopago.com.ar/3ds/challenge?id=abc123')
+    expect(readOrderSession()).toEqual(SESSION)
+  })
+
+  it('rechaza una dirección de desafío que no sea https ni una ruta de la tienda', () => {
+    saveOrderSession(SESSION)
+    for (const url of ['javascript:alert(1)', 'http://mp.example/3ds', '//evil.example/3ds', '']) {
+      expect(() => {
+        saveChallengeUrl('GLP-10001', url)
+      }).toThrow(RangeError)
+    }
+    expect(() => {
+      saveChallengeUrl('ABC', null)
+    }).toThrow(RangeError)
+  })
+
+  it('descarta el desafío guardado si no sirve, pero conserva el pedido', () => {
+    sessionStorage.setItem(
+      ORDER_SESSION_KEY,
+      JSON.stringify({ ...SESSION, challengeUrl: 'javascript:alert(1)' }),
+    )
+    expect(readOrderSession()).toEqual(SESSION)
+    sessionStorage.setItem(ORDER_SESSION_KEY, JSON.stringify({ ...SESSION, challengeUrl: 42 }))
+    expect(readOrderSession()).toEqual(SESSION)
   })
 
   it('rechaza un número sin formato o un token vacío', () => {

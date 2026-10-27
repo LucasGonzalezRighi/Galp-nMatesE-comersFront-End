@@ -344,6 +344,66 @@ describe('Checkout', () => {
     })
   })
 
+  it('si el carrito cambia con el medio ya elegido pide confirmar de nuevo y no deja sin salida', async () => {
+    const user = userEvent.setup()
+    const testApi = createCheckoutApi()
+    addYerba(testApi.db)
+    renderCheckout(testApi)
+    await fillContact(user)
+    await choosePickup(user)
+    await choosePayment(user, /Mercado Pago/)
+    const firstTotal = formatPesos(pesos(yerbaPrice(testApi.db)))
+    await screen.findByRole('button', { name: payWithMpLabel(firstTotal) })
+
+    // El pedido deja de valer, pero el radio sigue marcado y no vuelve a disparar `onChange`.
+    addYerba(testApi.db)
+    const confirmAgain = await screen.findByRole('button', { name: CHECKOUT_COPY.confirmAgain })
+    expect(screen.getByText(CHECKOUT_COPY.orderChanged)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Pagar/ })).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(confirmAgain).toBeEnabled()
+    })
+    await user.click(confirmAgain)
+
+    const newTotal = formatPesos(pesos(yerbaPrice(testApi.db) * 2))
+    expect(
+      await screen.findByRole('button', { name: payWithMpLabel(newTotal) }),
+    ).toBeInTheDocument()
+    expect(testApi.db.orders).toHaveLength(2)
+    expect(screen.queryByText(CHECKOUT_COPY.orderChanged)).not.toBeInTheDocument()
+  })
+
+  it('con 3-D Secure abre el desafío, recuerda su dirección para retomarlo y al cerrar va al resultado', async () => {
+    const user = userEvent.setup()
+    const testApi = createCheckoutApi()
+    addYerba(testApi.db)
+    renderCheckout(testApi)
+    await fillContact(user)
+    await choosePickup(user)
+    await choosePayment(user, /Tarjeta de crédito o débito/)
+
+    await user.type(await screen.findByLabelText('Número de tarjeta'), '4509953566233704')
+    await user.type(screen.getByLabelText('Nombre del titular'), '3DS')
+    await user.type(screen.getByLabelText('Vencimiento'), '1130')
+    await user.type(screen.getByLabelText('CVC'), '123')
+    await user.type(screen.getByLabelText('Número de documento'), '12345678')
+    await waitFor(() => {
+      expect(requestsTo(testApi.requests, 'POST', '/installments').length).toBeGreaterThan(0)
+    })
+
+    const total = formatPesos(pesos(yerbaPrice(testApi.db)))
+    await user.click(screen.getByRole('button', { name: `Pagar ${total}` }))
+    const number = testApi.db.orders[0]?.number ?? ''
+    const challengeUrl = `/checkout/mp-simulado?pedido=${number}&challenge=1`
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.querySelector('iframe')).toHaveAttribute('src', challengeUrl)
+    expect(readOrderSession()?.challengeUrl).toBe(challengeUrl)
+    expect(navigation.push).not.toHaveBeenCalled()
+
+    await user.click(within(dialog).getByRole('button', { name: /Ya terminé/ }))
+    expect(navigation.push).toHaveBeenCalledWith(`/checkout/resultado?pedido=${number}`)
+  })
+
   it('con tarjeta cobra el total confirmado y lleva al resultado del pedido', async () => {
     const user = userEvent.setup()
     const testApi = createCheckoutApi()
@@ -369,5 +429,6 @@ describe('Checkout', () => {
       expect(navigation.push).toHaveBeenCalledWith(`/checkout/resultado?pedido=${number}`)
     })
     expect(requestsTo(testApi.requests, 'POST', '/card')).toHaveLength(1)
+    expect(readOrderSession()?.challengeUrl).toBeUndefined()
   })
 })

@@ -605,7 +605,7 @@ POST /orders { …, expectedTotalArs }  (Idempotency-Key)
 |---|---|
 | `approved` | "¡Gracias, {nombre}!" con check dibujado, "Tu pedido GLP-12345 está confirmado. Te enviamos el detalle a {email}…", líneas, envío, medio y total, "Seguir comprando". Vacía el carrito |
 | `pending` | "Estamos esperando la confirmación del pago" (consulta cada 5 s); a los 2 min: "Te avisamos por mail apenas se acredite" + número de pedido |
-| `action_required` | Retoma la verificación 3-D Secure |
+| `action_required` | Retoma la verificación 3-D Secure (con la dirección del desafío que el checkout dejó en `sessionStorage` de la pestaña, porque `Order.payment` no la trae; sin ella ofrece "Pagar de nuevo") |
 | `rejected` | Motivo legible en español (según `statusDetail`) + "Probar con otro medio" |
 | `none` | "No completaste el pago" + "Pagar" |
 | `cancelled` / pedido `expired` | "El pedido venció" + "Volver al carrito" |
