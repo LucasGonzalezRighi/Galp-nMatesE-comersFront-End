@@ -34,11 +34,11 @@ Aparecen en las tablas como ✅ con su nota. Las claves A vienen de `CHECKLIST-P
 | Paso 1, Contacto (`checkout-contact`) 390 | ✅ A1 B4 | ✅ A6 | ✅ | ✅ | ✅ A1 | ✅ | ✅ |
 | Paso 2, Envío (`checkout-shipping`) 1440 | ✅ A1 B4 | ✅ B3 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Paso 2, Envío (`checkout-shipping`) 390 | ✅ A1 B4 | ✅ B3 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Paso 3, Pago con Mercado Pago (`checkout-payment`) 1440 | ❌ 3 (B1 B2) | ✅ B1 B2 | ✅ | ✅ | ✅ | ✅ B1 | ✅ |
-| Paso 3, Pago con Mercado Pago (`checkout-payment`) 390 | ❌ 3 (B1 B2 B4) | ✅ B1 B2 | ✅ | ✅ | ✅ | ✅ B1 | ✅ |
-| Resumen "Tu pedido" (en los tres pasos) | ✅ | ❌ 2 (A4) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Resultado aprobado (`checkout-result`) 1440 | ✅ B5 | ✅ B5 B6 | ✅ | ❌ 4 | ✅ | ✅ | ✅ |
-| Resultado aprobado (`checkout-result`) 390 | ✅ B4 B5 | ✅ B5 B6 | ✅ | ❌ 4 | ✅ | ✅ | ✅ |
+| Paso 3, Pago con Mercado Pago (`checkout-payment`) 1440 | ✅ B1 B2 (3 resuelto en ba22fb6) | ✅ B1 B2 | ✅ | ✅ | ✅ | ✅ B1 | ✅ |
+| Paso 3, Pago con Mercado Pago (`checkout-payment`) 390 | ✅ B1 B2 B4 (3 resuelto en ba22fb6) | ✅ B1 B2 | ✅ | ✅ | ✅ | ✅ B1 | ✅ |
+| Resumen "Tu pedido" (en los tres pasos) | ✅ | ✅ A4 (2 resuelto en ba22fb6) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Resultado aprobado (`checkout-result`) 1440 | ✅ B5 | ✅ B5 B6 | ✅ | ✅ (4 resuelto en ba22fb6) | ✅ | ✅ | ✅ |
+| Resultado aprobado (`checkout-result`) 390 | ✅ B4 B5 | ✅ B5 B6 | ✅ | ✅ (4 resuelto en ba22fb6) | ✅ | ✅ | ✅ |
 | Pie (en todas) | ✅ A5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Pantallas sin referencia (el diseño no las tiene)
