@@ -322,7 +322,9 @@ Ajustes (`/ajustes`, `SettingsForm` con `settingsFormSchema`, una sola página c
 
 ## Ola 4 (en paralelo)
 
-### Task 13: Tienda — pulidos del checkout y layout del simulador (deudas de P3)
+> **Hecho antes de la Ola 0 (2026-10-27):** las Tasks 13 y 14 se ejecutaron como una sola tarea de pulidos de la tienda fuera de este plan (commits `ba22fb6` y `033e75e`: dos root layouts `(tienda)` y `(simulador)`, desvíos 2–4 del checklist, `Reveal` del checkout, `queryKeys.cartQuotes()`, lectura única del catálogo, buscador y contacto, test de `PageEnter` determinista, descripciones del contrato). En esta ola corre solo la Task 15. Se dejan como registro.
+
+### Task 13: Tienda — pulidos del checkout y layout del simulador (deudas de P3) — HECHA (ba22fb6, 033e75e)
 
 **Dueño:** `apps/store/src/features/checkout/**`, `apps/store/src/app/layout.tsx`, `apps/store/src/app/not-found.tsx`, `apps/store/src/app/(tienda)/layout.tsx` (nuevo), `apps/store/src/app/(tienda)/error.tsx` (nuevo), `apps/store/src/app/(tienda)/checkout/mp-simulado/**` (se mueve a `apps/store/src/app/(simulador)/checkout/mp-simulado/**`), `apps/store/src/components/layout/{StoreChrome.tsx,index.ts}`, `e2e/store/checkout.spec.ts`, `docs/design/galpon-tienda-v3/CHECKLIST-P3.md`.
 
@@ -337,7 +339,7 @@ Ajustes (`/ajustes`, `SettingsForm` con `settingsFormSchema`, una sola página c
 - Si Lucas eligió la alternativa de la pregunta 5 antes de esta ola, esta task suma `components/layout/Header.tsx` y `features/cart/CartButton.tsx` a su dueño y la implementa.
 - Tests: la fila del envío con y sin método; el orden de la línea del candado; el número en negrita; `Reveal` presente (y sin movimiento con `reduce`); la página del simulador sin header; el 404 con header; `npm run build -w @galpon/store` y `npx playwright test e2e/store/checkout.spec.ts e2e/store/navigation.spec.ts --project=store-desktop` (el E2E del 3-D Secure no ve el header dentro del iframe).
 
-### Task 14: Tienda — deudas de P2 y documentos
+### Task 14: Tienda — deudas de P2 y documentos — HECHA (ba22fb6)
 
 **Dueño:** `apps/store/src/lib/data/catalog.ts`, `apps/store/src/app/(tienda)/kit/kit-data.ts`, `apps/store/src/features/catalog/catalog.data.ts`, `apps/store/src/features/home/home.data.ts`, `apps/store/src/features/product/product.data.ts`, `apps/store/src/features/search/**`, `apps/store/src/features/contact/**`, `apps/store/src/features/about/**`, `docs/superpowers/plans/2026-10-21-p2-tienda-publica.md`.
 
