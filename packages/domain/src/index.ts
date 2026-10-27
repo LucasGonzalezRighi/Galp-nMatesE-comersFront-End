@@ -3,11 +3,13 @@
  *
  * @packageDocumentation
  */
+export * from './admin-orders'
 export * from './cart'
 export * from './catalog'
 export * from './dates'
 export * from './installments'
 export * from './kit'
+export * from './media'
 export * from './money'
 export * from './options'
 export * from './orders'

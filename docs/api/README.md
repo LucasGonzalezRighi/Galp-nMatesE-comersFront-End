@@ -16,7 +16,7 @@ Salen de la sección 12 del [diseño del front](../superpowers/specs/2026-10-19-
 - **Nulos**: se escriben con `type: [X, 'null']`, o con `oneOf` cuando es una referencia. Un campo que puede faltar y uno que vale `null` son cosas distintas: todo campo que no está en `required` puede no venir; el resto siempre viene, aunque sea `null`.
 - **Fechas**: ISO 8601 en UTC (`date-time`). Solo `LegalContent.updatedAt` es una fecha sin hora (`date`). El front las muestra en `America/Argentina/Buenos_Aires`.
 - **Listas paginadas**: `?page=&pageSize=` (de 1 a 100) y respuesta `{ items, page, pageSize, total }`.
-- **Errores**: `application/problem+json` (`Problem`), con `errors` para el detalle por campo y `changes` para los conflictos de pedido. Los errores comunes están en `components.responses` (`ValidationError`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `RateLimited`, `ServerError`); se referencian, no se repiten.
+- **Errores**: `application/problem+json` (`Problem`), con `errors` para el detalle por campo y `changes` para los conflictos de pedido. Los errores comunes están en `components.responses` (`ValidationError`, `IdempotentValidationError`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `RateLimited`, `ServerError`); se referencian, no se repiten.
 - **Límite de uso**: `429` siempre trae la cabecera `Retry-After`.
 - **Seguridad**: la sesión, el token CSRF (`X-CSRF-Token`) y el token de pedido (`X-Order-Token`) son esquemas de seguridad (`components.securitySchemes`), no parámetros. Así el middleware del cliente los agrega y las llamadas no los piden una por una. Las rutas públicas declaran `security: []`.
 - **Idempotencia**: las escrituras de pedidos y pagos llevan `Idempotency-Key` (un UUID por intento), que es el parámetro `IdempotencyKey`. La misma clave con otro cuerpo responde `422` con `type` `idempotency_key_reused`.
@@ -45,6 +45,24 @@ Las rutas de pago del pedido llevan `X-Order-Token` (el que entrega `POST /order
 La cotización del carrito trae también los importes sin impuestos nacionales que exige la Ley 27.743: `netUnitPriceArs` en cada línea (también en los kits) y `netSubtotalArs`. Ambos son el neto del precio de venta, o sea de lo que paga el cliente: `netUnitPriceArs` se calcula sobre el precio efectivo por unidad (`totalArs / cantidad`, con el ahorro por kit ya descontado) y `netSubtotalArs` sobre `subtotalArs`. Valen `null` si el ajuste `priceDisplay.showNetPrice` está apagado.
 
 Las rutas de `admin` llevan la cookie de sesión `adminSession` (`__Host-galpon_admin`, `SameSite=Lax`); las que escriben llevan además el token `X-CSRF-Token`. El login es la excepción: no tiene sesión todavía y devuelve el token en `csrfToken`. El `PUT` de contenido y de ajustes y el `PATCH` de productos y líneas llevan el objeto completo, como `PATCH /me/addresses/{id}`; el `PATCH` de reseñas y de mensajes modifica solo los campos que vienen.
+
+## Cambios de P4 que el back tiene que implementar
+
+El dashboard (P4) cambió el contrato en estos puntos. Cada uno tiene su `description` en `openapi.yaml` y, si es una regla de formulario, sus casos en `validation-cases.json`:
+
+- **Ediciones concurrentes de productos**: `AdminProductInput.expectedUpdatedAt` (opcional, `date-time`). `PATCH /admin/products/{id}` lo compara con el `updatedAt` guardado y, si no coincide, responde `409` con `type` `product_changed` ("El producto cambió desde que lo abriste.") sin guardar nada; si falta, guarda igual. `POST /admin/products` lo ignora. El `409` del `PATCH` tiene dos ejemplos: `slug_taken` y `product_changed`.
+- **Fotos de los socios**: `PUT /admin/content/about` recibe `AboutContentInput` (como `AboutContent`, pero `partners[].photo` es `ImageInput | null`) y el back arma la `url` desde `publicId`, como en productos y líneas. La respuesta sigue siendo `AboutContent`.
+- **Fotos que el back no conoce**: un `publicId` que no salió de una subida responde `422` en ese campo (`images.N.publicId` en un producto, `image.publicId` en una línea, `partners.N.photo.publicId` en Nosotros).
+- **Límites de los contenidos**: `HomeContent`, `AboutContent`, `AboutContentInput`, `FaqContent`, `FooterContent`, `ProductTabsGroupContent`, `ProductTabsContent` y `LegalContent` tienen `maxLength`, `minItems` y `maxItems` (y las cifras del inicio, de 0 a 999), los mismos que los `*ContentFormSchema` de `@galpon/schemas`. Los textos se recortan y los obligatorios no pueden quedar vacíos ("Requerido").
+- **Filtro de pedidos con varios estados**: `GET /admin/orders` acepta `status` repetido (`?status=paid&status=preparing`, "Para despachar" en el dashboard) y devuelve los pedidos que están en alguno de ellos.
+- **Cambios de estado del pedido**: `POST /admin/orders/{number}/status` aplica la tabla de su `description` (la misma que `adminOrderTargets` de `@galpon/domain`). Cancelar un pedido en `pending_payment` con un pago `pending` o `action_required` responde `409` `payment_in_progress`; cualquier otro cambio no permitido, `409` `invalid_status_transition`. Cancelar libera la reserva de stock y cancela el intento de pago activo; despachar guarda `tracking`.
+- **CSRF rotado**: el `403` (`Forbidden`) documenta `type` `csrf_invalid` ("El token CSRF falta o no es válido."), por ejemplo cuando otro inicio de sesión rotó el token.
+- **Subida de fotos**: `MediaSignature` firma `folder` y `timestamp`; la subida a Cloudinary manda exactamente `file`, `api_key`, `timestamp`, `signature` y `folder`. Carpetas por `purpose`: `product` → `galpon/productos`, `category` → `galpon/lineas`, `partner` → `galpon/socios`, `site` → `galpon/sitio`.
+- **Ajustes**: `PUT /admin/settings` ignora `shippingOptions[].label`, que es fijo por método.
+- **3-D Secure desde cualquier pestaña**: `OrderPayment.challenge` (`PaymentChallenge | null`, obligatorio) es la verificación pendiente del intento de pago activo, la misma que devolvió `POST …/card` en `CardPaymentResult.challenge`; vale `null` si el pago no está en `action_required`.
+- **Precedencia de los avisos del carrito** (deuda de P3): en `expectedUnitPriceArs`, `quantity_reduced` y `stock_changed` ganan a `price_changed`.
+- **Clave de idempotencia repetida** (deuda de P3): el `422` de `POST /orders`, `…/preference` y `…/card` es `IdempotentValidationError`, que además de `validation_error` documenta `type` `idempotency_key_reused` (la misma `Idempotency-Key` con otros datos).
+- **Validaciones nuevas del dashboard**: `categoryOrderSchema`, `mediaSignatureSchema`, `orderStatusChangeSchema`, `adminReviewUpdateSchema`, `messageUpdateSchema` y los seis `*ContentFormSchema`, con sus casos en `validation-cases.json`.
 
 ## Cómo se valida
 

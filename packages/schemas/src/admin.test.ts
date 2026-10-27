@@ -1,13 +1,32 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { MAX_KIT_DISCOUNT_PERCENT, PRODUCT_GROUPS, SHIPPING_METHODS } from '@galpon/domain'
-import type { CategoryForm, ProductForm, SettingsForm, SettingsFormInput } from './admin'
+import type { AdminOrderTarget, MediaPurpose } from '@galpon/domain'
+import {
+  ADMIN_ORDER_TARGETS,
+  MAX_KIT_DISCOUNT_PERCENT,
+  MEDIA_PURPOSES,
+  PRODUCT_GROUPS,
+  SHIPPING_METHODS,
+} from '@galpon/domain'
+import type {
+  CategoryForm,
+  MediaSignatureForm,
+  OrderStatusChangeForm,
+  ProductForm,
+  SettingsForm,
+  SettingsFormInput,
+} from './admin'
 import {
   adminLoginSchema,
   adminPasswordChangeSchema,
+  adminReviewUpdateSchema,
   categoryFormSchema,
+  categoryOrderSchema,
   cuitSchema,
   dispatchSchema,
   imageFormSchema,
+  mediaSignatureSchema,
+  messageUpdateSchema,
+  orderStatusChangeSchema,
   productFormSchema,
   settingsFormSchema,
   slugSchema,
@@ -815,5 +834,202 @@ describe('cuitSchema', () => {
 
   it.each([undefined, null, 20123456786])('rechaza lo que no es texto (%j)', (input) => {
     expect(messagesOf(cuitSchema, input)).toEqual(['CUIT inválido'])
+  })
+})
+
+describe('categoryOrderSchema', () => {
+  it('acepta las líneas en el orden nuevo y recorta cada identificador', () => {
+    expect(categoryOrderSchema.parse({ ids: [' cat-torpedos ', 'cat-imperiales'] })).toEqual({
+      ids: ['cat-torpedos', 'cat-imperiales'],
+    })
+  })
+
+  it('una lista vacía da "Requerido"', () => {
+    expect(issuesOf(categoryOrderSchema, { ids: [] })).toEqual([
+      { path: ['ids'], message: 'Requerido' },
+    ])
+  })
+
+  it('una línea repetida da el error en la lista', () => {
+    expect(
+      issuesOf(categoryOrderSchema, { ids: ['cat-imperiales', 'cat-torpedos', ' cat-imperiales'] }),
+    ).toEqual([{ path: ['ids'], message: 'Cada línea tiene que aparecer una sola vez' }])
+  })
+
+  it.each([
+    ['', 'Requerido'],
+    ['a'.repeat(81), 'Máximo 80 caracteres'],
+  ])('rechaza el identificador %j', (id, message) => {
+    expect(issuesOf(categoryOrderSchema, { ids: ['cat-imperiales', id] })).toEqual([
+      { path: ['ids', 1], message },
+    ])
+  })
+})
+
+describe('mediaSignatureSchema', () => {
+  it.each(MEDIA_PURPOSES)('acepta el uso %s', (purpose) => {
+    expect(mediaSignatureSchema.parse({ purpose })).toEqual({ purpose })
+  })
+
+  it('rechaza un uso desconocido', () => {
+    expect(issuesOf(mediaSignatureSchema, { purpose: 'avatar' })).toEqual([
+      { path: ['purpose'], message: 'Elegí para qué es la foto' },
+    ])
+  })
+
+  it('el uso es el del dominio', () => {
+    expectTypeOf<MediaSignatureForm['purpose']>().toEqualTypeOf<MediaPurpose>()
+  })
+})
+
+describe('orderStatusChangeSchema', () => {
+  const shipped = {
+    status: 'shipped',
+    carrier: 'Andreani',
+    trackingNumber: 'AND123456789',
+    note: null,
+  }
+
+  it('al despachar recorta la empresa, el seguimiento y la nota', () => {
+    expect(
+      orderStatusChangeSchema.parse({
+        status: 'shipped',
+        carrier: ' Andreani ',
+        trackingNumber: ' AND123456789 ',
+        note: ' Sale mañana a primera hora ',
+      }),
+    ).toEqual({ ...shipped, note: 'Sale mañana a primera hora' })
+  })
+
+  it.each(['preparing', 'delivered', 'cancelled'])(
+    'con %s la empresa y el seguimiento van en null',
+    (status) => {
+      expect(
+        orderStatusChangeSchema.parse({ status, carrier: null, trackingNumber: null, note: null }),
+      ).toEqual({ status, carrier: null, trackingNumber: null, note: null })
+    },
+  )
+
+  it('sin empresa, seguimiento ni nota los completa con null', () => {
+    expect(orderStatusChangeSchema.parse({ status: 'preparing' })).toEqual({
+      status: 'preparing',
+      carrier: null,
+      trackingNumber: null,
+      note: null,
+    })
+  })
+
+  it.each(['', '   '])('una nota %j queda en null', (note) => {
+    expect(orderStatusChangeSchema.parse({ ...shipped, note }).note).toBeNull()
+  })
+
+  it('la nota admite hasta 500 caracteres', () => {
+    expect(orderStatusChangeSchema.parse({ ...shipped, note: 'a'.repeat(500) }).note).toHaveLength(
+      500,
+    )
+    expect(issuesOf(orderStatusChangeSchema, { ...shipped, note: 'a'.repeat(501) })).toEqual([
+      { path: ['note'], message: 'Máximo 500 caracteres' },
+    ])
+  })
+
+  it.each([
+    [null, 'Requerido'],
+    ['', 'Requerido'],
+    ['A', 'Mínimo 2 caracteres'],
+    ['a'.repeat(41), 'Máximo 40 caracteres'],
+  ])('al despachar rechaza la empresa %j con el mensaje del despacho', (carrier, message) => {
+    expect(issuesOf(orderStatusChangeSchema, { ...shipped, carrier })).toEqual([
+      { path: ['carrier'], message },
+    ])
+  })
+
+  it.each([
+    [null, 'Requerido'],
+    ['', 'Requerido'],
+    ['ABC', 'Mínimo 4 caracteres'],
+    ['a'.repeat(41), 'Máximo 40 caracteres'],
+  ])(
+    'al despachar rechaza el seguimiento %j con el mensaje del despacho',
+    (trackingNumber, message) => {
+      expect(issuesOf(orderStatusChangeSchema, { ...shipped, trackingNumber })).toEqual([
+        { path: ['trackingNumber'], message },
+      ])
+    },
+  )
+
+  it('con los demás destinos no admite empresa ni seguimiento', () => {
+    expect(
+      issuesOf(orderStatusChangeSchema, {
+        status: 'cancelled',
+        carrier: 'Andreani',
+        trackingNumber: 'AND123456789',
+        note: null,
+      }),
+    ).toEqual([
+      { path: ['carrier'], message: 'Solo se completa al despachar el pedido' },
+      { path: ['trackingNumber'], message: 'Solo se completa al despachar el pedido' },
+    ])
+  })
+
+  it.each(['paid', 'pending_payment', 'refunded'])('rechaza el destino %s', (status) => {
+    expect(issuesOf(orderStatusChangeSchema, { ...shipped, status })).toEqual([
+      { path: ['status'], message: 'Elegí el estado nuevo del pedido' },
+    ])
+  })
+
+  it('los destinos son los del dominio', () => {
+    expectTypeOf<OrderStatusChangeForm['status']>().toEqualTypeOf<AdminOrderTarget>()
+    for (const status of ADMIN_ORDER_TARGETS) {
+      const change = status === 'shipped' ? shipped : { status }
+      expect(orderStatusChangeSchema.safeParse({ ...change, status }).success).toBe(true)
+    }
+  })
+})
+
+describe('adminReviewUpdateSchema', () => {
+  it.each([
+    { status: 'approved' },
+    { status: 'hidden' },
+    { featured: true },
+    { status: 'pending', featured: false },
+  ])('acepta %j', (update) => {
+    expect(adminReviewUpdateSchema.parse(update)).toEqual(update)
+  })
+
+  it('sin ningún cambio da "Mandá al menos un cambio"', () => {
+    expect(issuesOf(adminReviewUpdateSchema, {})).toEqual([
+      { path: [], message: 'Mandá al menos un cambio' },
+    ])
+  })
+
+  it('descarta los campos que no se moderan', () => {
+    expect(issuesOf(adminReviewUpdateSchema, { text: 'Otro texto' })).toEqual([
+      { path: [], message: 'Mandá al menos un cambio' },
+    ])
+    expect(adminReviewUpdateSchema.parse({ featured: true, text: 'Otro texto' })).toEqual({
+      featured: true,
+    })
+  })
+
+  it('rechaza un estado desconocido', () => {
+    expect(issuesOf(adminReviewUpdateSchema, { status: 'deleted' })).toEqual([
+      { path: ['status'], message: 'Elegí un estado' },
+    ])
+  })
+
+  it('rechaza un destacado que no es sí o no', () => {
+    expect(
+      issuesOf(adminReviewUpdateSchema, { featured: 'sí' }).map((issue) => issue.path),
+    ).toEqual([['featured']])
+  })
+})
+
+describe('messageUpdateSchema', () => {
+  it.each([true, false])('acepta read %s', (read) => {
+    expect(messageUpdateSchema.parse({ read })).toEqual({ read })
+  })
+
+  it('rechaza un cambio sin read', () => {
+    expect(issuesOf(messageUpdateSchema, {}).map((issue) => issue.path)).toEqual([['read']])
   })
 })

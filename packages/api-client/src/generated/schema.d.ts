@@ -186,7 +186,7 @@ export interface paths {
         get: operations["getAdminAboutContent"];
         /**
          * Guardar los textos de Nosotros
-         * @description Reemplaza los textos de Nosotros: el cuerpo lleva el contenido completo.
+         * @description Reemplaza los textos de Nosotros: el cuerpo lleva el contenido completo, con la foto de cada socio como `ImageInput`. Responde con el contenido guardado, con las fotos ya armadas (`AboutContent`).
          */
         put: operations["updateAdminAboutContent"];
         post?: never;
@@ -447,7 +447,20 @@ export interface paths {
         put?: never;
         /**
          * Cambiar el estado de un pedido
-         * @description Mueve el pedido a `preparing`, `shipped`, `delivered` o `cancelled`. Para `shipped` hacen falta `carrier` y `trackingNumber`; para los demás van en `null`. Solo se cancela un pedido que todavía no se pagó. El estado del pago no se edita: lo escribe el back a partir de Mercado Pago.
+         * @description Mueve el pedido a `preparing`, `shipped`, `delivered` o `cancelled`. Para `shipped` hacen falta `carrier` y `trackingNumber` (se guardan en `tracking`); para los demás van en `null`. La `note` queda en el historial. El estado del pago no se edita: lo escribe el back a partir de Mercado Pago.
+         *
+         *     Transiciones permitidas (las mismas que `adminOrderTargets` de `@galpon/domain`):
+         *
+         *     | Estado del pedido | Destinos |
+         *     | --- | --- |
+         *     | `paid` | `preparing` o `shipped` |
+         *     | `preparing` | `shipped` |
+         *     | `shipped` | `delivered` |
+         *     | `pending_payment` con pago `none`, `rejected` o `cancelled` | `cancelled`: libera la reserva de stock y cancela el intento de pago activo |
+         *     | `pending_payment` con pago `pending` o `action_required` | ninguno: pedir `cancelled` responde `409` con `type` `payment_in_progress` |
+         *     | `delivered`, `cancelled`, `expired` y `refunded` | ninguno |
+         *
+         *     Cualquier otro cambio responde `409` con `type` `invalid_status_transition` (por ejemplo, cancelar un pedido pagado).
          */
         post: operations["changeOrderStatus"];
         delete?: never;
@@ -499,7 +512,7 @@ export interface paths {
         head?: never;
         /**
          * Modificar un producto
-         * @description Reemplaza los datos editables del producto: el cuerpo lleva el producto completo. Si cambia el `slug`, el anterior pasa a `previousSlugs` y la tienda lo redirige al nuevo. Responde `409` si el `slug` ya lo usa otro producto.
+         * @description Reemplaza los datos editables del producto: el cuerpo lleva el producto completo. Si cambia el `slug`, el anterior pasa a `previousSlugs` y la tienda lo redirige al nuevo. Responde `409` con `type` `slug_taken` si el `slug` ya lo usa otro producto, y con `type` `product_changed` si vino `expectedUpdatedAt` y no coincide con el `updatedAt` guardado (alguien lo modificó desde que se abrió): no guarda nada y el dashboard ofrece ver la versión guardada o guardar encima, mandando el `updatedAt` nuevo.
          */
         patch: operations["updateAdminProduct"];
         trace?: never;
@@ -578,7 +591,7 @@ export interface paths {
         get: operations["getAdminSettings"];
         /**
          * Guardar los ajustes
-         * @description Reemplaza los ajustes: el cuerpo lleva todos. Tienen que venir las tres opciones de envío, una por método.
+         * @description Reemplaza los ajustes: el cuerpo lleva todos. Tienen que venir las tres opciones de envío, una por método. El back ignora `shippingOptions[].label`: el nombre de cada método es fijo.
          */
         put: operations["updateAdminSettings"];
         post?: never;
@@ -1129,7 +1142,7 @@ export interface paths {
          * Crear la preferencia de pago en Mercado Pago
          * @description Crea la preferencia de Mercado Pago del pedido y devuelve `initPoint`, la dirección a la que el front redirige al cliente para que pague. La preferencia vence junto con la reserva de stock del pedido.
          *
-         *     **Idempotencia**: con la misma `Idempotency-Key` devuelve la misma preferencia en lugar de crear otra.
+         *     **Idempotencia**: con la misma `Idempotency-Key` devuelve la misma preferencia en lugar de crear otra, y si la clave ya se usó con otros datos responde `422` con `type` `idempotency_key_reused`.
          *
          *     **Un intento de pago activo por pedido**: si el pedido ya tenía una preferencia o un pago pendiente, el back lo cancela antes de crear este. Si igual llegara un segundo pago aprobado, se marca para devolverlo y aparece como alerta en el dashboard.
          *
@@ -1332,27 +1345,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description Textos editables de la página Nosotros. */
+        /** @description Textos editables de la página Nosotros. Los límites son los de `aboutContentFormSchema` de `@galpon/schemas`: los textos se recortan y los obligatorios no pueden quedar vacíos. */
         AboutContent: {
             /**
-             * @description Texto del botón que lleva a la tienda.
+             * @description Texto del botón que lleva a la tienda, hasta 40 caracteres.
              * @example Conocé la tienda
              */
             ctaLabel: string;
             /** @description Portada de la página. */
             hero: {
                 /**
-                 * @description Texto corto que va arriba del título.
+                 * @description Texto corto que va arriba del título, hasta 60 caracteres.
                  * @example Sobre nosotros
                  */
                 eyebrow: string;
                 /**
-                 * @description Texto debajo del título.
+                 * @description Texto debajo del título, hasta 600 caracteres.
                  * @example Galpón nació entre dos socios que compartían la misma costumbre, un buen mate al lado. Hoy elegimos cada pieza, la revisamos a mano y la mandamos a todo el país.
                  */
                 text: string;
                 /**
-                 * @description Líneas del título, una debajo de la otra.
+                 * @description Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
                  * @example [
                  *       "Dos socios.",
                  *       "Un galpón.",
@@ -1361,41 +1374,109 @@ export interface components {
                  */
                 titleLines: string[];
             };
-            /** @description Socios, con su foto. */
+            /** @description Socios, con su foto; hasta 8. */
             partners: {
                 /**
-                 * @description Nombre del socio.
+                 * @description Nombre del socio, hasta 60 caracteres.
                  * @example Bruno Galimberti
                  */
                 name: string;
                 /** @description Foto del socio, o `null` si todavía no hay. */
                 photo: components["schemas"]["Image"] | null;
                 /**
-                 * @description Rol del socio.
+                 * @description Rol del socio, hasta 80 caracteres.
                  * @example Socio fundador
                  */
                 role: string;
             }[];
             /**
-             * @description Frase destacada de la página.
+             * @description Frase destacada de la página, hasta 300 caracteres.
              * @example No vendemos lo que no usaríamos. Cada mate pasa por nuestras manos antes de llegar a las tuyas.
              */
             quote: string;
-            /** @description Pasos de cómo trabaja el galpón. */
+            /** @description Los 3 pasos de cómo trabaja el galpón. */
             steps: {
                 /**
-                 * @description Texto del paso.
+                 * @description Texto del paso, hasta 400 caracteres.
                  * @example Buscamos formas parejas, paredes firmes y buena boca. Si no pasa la revisión, no sale.
                  */
                 text: string;
                 /**
-                 * @description Título del paso.
+                 * @description Título del paso, hasta 60 caracteres.
                  * @example Elegimos cada calabaza
                  */
                 title: string;
             }[];
             /**
-             * @description Texto corto que va arriba de los pasos.
+             * @description Texto corto que va arriba de los pasos, hasta 60 caracteres.
+             * @example Cómo trabajamos
+             */
+            stepsEyebrow: string;
+        };
+        /** @description Textos de Nosotros que guarda el dashboard: lo mismo que `AboutContent`, con la foto de cada socio como `ImageInput` (el back arma la `url` desde `publicId`, como en productos y líneas). Los límites son los de `aboutContentFormSchema` de `@galpon/schemas`. */
+        AboutContentInput: {
+            /**
+             * @description Texto del botón que lleva a la tienda, hasta 40 caracteres.
+             * @example Conocé la tienda
+             */
+            ctaLabel: string;
+            /** @description Portada de la página. */
+            hero: {
+                /**
+                 * @description Texto corto que va arriba del título, hasta 60 caracteres.
+                 * @example Sobre nosotros
+                 */
+                eyebrow: string;
+                /**
+                 * @description Texto debajo del título, hasta 600 caracteres.
+                 * @example Galpón nació entre dos socios que compartían la misma costumbre, un buen mate al lado.
+                 */
+                text: string;
+                /**
+                 * @description Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
+                 * @example [
+                 *       "Dos socios.",
+                 *       "Un galpón.",
+                 *       "La ronda de siempre."
+                 *     ]
+                 */
+                titleLines: string[];
+            };
+            /** @description Socios, con su foto; hasta 8. */
+            partners: {
+                /**
+                 * @description Nombre del socio, hasta 60 caracteres.
+                 * @example Bruno Galimberti
+                 */
+                name: string;
+                /** @description Foto ya subida del socio, o `null` si no tiene. */
+                photo: components["schemas"]["ImageInput"] | null;
+                /**
+                 * @description Rol del socio, hasta 80 caracteres.
+                 * @example Socio fundador
+                 */
+                role: string;
+            }[];
+            /**
+             * @description Frase destacada de la página, hasta 300 caracteres.
+             * @example No vendemos lo que no usaríamos.
+             */
+            quote: string;
+            /** @description Los 3 pasos de cómo trabaja el galpón. */
+            steps: {
+                /**
+                 * @description Texto del paso, hasta 400 caracteres.
+                 * @example Buscamos formas parejas, paredes firmes y buena boca.
+                 */
+                text: string;
+                /**
+                 * @description Título del paso, hasta 60 caracteres.
+                 * @example Elegimos cada calabaza
+                 */
+                title: string;
+            }[];
+            /**
+             * @description Texto corto que va arriba de los pasos, hasta 60 caracteres.
              * @example Cómo trabajamos
              */
             stepsEyebrow: string;
@@ -1551,6 +1632,12 @@ export interface components {
              * @example Imperial con virola y base de alpaca con pelotitas en bronce.
              */
             description: string;
+            /**
+             * Format: date-time
+             * @description `updatedAt` del producto cuando se abrió para editarlo. Solo lo usa `PATCH /admin/products/{id}`: si no coincide con el `updatedAt` guardado responde `409` con `type` `product_changed` y no guarda nada; si falta, guarda igual (gana el último). `POST /admin/products` lo ignora.
+             * @example 2026-10-15T18:30:00Z
+             */
+            expectedUpdatedAt?: string;
             /**
              * @description Si es un producto destacado.
              * @example false
@@ -1734,14 +1821,7 @@ export interface components {
         /** @description Resultado de un intento de pago con tarjeta. `paymentStatus` es el estado en este momento: el definitivo llega por la notificación de Mercado Pago. */
         CardPaymentResult: {
             /** @description Verificación 3-D Secure pendiente, o `null` si no hace falta. */
-            challenge: {
-                /**
-                 * Format: uri
-                 * @description Dirección que se abre en un diálogo para que el cliente verifique la compra.
-                 * @example https://www.mercadopago.com.ar/3ds/challenge?id=abc123
-                 */
-                url: string;
-            } | null;
+            challenge: components["schemas"]["PaymentChallenge"] | null;
             paymentStatus: components["schemas"]["PaymentStatus"];
             /**
              * @description Detalle del estado que informa Mercado Pago, o `null` si no hay.
@@ -2195,30 +2275,30 @@ export interface components {
          * @example vos@ejemplo.com
          */
         Email: string;
-        /** @description Preguntas frecuentes, agrupadas por categoría. */
+        /** @description Preguntas frecuentes, agrupadas por categoría. Los límites son los de `faqContentFormSchema` de `@galpon/schemas`. */
         FaqContent: {
-            /** @description Categorías de preguntas, en el orden en que se muestran. */
+            /** @description Categorías de preguntas, en el orden en que se muestran; de 1 a 10. */
             categories: {
                 /**
-                 * @description Identificador de la categoría, usado en la dirección web.
+                 * @description Identificador de la categoría, usado en la dirección web. Minúsculas, números y guiones.
                  * @example envios
                  */
                 id: string;
-                /** @description Preguntas de la categoría. */
+                /** @description Preguntas de la categoría, de 1 a 30. */
                 items: {
                     /**
-                     * @description Respuesta.
+                     * @description Respuesta, hasta 2000 caracteres.
                      * @example Sí, enviamos a las 24 provincias. Podés elegir envío a domicilio o a sucursal.
                      */
                     answer: string;
                     /**
-                     * @description Pregunta.
+                     * @description Pregunta, hasta 200 caracteres.
                      * @example ¿Hacen envíos a todo el país?
                      */
                     question: string;
                 }[];
                 /**
-                 * @description Nombre de la categoría.
+                 * @description Nombre de la categoría, hasta 40 caracteres.
                  * @example Envíos
                  */
                 label: string;
@@ -2265,7 +2345,7 @@ export interface components {
             message: string;
         };
         /**
-         * @description Textos editables del pie de página.
+         * @description Textos editables del pie de página. Los límites son los de `footerContentFormSchema` de `@galpon/schemas`.
          * @example {
          *       "tagline": "Hechos para compartir.",
          *       "text": "Mates, bombillones y yerba con envío a todo el país.",
@@ -2281,12 +2361,12 @@ export interface components {
         FooterContent: {
             /**
              * Format: uri
-             * @description Enlace a Defensa del Consumidor, o `null` si no se muestra.
+             * @description Enlace a Defensa del Consumidor (http o https), o `null` si no se muestra.
              * @example https://www.argentina.gob.ar/produccion/defensadelconsumidor
              */
             consumerDefenseUrl: string | null;
             /**
-             * @description Nombres de los medios de pago que se muestran.
+             * @description Nombres de los medios de pago que se muestran; hasta 10, de hasta 40 caracteres.
              * @example [
              *       "Mercado Pago",
              *       "Visa",
@@ -2296,12 +2376,12 @@ export interface components {
              */
             paymentMethods: string[];
             /**
-             * @description Frase del pie.
+             * @description Frase del pie, hasta 80 caracteres.
              * @example Hechos para compartir.
              */
             tagline: string;
             /**
-             * @description Texto debajo de la frase.
+             * @description Texto debajo de la frase, hasta 300 caracteres.
              * @example Mates, bombillones y yerba con envío a todo el país.
              */
             text: string;
@@ -2310,7 +2390,7 @@ export interface components {
         ForgotPasswordInput: {
             email: components["schemas"]["Email"];
         };
-        /** @description Textos editables de la página de inicio. */
+        /** @description Textos editables de la página de inicio. Los límites son los de `homeContentFormSchema` de `@galpon/schemas`: los textos se recortan y los obligatorios no pueden quedar vacíos. */
         HomeContent: {
             /** @description Encabezado de la sección de líneas. */
             collection: components["schemas"]["SectionHeading"];
@@ -2319,27 +2399,27 @@ export interface components {
             /** @description Portada del inicio. */
             hero: {
                 /**
-                 * @description Texto corto que va arriba del título.
+                 * @description Texto corto que va arriba del título, hasta 60 caracteres.
                  * @example Hechos para compartir
                  */
                 eyebrow: string;
                 /**
-                 * @description Texto del botón principal.
+                 * @description Texto del botón principal, hasta 40 caracteres.
                  * @example Ver la tienda
                  */
                 primaryCtaLabel: string;
                 /**
-                 * @description Texto del botón secundario.
+                 * @description Texto del botón secundario, hasta 40 caracteres.
                  * @example Armá tu kit
                  */
                 secondaryCtaLabel: string;
                 /**
-                 * @description Texto debajo del título.
+                 * @description Texto debajo del título, hasta 600 caracteres.
                  * @example Calabaza curada, virola de alpaca cincelada y bombillones de bronce. Bajá, que te mostramos cada pieza de cerca.
                  */
                 text: string;
                 /**
-                 * @description Líneas del título, una debajo de la otra.
+                 * @description Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
                  * @example [
                  *       "Encontrá",
                  *       "tu mate."
@@ -2350,22 +2430,22 @@ export interface components {
             /** @description Bloque que invita a armar el kit. */
             kitBlock: {
                 /**
-                 * @description Texto del botón.
+                 * @description Texto del botón, hasta 40 caracteres.
                  * @example Armar mi kit
                  */
                 ctaLabel: string;
                 /**
-                 * @description Texto corto que va arriba del título.
+                 * @description Texto corto que va arriba del título, hasta 60 caracteres.
                  * @example Armá tu kit
                  */
                 eyebrow: string;
                 /**
-                 * @description Texto del bloque.
+                 * @description Texto del bloque, hasta 600 caracteres.
                  * @example Elegí las tres piezas en tres pasos. El descuento se aplica solo sobre el total del kit.
                  */
                 text: string;
                 /**
-                 * @description Título del bloque.
+                 * @description Título del bloque, hasta 60 caracteres.
                  * @example Mate, bombilla y yerba.
                  */
                 title: string;
@@ -2373,17 +2453,17 @@ export interface components {
             /** @description Frase del manifiesto. */
             manifesto: {
                 /**
-                 * @description Texto del enlace a Nosotros.
+                 * @description Texto del enlace a Nosotros, hasta 40 caracteres.
                  * @example Conocé la historia del galpón
                  */
                 ctaLabel: string;
                 /**
-                 * @description Texto corto que va arriba de la frase.
+                 * @description Texto corto que va arriba de la frase, hasta 60 caracteres.
                  * @example Manifiesto
                  */
                 eyebrow: string;
                 /**
-                 * @description Frase del manifiesto.
+                 * @description Frase del manifiesto, hasta 400 caracteres.
                  * @example Un mate no se compra, se elige. Calabaza curada, alpaca cincelada a mano y cuero cosido punto por punto. Piezas hechas para durar muchas rondas.
                  */
                 text: string;
@@ -2391,7 +2471,7 @@ export interface components {
             /** @description Encabezado de la sección de reseñas. */
             reviews: components["schemas"]["SectionHeading"];
             /**
-             * @description Los 4 pasos del ritual, en orden.
+             * @description Los 4 pasos del ritual, en orden, de hasta 80 caracteres cada uno.
              * @example [
              *       "Yerba",
              *       "Montañita",
@@ -2400,17 +2480,17 @@ export interface components {
              *     ]
              */
             ritualSteps: string[];
-            /** @description Las 6 escenas de la historia, en el orden en que se muestran. */
+            /** @description Las 6 escenas de la historia, en el orden en que se muestran; cada `key` aparece una sola vez. */
             scenes: components["schemas"]["StoryScene"][];
             /** @description Cifras editables que se muestran junto al manifiesto. */
             stats: {
                 /**
-                 * @description Cantidad de socios.
+                 * @description Cantidad de socios, de 0 a 999.
                  * @example 2
                  */
                 partners: number;
                 /**
-                 * @description Cantidad de provincias con envío.
+                 * @description Cantidad de provincias con envío, de 0 a 999.
                  * @example 24
                  */
                 provinces: number;
@@ -2487,7 +2567,7 @@ export interface components {
              */
             height: number;
             /**
-             * @description Identificador de la foto en el proveedor de imágenes.
+             * @description Identificador de la foto en el proveedor de imágenes, el que devolvió la subida. Si el back no conoce esa foto responde `422` en ese campo: `images.N.publicId` en un producto, `image.publicId` en una línea y `partners.N.photo.publicId` en Nosotros.
              * @example galpon/productos/mate-imperial-premium
              */
             publicId: string;
@@ -2591,17 +2671,17 @@ export interface components {
          * @enum {string}
          */
         Leather: "Negro" | "Marrón" | "Crudo" | "Borravino";
-        /** @description Documento legal (términos y condiciones o política de privacidad). */
+        /** @description Documento legal (términos y condiciones o política de privacidad). Los límites son los de `legalContentFormSchema` de `@galpon/schemas`. */
         LegalContent: {
             /**
-             * @description Texto del documento, con los párrafos separados por una línea en blanco.
+             * @description Texto del documento, con los párrafos separados por una línea en blanco; de 1 a 60.000 caracteres.
              * @example Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.
              *
              *     Segundo párrafo.
              */
             body: string;
             /**
-             * @description Título del documento.
+             * @description Título del documento, hasta 120 caracteres.
              * @example Términos y condiciones
              */
             title: string;
@@ -2627,7 +2707,7 @@ export interface components {
              */
             password: string;
         };
-        /** @description Datos firmados para subir una foto a Cloudinary desde el navegador. */
+        /** @description Datos firmados para subir una foto a Cloudinary desde el navegador. La subida (`POST https://api.cloudinary.com/v1_1/{cloudName}/image/upload`, `multipart/form-data`) manda exactamente `file`, `api_key` (este `apiKey`), `timestamp`, `signature` y `folder`. La firma cubre `folder` y `timestamp`, así que otro parámetro la invalida. */
         MediaSignature: {
             /**
              * @description Clave pública de la cuenta de Cloudinary.
@@ -2658,7 +2738,7 @@ export interface components {
         /** @description Pedido de firma para subir una foto. */
         MediaSignatureInput: {
             /**
-             * @description Para qué es la foto; define la carpeta de Cloudinary donde se guarda.
+             * @description Para qué es la foto; define la carpeta de Cloudinary donde se guarda: `product` → `galpon/productos`, `category` → `galpon/lineas`, `partner` → `galpon/socios` y `site` → `galpon/sitio`.
              * @example product
              * @enum {string}
              */
@@ -2752,7 +2832,8 @@ export interface components {
          *         "paymentTypeId": "credit_card",
          *         "lastFour": "4242",
          *         "statusDetail": "accredited",
-         *         "mpPaymentId": "1234567890"
+         *         "mpPaymentId": "1234567890",
+         *         "challenge": null
          *       },
          *       "tracking": null,
          *       "history": [
@@ -2876,6 +2957,8 @@ export interface components {
         OrderNumber: string;
         /** @description Pago del pedido. Salvo `method`, cada dato es `null` hasta que hay un intento de pago que lo informe. */
         OrderPayment: {
+            /** @description Verificación 3-D Secure pendiente del intento de pago activo, para retomarla desde cualquier pestaña, o `null` si el pago no está en `action_required`. Es la misma que devolvió `POST /orders/{number}/payments/mercadopago/card` (`CardPaymentResult.challenge`) para ese intento: el back la guarda con el intento y deja de mandarla cuando el pago se resuelve o se inicia otro intento. */
+            challenge: components["schemas"]["PaymentChallenge"] | null;
             /**
              * @description Cantidad de cuotas del pago.
              * @example 3
@@ -3003,6 +3086,15 @@ export interface components {
          * @example mate-con-yerba-2026
          */
         Password: string;
+        /** @description Verificación 3-D Secure que el cliente completa con su banco. */
+        PaymentChallenge: {
+            /**
+             * Format: uri
+             * @description Dirección que se abre en un diálogo para que el cliente verifique la compra.
+             * @example https://www.mercadopago.com.ar/3ds/challenge?id=abc123
+             */
+            url: string;
+        };
         /**
          * @description Forma de pago elegida en el checkout. `mp_redirect` lleva al cliente a Mercado Pago y `card` cobra con tarjeta dentro de la tienda.
          * @example mp_redirect
@@ -3266,12 +3358,12 @@ export interface components {
              */
             shipping: string;
         };
-        /** @description Textos de fábrica de las pestañas de la ficha, por grupo de producto, más el de envío y cambios, que es común. */
+        /** @description Textos de fábrica de las pestañas de la ficha, por grupo de producto, más el de envío y cambios, que es común. Los límites son los de `productTabsContentFormSchema` de `@galpon/schemas`. */
         ProductTabsContent: {
             bombilla: components["schemas"]["ProductTabsGroupContent"];
             mate: components["schemas"]["ProductTabsGroupContent"];
             /**
-             * @description Texto de la pestaña de envío y cambios, igual para todos los grupos.
+             * @description Texto de la pestaña de envío y cambios, igual para todos los grupos; hasta 2000 caracteres.
              * @example Enviamos a todo el país y calculás el costo en el checkout. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.
              */
             shipping: string;
@@ -3280,27 +3372,27 @@ export interface components {
         /** @description Textos de las pestañas de la ficha para un grupo de producto. */
         ProductTabsGroupContent: {
             /**
-             * @description Texto de la pestaña de cuidado.
+             * @description Texto de la pestaña de cuidado, hasta 2000 caracteres.
              * @example Curalo antes del primer uso y secalo boca abajo después de cada ronda.
              */
             care: string;
             /**
-             * @description Título de la pestaña de cuidado ("Cuidado" o "Conservación").
+             * @description Título de la pestaña de cuidado ("Cuidado" o "Conservación"), hasta 30 caracteres.
              * @example Cuidado
              */
             careTitle: string;
             /**
-             * @description Nota que se muestra debajo de la descripción, o `null` si el grupo no tiene.
+             * @description Nota que se muestra debajo de la descripción (hasta 600 caracteres), o `null` si el grupo no tiene.
              * @example Cada pieza es artesanal, así que los tonos de la calabaza, el cuero y el cincelado pueden variar.
              */
             descriptionNote: string | null;
             /**
-             * @description Texto de la pestaña de materiales.
+             * @description Texto de la pestaña de materiales, hasta 2000 caracteres.
              * @example Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
              */
             materials: string;
             /**
-             * @description Título de la pestaña de materiales ("Materiales" o "Contenido").
+             * @description Título de la pestaña de materiales ("Materiales" o "Contenido"), hasta 30 caracteres.
              * @example Materiales
              */
             materialsTitle: string;
@@ -3563,12 +3655,12 @@ export interface components {
          */
         SectionHeading: {
             /**
-             * @description Texto corto que va arriba del título.
+             * @description Texto corto que va arriba del título, hasta 60 caracteres.
              * @example Destacados
              */
             eyebrow: string;
             /**
-             * @description Título de la sección.
+             * @description Título de la sección, hasta 60 caracteres.
              * @example Los más elegidos de la ronda
              */
             title: string;
@@ -3639,12 +3731,12 @@ export interface components {
         /** @description Escena de la historia que se cuenta al bajar por el inicio. */
         StoryScene: {
             /**
-             * @description Texto del botón de la escena, o `null` si la escena no tiene botón.
+             * @description Texto del botón de la escena (hasta 40 caracteres), o `null` si la escena no tiene botón.
              * @example Ver mates
              */
             ctaLabel: string | null;
             /**
-             * @description Texto corto que va arriba del título.
+             * @description Texto corto que va arriba del título, hasta 60 caracteres.
              * @example Mate
              */
             eyebrow: string;
@@ -3655,12 +3747,12 @@ export interface components {
              */
             key: "pieces" | "gourd" | "bombilla" | "yerba" | "ritual" | "leather";
             /**
-             * @description Texto de la escena.
+             * @description Texto de la escena, hasta 600 caracteres.
              * @example Cada calabaza se elige por su forma y sus paredes. La virola se cincela a mano y la base de bronce lo mantiene firme sobre la mesa.
              */
             text: string;
             /**
-             * @description Líneas del título, una debajo de la otra.
+             * @description Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
              * @example [
              *       "Calabaza curada.",
              *       "Virola de alpaca."
@@ -3720,20 +3812,21 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description La sesión es válida pero no alcanza para esta operación (por ejemplo, token CSRF inválido). */
+        /** @description La sesión es válida pero no alcanza para esta operación. Con `type` `csrf_invalid` falta el token CSRF o no es válido (por ejemplo, porque otro inicio de sesión lo rotó): el front pide uno nuevo y le pide a la persona que reintente, sin repetir la escritura solo. */
         Forbidden: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                /**
-                 * @example {
-                 *       "type": "forbidden",
-                 *       "title": "Acceso denegado",
-                 *       "status": 403,
-                 *       "detail": "No tenés permiso para hacer esto."
-                 *     }
-                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Los datos enviados no son válidos (`validation_error`, con `errors` por campo) o la `Idempotency-Key` ya se usó con otros datos (`idempotency_key_reused`): cada intento distinto lleva una clave nueva. */
+        IdempotentValidationError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
@@ -3908,6 +4001,7 @@ export interface components {
     pathItems: never;
 }
 export type AboutContent = components['schemas']['AboutContent'];
+export type AboutContentInput = components['schemas']['AboutContentInput'];
 export type Address = components['schemas']['Address'];
 export type AddressBookInput = components['schemas']['AddressBookInput'];
 export type AddressInput = components['schemas']['AddressInput'];
@@ -3983,6 +4077,7 @@ export type OrderSummary = components['schemas']['OrderSummary'];
 export type OrderSummaryPage = components['schemas']['OrderSummaryPage'];
 export type OrderTracking = components['schemas']['OrderTracking'];
 export type Password = components['schemas']['Password'];
+export type PaymentChallenge = components['schemas']['PaymentChallenge'];
 export type PaymentMethod = components['schemas']['PaymentMethod'];
 export type PaymentStatus = components['schemas']['PaymentStatus'];
 export type PersonName = components['schemas']['PersonName'];
@@ -4026,6 +4121,7 @@ export type WithdrawalInput = components['schemas']['WithdrawalInput'];
 export type WithdrawalReceipt = components['schemas']['WithdrawalReceipt'];
 export type ResponseConflict = components['responses']['Conflict'];
 export type ResponseForbidden = components['responses']['Forbidden'];
+export type ResponseIdempotentValidationError = components['responses']['IdempotentValidationError'];
 export type ResponseNotFound = components['responses']['NotFound'];
 export type ResponseRateLimited = components['responses']['RateLimited'];
 export type ResponseServerError = components['responses']['ServerError'];
@@ -4380,7 +4476,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AboutContent"];
+                "application/json": components["schemas"]["AboutContentInput"];
             };
         };
         responses: {
@@ -4805,8 +4901,14 @@ export interface operations {
                  * @example GLP-12345
                  */
                 q?: string;
-                /** @description Estado del pedido; deja solo los pedidos en ese estado. */
-                status?: components["schemas"]["OrderStatus"];
+                /**
+                 * @description Estados del pedido; deja solo los pedidos que están en alguno de ellos. Se repite para pedir varios: `?status=paid&status=preparing` son los pedidos para despachar.
+                 * @example [
+                 *       "paid",
+                 *       "preparing"
+                 *     ]
+                 */
+                status?: components["schemas"]["OrderStatus"][];
             };
             header?: never;
             path?: never;
@@ -4891,20 +4993,12 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description El pedido no puede pasar a ese estado desde el que tiene. Por ejemplo, no se cancela un pedido pagado. */
+            /** @description El pedido no puede pasar a ese estado desde el que tiene (`invalid_status_transition`) o tiene un pago en curso y todavía no se puede cancelar (`payment_in_progress`). El dashboard muestra el motivo y vuelve a cargar el pedido. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "type": "invalid_status_transition",
-                     *       "title": "Transición inválida",
-                     *       "status": 409,
-                     *       "detail": "Un pedido pagado no se puede cancelar."
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -5053,7 +5147,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["SlugTaken"];
+            /** @description El `slug` ya lo usa otro producto (`slug_taken`) o el producto cambió desde que se abrió (`product_changed`, solo si vino `expectedUpdatedAt`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["ServerError"];
@@ -5863,7 +5965,7 @@ export interface operations {
                 };
             };
             409: components["responses"]["Conflict"];
-            422: components["responses"]["ValidationError"];
+            422: components["responses"]["IdempotentValidationError"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["ServerError"];
         };
@@ -5995,7 +6097,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            422: components["responses"]["ValidationError"];
+            422: components["responses"]["IdempotentValidationError"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["ServerError"];
         };
@@ -6099,7 +6201,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            422: components["responses"]["ValidationError"];
+            422: components["responses"]["IdempotentValidationError"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["ServerError"];
         };

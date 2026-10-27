@@ -98,4 +98,27 @@ export const MESSAGES = {
   invalidGroup: 'Elegí un grupo',
   /** Estado del producto que no es borrador ni publicado. */
   invalidProductStatus: 'Elegí un estado',
+  /** Orden de líneas con una línea repetida. */
+  duplicateCategoryIds: 'Cada línea tiene que aparecer una sola vez',
+  /** Uso de una foto que no es producto, línea, socio ni sitio. */
+  invalidMediaPurpose: 'Elegí para qué es la foto',
+  /** Estado nuevo de un pedido que no es uno de los que ofrece el admin. */
+  invalidOrderTarget: 'Elegí el estado nuevo del pedido',
+  /** Empresa o seguimiento cargados para un cambio de estado que no es un despacho. */
+  onlyWhenShipped: 'Solo se completa al despachar el pedido',
+  /** Estado de una reseña que no es pendiente, aprobada ni oculta. */
+  invalidReviewStatus: 'Elegí un estado',
+  /** Cambio parcial (por ejemplo, de una reseña) que no trae ningún campo. */
+  emptyUpdate: 'Mandá al menos un cambio',
+  /** Escena del inicio que aparece más de una vez. */
+  duplicateScenes: 'Cada escena tiene que aparecer una sola vez',
+  /** Fecha que no es un día real con el formato `AAAA-MM-DD`. */
+  invalidDate: 'Ingresá una fecha válida (AAAA-MM-DD)',
+  /** Lista con más de `n` elementos; `noun` los nombra en plural ("socios"). */
+  maxItems: (n: number, noun: string) => `Máximo ${String(n)} ${noun}`,
+  /** Lista que no tiene de `min` a `max` elementos; `noun` los nombra en plural ("líneas"). */
+  itemsBetween: (min: number, max: number, noun: string) =>
+    `Cargá de ${String(min)} a ${String(max)} ${noun}`,
+  /** Lista que no tiene exactamente `n` elementos; `noun` los nombra en plural ("pasos"). */
+  exactItems: (n: number, noun: string) => `Tienen que ser ${String(n)} ${noun}`,
 } as const

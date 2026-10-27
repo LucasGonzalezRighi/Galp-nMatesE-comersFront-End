@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import type { ProductStatus, ShippingMethod } from '@galpon/domain'
-import { MAX_KIT_DISCOUNT_PERCENT, PRODUCT_GROUPS, SHIPPING_METHODS } from '@galpon/domain'
+import {
+  ADMIN_ORDER_TARGETS,
+  MAX_IMAGES,
+  MAX_KIT_DISCOUNT_PERCENT,
+  MEDIA_PURPOSES,
+  PRODUCT_GROUPS,
+  SHIPPING_METHODS,
+} from '@galpon/domain'
 import { loginPasswordSchema, passwordSchema } from './account'
 import { emailSchema, optionalTextSchema } from './fields'
 import { MESSAGES } from './messages'
@@ -20,8 +27,8 @@ const CUIT_WEIGHTS = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2] as const
  */
 const MAX_PESOS = 99_999_999
 
-/** Máximo de fotos de un producto (spec 11.4). */
-const MAX_PRODUCT_IMAGES = 8
+/** Máximo de fotos de un producto (spec 11.4), el cupo de `MAX_IMAGES` del dominio. */
+const MAX_PRODUCT_IMAGES = MAX_IMAGES.product
 
 /** Máximo de caracteres del texto propio de cada pestaña de un producto. */
 const MAX_TAB_TEXT = 2000
@@ -331,3 +338,103 @@ export type AdminPasswordChangeInput = z.input<typeof adminPasswordChangeSchema>
 
 /** Cambio de contraseña ya validado. */
 export type AdminPasswordChange = z.output<typeof adminPasswordChangeSchema>
+
+/**
+ * Orden nuevo de las líneas: `ids` trae una o más líneas, cada una una sola vez (recortadas, de
+ * hasta 80 caracteres). Que estén todas lo controla el back.
+ */
+export const categoryOrderSchema = z.object({
+  ids: z
+    .array(requiredText(1, 80))
+    .min(1, MESSAGES.required)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      error: MESSAGES.duplicateCategoryIds,
+    }),
+})
+
+/** Orden de las líneas como lo arma el dashboard. */
+export type CategoryOrderFormInput = z.input<typeof categoryOrderSchema>
+
+/** Orden de las líneas ya normalizado. */
+export type CategoryOrderForm = z.output<typeof categoryOrderSchema>
+
+/** Pedido de firma para subir una foto: el uso, que define la carpeta de Cloudinary. */
+export const mediaSignatureSchema = z.object({
+  purpose: z.enum(MEDIA_PURPOSES, { error: MESSAGES.invalidMediaPurpose }),
+})
+
+/** Pedido de firma ya validado. */
+export type MediaSignatureForm = z.output<typeof mediaSignatureSchema>
+
+/** Nota del historial de un pedido: recortada, hasta 500 caracteres; vacía o ausente queda en `null`. */
+const orderNoteSchema = z
+  .string({ error: MESSAGES.required })
+  .trim()
+  .max(500, MESSAGES.max(500))
+  .nullable()
+  .default(null)
+  .transform((note) => (note === '' ? null : note))
+
+/** Empresa o seguimiento de un cambio que no es un despacho: siempre `null` (si falta, también). */
+const notShippedField = z.null({ error: MESSAGES.onlyWhenShipped }).default(null)
+
+/**
+ * Cambio de estado de un pedido que pide el admin, a uno de `ADMIN_ORDER_TARGETS`.
+ *
+ * - `shipped`: `carrier` (2 a 40) y `trackingNumber` (4 a 40) obligatorios, con los mensajes de
+ *   {@link dispatchSchema}.
+ * - `preparing`, `delivered` y `cancelled`: `carrier` y `trackingNumber` van en `null`.
+ * - `note`: hasta 500 caracteres; vacía queda en `null`.
+ *
+ * Si el pedido puede pasar a ese estado lo decide `checkOrderTransition` de `@galpon/domain`.
+ */
+export const orderStatusChangeSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('shipped'),
+      ...dispatchSchema.shape,
+      note: orderNoteSchema,
+    }),
+    z.object({
+      status: z.enum(ADMIN_ORDER_TARGETS).exclude(['shipped']),
+      carrier: notShippedField,
+      trackingNumber: notShippedField,
+      note: orderNoteSchema,
+    }),
+  ],
+  { error: MESSAGES.invalidOrderTarget },
+)
+
+/** Cambio de estado como lo arma el admin. */
+export type OrderStatusChangeFormInput = z.input<typeof orderStatusChangeSchema>
+
+/** Cambio de estado ya normalizado, listo para `POST /admin/orders/{number}/status`. */
+export type OrderStatusChangeForm = z.output<typeof orderStatusChangeSchema>
+
+/** Estados de una reseña (`ReviewStatus` del contrato). */
+const REVIEW_STATUSES = ['pending', 'approved', 'hidden'] as const
+
+/**
+ * Moderación de una reseña: cambia el estado, si es destacada o las dos cosas. Tiene que traer al
+ * menos un campo; los que no se moderan se descartan.
+ */
+export const adminReviewUpdateSchema = z
+  .object({
+    status: z.enum(REVIEW_STATUSES, { error: MESSAGES.invalidReviewStatus }).optional(),
+    featured: z.boolean().optional(),
+  })
+  .refine((update) => update.status !== undefined || update.featured !== undefined, {
+    error: MESSAGES.emptyUpdate,
+  })
+
+/** Moderación de una reseña ya validada. */
+export type AdminReviewUpdateForm = z.output<typeof adminReviewUpdateSchema>
+
+/** Cambio de un mensaje de la bandeja: si queda leído o no leído. */
+export const messageUpdateSchema = z.object({
+  read: z.boolean(),
+})
+
+/** Cambio de un mensaje ya validado. */
+export type MessageUpdateForm = z.output<typeof messageUpdateSchema>

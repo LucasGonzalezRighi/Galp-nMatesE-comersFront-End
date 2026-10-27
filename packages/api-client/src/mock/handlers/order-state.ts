@@ -234,6 +234,7 @@ export function toOrder(order: MockOrder): Order {
       lastFour: intent?.lastFour ?? null,
       statusDetail: intent?.statusDetail ?? null,
       mpPaymentId: intent?.mpPaymentId ?? null,
+      challenge: null,
     },
     tracking: order.tracking,
     history: order.history,

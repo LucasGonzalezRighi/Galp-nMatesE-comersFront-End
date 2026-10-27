@@ -6476,6 +6476,1052 @@
       "errors": {
         "password": "Requerido"
       }
+    },
+    {
+      "field": "Admin · orden de líneas",
+      "name": "Admin · orden de líneas: todas las líneas, recortadas",
+      "schema": "categoryOrderSchema",
+      "input": {
+        "ids": [" cat-torpedos ", "cat-imperiales"]
+      },
+      "valid": true,
+      "output": {
+        "ids": ["cat-torpedos", "cat-imperiales"]
+      }
+    },
+    {
+      "field": "Admin · orden de líneas",
+      "name": "Admin · orden de líneas: sin ninguna línea",
+      "schema": "categoryOrderSchema",
+      "input": {
+        "ids": []
+      },
+      "valid": false,
+      "errors": {
+        "ids": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · orden de líneas",
+      "name": "Admin · orden de líneas: con una línea repetida",
+      "schema": "categoryOrderSchema",
+      "input": {
+        "ids": ["cat-imperiales", "cat-torpedos", "cat-imperiales"]
+      },
+      "valid": false,
+      "errors": {
+        "ids": "Cada línea tiene que aparecer una sola vez"
+      }
+    },
+    {
+      "field": "Admin · firma de foto",
+      "name": "Admin · firma de foto: para un producto",
+      "schema": "mediaSignatureSchema",
+      "input": {
+        "purpose": "product"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · firma de foto",
+      "name": "Admin · firma de foto: para el sitio",
+      "schema": "mediaSignatureSchema",
+      "input": {
+        "purpose": "site"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · firma de foto",
+      "name": "Admin · firma de foto: con un uso desconocido",
+      "schema": "mediaSignatureSchema",
+      "input": {
+        "purpose": "avatar"
+      },
+      "valid": false,
+      "errors": {
+        "purpose": "Elegí para qué es la foto"
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: despacho con empresa, seguimiento y nota recortados",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "shipped",
+        "carrier": " Andreani ",
+        "trackingNumber": " AND123456789 ",
+        "note": "  "
+      },
+      "valid": true,
+      "output": {
+        "status": "shipped",
+        "carrier": "Andreani",
+        "trackingNumber": "AND123456789",
+        "note": null
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: pasar a preparación, sin empresa ni seguimiento",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "preparing",
+        "carrier": null,
+        "trackingNumber": null,
+        "note": "Lo arma Bruno"
+      },
+      "valid": true,
+      "output": {
+        "status": "preparing",
+        "carrier": null,
+        "trackingNumber": null,
+        "note": "Lo arma Bruno"
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: despacho con la empresa de 1 letra y sin seguimiento",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "shipped",
+        "carrier": "A",
+        "trackingNumber": "",
+        "note": null
+      },
+      "valid": false,
+      "errors": {
+        "carrier": "Mínimo 2 caracteres",
+        "trackingNumber": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: cancelar con empresa de envío",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "cancelled",
+        "carrier": "Andreani",
+        "trackingNumber": null,
+        "note": null
+      },
+      "valid": false,
+      "errors": {
+        "carrier": "Solo se completa al despachar el pedido"
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: a un estado que el admin no ofrece",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "paid",
+        "carrier": null,
+        "trackingNumber": null,
+        "note": null
+      },
+      "valid": false,
+      "errors": {
+        "status": "Elegí el estado nuevo del pedido"
+      }
+    },
+    {
+      "field": "Admin · cambio de estado del pedido",
+      "name": "Admin · cambio de estado del pedido: nota de 501 caracteres",
+      "schema": "orderStatusChangeSchema",
+      "input": {
+        "status": "delivered",
+        "carrier": null,
+        "trackingNumber": null,
+        "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "valid": false,
+      "errors": {
+        "note": "Máximo 500 caracteres"
+      }
+    },
+    {
+      "field": "Admin · moderación de reseña",
+      "name": "Admin · moderación de reseña: aprobar y destacar",
+      "schema": "adminReviewUpdateSchema",
+      "input": {
+        "status": "approved",
+        "featured": true
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · moderación de reseña",
+      "name": "Admin · moderación de reseña: sin ningún cambio",
+      "schema": "adminReviewUpdateSchema",
+      "input": {},
+      "valid": false,
+      "errors": {
+        "": "Mandá al menos un cambio"
+      }
+    },
+    {
+      "field": "Admin · moderación de reseña",
+      "name": "Admin · moderación de reseña: con un estado desconocido",
+      "schema": "adminReviewUpdateSchema",
+      "input": {
+        "status": "deleted"
+      },
+      "valid": false,
+      "errors": {
+        "status": "Elegí un estado"
+      }
+    },
+    {
+      "field": "Admin · mensaje leído",
+      "name": "Admin · mensaje leído: marcar como leído",
+      "schema": "messageUpdateSchema",
+      "input": {
+        "read": true
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · mensaje leído",
+      "name": "Admin · mensaje leído: marcar como no leído",
+      "schema": "messageUpdateSchema",
+      "input": {
+        "read": false
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · mensaje leído",
+      "name": "Admin · mensaje leído: sin indicar si está leído",
+      "schema": "messageUpdateSchema",
+      "input": {},
+      "valid": false,
+      "errors": {
+        "read": null
+      }
+    },
+    {
+      "field": "Admin · contenido del inicio",
+      "name": "Admin · contenido del inicio: completo, con los textos recortados y un botón vacío en null",
+      "schema": "homeContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "  Hechos para compartir  ",
+          "titleLines": ["Encontrá", "tu mate."],
+          "text": "Calabaza curada, virola de alpaca cincelada y bombillones de bronce.",
+          "primaryCtaLabel": "Ver la tienda",
+          "secondaryCtaLabel": "Armá tu kit"
+        },
+        "scenes": [
+          {
+            "key": "pieces",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "gourd",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": "  "
+          },
+          {
+            "key": "bombilla",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "yerba",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "ritual",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "leather",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          }
+        ],
+        "ritualSteps": ["Yerba", "Montañita", "Bombilla", "Agua"],
+        "storyProducts": {
+          "hero": "mate-imperial-premium",
+          "bombillas": ["bombillon-premium-curvo", "bombillon-100-alpaca"],
+          "yerbas": [
+            "yerba-canarias-1-kg",
+            "yerba-canarias-serena-1-kg",
+            "yerba-canarias-te-y-jengibre-1-kg"
+          ]
+        },
+        "collection": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "featured": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "reviews": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "manifesto": {
+          "eyebrow": "Manifiesto",
+          "text": "Un mate no se compra, se elige.",
+          "ctaLabel": "Conocé la historia del galpón"
+        },
+        "stats": {
+          "provinces": 24,
+          "partners": 2
+        },
+        "kitBlock": {
+          "eyebrow": "Armá tu kit",
+          "title": "Mate, bombilla y yerba.",
+          "text": "Elegí las tres piezas en tres pasos.",
+          "ctaLabel": "Armar mi kit"
+        }
+      },
+      "valid": true,
+      "output": {
+        "hero": {
+          "eyebrow": "Hechos para compartir",
+          "titleLines": ["Encontrá", "tu mate."],
+          "text": "Calabaza curada, virola de alpaca cincelada y bombillones de bronce.",
+          "primaryCtaLabel": "Ver la tienda",
+          "secondaryCtaLabel": "Armá tu kit"
+        },
+        "scenes": [
+          {
+            "key": "pieces",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "gourd",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "bombilla",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "yerba",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "ritual",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "leather",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          }
+        ],
+        "ritualSteps": ["Yerba", "Montañita", "Bombilla", "Agua"],
+        "storyProducts": {
+          "hero": "mate-imperial-premium",
+          "bombillas": ["bombillon-premium-curvo", "bombillon-100-alpaca"],
+          "yerbas": [
+            "yerba-canarias-1-kg",
+            "yerba-canarias-serena-1-kg",
+            "yerba-canarias-te-y-jengibre-1-kg"
+          ]
+        },
+        "collection": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "featured": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "reviews": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "manifesto": {
+          "eyebrow": "Manifiesto",
+          "text": "Un mate no se compra, se elige.",
+          "ctaLabel": "Conocé la historia del galpón"
+        },
+        "stats": {
+          "provinces": 24,
+          "partners": 2
+        },
+        "kitBlock": {
+          "eyebrow": "Armá tu kit",
+          "title": "Mate, bombilla y yerba.",
+          "text": "Elegí las tres piezas en tres pasos.",
+          "ctaLabel": "Armar mi kit"
+        }
+      }
+    },
+    {
+      "field": "Admin · contenido del inicio",
+      "name": "Admin · contenido del inicio: título de 4 líneas y una cifra de 1000",
+      "schema": "homeContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "Hechos para compartir",
+          "titleLines": ["Encontrá", "tu", "mate", "hoy."],
+          "text": "Calabaza curada, virola de alpaca cincelada y bombillones de bronce.",
+          "primaryCtaLabel": "Ver la tienda",
+          "secondaryCtaLabel": "Armá tu kit"
+        },
+        "scenes": [
+          {
+            "key": "pieces",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "gourd",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "bombilla",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "yerba",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "ritual",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "leather",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          }
+        ],
+        "ritualSteps": ["Yerba", "Montañita", "Bombilla", "Agua"],
+        "storyProducts": {
+          "hero": "mate-imperial-premium",
+          "bombillas": ["bombillon-premium-curvo", "bombillon-100-alpaca"],
+          "yerbas": [
+            "yerba-canarias-1-kg",
+            "yerba-canarias-serena-1-kg",
+            "yerba-canarias-te-y-jengibre-1-kg"
+          ]
+        },
+        "collection": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "featured": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "reviews": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "manifesto": {
+          "eyebrow": "Manifiesto",
+          "text": "Un mate no se compra, se elige.",
+          "ctaLabel": "Conocé la historia del galpón"
+        },
+        "stats": {
+          "provinces": 1000,
+          "partners": 2
+        },
+        "kitBlock": {
+          "eyebrow": "Armá tu kit",
+          "title": "Mate, bombilla y yerba.",
+          "text": "Elegí las tres piezas en tres pasos.",
+          "ctaLabel": "Armar mi kit"
+        }
+      },
+      "valid": false,
+      "errors": {
+        "hero.titleLines": "Cargá de 1 a 3 líneas",
+        "stats.provinces": "Ingresá un número entero entre 0 y 999"
+      }
+    },
+    {
+      "field": "Admin · contenido del inicio",
+      "name": "Admin · contenido del inicio: 5 escenas y un manifiesto de 401 caracteres",
+      "schema": "homeContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "Hechos para compartir",
+          "titleLines": ["Encontrá", "tu mate."],
+          "text": "Calabaza curada, virola de alpaca cincelada y bombillones de bronce.",
+          "primaryCtaLabel": "Ver la tienda",
+          "secondaryCtaLabel": "Armá tu kit"
+        },
+        "scenes": [
+          {
+            "key": "pieces",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "gourd",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "bombilla",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "yerba",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          },
+          {
+            "key": "ritual",
+            "eyebrow": "La ronda completa",
+            "titleLines": ["Tres piezas.", "Una ronda."],
+            "text": "Mate, bombilla y yerba.",
+            "ctaLabel": null
+          }
+        ],
+        "ritualSteps": ["Yerba", "Montañita", "Bombilla", "Agua"],
+        "storyProducts": {
+          "hero": "mate-imperial-premium",
+          "bombillas": ["bombillon-premium-curvo", "bombillon-100-alpaca"],
+          "yerbas": [
+            "yerba-canarias-1-kg",
+            "yerba-canarias-serena-1-kg",
+            "yerba-canarias-te-y-jengibre-1-kg"
+          ]
+        },
+        "collection": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "featured": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "reviews": {
+          "eyebrow": "Destacados",
+          "title": "Los más elegidos de la ronda"
+        },
+        "manifesto": {
+          "eyebrow": "Manifiesto",
+          "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "ctaLabel": "Conocé la historia del galpón"
+        },
+        "stats": {
+          "provinces": 24,
+          "partners": 2
+        },
+        "kitBlock": {
+          "eyebrow": "Armá tu kit",
+          "title": "Mate, bombilla y yerba.",
+          "text": "Elegí las tres piezas en tres pasos.",
+          "ctaLabel": "Armar mi kit"
+        }
+      },
+      "valid": false,
+      "errors": {
+        "scenes": "Tienen que ser 6 escenas",
+        "manifesto.text": "Máximo 400 caracteres"
+      }
+    },
+    {
+      "field": "Admin · contenido de Nosotros",
+      "name": "Admin · contenido de Nosotros: con un socio con foto y otro sin",
+      "schema": "aboutContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "Sobre nosotros",
+          "titleLines": ["Dos socios.", "Un galpón.", "La ronda de siempre."],
+          "text": "Galpón nació entre dos socios."
+        },
+        "partners": [
+          {
+            "name": "Bruno Galimberti",
+            "role": "Socio fundador",
+            "photo": {
+              "publicId": "galpon/socios/bruno",
+              "width": 1200,
+              "height": 1200,
+              "alt": "Bruno en el galpón"
+            }
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          }
+        ],
+        "quote": "No vendemos lo que no usaríamos.",
+        "stepsEyebrow": "Cómo trabajamos",
+        "steps": [
+          {
+            "title": "Elegimos cada calabaza",
+            "text": "Buscamos formas parejas y paredes firmes."
+          },
+          {
+            "title": "Cosemos el cuero",
+            "text": "Punto por punto, a mano."
+          },
+          {
+            "title": "Mandamos a todo el país",
+            "text": "Embalado para que llegue entero."
+          }
+        ],
+        "ctaLabel": "Conocé la tienda"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · contenido de Nosotros",
+      "name": "Admin · contenido de Nosotros: 2 pasos y un socio sin nombre y con un texto alternativo corto",
+      "schema": "aboutContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "Sobre nosotros",
+          "titleLines": ["Dos socios.", "Un galpón.", "La ronda de siempre."],
+          "text": "Galpón nació entre dos socios."
+        },
+        "partners": [
+          {
+            "name": " ",
+            "role": "Socio fundador",
+            "photo": {
+              "publicId": "galpon/socios/bruno",
+              "width": 1200,
+              "height": 1200,
+              "alt": "ab"
+            }
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          }
+        ],
+        "quote": "No vendemos lo que no usaríamos.",
+        "stepsEyebrow": "Cómo trabajamos",
+        "steps": [
+          {
+            "title": "Elegimos cada calabaza",
+            "text": "Buscamos formas parejas y paredes firmes."
+          },
+          {
+            "title": "Cosemos el cuero",
+            "text": "Punto por punto, a mano."
+          }
+        ],
+        "ctaLabel": "Conocé la tienda"
+      },
+      "valid": false,
+      "errors": {
+        "steps": "Tienen que ser 3 pasos",
+        "partners.0.name": "Requerido",
+        "partners.0.photo.alt": "Escribí un texto alternativo de 3 a 120 caracteres"
+      }
+    },
+    {
+      "field": "Admin · contenido de Nosotros",
+      "name": "Admin · contenido de Nosotros: 9 socios",
+      "schema": "aboutContentFormSchema",
+      "input": {
+        "hero": {
+          "eyebrow": "Sobre nosotros",
+          "titleLines": ["Dos socios.", "Un galpón.", "La ronda de siempre."],
+          "text": "Galpón nació entre dos socios."
+        },
+        "partners": [
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          },
+          {
+            "name": "Marcos Ruiz",
+            "role": "Socio fundador",
+            "photo": null
+          }
+        ],
+        "quote": "No vendemos lo que no usaríamos.",
+        "stepsEyebrow": "Cómo trabajamos",
+        "steps": [
+          {
+            "title": "Elegimos cada calabaza",
+            "text": "Buscamos formas parejas y paredes firmes."
+          },
+          {
+            "title": "Cosemos el cuero",
+            "text": "Punto por punto, a mano."
+          },
+          {
+            "title": "Mandamos a todo el país",
+            "text": "Embalado para que llegue entero."
+          }
+        ],
+        "ctaLabel": "Conocé la tienda"
+      },
+      "valid": false,
+      "errors": {
+        "partners": "Máximo 8 socios"
+      }
+    },
+    {
+      "field": "Admin · preguntas frecuentes",
+      "name": "Admin · preguntas frecuentes: una categoría con una pregunta",
+      "schema": "faqContentFormSchema",
+      "input": {
+        "categories": [
+          {
+            "id": "envios",
+            "label": "Envíos",
+            "items": [
+              {
+                "question": "¿Hacen envíos a todo el país?",
+                "answer": "Sí, enviamos a las 24 provincias."
+              }
+            ]
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · preguntas frecuentes",
+      "name": "Admin · preguntas frecuentes: sin categorías",
+      "schema": "faqContentFormSchema",
+      "input": {
+        "categories": []
+      },
+      "valid": false,
+      "errors": {
+        "categories": "Cargá de 1 a 10 categorías"
+      }
+    },
+    {
+      "field": "Admin · preguntas frecuentes",
+      "name": "Admin · preguntas frecuentes: categoría sin preguntas y con un identificador inválido",
+      "schema": "faqContentFormSchema",
+      "input": {
+        "categories": [
+          {
+            "id": "Envíos",
+            "label": "Envíos",
+            "items": []
+          }
+        ]
+      },
+      "valid": false,
+      "errors": {
+        "categories.0.id": "Solo minúsculas, números y guiones",
+        "categories.0.items": "Cargá de 1 a 30 preguntas"
+      }
+    },
+    {
+      "field": "Admin · pie de página",
+      "name": "Admin · pie de página: con el enlace a Defensa del Consumidor",
+      "schema": "footerContentFormSchema",
+      "input": {
+        "tagline": "Hechos para compartir.",
+        "text": "Mates, bombillones y yerba con envío a todo el país.",
+        "paymentMethods": ["Mercado Pago", "Visa"],
+        "consumerDefenseUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · pie de página",
+      "name": "Admin · pie de página: sin enlace: vacío queda en null",
+      "schema": "footerContentFormSchema",
+      "input": {
+        "tagline": "Hechos para compartir.",
+        "text": "Mates, bombillones y yerba con envío a todo el país.",
+        "paymentMethods": ["Mercado Pago", "Visa"],
+        "consumerDefenseUrl": " "
+      },
+      "valid": true,
+      "output": {
+        "tagline": "Hechos para compartir.",
+        "text": "Mates, bombillones y yerba con envío a todo el país.",
+        "paymentMethods": ["Mercado Pago", "Visa"],
+        "consumerDefenseUrl": null
+      }
+    },
+    {
+      "field": "Admin · pie de página",
+      "name": "Admin · pie de página: enlace sin http y 11 medios de pago",
+      "schema": "footerContentFormSchema",
+      "input": {
+        "tagline": "Hechos para compartir.",
+        "text": "Mates, bombillones y yerba con envío a todo el país.",
+        "paymentMethods": [
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa",
+          "Visa"
+        ],
+        "consumerDefenseUrl": "www.argentina.gob.ar"
+      },
+      "valid": false,
+      "errors": {
+        "consumerDefenseUrl": "Ingresá una URL válida, con http:// o https://",
+        "paymentMethods": "Máximo 10 medios de pago"
+      }
+    },
+    {
+      "field": "Admin · pestañas de la ficha",
+      "name": "Admin · pestañas de la ficha: con una nota vacía que queda en null",
+      "schema": "productTabsContentFormSchema",
+      "input": {
+        "mate": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "bombilla": {
+          "descriptionNote": null,
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "yerba": {
+          "descriptionNote": " ",
+          "materialsTitle": "Contenido",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "shipping": "Enviamos a todo el país."
+      },
+      "valid": true,
+      "output": {
+        "mate": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "bombilla": {
+          "descriptionNote": null,
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "yerba": {
+          "descriptionNote": null,
+          "materialsTitle": "Contenido",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "shipping": "Enviamos a todo el país."
+      }
+    },
+    {
+      "field": "Admin · pestañas de la ficha",
+      "name": "Admin · pestañas de la ficha: título de 31 caracteres",
+      "schema": "productTabsContentFormSchema",
+      "input": {
+        "mate": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "bombilla": {
+          "descriptionNote": null,
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "yerba": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "Contenido",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "shipping": "Enviamos a todo el país."
+      },
+      "valid": false,
+      "errors": {
+        "mate.materialsTitle": "Máximo 30 caracteres"
+      }
+    },
+    {
+      "field": "Admin · pestañas de la ficha",
+      "name": "Admin · pestañas de la ficha: sin texto de envío",
+      "schema": "productTabsContentFormSchema",
+      "input": {
+        "mate": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "bombilla": {
+          "descriptionNote": null,
+          "materialsTitle": "Materiales",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "yerba": {
+          "descriptionNote": "Cada pieza es artesanal.",
+          "materialsTitle": "Contenido",
+          "materials": "Calabaza natural curable.",
+          "careTitle": "Cuidado",
+          "care": "Curalo antes del primer uso."
+        },
+        "shipping": "  "
+      },
+      "valid": false,
+      "errors": {
+        "shipping": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · documento legal",
+      "name": "Admin · documento legal: con fecha y cuerpo",
+      "schema": "legalContentFormSchema",
+      "input": {
+        "title": "Términos y condiciones",
+        "updatedAt": "2026-10-01",
+        "body": "Primer párrafo.\n\nSegundo párrafo."
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · documento legal",
+      "name": "Admin · documento legal: con una fecha que no existe",
+      "schema": "legalContentFormSchema",
+      "input": {
+        "title": "Términos y condiciones",
+        "updatedAt": "2026-02-30",
+        "body": "Primer párrafo.\n\nSegundo párrafo."
+      },
+      "valid": false,
+      "errors": {
+        "updatedAt": "Ingresá una fecha válida (AAAA-MM-DD)"
+      }
+    },
+    {
+      "field": "Admin · documento legal",
+      "name": "Admin · documento legal: sin cuerpo ni título",
+      "schema": "legalContentFormSchema",
+      "input": {
+        "title": " ",
+        "updatedAt": "2026-10-01",
+        "body": " "
+      },
+      "valid": false,
+      "errors": {
+        "title": "Requerido",
+        "body": "Requerido"
+      }
     }
   ]
 }

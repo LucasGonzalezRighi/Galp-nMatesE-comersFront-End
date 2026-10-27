@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { pesos } from './money'
-import { netPrice } from './tax'
+import { formatCuit, netPrice } from './tax'
 
 describe('netPrice', () => {
   it('quita el IVA del precio final', () => {
@@ -30,4 +30,23 @@ describe('netPrice', () => {
       'La alícuota tiene que ser un número entre 0 y 100; se recibió 101.',
     )
   })
+})
+
+describe('formatCuit', () => {
+  it('agrega los guiones a los 11 dígitos', () => {
+    expect(formatCuit('20123456786')).toBe('20-12345678-6')
+  })
+  it('deja igual un CUIT que ya tiene los guiones', () => {
+    expect(formatCuit('20-12345678-6')).toBe('20-12345678-6')
+  })
+  it.each(['', '2012345678', '201234567861', '20.12345678.6', 'veinte', ' 20123456786'])(
+    'rechaza %j',
+    (cuit) => {
+      expect(() => formatCuit(cuit)).toThrow(
+        new RangeError(
+          `El CUIT tiene que tener 11 dígitos, con o sin guiones; se recibió "${cuit}".`,
+        ),
+      )
+    },
+  )
 })

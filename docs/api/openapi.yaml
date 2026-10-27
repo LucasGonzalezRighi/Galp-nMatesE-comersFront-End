@@ -513,7 +513,7 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/IdempotentValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -565,7 +565,8 @@ paths:
 
 
         **Idempotencia**: con la misma `Idempotency-Key` devuelve la misma preferencia en lugar de
-        crear otra.
+        crear otra, y si la clave ya se usó con otros datos responde `422` con `type`
+        `idempotency_key_reused`.
 
 
         **Un intento de pago activo por pedido**: si el pedido ya tenía una preferencia o un pago
@@ -602,7 +603,7 @@ paths:
                 status: 409
                 detail: El pedido ya está pagado o venció.
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/IdempotentValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -662,7 +663,7 @@ paths:
                 status: 409
                 detail: El pedido ya está pagado o venció.
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/IdempotentValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -1583,7 +1584,10 @@ paths:
       description: >-
         Reemplaza los datos editables del producto: el cuerpo lleva el producto completo. Si
         cambia el `slug`, el anterior pasa a `previousSlugs` y la tienda lo redirige al nuevo.
-        Responde `409` si el `slug` ya lo usa otro producto.
+        Responde `409` con `type` `slug_taken` si el `slug` ya lo usa otro producto, y con `type`
+        `product_changed` si vino `expectedUpdatedAt` y no coincide con el `updatedAt` guardado
+        (alguien lo modificó desde que se abrió): no guarda nada y el dashboard ofrece ver la
+        versión guardada o guardar encima, mandando el `updatedAt` nuevo.
       security:
         - adminSession: []
           csrfToken: []
@@ -1609,7 +1613,28 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/SlugTaken'
+          description: >-
+            El `slug` ya lo usa otro producto (`slug_taken`) o el producto cambió desde que se
+            abrió (`product_changed`, solo si vino `expectedUpdatedAt`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                slugTaken:
+                  summary: El slug ya está en uso
+                  value:
+                    type: slug_taken
+                    title: El slug ya está en uso
+                    status: 409
+                    detail: Ya hay algo con el slug mate-imperial-premium.
+                productChanged:
+                  summary: El producto cambió
+                  value:
+                    type: product_changed
+                    title: El producto cambió
+                    status: 409
+                    detail: El producto cambió desde que lo abriste.
         '422':
           $ref: '#/components/responses/ValidationError'
         '429':
@@ -1865,9 +1890,16 @@ paths:
         - name: status
           in: query
           required: false
-          description: Estado del pedido; deja solo los pedidos en ese estado.
+          description: >-
+            Estados del pedido; deja solo los pedidos que están en alguno de ellos. Se repite para
+            pedir varios: `?status=paid&status=preparing` son los pedidos para despachar.
+          style: form
+          explode: true
           schema:
-            $ref: '#/components/schemas/OrderStatus'
+            type: array
+            items:
+              $ref: '#/components/schemas/OrderStatus'
+          example: [paid, preparing]
         - name: paymentStatus
           in: query
           required: false
@@ -1932,11 +1964,21 @@ paths:
       operationId: changeOrderStatus
       tags: [admin]
       summary: Cambiar el estado de un pedido
-      description: >-
-        Mueve el pedido a `preparing`, `shipped`, `delivered` o `cancelled`. Para `shipped`
-        hacen falta `carrier` y `trackingNumber`; para los demás van en `null`. Solo se cancela
-        un pedido que todavía no se pagó. El estado del pago no se edita: lo escribe el back a
-        partir de Mercado Pago.
+      description: |-
+        Mueve el pedido a `preparing`, `shipped`, `delivered` o `cancelled`. Para `shipped` hacen falta `carrier` y `trackingNumber` (se guardan en `tracking`); para los demás van en `null`. La `note` queda en el historial. El estado del pago no se edita: lo escribe el back a partir de Mercado Pago.
+
+        Transiciones permitidas (las mismas que `adminOrderTargets` de `@galpon/domain`):
+
+        | Estado del pedido | Destinos |
+        | --- | --- |
+        | `paid` | `preparing` o `shipped` |
+        | `preparing` | `shipped` |
+        | `shipped` | `delivered` |
+        | `pending_payment` con pago `none`, `rejected` o `cancelled` | `cancelled`: libera la reserva de stock y cancela el intento de pago activo |
+        | `pending_payment` con pago `pending` o `action_required` | ninguno: pedir `cancelled` responde `409` con `type` `payment_in_progress` |
+        | `delivered`, `cancelled`, `expired` y `refunded` | ninguno |
+
+        Cualquier otro cambio responde `409` con `type` `invalid_status_transition` (por ejemplo, cancelar un pedido pagado).
       security:
         - adminSession: []
           csrfToken: []
@@ -1963,17 +2005,28 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: >-
-            El pedido no puede pasar a ese estado desde el que tiene. Por ejemplo, no se cancela
-            un pedido pagado.
+            El pedido no puede pasar a ese estado desde el que tiene (`invalid_status_transition`)
+            o tiene un pago en curso y todavía no se puede cancelar (`payment_in_progress`). El
+            dashboard muestra el motivo y vuelve a cargar el pedido.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-              example:
-                type: invalid_status_transition
-                title: Transición inválida
-                status: 409
-                detail: Un pedido pagado no se puede cancelar.
+              examples:
+                invalidStatusTransition:
+                  summary: Transición inválida
+                  value:
+                    type: invalid_status_transition
+                    title: Transición inválida
+                    status: 409
+                    detail: Un pedido pagado no se puede cancelar.
+                paymentInProgress:
+                  summary: Pago en curso
+                  value:
+                    type: payment_in_progress
+                    title: Hay un pago en curso
+                    status: 409
+                    detail: 'Hay un pago en curso: esperá a que se resuelva para cancelar el pedido.'
         '422':
           $ref: '#/components/responses/ValidationError'
         '429':
@@ -2061,7 +2114,9 @@ paths:
       tags: [admin]
       summary: Guardar los textos de Nosotros
       description: >-
-        Reemplaza los textos de Nosotros: el cuerpo lleva el contenido completo.
+        Reemplaza los textos de Nosotros: el cuerpo lleva el contenido completo, con la foto de
+        cada socio como `ImageInput`. Responde con el contenido guardado, con las fotos ya
+        armadas (`AboutContent`).
       security:
         - adminSession: []
           csrfToken: []
@@ -2070,7 +2125,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AboutContent'
+              $ref: '#/components/schemas/AboutContentInput'
       responses:
         '200':
           description: Textos guardados.
@@ -2343,7 +2398,8 @@ paths:
       summary: Guardar los ajustes
       description: >-
         Reemplaza los ajustes: el cuerpo lleva todos. Tienen que venir las tres opciones de
-        envío, una por método.
+        envío, una por método. El back ignora `shippingOptions[].label`: el nombre de cada
+        método es fijo.
       security:
         - adminSession: []
           csrfToken: []
@@ -2677,6 +2733,34 @@ components:
               - field: page
                 code: too_small
                 message: La página tiene que ser mayor o igual a 1.
+    IdempotentValidationError:
+      description: >-
+        Los datos enviados no son válidos (`validation_error`, con `errors` por campo) o la
+        `Idempotency-Key` ya se usó con otros datos (`idempotency_key_reused`): cada intento
+        distinto lleva una clave nueva.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            validationError:
+              summary: Datos inválidos
+              value:
+                type: validation_error
+                title: Los datos no son válidos
+                status: 422
+                detail: Revisá los campos marcados.
+                errors:
+                  - field: customer.email
+                    code: invalid_email
+                    message: Ingresá un email válido
+            idempotencyKeyReused:
+              summary: Clave ya usada con otros datos
+              value:
+                type: idempotency_key_reused
+                title: La clave ya se usó
+                status: 422
+                detail: La Idempotency-Key ya se usó con otros datos. Generá una nueva para este intento.
     Unauthorized:
       description: Falta la sesión o venció.
       content:
@@ -2689,16 +2773,29 @@ components:
             status: 401
             detail: Iniciá sesión para continuar.
     Forbidden:
-      description: La sesión es válida pero no alcanza para esta operación (por ejemplo, token CSRF inválido).
+      description: >-
+        La sesión es válida pero no alcanza para esta operación. Con `type` `csrf_invalid` falta
+        el token CSRF o no es válido (por ejemplo, porque otro inicio de sesión lo rotó): el
+        front pide uno nuevo y le pide a la persona que reintente, sin repetir la escritura solo.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
-          example:
-            type: forbidden
-            title: Acceso denegado
-            status: 403
-            detail: No tenés permiso para hacer esto.
+          examples:
+            csrfInvalid:
+              summary: Token CSRF inválido
+              value:
+                type: csrf_invalid
+                title: Token CSRF inválido
+                status: 403
+                detail: El token CSRF falta o no es válido.
+            forbidden:
+              summary: Acceso denegado
+              value:
+                type: forbidden
+                title: Acceso denegado
+                status: 403
+                detail: No tenés permiso para hacer esto.
     NotFound:
       description: El recurso no existe o no está publicado.
       content:
@@ -3430,11 +3527,13 @@ components:
       properties:
         eyebrow:
           type: string
-          description: Texto corto que va arriba del título.
+          maxLength: 60
+          description: Texto corto que va arriba del título, hasta 60 caracteres.
           example: Destacados
         title:
           type: string
-          description: Título de la sección.
+          maxLength: 60
+          description: Título de la sección, hasta 60 caracteres.
           example: Los más elegidos de la ronda
       example:
         eyebrow: Destacados
@@ -3451,25 +3550,33 @@ components:
           example: gourd
         eyebrow:
           type: string
-          description: Texto corto que va arriba del título.
+          maxLength: 60
+          description: Texto corto que va arriba del título, hasta 60 caracteres.
           example: Mate
         titleLines:
           type: array
-          description: Líneas del título, una debajo de la otra.
+          description: Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
+          minItems: 1
+          maxItems: 3
           items:
             type: string
+            maxLength: 60
           example: [Calabaza curada., Virola de alpaca.]
         text:
           type: string
-          description: Texto de la escena.
+          maxLength: 600
+          description: Texto de la escena, hasta 600 caracteres.
           example: Cada calabaza se elige por su forma y sus paredes. La virola se cincela a mano y la base de bronce lo mantiene firme sobre la mesa.
         ctaLabel:
           type: [string, 'null']
-          description: Texto del botón de la escena, o `null` si la escena no tiene botón.
+          maxLength: 40
+          description: Texto del botón de la escena (hasta 40 caracteres), o `null` si la escena no tiene botón.
           example: Ver mates
     HomeContent:
       type: object
-      description: Textos editables de la página de inicio.
+      description: >-
+        Textos editables de la página de inicio. Los límites son los de `homeContentFormSchema`
+        de `@galpon/schemas`: los textos se recortan y los obligatorios no pueden quedar vacíos.
       required:
         - hero
         - scenes
@@ -3489,40 +3596,48 @@ components:
           properties:
             eyebrow:
               type: string
-              description: Texto corto que va arriba del título.
+              maxLength: 60
+              description: Texto corto que va arriba del título, hasta 60 caracteres.
               example: Hechos para compartir
             titleLines:
               type: array
-              description: Líneas del título, una debajo de la otra.
+              description: Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
+              minItems: 1
+              maxItems: 3
               items:
                 type: string
+                maxLength: 60
               example: [Encontrá, tu mate.]
             text:
               type: string
-              description: Texto debajo del título.
+              maxLength: 600
+              description: Texto debajo del título, hasta 600 caracteres.
               example: Calabaza curada, virola de alpaca cincelada y bombillones de bronce. Bajá, que te mostramos cada pieza de cerca.
             primaryCtaLabel:
               type: string
-              description: Texto del botón principal.
+              maxLength: 40
+              description: Texto del botón principal, hasta 40 caracteres.
               example: Ver la tienda
             secondaryCtaLabel:
               type: string
-              description: Texto del botón secundario.
+              maxLength: 40
+              description: Texto del botón secundario, hasta 40 caracteres.
               example: Armá tu kit
         scenes:
           type: array
-          description: Las 6 escenas de la historia, en el orden en que se muestran.
+          description: Las 6 escenas de la historia, en el orden en que se muestran; cada `key` aparece una sola vez.
           minItems: 6
           maxItems: 6
           items:
             $ref: '#/components/schemas/StoryScene'
         ritualSteps:
           type: array
-          description: Los 4 pasos del ritual, en orden.
+          description: Los 4 pasos del ritual, en orden, de hasta 80 caracteres cada uno.
           minItems: 4
           maxItems: 4
           items:
             type: string
+            maxLength: 80
           example: [Yerba, Montañita, Bombilla, Agua]
         storyProducts:
           type: object
@@ -3531,6 +3646,8 @@ components:
           properties:
             hero:
               type: string
+              maxLength: 80
+              pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
               description: Slug del mate de la portada.
               example: mate-imperial-premium
             bombillas:
@@ -3540,6 +3657,8 @@ components:
               maxItems: 2
               items:
                 type: string
+                maxLength: 80
+                pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
               example: [bombillon-premium-curvo, bombillon-100-alpaca]
             yerbas:
               type: array
@@ -3548,6 +3667,8 @@ components:
               maxItems: 3
               items:
                 type: string
+                maxLength: 80
+                pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
               example:
                 [yerba-canarias-1-kg, yerba-canarias-serena-1-kg, yerba-canarias-te-y-jengibre-1-kg]
         collection:
@@ -3566,15 +3687,18 @@ components:
           properties:
             eyebrow:
               type: string
-              description: Texto corto que va arriba de la frase.
+              maxLength: 60
+              description: Texto corto que va arriba de la frase, hasta 60 caracteres.
               example: Manifiesto
             text:
               type: string
-              description: Frase del manifiesto.
+              maxLength: 400
+              description: Frase del manifiesto, hasta 400 caracteres.
               example: Un mate no se compra, se elige. Calabaza curada, alpaca cincelada a mano y cuero cosido punto por punto. Piezas hechas para durar muchas rondas.
             ctaLabel:
               type: string
-              description: Texto del enlace a Nosotros.
+              maxLength: 40
+              description: Texto del enlace a Nosotros, hasta 40 caracteres.
               example: Conocé la historia del galpón
         stats:
           type: object
@@ -3583,13 +3707,15 @@ components:
           properties:
             provinces:
               type: integer
-              description: Cantidad de provincias con envío.
+              description: Cantidad de provincias con envío, de 0 a 999.
               minimum: 0
+              maximum: 999
               example: 24
             partners:
               type: integer
-              description: Cantidad de socios.
+              description: Cantidad de socios, de 0 a 999.
               minimum: 0
+              maximum: 999
               example: 2
         kitBlock:
           type: object
@@ -3598,23 +3724,29 @@ components:
           properties:
             eyebrow:
               type: string
-              description: Texto corto que va arriba del título.
+              maxLength: 60
+              description: Texto corto que va arriba del título, hasta 60 caracteres.
               example: Armá tu kit
             title:
               type: string
-              description: Título del bloque.
+              maxLength: 60
+              description: Título del bloque, hasta 60 caracteres.
               example: Mate, bombilla y yerba.
             text:
               type: string
-              description: Texto del bloque.
+              maxLength: 600
+              description: Texto del bloque, hasta 600 caracteres.
               example: Elegí las tres piezas en tres pasos. El descuento se aplica solo sobre el total del kit.
             ctaLabel:
               type: string
-              description: Texto del botón.
+              maxLength: 40
+              description: Texto del botón, hasta 40 caracteres.
               example: Armar mi kit
     AboutContent:
       type: object
-      description: Textos editables de la página Nosotros.
+      description: >-
+        Textos editables de la página Nosotros. Los límites son los de `aboutContentFormSchema`
+        de `@galpon/schemas`: los textos se recortan y los obligatorios no pueden quedar vacíos.
       required: [hero, partners, quote, stepsEyebrow, steps, ctaLabel]
       properties:
         hero:
@@ -3624,21 +3756,27 @@ components:
           properties:
             eyebrow:
               type: string
-              description: Texto corto que va arriba del título.
+              maxLength: 60
+              description: Texto corto que va arriba del título, hasta 60 caracteres.
               example: Sobre nosotros
             titleLines:
               type: array
-              description: Líneas del título, una debajo de la otra.
+              description: Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
+              minItems: 1
+              maxItems: 3
               items:
                 type: string
+                maxLength: 60
               example: [Dos socios., Un galpón., La ronda de siempre.]
             text:
               type: string
-              description: Texto debajo del título.
+              maxLength: 600
+              description: Texto debajo del título, hasta 600 caracteres.
               example: Galpón nació entre dos socios que compartían la misma costumbre, un buen mate al lado. Hoy elegimos cada pieza, la revisamos a mano y la mandamos a todo el país.
         partners:
           type: array
-          description: Socios, con su foto.
+          description: Socios, con su foto; hasta 8.
+          maxItems: 8
           items:
             type: object
             description: Socio del galpón.
@@ -3646,11 +3784,13 @@ components:
             properties:
               name:
                 type: string
-                description: Nombre del socio.
+                maxLength: 60
+                description: Nombre del socio, hasta 60 caracteres.
                 example: Bruno Galimberti
               role:
                 type: string
-                description: Rol del socio.
+                maxLength: 80
+                description: Rol del socio, hasta 80 caracteres.
                 example: Socio fundador
               photo:
                 description: Foto del socio, o `null` si todavía no hay.
@@ -3659,15 +3799,19 @@ components:
                   - type: 'null'
         quote:
           type: string
-          description: Frase destacada de la página.
+          maxLength: 300
+          description: Frase destacada de la página, hasta 300 caracteres.
           example: No vendemos lo que no usaríamos. Cada mate pasa por nuestras manos antes de llegar a las tuyas.
         stepsEyebrow:
           type: string
-          description: Texto corto que va arriba de los pasos.
+          maxLength: 60
+          description: Texto corto que va arriba de los pasos, hasta 60 caracteres.
           example: Cómo trabajamos
         steps:
           type: array
-          description: Pasos de cómo trabaja el galpón.
+          description: Los 3 pasos de cómo trabaja el galpón.
+          minItems: 3
+          maxItems: 3
           items:
             type: object
             description: Paso de trabajo.
@@ -3675,24 +3819,122 @@ components:
             properties:
               title:
                 type: string
-                description: Título del paso.
+                maxLength: 60
+                description: Título del paso, hasta 60 caracteres.
                 example: Elegimos cada calabaza
               text:
                 type: string
-                description: Texto del paso.
+                maxLength: 400
+                description: Texto del paso, hasta 400 caracteres.
                 example: Buscamos formas parejas, paredes firmes y buena boca. Si no pasa la revisión, no sale.
         ctaLabel:
           type: string
-          description: Texto del botón que lleva a la tienda.
+          maxLength: 40
+          description: Texto del botón que lleva a la tienda, hasta 40 caracteres.
+          example: Conocé la tienda
+    AboutContentInput:
+      type: object
+      description: >-
+        Textos de Nosotros que guarda el dashboard: lo mismo que `AboutContent`, con la foto de
+        cada socio como `ImageInput` (el back arma la `url` desde `publicId`, como en productos y
+        líneas). Los límites son los de `aboutContentFormSchema` de `@galpon/schemas`.
+      required: [hero, partners, quote, stepsEyebrow, steps, ctaLabel]
+      properties:
+        hero:
+          type: object
+          description: Portada de la página.
+          required: [eyebrow, titleLines, text]
+          properties:
+            eyebrow:
+              type: string
+              maxLength: 60
+              description: Texto corto que va arriba del título, hasta 60 caracteres.
+              example: Sobre nosotros
+            titleLines:
+              type: array
+              description: Líneas del título, una debajo de la otra; de 1 a 3, de hasta 60 caracteres cada una.
+              minItems: 1
+              maxItems: 3
+              items:
+                type: string
+                maxLength: 60
+              example: [Dos socios., Un galpón., La ronda de siempre.]
+            text:
+              type: string
+              maxLength: 600
+              description: Texto debajo del título, hasta 600 caracteres.
+              example: Galpón nació entre dos socios que compartían la misma costumbre, un buen mate al lado.
+        partners:
+          type: array
+          description: Socios, con su foto; hasta 8.
+          maxItems: 8
+          items:
+            type: object
+            description: Socio del galpón.
+            required: [name, role, photo]
+            properties:
+              name:
+                type: string
+                maxLength: 60
+                description: Nombre del socio, hasta 60 caracteres.
+                example: Bruno Galimberti
+              role:
+                type: string
+                maxLength: 80
+                description: Rol del socio, hasta 80 caracteres.
+                example: Socio fundador
+              photo:
+                description: Foto ya subida del socio, o `null` si no tiene.
+                oneOf:
+                  - $ref: '#/components/schemas/ImageInput'
+                  - type: 'null'
+        quote:
+          type: string
+          maxLength: 300
+          description: Frase destacada de la página, hasta 300 caracteres.
+          example: No vendemos lo que no usaríamos.
+        stepsEyebrow:
+          type: string
+          maxLength: 60
+          description: Texto corto que va arriba de los pasos, hasta 60 caracteres.
+          example: Cómo trabajamos
+        steps:
+          type: array
+          description: Los 3 pasos de cómo trabaja el galpón.
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            description: Paso de trabajo.
+            required: [title, text]
+            properties:
+              title:
+                type: string
+                maxLength: 60
+                description: Título del paso, hasta 60 caracteres.
+                example: Elegimos cada calabaza
+              text:
+                type: string
+                maxLength: 400
+                description: Texto del paso, hasta 400 caracteres.
+                example: Buscamos formas parejas, paredes firmes y buena boca.
+        ctaLabel:
+          type: string
+          maxLength: 40
+          description: Texto del botón que lleva a la tienda, hasta 40 caracteres.
           example: Conocé la tienda
     FaqContent:
       type: object
-      description: Preguntas frecuentes, agrupadas por categoría.
+      description: >-
+        Preguntas frecuentes, agrupadas por categoría. Los límites son los de
+        `faqContentFormSchema` de `@galpon/schemas`.
       required: [categories]
       properties:
         categories:
           type: array
-          description: Categorías de preguntas, en el orden en que se muestran.
+          description: Categorías de preguntas, en el orden en que se muestran; de 1 a 10.
+          minItems: 1
+          maxItems: 10
           items:
             type: object
             description: Categoría de preguntas.
@@ -3700,15 +3942,20 @@ components:
             properties:
               id:
                 type: string
-                description: Identificador de la categoría, usado en la dirección web.
+                maxLength: 80
+                pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                description: Identificador de la categoría, usado en la dirección web. Minúsculas, números y guiones.
                 example: envios
               label:
                 type: string
-                description: Nombre de la categoría.
+                maxLength: 40
+                description: Nombre de la categoría, hasta 40 caracteres.
                 example: Envíos
               items:
                 type: array
-                description: Preguntas de la categoría.
+                description: Preguntas de la categoría, de 1 a 30.
+                minItems: 1
+                maxItems: 30
                 items:
                   type: object
                   description: Pregunta con su respuesta.
@@ -3716,35 +3963,45 @@ components:
                   properties:
                     question:
                       type: string
-                      description: Pregunta.
+                      maxLength: 200
+                      description: Pregunta, hasta 200 caracteres.
                       example: ¿Hacen envíos a todo el país?
                     answer:
                       type: string
-                      description: Respuesta.
+                      maxLength: 2000
+                      description: Respuesta, hasta 2000 caracteres.
                       example: Sí, enviamos a las 24 provincias. Podés elegir envío a domicilio o a sucursal.
     FooterContent:
       type: object
-      description: Textos editables del pie de página.
+      description: >-
+        Textos editables del pie de página. Los límites son los de `footerContentFormSchema` de
+        `@galpon/schemas`.
       required: [tagline, text, paymentMethods, consumerDefenseUrl]
       properties:
         tagline:
           type: string
-          description: Frase del pie.
+          maxLength: 80
+          description: Frase del pie, hasta 80 caracteres.
           example: Hechos para compartir.
         text:
           type: string
-          description: Texto debajo de la frase.
+          maxLength: 300
+          description: Texto debajo de la frase, hasta 300 caracteres.
           example: Mates, bombillones y yerba con envío a todo el país.
         paymentMethods:
           type: array
-          description: Nombres de los medios de pago que se muestran.
+          description: Nombres de los medios de pago que se muestran; hasta 10, de hasta 40 caracteres.
+          maxItems: 10
           items:
             type: string
+            maxLength: 40
           example: [Mercado Pago, Visa, Mastercard, American Express]
         consumerDefenseUrl:
           type: [string, 'null']
           format: uri
-          description: Enlace a Defensa del Consumidor, o `null` si no se muestra.
+          maxLength: 2048
+          pattern: '^https?://'
+          description: Enlace a Defensa del Consumidor (http o https), o `null` si no se muestra.
           example: https://www.argentina.gob.ar/produccion/defensadelconsumidor
       example:
         tagline: Hechos para compartir.
@@ -3758,27 +4015,35 @@ components:
       properties:
         descriptionNote:
           type: [string, 'null']
-          description: Nota que se muestra debajo de la descripción, o `null` si el grupo no tiene.
+          maxLength: 600
+          description: Nota que se muestra debajo de la descripción (hasta 600 caracteres), o `null` si el grupo no tiene.
           example: Cada pieza es artesanal, así que los tonos de la calabaza, el cuero y el cincelado pueden variar.
         materialsTitle:
           type: string
-          description: Título de la pestaña de materiales ("Materiales" o "Contenido").
+          maxLength: 30
+          description: Título de la pestaña de materiales ("Materiales" o "Contenido"), hasta 30 caracteres.
           example: Materiales
         materials:
           type: string
-          description: Texto de la pestaña de materiales.
+          maxLength: 2000
+          description: Texto de la pestaña de materiales, hasta 2000 caracteres.
           example: Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
         careTitle:
           type: string
-          description: Título de la pestaña de cuidado ("Cuidado" o "Conservación").
+          maxLength: 30
+          description: Título de la pestaña de cuidado ("Cuidado" o "Conservación"), hasta 30 caracteres.
           example: Cuidado
         care:
           type: string
-          description: Texto de la pestaña de cuidado.
+          maxLength: 2000
+          description: Texto de la pestaña de cuidado, hasta 2000 caracteres.
           example: Curalo antes del primer uso y secalo boca abajo después de cada ronda.
     ProductTabsContent:
       type: object
-      description: Textos de fábrica de las pestañas de la ficha, por grupo de producto, más el de envío y cambios, que es común.
+      description: >-
+        Textos de fábrica de las pestañas de la ficha, por grupo de producto, más el de envío y
+        cambios, que es común. Los límites son los de `productTabsContentFormSchema` de
+        `@galpon/schemas`.
       required: [mate, bombilla, yerba, shipping]
       properties:
         mate:
@@ -3789,16 +4054,20 @@ components:
           $ref: '#/components/schemas/ProductTabsGroupContent'
         shipping:
           type: string
-          description: Texto de la pestaña de envío y cambios, igual para todos los grupos.
+          maxLength: 2000
+          description: Texto de la pestaña de envío y cambios, igual para todos los grupos; hasta 2000 caracteres.
           example: Enviamos a todo el país y calculás el costo en el checkout. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.
     LegalContent:
       type: object
-      description: Documento legal (términos y condiciones o política de privacidad).
+      description: >-
+        Documento legal (términos y condiciones o política de privacidad). Los límites son los de
+        `legalContentFormSchema` de `@galpon/schemas`.
       required: [title, updatedAt, body]
       properties:
         title:
           type: string
-          description: Título del documento.
+          maxLength: 120
+          description: Título del documento, hasta 120 caracteres.
           example: Términos y condiciones
         updatedAt:
           type: string
@@ -3807,7 +4076,9 @@ components:
           example: '2026-10-01'
         body:
           type: string
-          description: Texto del documento, con los párrafos separados por una línea en blanco.
+          minLength: 1
+          maxLength: 60000
+          description: Texto del documento, con los párrafos separados por una línea en blanco; de 1 a 60.000 caracteres.
           example: "Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.\n\nSegundo párrafo."
     OrderStatus:
       type: string
@@ -4434,7 +4705,8 @@ components:
     OrderPayment:
       type: object
       description: Pago del pedido. Salvo `method`, cada dato es `null` hasta que hay un intento de pago que lo informe.
-      required: [method, installments, paymentTypeId, lastFour, statusDetail, mpPaymentId]
+      required:
+        [method, installments, paymentTypeId, lastFour, statusDetail, mpPaymentId, challenge]
       properties:
         method:
           $ref: '#/components/schemas/PaymentMethod'
@@ -4461,6 +4733,16 @@ components:
           type: [string, 'null']
           description: Identificador del pago en Mercado Pago.
           example: '1234567890'
+        challenge:
+          description: >-
+            Verificación 3-D Secure pendiente del intento de pago activo, para retomarla desde
+            cualquier pestaña, o `null` si el pago no está en `action_required`. Es la misma que
+            devolvió `POST /orders/{number}/payments/mercadopago/card` (`CardPaymentResult.challenge`)
+            para ese intento: el back la guarda con el intento y deja de mandarla cuando el pago
+            se resuelve o se inicia otro intento.
+          oneOf:
+            - $ref: '#/components/schemas/PaymentChallenge'
+            - type: 'null'
     OrderTracking:
       type: object
       description: Datos del despacho, una vez que el pedido se envió.
@@ -4615,6 +4897,7 @@ components:
           lastFour: '4242'
           statusDetail: accredited
           mpPaymentId: '1234567890'
+          challenge: null
         tracking: null
         history:
           - status: pending_payment
@@ -4767,16 +5050,18 @@ components:
         challenge:
           description: Verificación 3-D Secure pendiente, o `null` si no hace falta.
           oneOf:
-            - type: object
-              description: Verificación que el cliente completa con su banco.
-              required: [url]
-              properties:
-                url:
-                  type: string
-                  format: uri
-                  description: Dirección que se abre en un diálogo para que el cliente verifique la compra.
-                  example: https://www.mercadopago.com.ar/3ds/challenge?id=abc123
+            - $ref: '#/components/schemas/PaymentChallenge'
             - type: 'null'
+    PaymentChallenge:
+      type: object
+      description: Verificación 3-D Secure que el cliente completa con su banco.
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Dirección que se abre en un diálogo para que el cliente verifique la compra.
+          example: https://www.mercadopago.com.ar/3ds/challenge?id=abc123
     InstallmentsInput:
       type: object
       description: >-
@@ -5246,7 +5531,10 @@ components:
           type: string
           minLength: 1
           maxLength: 255
-          description: Identificador de la foto en el proveedor de imágenes.
+          description: >-
+            Identificador de la foto en el proveedor de imágenes, el que devolvió la subida. Si el
+            back no conoce esa foto responde `422` en ese campo: `images.N.publicId` en un
+            producto, `image.publicId` en una línea y `partners.N.photo.publicId` en Nosotros.
           example: galpon/productos/mate-imperial-premium
         width:
           type: integer
@@ -5390,6 +5678,15 @@ components:
           maxItems: 8
           items:
             $ref: '#/components/schemas/ImageInput'
+        expectedUpdatedAt:
+          type: string
+          format: date-time
+          description: >-
+            `updatedAt` del producto cuando se abrió para editarlo. Solo lo usa `PATCH
+            /admin/products/{id}`: si no coincide con el `updatedAt` guardado responde `409` con
+            `type` `product_changed` y no guarda nada; si falta, guarda igual (gana el último).
+            `POST /admin/products` lo ignora.
+          example: '2026-10-15T18:30:00Z'
     AdminProductPage:
       type: object
       description: Página de productos del dashboard.
@@ -5470,12 +5767,19 @@ components:
       properties:
         purpose:
           type: string
-          description: Para qué es la foto; define la carpeta de Cloudinary donde se guarda.
+          description: >-
+            Para qué es la foto; define la carpeta de Cloudinary donde se guarda: `product` →
+            `galpon/productos`, `category` → `galpon/lineas`, `partner` → `galpon/socios` y
+            `site` → `galpon/sitio`.
           enum: [product, category, partner, site]
           example: product
     MediaSignature:
       type: object
-      description: Datos firmados para subir una foto a Cloudinary desde el navegador.
+      description: >-
+        Datos firmados para subir una foto a Cloudinary desde el navegador. La subida
+        (`POST https://api.cloudinary.com/v1_1/{cloudName}/image/upload`, `multipart/form-data`)
+        manda exactamente `file`, `api_key` (este `apiKey`), `timestamp`, `signature` y `folder`.
+        La firma cubre `folder` y `timestamp`, así que otro parámetro la invalida.
       required: [timestamp, signature, apiKey, cloudName, folder]
       properties:
         timestamp:
