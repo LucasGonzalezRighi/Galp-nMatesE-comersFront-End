@@ -1,8 +1,11 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { DrawCheck } from '@/components/motion'
+import { asRoute } from '@/lib/routes'
+import { ACCOUNT_COPY } from './account.copy'
 
 /** Tarjeta de los formularios de la cuenta (la misma de Contacto y Arrepentimiento). */
 export const FORM_CARD =
@@ -20,6 +23,22 @@ export function FormError({ message }: FormErrorProps): ReactNode {
   return (
     <p role="alert" className="text-danger m-0 text-[13px]">
       {message}
+    </p>
+  )
+}
+
+/**
+ * Aviso breve de privacidad con link a `/privacidad` (spec 14.6), que va sobre el botón de los
+ * formularios de la cuenta que piden datos.
+ */
+export function PrivacyNotice(): ReactNode {
+  return (
+    <p className="m-0 text-[12px] text-neutral-400">
+      {ACCOUNT_COPY.privacyBefore}{' '}
+      <Link href={asRoute('/privacidad')} className="text-accent underline">
+        {ACCOUNT_COPY.privacyLink}
+      </Link>
+      .
     </p>
   )
 }

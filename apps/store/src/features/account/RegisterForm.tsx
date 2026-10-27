@@ -14,7 +14,7 @@ import { registerSchema } from '@galpon/schemas'
 import { ACCOUNT_COPY } from './account.copy'
 import { resetAccountState, withCsrf } from './csrf'
 import { showSubmitError } from './form-errors'
-import { FORM_CARD, FormError } from './form-parts'
+import { FORM_CARD, FormError, PrivacyNotice } from './form-parts'
 import { safeReturnPath } from './return-path'
 
 /** Campos que la API puede marcar con error. */
@@ -91,6 +91,7 @@ export function RegisterForm(): ReactNode {
           <Input {...control} {...field('password')} type="password" autoComplete="new-password" />
         )}
       </Field>
+      <PrivacyNotice />
       <FormError message={errors.root?.server?.message} />
       <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
         {isSubmitting ? ACCOUNT_COPY.submitting : ACCOUNT_COPY.register.submit}

@@ -35,8 +35,11 @@ const OPTIONS: InstallmentOption[] = [
   },
 ]
 
-/** Dibuja el formulario en modo de prueba con un botón "Pagar" dentro. */
-function renderForm(props: Partial<CardPaymentFormProps> = {}) {
+/**
+ * Dibuja el formulario en modo de prueba con un botón "Pagar" dentro y espera a que los campos
+ * simulados (que se cargan de forma diferida) estén montados.
+ */
+async function renderForm(props: Partial<CardPaymentFormProps> = {}) {
   const onSubmit = vi.fn()
   const onBinChange = vi.fn()
   const ref = createRef<CardPaymentFormHandle>()
@@ -53,6 +56,7 @@ function renderForm(props: Partial<CardPaymentFormProps> = {}) {
       <button type="submit">Pagar</button>
     </CardPaymentForm>,
   )
+  await screen.findByLabelText(PAYMENTS_COPY.cardNumber)
   return { onSubmit, onBinChange, ref }
 }
 
@@ -78,7 +82,7 @@ function preview(): HTMLElement {
 describe('CardPaymentForm', () => {
   it('nunca muestra el número de la tarjeta fuera de su campo: solo la marca y el BIN', async () => {
     const user = userEvent.setup()
-    renderForm()
+    await renderForm()
 
     await user.type(field(PAYMENTS_COPY.cardNumber), CARD_NUMBER)
 
@@ -90,7 +94,7 @@ describe('CardPaymentForm', () => {
 
   it('la tarjeta muestra el titular, y vencimiento y CVC fijos, y gira al enfocar el CVC', async () => {
     const user = userEvent.setup()
-    renderForm()
+    await renderForm()
 
     await user.type(field(PAYMENTS_COPY.cardholderName), 'Juana Pérez')
     await user.type(field(PAYMENTS_COPY.expirationDate), '1130')
@@ -110,7 +114,7 @@ describe('CardPaymentForm', () => {
 
   it('al pagar vacío muestra cada error y lleva el foco al primero', async () => {
     const user = userEvent.setup()
-    const { onSubmit } = renderForm()
+    const { onSubmit } = await renderForm()
 
     await user.click(screen.getByRole('button', { name: 'Pagar' }))
 
@@ -129,7 +133,7 @@ describe('CardPaymentForm', () => {
 
   it('con la tarjeta completa, el foco va al primer error de los datos del titular', async () => {
     const user = userEvent.setup()
-    const { onSubmit } = renderForm()
+    const { onSubmit } = await renderForm()
 
     await fillCard(user)
     await user.click(screen.getByRole('button', { name: 'Pagar' }))
@@ -141,7 +145,7 @@ describe('CardPaymentForm', () => {
 
   it('los errores aparecen al salir del campo, no mientras se escribe por primera vez', async () => {
     const user = userEvent.setup()
-    renderForm()
+    await renderForm()
 
     await user.type(field(PAYMENTS_COPY.cardNumber), '4509')
     expect(screen.queryByText(MESSAGES.incompleteCardNumber)).not.toBeInTheDocument()
@@ -151,7 +155,7 @@ describe('CardPaymentForm', () => {
 
   it('avisa el BIN para pedir las cuotas y entrega el token con lo que necesita el pago', async () => {
     const user = userEvent.setup()
-    const { onSubmit, onBinChange } = renderForm()
+    const { onSubmit, onBinChange } = await renderForm()
 
     await fillCard(user)
     await user.type(field(PAYMENTS_COPY.cardholderName), 'APRO')
@@ -175,7 +179,7 @@ describe('CardPaymentForm', () => {
 
   it('expone createCardToken por su ref: un token nuevo en cada intento', async () => {
     const user = userEvent.setup()
-    const { ref } = renderForm()
+    const { ref } = await renderForm()
 
     const createToken = () => act(() => ref.current?.createCardToken())
 
@@ -193,7 +197,7 @@ describe('CardPaymentForm', () => {
 
   it('avisa null al borrar el número', async () => {
     const user = userEvent.setup()
-    const { onBinChange } = renderForm()
+    const { onBinChange } = await renderForm()
 
     await user.type(field(PAYMENTS_COPY.cardNumber), CARD_NUMBER)
     await user.clear(field(PAYMENTS_COPY.cardNumber))

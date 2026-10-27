@@ -21,6 +21,11 @@ export const ACCOUNT_COPY = {
   phoneHint: 'Con el código de área, sin 0 ni 15.',
   resetToken: 'Código del enlace',
 
+  /** Aviso de privacidad de los formularios que piden datos (spec 14.6): lo que se hace con ellos, antes del link. */
+  privacyBefore: 'Usamos tus datos solo para gestionar tu cuenta y tus pedidos. Más en nuestra',
+  /** Texto del link a la política de privacidad. */
+  privacyLink: 'Política de privacidad',
+
   /** Errores generales de los formularios (spec 9.7). */
   networkError: 'No pudimos conectar, probá de nuevo',
   unexpectedError: 'Algo salió mal. Probá de nuevo en unos minutos.',

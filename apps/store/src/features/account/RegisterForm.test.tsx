@@ -34,6 +34,16 @@ async function fillAndSubmit(email: string): Promise<void> {
 }
 
 describe('RegisterForm', () => {
+  it('muestra el aviso de privacidad con link a /privacidad (spec 14.6)', () => {
+    render(createAccountTestApi().wrap(<RegisterForm />))
+
+    expect(screen.getByText(new RegExp(ACCOUNT_COPY.privacyBefore))).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    )
+  })
+
   it('crea la cuenta, abre la sesión y lleva a /cuenta', async () => {
     const testApi = createAccountTestApi()
     render(testApi.wrap(<RegisterForm />))

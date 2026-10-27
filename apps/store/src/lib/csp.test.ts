@@ -32,7 +32,7 @@ describe('buildContentSecurityPolicy', () => {
         "img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com",
         "font-src 'self'",
         "connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com",
-        'frame-src https://*.mercadopago.com https://*.mercadolibre.com https:',
+        "frame-src 'self' https://*.mercadopago.com https://*.mercadolibre.com https:",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self' https://*.mercadopago.com",
@@ -40,6 +40,16 @@ describe('buildContentSecurityPolicy', () => {
         'upgrade-insecure-requests',
       ].join('; '),
     )
+  })
+
+  it("frame-src incluye 'self' para el 3-D Secure simulado, que es una página de la tienda", () => {
+    expect(directive(production, 'frame-src')).toMatch(/^'self' /)
+  })
+
+  it("con framedBySelf solo cambia frame-ancestors a 'self'", () => {
+    const framed = buildContentSecurityPolicy({ isDev: false, apiOrigin: null, framedBySelf: true })
+    expect(directive(framed, 'frame-ancestors')).toBe("'self'")
+    expect(framed.replace("frame-ancestors 'self'", "frame-ancestors 'none'")).toBe(production)
   })
 
   it('en desarrollo agrega eval a los scripts', () => {

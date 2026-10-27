@@ -12,6 +12,19 @@ afterEach(cleanup)
 const COPY = ACCOUNT_COPY.addresses
 
 describe('AddressBook', () => {
+  it('el formulario de dirección muestra el aviso de privacidad con link a /privacidad', async () => {
+    const testApi = createAccountTestApi()
+    await signUp(testApi)
+    render(testApi.wrap(<AddressBook initialAddresses={[]} />))
+
+    await userEvent.setup().click(screen.getByRole('button', { name: COPY.add }))
+
+    expect(screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    )
+  })
+
   it('agrega, edita y borra una dirección con el token CSRF de la sesión', async () => {
     const testApi = createAccountTestApi()
     await signUp(testApi)

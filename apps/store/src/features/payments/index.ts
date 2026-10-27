@@ -35,5 +35,3 @@ export type {
   ValidityChangeEvent,
 } from './payments.types'
 export { PAYMENT_FIELD_NAMES } from './payments.types'
-export type { SimulatedPaymentFieldsOptions } from './simulated-fields'
-export { createSimulatedPaymentFields, detectCardBrand } from './simulated-fields'

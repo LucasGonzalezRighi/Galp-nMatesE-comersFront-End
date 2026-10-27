@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next'
 import { PHASE_DEVELOPMENT_SERVER } from 'next/constants'
-import { buildContentSecurityPolicy } from './src/lib/csp'
+import { buildContentSecurityPolicy, SIMULATED_PAYMENT_PATH } from './src/lib/csp'
 import { parseStoreEnv } from './src/lib/env'
 
 /**
@@ -18,6 +18,11 @@ export default function nextConfig(phase: string): NextConfig {
   const env = parseStoreEnv(process.env)
   const isDev = phase === PHASE_DEVELOPMENT_SERVER
   const contentSecurityPolicy = buildContentSecurityPolicy({ isDev, apiOrigin: env.apiBaseUrl })
+  const simulatorContentSecurityPolicy = buildContentSecurityPolicy({
+    isDev,
+    apiOrigin: env.apiBaseUrl,
+    framedBySelf: true,
+  })
 
   return {
     cacheComponents: true,
@@ -46,6 +51,12 @@ export default function nextConfig(phase: string): NextConfig {
               value: 'camera=(), microphone=(), geolocation=(), payment=(self)',
             },
           ],
+        },
+        // Va después de la regla general: ante la misma cabecera, gana la última. El simulador de
+        // Mercado Pago se abre en un iframe de la tienda (3-D Secure simulado).
+        {
+          source: SIMULATED_PAYMENT_PATH,
+          headers: [{ key: 'Content-Security-Policy', value: simulatorContentSecurityPolicy }],
         },
       ])
     },

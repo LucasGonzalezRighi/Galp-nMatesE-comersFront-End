@@ -10,7 +10,7 @@ import { PROVINCES } from '@galpon/domain'
 import { addressBookEntrySchema } from '@galpon/schemas'
 import { ACCOUNT_COPY } from './account.copy'
 import { showSubmitError } from './form-errors'
-import { FORM_CARD, FormError } from './form-parts'
+import { FORM_CARD, FormError, PrivacyNotice } from './form-parts'
 
 /** Campos que la API puede marcar con error. */
 const FIELDS = [
@@ -139,6 +139,7 @@ export function AddressForm({ address, onSave, onCancel }: AddressFormProps): Re
         <input type="checkbox" className="accent-accent size-4" {...field('isDefault')} />
         {COPY.isDefault}
       </label>
+      <PrivacyNotice />
       <FormError message={errors.root?.server?.message} />
       <div className="flex flex-wrap gap-3">
         <Button type="submit" loading={isSubmitting}>

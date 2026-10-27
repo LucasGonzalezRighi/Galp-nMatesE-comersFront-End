@@ -16,7 +16,7 @@ import { checkoutContactSchema } from '@galpon/schemas'
 import { ACCOUNT_COPY, ORDER_STATUS_LABELS } from './account.copy'
 import { withCsrf } from './csrf'
 import { showSubmitError } from './form-errors'
-import { FORM_CARD, FormError } from './form-parts'
+import { FORM_CARD, FormError, PrivacyNotice } from './form-parts'
 import { formatAddressLines } from './format-address'
 
 /** Datos editables del perfil: los del contacto del checkout, sin el email (identifica la cuenta). */
@@ -101,6 +101,7 @@ function ProfileForm({ customer }: ProfileFormProps): ReactNode {
       <Field label={ACCOUNT_COPY.phone} hint={ACCOUNT_COPY.phoneHint} error={errors.phone?.message}>
         {(control) => <Input {...control} {...field('phone')} type="tel" autoComplete="tel" />}
       </Field>
+      <PrivacyNotice />
       <FormError message={errors.root?.server?.message} />
       <p role="status" className="m-0 text-[13px] text-neutral-300">
         {saved ? COPY.profileSaved : null}

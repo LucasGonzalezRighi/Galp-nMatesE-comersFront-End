@@ -1,4 +1,4 @@
-import { createMockCardToken } from '@galpon/api-client/mock'
+import { createMockCardToken } from '@galpon/api-client/mock/card-token'
 import { AR_TIME_ZONE } from '@galpon/domain'
 import type {
   CardMethod,
