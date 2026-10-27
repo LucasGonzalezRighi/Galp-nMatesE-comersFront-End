@@ -10,8 +10,10 @@
  * @packageDocumentation
  */
 export type { CheckoutResultProps } from './CheckoutResult'
+export type { GuestOrderTrackingProps } from './GuestOrderTracking'
 export type { OrderResultProps } from './OrderResult'
 export { CheckoutResult } from './CheckoutResult'
+export { GuestOrderTracking } from './GuestOrderTracking'
 export { MercadoPagoSimulator } from './MercadoPagoSimulator'
 export { CHALLENGE_DONE_MESSAGE, isChallengeDoneMessage } from './mp-simulator'
 export { OrderResult, OrderResultLoading } from './OrderResult'

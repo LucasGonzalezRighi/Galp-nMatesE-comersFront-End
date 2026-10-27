@@ -215,3 +215,21 @@ test.describe('tienda: checkout robusto', () => {
     await other.close()
   })
 })
+
+test.describe('tienda: seguimiento del pedido de invitado', () => {
+  test('/pedido/{numero} muestra el pedido pagado con el token de la pestaña', async ({
+    page,
+  }, testInfo) => {
+    await goToPayment(page, buyerFor(testInfo))
+    await fillCard(page, 'APRO')
+    await payWithCardButton(page).click()
+    const { number } = await readStoredOrder(page)
+    await waitForResult(page, number)
+
+    // Misma pestaña (mismo sessionStorage): la página lee el número de la dirección y consulta
+    // el pedido apenas carga, sin quedarse en "Consultando tu pedido…".
+    await gotoStore(page, `/pedido/${number}`)
+    await expect(page.getByRole('heading', { level: 1, name: `Pedido ${number}` })).toBeVisible()
+    await expect(page.getByText('Consultando tu pedido…')).toHaveCount(0)
+  })
+})
