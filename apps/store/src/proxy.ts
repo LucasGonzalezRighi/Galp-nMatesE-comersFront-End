@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { DEFAULT_CUSTOMER_SESSION_COOKIE } from '@galpon/api-client/mock'
+import { DEFAULT_CUSTOMER_SESSION_COOKIE } from '@galpon/api-client/mock/session-cookie'
 import type { ApiMode } from './lib/env'
 import { getStoreEnv } from './lib/env'
 

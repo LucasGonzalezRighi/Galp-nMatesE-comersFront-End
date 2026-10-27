@@ -539,7 +539,8 @@ packages/api-client/src/
 | Admin (SPA) | `mockFetch` en el navegador; `db` y sesión simulada en `sessionStorage` (sobreviven a recargas) | `VITE_API_BASE_URL` con `credentials: 'include'` |
 
 - El navegador de la tienda **siempre** habla con `/api/v1` en su mismo dominio; solo cambia el destino del *rewrite*.
-- El mock simula latencia (150–400 ms), errores de validación reales, `401`, `409` de stock/precio/total, y los resultados de pago **como el sandbox de MP: por el nombre del titular** (`APRO` aprobado, `CONT` pendiente, `OTHE` rechazado, `FUND` fondos insuficientes, `SECU` CVC inválido, `EXPI` vencida; DNI de prueba 12345678). La tabla está en el README de `api-client`.
+- El mock simula latencia (150–400 ms), errores de validación reales, `401`, `409` de stock/precio/total, y los resultados de pago **como el sandbox de MP: por el nombre del titular** (`APRO` aprobado, `CONT` pendiente, `OTHE` rechazado, `FUND` fondos insuficientes, `SECU` CVC inválido, `EXPI` vencida, `CALL` hay que autorizar con el banco y `3DS` abre el desafío 3-D Secure simulado; DNI de prueba 12345678). La tabla está en el README de `api-client`.
+- Para armar escenarios, el mock tiene rutas de control fuera del contrato (`MOCK_CONTROL_ROUTES`, solo en modo de prueba): `POST /__mock/orders/{number}/expire` vence la reserva de un pedido y `POST /__mock/products/{id}` cambia el precio o el stock de un producto; el simulador de Mercado Pago resuelve el pago con `POST /__mock/mercadopago/resolve`.
 - En modo de prueba, `initPoint` apunta a `/checkout/mp-simulado?pedido=…`: una página con botones Aprobar / Dejar pendiente / Rechazar que redirige a `/checkout/resultado` como lo haría MP.
 - Tienda y admin no comparten datos simulados (procesos distintos): un cambio en el admin no se ve en la tienda hasta que exista el back. Documentado en el README.
 
@@ -597,7 +598,7 @@ POST /orders { …, expectedTotalArs }  (Idempotency-Key)
                                                                                 └─► /checkout/resultado
 ```
 
-- **El pedido se crea al elegir el medio de pago, no al tocar "Pagar"** (Ruling P3-5): las cuotas necesitan el total confirmado por el back y el número del pedido, y así la reserva de 30 minutos cubre tanto Mercado Pago como la tarjeta. Mientras `cartHash` y los datos de los pasos 1 y 2 no cambien se reutiliza el pedido; si cambian, se crea uno nuevo con otra `Idempotency-Key`.
+- **El pedido se crea al elegir el medio de pago, no al tocar "Pagar"** (decisión tomada al construir el checkout en P3): las cuotas necesitan el total confirmado por el back y el número del pedido, y así la reserva de 30 minutos cubre tanto Mercado Pago como la tarjeta. Mientras `cartHash` y los datos de los pasos 1 y 2 no cambien se reutiliza el pedido; si cambian, se crea uno nuevo con otra `Idempotency-Key`.
 
 - **El pedido solo pasa a pagado cuando el back lo confirma con la notificación de Mercado Pago.** Los parámetros de la redirección no prueban nada.
 - El token del pedido viaja en la cabecera `X-Order-Token`, nunca en la URL; la URL de regreso lleva solo el número.
@@ -613,7 +614,7 @@ POST /orders { …, expectedTotalArs }  (Idempotency-Key)
 | `action_required` | Retoma la verificación 3-D Secure (con la dirección del desafío que el checkout dejó en `sessionStorage` de la pestaña, porque `Order.payment` no la trae; sin ella ofrece "Pagar de nuevo") |
 | `rejected` | Motivo legible en español (según `statusDetail`) + "Probar con otro medio" |
 | `none` / `cancelled` (pedido pendiente) | "No completaste el pago" + "Pagar" (vuelve al paso 3 reutilizando el pedido, que sigue reservado) |
-| pedido `expired` (`status: expired`, con cualquier `paymentStatus`) | "El pedido venció" + "Volver al carrito" (Ruling P3-6: solo con `status: expired`) |
+| pedido `expired` (`status: expired`, con cualquier `paymentStatus`) | "El pedido venció" + "Volver al carrito" (solo con `status: expired`: después de cancelar un intento el pedido sigue reservado y se puede pagar) |
 | sin token o inválido | "No encontramos ese pedido" (sin revelar si existe) |
 
 ### 14.3 Estados de pago (normalizados en el contrato)
@@ -647,7 +648,7 @@ Datos que el back manda a MP (fase 2, documentado en el ADR 0004): `external_ref
 
 ### 14.5 Precio sin impuestos nacionales (Ley 27.743)
 
-Si `priceDisplay.showNetPrice` está activo, cada precio de venta a consumidor final (tarjeta, ficha, carrito y resumen) muestra debajo, en letra menor, "Precio sin impuestos nacionales: $X" (`netPriceArs`, calculado por el back según la condición fiscal y la alícuota configuradas). Se deja configurable y marcado para que lo confirme el contador del cliente.
+Si `priceDisplay.showNetPrice` está activo, cada precio de venta a consumidor final (tarjeta, ficha, carrito y resumen) muestra debajo, en letra menor, "Precio sin impuestos nacionales: $X" (`netPriceArs`, calculado por el back según la condición fiscal y la alícuota configuradas). En la cotización del carrito cada línea trae `netUnitPriceArs` y el total trae `netSubtotalArs`; el neto por unidad se calcula sobre el precio efectivo del kit, con el ahorro por kit ya descontado (`totalArs` de la línea dividido por la cantidad) y no sobre el precio de lista de las piezas, y `netSubtotalArs` sobre el subtotal ya con ese ahorro. Se deja configurable y marcado para que lo confirme el contador del cliente.
 
 ### 14.6 Información obligatoria del vendedor
 
@@ -699,7 +700,7 @@ Los errores aparecen al salir del campo y al intentar avanzar (no mientras se es
 
 - Variables de entorno validadas al arrancar; al navegador llegan solo las `NEXT_PUBLIC_*` / `VITE_*` de la tabla 13.3.
 - **CSP de la tienda** (en `headers()` de `next.config`, sin nonce para conservar el render estático):
-  `default-src 'self'` · `script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com` (+ `'unsafe-eval'` solo en desarrollo) · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com` · `font-src 'self'` · `connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com` · `frame-src https://*.mercadopago.com https://*.mercadolibre.com https:` (el desafío 3-D Secure carga páginas del banco) · `object-src 'none'` · `base-uri 'self'` · `form-action 'self' https://*.mercadopago.com` · `frame-ancestors 'none'` · `upgrade-insecure-requests`.
+  `default-src 'self'` · `script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com` (+ `'unsafe-eval'` solo en desarrollo) · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com` · `font-src 'self'` · `connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com` · `frame-src 'self' https://*.mercadopago.com https://*.mercadolibre.com https:` (el desafío 3-D Secure carga páginas del banco; `'self'` es para el simulador del modo de prueba, que es una página de la tienda) · `object-src 'none'` · `base-uri 'self'` · `form-action 'self' https://*.mercadopago.com` · `frame-ancestors 'none'` (solo `/checkout/mp-simulado` lleva `frame-ancestors 'self'`, porque el 3-D Secure simulado la abre en un iframe del mismo origen; ver `src/lib/csp.ts`) · `upgrade-insecure-requests`.
 - **CSP del admin** (estricta; la SPA no tiene scripts inline): `default-src 'self'` · `script-src 'self'` · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com` · `connect-src 'self' {VITE_API_BASE_URL} https://api.cloudinary.com` · `frame-ancestors 'none'`. Se aplica en el servidor que sirva el admin (documentado en su README) y en `vite preview` para los tests.
 - Además, en las dos: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictiva (`payment` solo para MP).
 - Los E2E fallan si aparece una violación de CSP en la consola.

@@ -57,6 +57,14 @@ export interface CardPaymentFormProps {
   installments: readonly InstallmentOption[] | null
   /** Avisa el BIN y el tipo de tarjeta para pedir las cuotas, o `null` cuando ya no hay BIN. */
   onBinChange?: (input: InstallmentsInput | null) => void
+  /**
+   * Avisa que la persona cambió algo de lo que se paga: el titular, el documento, las cuotas, los
+   * primeros dígitos de la tarjeta o si el número, el vencimiento o el código quedaron completos o
+   * incompletos. Sirve para no reintentar un cobro con los datos de un intento anterior. En vivo
+   * los dígitos viven en iframes de Mercado Pago: un cambio que no mueve el BIN ni la validez no
+   * se ve.
+   */
+  onEdit?: () => void
   /** Recibe los datos del pago al enviar el formulario completo. */
   onSubmit?: (submission: CardPaymentSubmission) => void | Promise<void>
   /** Referencia para pedir el token desde afuera del formulario. */
@@ -146,6 +154,7 @@ export function CardPaymentForm({
   publicKey,
   installments,
   onBinChange,
+  onEdit,
   onSubmit,
   ref,
   id,
@@ -184,8 +193,10 @@ export function CardPaymentForm({
   const holderInputs = useRef<Partial<Record<HolderField, HTMLElement | null>>>({})
   const shakes = useRef<Partial<Record<FormField, ShakeHandle | null>>>({})
   const onBinChangeRef = useRef(onBinChange)
+  const onEditRef = useRef(onEdit)
   useEffect(() => {
     onBinChangeRef.current = onBinChange
+    onEditRef.current = onEdit
   })
 
   const markTouched = (field: FormField): void => {
@@ -212,13 +223,24 @@ export function CardPaymentForm({
     let active = true
     fields.on('binChange', (event) => {
       setCard(event)
+      onEditRef.current?.()
       onBinChangeRef.current?.(
         event.bin === null || event.method === null
           ? null
           : { bin: event.bin, paymentTypeId: event.method.paymentTypeId },
       )
     })
+    // Los campos simulados avisan la validez también al salir del campo: solo un cambio es una edición.
+    const known: Record<PaymentFieldName, boolean> = {
+      cardNumber: false,
+      expirationDate: false,
+      securityCode: false,
+    }
     fields.on('validityChange', ({ field, valid }) => {
+      if (known[field] !== valid) {
+        known[field] = valid
+        onEditRef.current?.()
+      }
       setValidity((current) =>
         current[field] === valid ? current : { ...current, [field]: valid },
       )
@@ -343,6 +365,7 @@ export function CardPaymentForm({
 
   const updateHolder = (field: HolderField, value: string): void => {
     setHolder((current) => ({ ...current, [field]: value }))
+    onEdit?.()
   }
 
   return (
@@ -453,7 +476,10 @@ export function CardPaymentForm({
               className="col-span-2"
               options={installments}
               value={chosenInstallments}
-              onChange={setSelectedInstallments}
+              onChange={(count) => {
+                setSelectedInstallments(count)
+                onEdit?.()
+              }}
             />
           )}
         </div>

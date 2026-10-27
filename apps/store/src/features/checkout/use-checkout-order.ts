@@ -45,8 +45,8 @@ export interface CheckoutOrder {
   error: string | null
   /**
    * Crea el pedido para el medio elegido, o devuelve el que ya existe para estos datos. Un doble
-   * clic devuelve la misma promesa; un reintento después de un error de red reutiliza la
-   * `Idempotency-Key`.
+   * clic devuelve la misma promesa; un reintento después de un error de red o del servidor (5xx)
+   * reutiliza la `Idempotency-Key`.
    *
    * @returns El pedido, o `null` si no se pudo (el motivo queda en `status`).
    */
@@ -126,9 +126,13 @@ export function useCheckoutOrder({
       setPhase({ status: 'idle' })
       return created.order
     } catch (error) {
-      // Sin respuesta no se sabe si se creó: el reintento usa la misma clave.
-      if (isApiError(error) && error.kind === 'network') {
-        setPhase({ status: 'error', message: CHECKOUT_COPY.networkError })
+      // Sin respuesta, o con un 5xx (un 502 o 504 puede llegar después de que el back confirmó),
+      // no se sabe si se creó: el reintento usa la misma clave y el back devuelve el mismo pedido.
+      if (isApiError(error) && (error.kind === 'network' || error.kind === 'server')) {
+        setPhase({
+          status: 'error',
+          message: error.kind === 'network' ? CHECKOUT_COPY.networkError : CHECKOUT_COPY.orderError,
+        })
         return null
       }
       useCheckoutStore.getState().setAttempt(null)

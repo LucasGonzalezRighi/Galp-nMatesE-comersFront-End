@@ -195,6 +195,43 @@ describe('CardPaymentForm', () => {
     expect(parseMockCardToken(first?.token ?? '')?.holder).toBe('CONT')
   })
 
+  it('onEdit avisa cada cambio de lo que se paga y no el solo pasar por un campo', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    await renderForm({ onEdit })
+
+    // Entrar y salir de un campo sin escribir no cambia nada.
+    await user.click(field(PAYMENTS_COPY.securityCode))
+    await user.tab()
+    expect(onEdit).not.toHaveBeenCalled()
+
+    await user.type(field(PAYMENTS_COPY.cardholderName), 'APRO')
+    expect(onEdit).toHaveBeenCalled()
+
+    onEdit.mockClear()
+    await fillCard(user)
+    expect(onEdit).toHaveBeenCalled()
+
+    // Salir de un campo completo y válido tampoco es un cambio.
+    onEdit.mockClear()
+    await user.click(field(PAYMENTS_COPY.securityCode))
+    await user.tab()
+    expect(onEdit).not.toHaveBeenCalled()
+
+    await user.type(field(PAYMENTS_COPY.identificationNumber), '12345678')
+    expect(onEdit).toHaveBeenCalled()
+
+    onEdit.mockClear()
+    await user.selectOptions(field(PAYMENTS_COPY.installments), '3')
+    expect(onEdit).toHaveBeenCalledTimes(1)
+
+    // Corregir el código de seguridad deja de ser válido un momento y vuelve a serlo.
+    onEdit.mockClear()
+    await user.clear(field(PAYMENTS_COPY.securityCode))
+    await user.type(field(PAYMENTS_COPY.securityCode), '456')
+    expect(onEdit).toHaveBeenCalledTimes(2)
+  })
+
   it('avisa null al borrar el número', async () => {
     const user = userEvent.setup()
     const { onBinChange } = await renderForm()

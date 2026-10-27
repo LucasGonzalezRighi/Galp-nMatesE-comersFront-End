@@ -3,11 +3,7 @@ import type { MockCustomer, MockCustomerSession } from '../types'
 import { problem, ResponseError } from '../http'
 import { randomUuid } from '../uuid'
 
-/**
- * Nombre de la cookie de sesión de la tienda en el modo de prueba. En vivo es
- * `__Host-galpon_session`, pero un navegador no acepta el prefijo `__Host-` en `http://localhost`.
- */
-export const DEFAULT_CUSTOMER_SESSION_COOKIE = 'galpon_session'
+export { DEFAULT_CUSTOMER_SESSION_COOKIE } from '../session-cookie'
 
 /** Duración de la sesión de un cliente: 30 días. */
 export const CUSTOMER_SESSION_MS = 30 * 24 * 60 * 60 * 1000

@@ -15,6 +15,7 @@ import { asRoute } from '@/lib/routes'
 import { cancelPayment, isApiError } from '@galpon/api-client'
 import { orderQuery, useApiClient } from '@galpon/api-client/react'
 import { isOrderNumber } from '@galpon/domain'
+import type { ResultKind } from './result-view'
 import { clearOrderSession, readOrderSession } from '../order-session'
 import { isChallengeDoneMessage } from './mp-simulator'
 import { OrderSummary } from './OrderSummary'
@@ -231,9 +232,7 @@ function PendingPanel({ order, timedOut }: PendingPanelProps): ReactNode {
     <>
       <Spinner size={32} />
       <h1 className={TITLE}>{RESULT_COPY.pending.title}</h1>
-      <p className={LEAD} aria-live="polite">
-        {RESULT_COPY.pending.text}
-      </p>
+      <p className={LEAD}>{RESULT_COPY.pending.text}</p>
     </>
   )
 }
@@ -373,6 +372,36 @@ interface KnownOrderProps {
 }
 
 /**
+ * Título del estado que se anuncia a los lectores de pantalla cuando cambia (el panel que lo
+ * muestra se desmonta al pasar de un estado al siguiente).
+ */
+function statusTitle(
+  order: Order,
+  kind: ResultKind,
+  variant: 'result' | 'tracking',
+  timedOut: boolean,
+): string {
+  switch (kind) {
+    case 'approved':
+      return variant === 'result'
+        ? RESULT_COPY.approved.title(order.customer.firstName)
+        : RESULT_COPY.tracking.title(order.number)
+    case 'pending':
+      return timedOut ? RESULT_COPY.pending.timeoutTitle : RESULT_COPY.pending.title
+    case 'action_required':
+      return RESULT_COPY.actionRequired.title
+    case 'rejected':
+      return RESULT_COPY.rejected.title
+    case 'unpaid':
+      return RESULT_COPY.unpaid.title
+    case 'expired':
+      return RESULT_COPY.expired.title
+    case 'other':
+      return RESULT_COPY.tracking.title(order.number)
+  }
+}
+
+/**
  * Lee el pedido de la pestaña y muestra la pantalla de su estado, con el detalle debajo. Siempre
  * consulta el pedido al abrir la pantalla: el checkout sembró la cache con el pedido recién creado
  * (sin pagar) y la cache de la tienda lo da por fresco un minuto, así que sin esto un pago aprobado
@@ -381,6 +410,7 @@ interface KnownOrderProps {
  */
 function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
   const api = useApiClient()
+  const { lines, hasHydrated } = useCart()
   const [timedOut, setTimedOut] = useState(false)
   const query = useQuery({
     ...orderQuery(api, number),
@@ -411,9 +441,12 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
     }
   }, [isPending])
 
+  // Solo se vacía el carrito del pedido pagado: si en esta pestaña se armó uno nuevo mientras
+  // tanto (otro `cartHash`), no se toca.
   useEffect(() => {
-    if (clearsCart) clearCart()
-  }, [clearsCart])
+    if (!clearsCart || !hasHydrated) return
+    if (readOrderSession()?.cartHash === cartHash(lines)) clearCart()
+  }, [clearsCart, hasHydrated, lines])
 
   const refresh = useCallback((): void => {
     void refetch()
@@ -436,6 +469,11 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
 
   return (
     <div className={SHELL}>
+      {/* Región siempre montada: los paneles de cada estado se desmontan al pasar al siguiente, así
+          que el cambio (por ejemplo de pendiente a aprobado) se anuncia desde acá. */}
+      <p role="status" className="sr-only">
+        {statusTitle(order, kind, variant, timedOut)}
+      </p>
       {kind === 'approved' && variant === 'result' ? <ApprovedPanel order={order} /> : null}
       {(kind === 'approved' && variant === 'tracking') || kind === 'other' ? (
         <TrackingHeader order={order} />

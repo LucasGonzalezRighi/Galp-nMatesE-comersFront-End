@@ -51,6 +51,14 @@ const METHODS: readonly MethodOption[] = [
   { value: 'card', label: CHECKOUT_COPY.cardLabel, hint: CHECKOUT_COPY.cardHint },
 ]
 
+/** Intento de cobro con tarjeta: los datos que se mandaron y la `Idempotency-Key` con la que se mandaron. */
+interface CardAttempt {
+  /** UUID v4 del cobro; se reutiliza solo para reenviar estos mismos datos. */
+  key: string
+  /** Datos del pago, con el token de un solo uso que ya se pidió. */
+  submission: CardPaymentSubmission
+}
+
 /** Botón principal del pago (las medidas del diseño). */
 const PAY_BUTTON = 'min-h-[50px] text-[15px] shadow-[0_0_32px_-10px_var(--color-accent)]'
 
@@ -146,12 +154,21 @@ export function PaymentStep({
   const [challenge, setChallenge] = useState<OpenChallenge | null>(null)
   const busy = useRef(false)
   const payKey = useRef<string | null>(null)
+  const cardAttempt = useRef<CardAttempt | null>(null)
+  const cardEdited = useRef(false)
   const cardForm = useRef<CardPaymentFormHandle>(null)
   const { order } = checkout
   const installments = useQuery({
     ...installmentsQuery(api, order?.number ?? '', bin ?? NO_BIN),
     enabled: order !== null && bin !== null,
   })
+
+  // Las claves y los datos de un intento valen para su pedido: con otro pedido empieza de cero.
+  const orderNumber = order?.number ?? null
+  useEffect(() => {
+    payKey.current = null
+    cardAttempt.current = null
+  }, [orderNumber])
 
   // El desafío avisa que terminó (`postMessage` del mismo origen): se va al resultado sin esperar
   // a que toquen "Ya terminé", igual que en `/checkout/resultado`.
@@ -167,10 +184,26 @@ export function PaymentStep({
     }
   }, [challenge, router])
 
+  // Si la persona vuelve con Atrás desde Mercado Pago, el navegador restaura la página tal como
+  // estaba (bfcache): el botón seguiría en "Conectando…". La clave de la preferencia se conserva,
+  // así que volver a tocar "Pagar" devuelve la misma.
+  useEffect(() => {
+    function onPageShow(event: PageTransitionEvent): void {
+      if (!event.persisted) return
+      busy.current = false
+      setPaying(null)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => {
+      window.removeEventListener('pageshow', onPageShow)
+    }
+  }, [])
+
   const choose = (next: PaymentMethod): void => {
     setMethod(next)
     setPayError(null)
     payKey.current = null
+    cardAttempt.current = null
     void checkout.confirm(next)
   }
 
@@ -181,12 +214,15 @@ export function PaymentStep({
 
   const fail = (error: unknown): void => {
     stopPaying()
-    if (isApiError(error) && error.kind === 'network') {
-      // Sin respuesta, el reintento usa la misma clave: el back devuelve el mismo intento.
-      setPayError(CHECKOUT_COPY.networkError)
+    if (isApiError(error) && (error.kind === 'network' || error.kind === 'server')) {
+      // Sin respuesta, o con un 5xx que puede haber llegado después de que el back cobró, no se
+      // sabe si el pago se hizo: el reintento usa la misma clave (y, con tarjeta, los mismos
+      // datos) y el back devuelve el mismo intento.
+      setPayError(error.kind === 'network' ? CHECKOUT_COPY.networkError : CHECKOUT_COPY.payError)
       return
     }
     payKey.current = null
+    cardAttempt.current = null
     if (isApiError(error) && error.kind === 'conflict') {
       setMethod(null)
       checkout.discard(CHECKOUT_COPY.orderExpired)
@@ -219,13 +255,23 @@ export function PaymentStep({
     setPaying('card')
     setPayError(null)
     try {
-      const submission = provided ?? (await cardForm.current?.createCardToken()) ?? null
-      // Sin token, el formulario ya muestra qué falta.
-      if (submission === null) {
-        stopPaying()
-        return
+      // Si la persona cambió la tarjeta, es otro cobro: otros datos y otra clave.
+      if (cardEdited.current) cardAttempt.current = null
+      cardEdited.current = false
+      // Después de un error de red o del servidor se reenvían los mismos datos con la misma clave:
+      // un token nuevo cambiaría el cuerpo y el back rechazaría la clave (422).
+      let attempt = cardAttempt.current
+      if (attempt === null) {
+        const submission = provided ?? (await cardForm.current?.createCardToken()) ?? null
+        // Sin token, el formulario ya muestra qué falta.
+        if (submission === null) {
+          stopPaying()
+          return
+        }
+        attempt = { key: newIdempotencyKey(), submission }
+        cardAttempt.current = attempt
       }
-      payKey.current ??= newIdempotencyKey()
+      const { key, submission } = attempt
       const result = await payWithCard(
         api,
         current.number,
@@ -236,9 +282,9 @@ export function PaymentStep({
           installments: submission.installments,
           payer: { email: current.customer.email, identification: submission.identification },
         },
-        payKey.current,
+        key,
       )
-      payKey.current = null
+      cardAttempt.current = null
       rememberChallenge(current.number, result.challenge?.url ?? null)
       if (result.challenge === null) router.push(resultRoute(current.number))
       else setChallenge({ url: result.challenge.url, number: current.number })
@@ -353,6 +399,9 @@ export function PaymentStep({
         publicKey={mpPublicKey}
         installments={bin === null ? null : (installments.data ?? null)}
         onBinChange={setBin}
+        onEdit={() => {
+          cardEdited.current = true
+        }}
         onSubmit={(submission) => payWithCardForm(order, submission)}
       >
         <LegalNotice />

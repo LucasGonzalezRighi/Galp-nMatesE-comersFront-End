@@ -25,6 +25,11 @@
 2. **Resultado de pago simulado:** en modo de prueba el simulador de MP (`/checkout/mp-simulado`) y los campos simulados de tarjeta deciden el resultado por el **nombre del titular** como el sandbox real (`APRO`, `CONT`, `OTHE`, `FUND`, `SECU`, `EXPI`, `CALL`); el titular `3DS` dispara un desafío 3-D Secure simulado.
 3. **Sesión de cliente en modo de prueba:** el mock emite la cookie `__Host-galpon_session` como cookie normal (no `__Host-` en http://localhost; el nombre se parametriza) y `proxy.ts` la lee para proteger `/cuenta/*`.
 4. **Cuotas sin MP real:** en modo de prueba `getInstallments` se simula con la tabla de ajustes (`maxWithoutInterest` cuotas con CFT 0 y, además, 6 y 12 cuotas con CFT de ejemplo 45,90 % / TEA 38,00 %) para que la pantalla muestre los dos casos.
+5. **Precio esperado por línea (Ruling P3-3):** `expectedUnitPriceArs` opcional en las líneas de `POST /cart/quote` y `POST /orders`; el back lo usa para avisar `price_changed` con el detalle, y `netUnitPriceArs = netPrice(totalArs/cantidad)` más `netSubtotalArs`.
+6. **El pedido se crea al elegir el medio de pago (Ruling P3-5):** `POST /orders` sale en el paso 3 al elegir Mercado Pago o tarjeta, no al tocar "Pagar"; las cuotas necesitan el total confirmado y la reserva de 30 minutos cubre los dos medios.
+7. **"El pedido venció" solo con `status: expired` (Ruling P3-6):** un pago `none` o `cancelled` con el pedido todavía pendiente muestra "No completaste el pago" con "Pagar".
+8. **3-D Secure en vivo (Ruling P3-7):** `challengeUrl` se guarda en la order-session de la pestaña que pagó (`Order.payment` no la trae); otra pestaña ofrece "Pagar de nuevo".
+9. **Simulación del mock:** las cuotas (1 a `maxWithoutInterest` con CFT 0, más 6 y 12 con CFT de ejemplo) y los titulares de prueba están en la tabla de `packages/api-client/README.md`.
 
 ## Review Focus
 

@@ -124,6 +124,20 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(mocks.clearCart).toHaveBeenCalledTimes(1)
   })
 
+  it('approved con un carrito nuevo armado en la pestaña no lo vacía', async () => {
+    const testApi = createResultTestApi()
+    const order = await placeGuestOrder(testApi)
+    await payWithTestCard(testApi, order.number, 'APRO')
+    // El carrito de ahora no es el del pedido pagado.
+    mocks.cartHash = 'ffffffffffffff'
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
+
+    expect(
+      await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') }),
+    ).toBeInTheDocument()
+    expect(mocks.clearCart).not.toHaveBeenCalled()
+  })
+
   it('en el seguimiento del pedido (/pedido) no vacía el carrito ni agradece de nuevo', async () => {
     const testApi = createResultTestApi()
     const order = await placeGuestOrder(testApi)
@@ -266,6 +280,35 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(
       await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') }),
     ).toBeInTheDocument()
+  })
+
+  it('anuncia el cambio de estado en una región siempre montada (de pendiente a aprobado)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const testApi = createResultTestApi()
+    const order = await placeGuestOrder(testApi)
+    await createMercadoPagoPreference(testApi.api, order.number, crypto.randomUUID())
+    await postMock(testApi, '/__mock/mercadopago/resolve', {
+      number: order.number,
+      intent: null,
+      result: 'pending',
+    })
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
+    await screen.findByRole('heading', { name: RESULT_COPY.pending.title })
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent(RESULT_COPY.pending.title)
+
+    await postMock(testApi, '/__mock/mercadopago/resolve', {
+      number: order.number,
+      intent: null,
+      result: 'approved',
+    })
+    await act(() => vi.advanceTimersByTimeAsync(5_000))
+    await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') })
+
+    // El panel pendiente se desmontó, pero la región es la misma y ahora dice el estado nuevo.
+    expect(status).toBeInTheDocument()
+    expect(status).toHaveTextContent(RESULT_COPY.approved.title('Lucía'))
+    expect(screen.getAllByRole('status')).toHaveLength(1)
   })
 
   it('action_required (modo de prueba): retoma el desafío y al terminar consulta el pedido', async () => {

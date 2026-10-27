@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { config, proxy } from './proxy'
 
@@ -20,6 +22,14 @@ function requestTo(path: string, cookie?: string): NextRequest {
 }
 
 describe('proxy', () => {
+  it('no importa el barrel del modo de prueba: en vivo traería los fixtures y los handlers al chunk', () => {
+    const source = readFileSync(fileURLToPath(new URL('./proxy.ts', import.meta.url)), 'utf8')
+    const packages = Array.from(source.matchAll(/from\s+'(@galpon\/[^']+)'/g), (match) => match[1])
+
+    expect(packages).not.toContain('@galpon/api-client/mock')
+    expect(packages).toContain('@galpon/api-client/mock/session-cookie')
+  })
+
   it('sin cookie de sesión manda a ingresar con `volver`', () => {
     const response = proxy(requestTo('/cuenta/pedidos?pagina=2'))
 

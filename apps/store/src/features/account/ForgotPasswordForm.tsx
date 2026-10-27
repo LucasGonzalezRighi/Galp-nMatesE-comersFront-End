@@ -14,7 +14,7 @@ import { forgotPasswordSchema } from '@galpon/schemas'
 import { ACCOUNT_COPY } from './account.copy'
 import { withCsrf } from './csrf'
 import { showSubmitError } from './form-errors'
-import { Confirmation, FORM_CARD, FormError } from './form-parts'
+import { Confirmation, FORM_CARD, FormError, PrivacyNotice } from './form-parts'
 import { LOGIN_PATH } from './return-path'
 
 /** Campos que la API puede marcar con error. */
@@ -71,6 +71,7 @@ export function ForgotPasswordForm(): ReactNode {
       <Field label={ACCOUNT_COPY.email} error={errors.email?.message}>
         {(control) => <Input {...control} {...field('email')} type="email" autoComplete="email" />}
       </Field>
+      <PrivacyNotice />
       <FormError message={errors.root?.server?.message} />
       <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
         {isSubmitting ? ACCOUNT_COPY.submitting : ACCOUNT_COPY.forgot.submit}
