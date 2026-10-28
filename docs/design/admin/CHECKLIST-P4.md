@@ -1,0 +1,66 @@
+# Lista de control visual de P4 (dashboard)
+
+El admin no tiene un diseño exportado: cada captura se compara contra las reglas de interfaz del plan de P4 (Global Constraints, "Interfaz del admin") y contra los textos de los `*.copy.ts` de cada feature, a 1440 px y a 390 px.
+
+- **Cómo se generan las capturas**: `npm run build -w @galpon/admin` y `npx playwright test e2e/admin/visual.spec.ts --project=admin-desktop` (con el admin servido por `vite preview`, que manda la CSP). Cada prueba abre un contexto nuevo (una base de demostración recién sembrada), entra con la cuenta de prueba, espera a que no quede nada cargando (`aria-busy`, `Skeleton`, listas desplegables sin opciones) ni falten los contadores del menú, y guarda `test-results/visual/admin-{pantalla}-{1440|390}.png`: página completa para las pantallas y solo la ventana para los diálogos y el menú abierto. Con movimiento reducido, para que los diálogos salgan abiertos del todo.
+- **Cómo se revisó**: cada captura a ojo (estructura, textos, tokens y tipografía, 390 px). Las otras columnas salen de las pruebas: axe con `e2e/admin/a11y.spec.ts` (WCAG 2.0 y 2.1 A y AA, sin violaciones serias ni críticas), el scroll horizontal con `e2e/admin/mobile.spec.ts` (`scrollWidth <= innerWidth` a 390 × 844), los flujos con los demás E2E del admin y los estados (cargando, vacío, error, guardando, sin guardar) con los tests de pantalla de cada task (Tasks 7 a 12). Teclado y foco: foco visible de `base.css`, el foco va al `h1` al navegar (`AdminLayout.test.tsx` y `mobile.spec.ts`), Escape en los diálogos (`Dialog.test.tsx`, `ConfirmDialog.test.tsx` y `a11y.spec.ts`), reordenar sin mouse (`SortableList` y las pantallas de las Tasks 10 a 12). No se recorrió cada pantalla con Tab a mano.
+- **Fecha**: 2026-10-28, sobre la rama `feat/p3-checkout` (Ola 4, Task 15). Las capturas revisadas salieron del árbol de trabajo entre `79d8ab4` y `008f7cd` (los menores de la Ola 3 estaban en curso); los E2E completos se volvieron a correr sobre `008f7cd`.
+
+Leyenda: ✅ cumple (o la diferencia es un desvío aceptado, con su clave); ❌ desvío que hay que corregir (el número remite a "Desvíos a corregir"); — la columna no aplica o la pantalla no está en esa prueba.
+
+## Desvíos aceptados (reglas del plan, rulings y forma de capturar)
+
+| Clave | Desvío | Dónde se ve |
+|---|---|---|
+| C1 | Sin diseño exportado: "coincide" quiere decir que respeta las reglas de interfaz del plan (tema oscuro, solo tokens, `h1` 25 px, `h2` 20 px, cuerpo 15 px, labels 12 px al 70 %, campos y botones de 36 px, `max-w-6xl`, 16/32 px de relleno) y los textos de los `*.copy.ts`. | Todas |
+| C2 | Captura de página completa: la barra lateral termina a los 900 px de la ventana y la barra de `FormActions` ("Descartar" y "Guardar cambios", pegada abajo) queda dibujada a la altura del borde de la ventana, encima del contenido. En el navegador las dos quedan fijas al hacer scroll: es un efecto de la captura, no de la pantalla. | Resumen, formularios largos (producto, contenido, ajustes) |
+| C3 | A 390 px las pestañas de Contenido (y las de Legales) se desplazan de costado dentro de su franja, no la página: "Pie" y "Legales" quedan fuera de vista hasta deslizarlas. | Contenido a 390 px |
+| C4 | A 390 px las tablas esconden las columnas secundarias (`meta.hideBelow`: línea, cliente, pago, envío) y lo que no entra se desplaza dentro de su tarjeta. | Productos, Pedidos |
+| C5 | Modo de prueba: insignia "Modo de prueba" en la barra lateral y en la superior, y el aviso del Resumen. En vivo no aparecen. | Todas, Resumen |
+| C6 | Datos de demostración: el segundo socio de Nosotros es "Nombre del socio" (contenido sembrado de la tienda hasta tener el nombre real) y las fechas de los pedidos son relativas al momento de abrir el admin. | Nosotros, Pedidos |
+| C7 | Una ruta que no existe en la raíz (`/no-existe`) muestra el 404 sin la barra lateral: la raíz no sabe si hay sesión. "Volver al inicio" lleva al Resumen. El `h1` es oculto y el título visible es el del `EmptyState`. | 404 |
+| C8 | Ruling P4-13: guardar cambios de un producto archivado lo pasa a borrador, con el aviso bajo "Estado" y el toast. Ruling P4-14: en el diálogo de `product_changed`, Escape cierra y conserva lo escrito; "Ver la versión guardada" descarta. | Producto |
+| C9 | El Resumen titula sus tarjetas con `h3` bajo dos `h2` ocultos ("Ventas" y "Para atender") para no saltar niveles; las reseñas usan `h2` con el nombre del producto. | Resumen, Reseñas |
+
+## Pantallas
+
+Cada fila se revisó con sus dos capturas (`admin-{captura}-1440.png` y `admin-{captura}-390.png`).
+
+| Pantalla (captura) | Estructura | Textos | Colores y tipografía | Estados | Teclado y foco | Accesibilidad (axe) | 390 px |
+|---|---|---|---|---|---|---|---|
+| Ingreso (`login`) | ✅ | ✅ | ❌ 4 | ✅ | ✅ | ✅ | ✅ |
+| Resumen (`dashboard`) | ✅ C2 C9 | ✅ C5 | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| Productos (`products`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ❌ 2 (C4) |
+| Producto nuevo (`product-new`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| Producto con fotos (`product-photos`) | ✅ C2 | ✅ | ✅ | ✅ C8 | ✅ | ✅ (salvo 1) | ✅ |
+| Líneas y su diálogo (`categories`, `categories-dialog`) | ✅ | ✅ | ✅ | ✅ | ❌ 3 | ✅ (salvo 1), también con el diálogo abierto | ✅ |
+| Pedidos (`orders`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C4 |
+| Pedido y el despacho (`order`, `order-ship`) | ✅ | ✅ | ✅ | ✅ | ❌ 3 | ✅ (salvo 1; el diálogo de despacho no se audita) | ❌ 6 |
+| Contenido · Inicio (`content-home`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C3 |
+| Contenido · Nosotros (`content-about`) | ✅ C2 | ✅ C6 | ✅ | ✅ | ✅ | — | ✅ C3 |
+| Contenido · Preguntas (`content-faq`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
+| Contenido · Pestañas (`content-tabs`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
+| Contenido · Pie (`content-footer`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
+| Contenido · Legales (`content-legal`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C3 |
+| Ajustes (`settings`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| Reseñas (`reviews`) | ✅ C9 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| Mensajes (`messages`) | ✅ | ✅ | ❌ 6 | ❌ 7 | ✅ | ✅ (salvo 1) | ❌ 6 |
+| Mi cuenta (`account`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| 404 (`not-found`) | ✅ C7 (❌ 5 dentro de la estructura) | ✅ | ✅ | — | ✅ | — | ✅ |
+| Sesión vencida (`session-expired`) | ✅ | ✅ | ❌ 4 | ✅ | ✅ | ✅ | ✅ |
+| Menú del celular (`menu-390`, solo 390) | ✅ | ✅ | ✅ | — | ✅ | — | ✅ |
+| Enlace a Mercado Pago verificado con la cuenta real | Pendiente hasta producción: el enlace "Ver en Mercado Pago" del pedido usa la dirección "a confirmar" (decisión Q4) y hay que probarlo con la cuenta real de Galpón | | | | | | |
+
+"Salvo 1": axe encuentra solo el desvío 1 (los enlaces del menú con contador). `a11y.spec.ts` lo excluye para esos enlaces y para esa regla, y sigue revisando todo lo demás.
+
+## Desvíos a corregir
+
+Ninguno se corrigió en esta task: los archivos son de otras tasks (la Task 15 es dueña solo de los E2E y los documentos). Las pruebas que los delatan quedan marcadas para que avisen cuando se arreglen.
+
+1. **Los enlaces del menú con contador no cumplen "nombre que incluye lo visible" (WCAG 2.5.3, axe `label-content-name-mismatch`, serio).** Se ven como "Pedidos3" (el texto y el `Badge` sin espacio entre los dos) y se llaman "Pedidos, 3 para despachar". Archivo: `apps/admin/src/app/AdminSidebar.tsx`. Probablemente alcanza con un `{' '}` entre el `<span>` del nombre y el `Badge`: axe compara sin la puntuación, y "Pedidos 3" sí está dentro de "Pedidos, 3 para despachar". Al corregirlo, sacar `KNOWN_RULE` y `KNOWN_NODES` de `e2e/admin/a11y.spec.ts`.
+2. **Productos tiene scroll horizontal a 390 px (112 px de más).** El encabezado oculto (`sr-only`, posición absoluta) de la columna de acciones se escapa del scroll de la tabla porque el contenedor con `overflow-x-auto` no está posicionado, y estira la página. Archivo: `apps/admin/src/components/ui/DataTable.tsx` (agregar `relative` al contenedor con scroll). La prueba de Productos de `e2e/admin/mobile.spec.ts` está marcada con `test.fail` (`KNOWN_OVERFLOW`): al corregirlo, sacarla de ahí.
+3. **Al cerrar un `Dialog` el foco queda en el `body`** (Escape, "Cancelar" o la X): Radix devuelve el foco al `Dialog.Trigger`, y el kit abre los diálogos con `open` controlado, sin `Trigger`. Pasa en "Nueva línea", editar una línea y el despacho de un pedido. `ConfirmDialog` ya recuerda quién lo abrió, pero si lo abrió un ítem de `ActionsMenu` (Archivar, Borrar), ese ítem ya no existe y el foco también queda en el `body`. Archivos: `apps/admin/src/components/ui/Dialog.tsx` (recordar el elemento enfocado en `onOpenAutoFocus` y volver a él en `onCloseAutoFocus`, como `ConfirmDialog`) y `apps/admin/src/components/ui/ActionsMenu.tsx` o `ConfirmDialog.tsx` (volver al botón del menú). La prueba "al cerrar un diálogo el foco vuelve al botón que lo abrió" de `a11y.spec.ts` está marcada con `test.fail`.
+4. **El ingreso y el diálogo "Tu sesión venció" no usan el kit.** Labels de 15 px en `neutral-300` (la regla dice 12 px al 70 %), campos de 15 px y un botón propio en lugar de `Button` (sin `min-h-9` ni `Spinner`). Archivo: `apps/admin/src/features/auth/components/LoginForm.tsx` (pasar a `Field`, `TextInput` y `Button`, conservando los textos y los `id` que usan los tests).
+5. **El 404 y el error de ruta dentro de la estructura dejan dos `main`.** `NotFound` y `RouteError` dibujan su propio `<main>`, y dentro de `AdminLayout` (que ya tiene uno) quedan dos. Archivo: `apps/admin/src/routes/__root.tsx` (dibujarlos sin `main` cuando están dentro de la estructura). Conocido desde la revisión de la Ola 2.
+6. **Identificadores que se cortan en el guion.** A 390 px el título del diálogo de despacho parte el número ("Despachar el pedido GLP-" / "09001") y en Mensajes el código de arrepentimiento ("Código ARR-" / "000003"), que además no va en `font-mono` como los números de pedido. Archivos: `apps/admin/src/features/messages/components/MessageItem.tsx` (código en `font-mono` y sin corte) y `apps/admin/src/features/orders/components/ShipOrderDialog.tsx` (el número del título sin corte).
+7. **"Solo sin leer" puede mostrar como no leído un mensaje recién abierto.** Si se tilda el filtro mientras se guarda el "leído" (la API simulada demora 150 a 400 ms), la lista filtrada llega antes que el guardado y, como la bandeja se invalida con `refetchType: 'none'` (decisión de la Task 9 para no esconder el mensaje que se está leyendo), no se vuelve a pedir hasta cambiar de filtro o de pantalla. El contador del menú sí queda bien. Archivo: `apps/admin/src/features/messages/use-mark-message.ts` (por ejemplo, volver a pedir las listas que no son la visible, o la visible si se pidió después de empezar a guardar). `e2e/admin/messages.spec.ts` tilda el filtro antes de abrir el mensaje.

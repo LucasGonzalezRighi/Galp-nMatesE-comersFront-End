@@ -131,7 +131,59 @@ Todo el 2026-10-26: plan a las 19:06 y rama desde `1ef9630`. Cuatro olas con el 
 
 **Para P5**: el mate 3D entra en `StoryMate` (la capa del mate, separada de la pista y del raíl). Si Lucas genera clips con Higgsfield, también entran ahí, como capa de fondo del escenario movida por el avance del scroll.
 
-## Próximos pasos: P4 a P5
+## P4 · Dashboard (2026-10-27 a 2026-10-28)
+
+**Estado**: implementada, con los E2E del admin en verde (105 pruebas; dos marcadas con `test.fail` y una exclusión puntual de axe señalan desvíos conocidos de la lista de control); faltan la revisión final de la rama (`feat/p3-checkout`) y los siete "Desvíos a corregir" de [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md).
+
+### Qué se construyó
+
+| Pieza                                    | Qué quedó                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contrato, dominio y API simulada (Ola 0) | `expectedUpdatedAt` y `409 product_changed`, foto de los socios como `ImageInput`, límites de los contenidos, filtro de varios estados de pedido, `403 csrf_invalid`, `OrderPayment.challenge` y `422` idempotente; en `@galpon/domain`, las transiciones del pedido (`adminOrderTargets`), las reglas de las fotos y fechas e impuestos del admin; en `@galpon/schemas`, los formularios del admin y de los contenidos. La API simulada del admin: sesión de 8 h, productos, líneas, fotos (`POST /__mock/media`), pedidos, resumen, contenido, ajustes, moderación y los datos de demostración (`demo: 'admin'`: 12 pedidos, 8 mensajes, 5 reseñas) |
+| Pre-wire                                 | Dependencias, las 17 rutas como marcadoras, `cx`, `Button` y `Spinner`, el contexto del router (`apiMode`, `storeUrl`, `registerMockImage`) y `createTestApp` para los tests de pantalla                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Kit (Ola 1)                              | `components/ui`: tabla con orden, páginas y columnas que se esconden en el celular, campos, diálogos, confirmación, menú de acciones, pestañas, `FormActions` y `UnsavedChangesGuard`, lista ordenable con teclado, avisos y estados (cargando, vacío, error). `components/media`: validar, firmar, subir con `XMLHttpRequest` (o simulada), cola, cancelar y reintentar                                                                                                                                                                                                                                                                              |
+| Pantallas (Olas 2 y 3)                   | Estructura con barra lateral, cajón del celular, contadores y "Tu sesión venció"; resumen; pedidos y su detalle con el cambio de estado; reseñas y mensajes; productos con fotos, filtros y ediciones concurrentes; líneas y ajustes; las seis pantallas de contenido; mi cuenta                                                                                                                                                                                                                                                                                                                                                                      |
+| Pruebas y cierre (Ola 4)                 | E2E de todos los flujos del brief, axe en cada pantalla, celular a 390 px sin scroll horizontal, capturas a 1440 y 390 px y la lista de control [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md); README del admin, spec (§11 a §13 y §16) y la actualización del ADR 0005                                                                                                                                                                                                                                                                                                                                                                           |
+
+### Cuándo
+
+Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corrió en paralelo con los pulidos de la tienda. Ola 0 en serie (T1 → T2 → T3, 7 agentes, unas 5,8 h) y después el pre-wire B. La ola 1 se cortó dos veces (un error de red a los 44 min y un reinicio de la sesión durante el fix) y se retomó sobre lo que había en disco. Ola 2 (6 agentes, 67 min) y ola 3 (6 agentes, 72 min), cada una con su revisión, su fix y los menores en paralelo con la ola siguiente. Ola 4 (Task 15): la primera corrida se cortó por un reinicio después de una hora y se retomó el 2026-10-28.
+
+- **Tasks 13 y 14 (deudas de la tienda)**: se hicieron antes, como una sola tarea (`ba22fb6` y `033e75e`; ver P3 y `CHECKLIST-P3.md`).
+- **El paseo del mate** entró en el medio, como trabajo aparte de la tienda (ver su sección).
+
+### Decisiones que cambiaron
+
+| Decisión                                     | Antes → ahora                                                                                                         | Por qué                                                                 |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Dónde viven las fotos (Ruling P4-1)          | `features/media` → `components/media` (lógica) y `components/ui` (piezas visuales)                                    | Las usan productos, líneas y contenido, y una feature no importa a otra |
+| `401` con una pantalla abierta (Ruling P4-3) | Redirigir a `/login` → diálogo "Tu sesión venció" sin salir de la pantalla                                            | No perder lo que se estaba editando; al navegar se sigue redirigiendo   |
+| Fotos en modo de prueba (Ruling P4-4)        | Vista previa `blob:` → además, un data URL reducido guardado con `POST /__mock/media`                                 | La base simulada sobrevive a las recargas y una `blob:` no              |
+| Datos de demostración (Ruling P4-8)          | Sin pedidos → 12 pedidos, 8 mensajes y 5 reseñas, solo en el admin                                                    | Probar cada estado sin tocar la tienda ni sus E2E                       |
+| Búsqueda de pedidos (Ruling P4-7)            | En la URL → en memoria de la feature                                                                                  | Nada personal en la URL                                                 |
+| Pedidos (decisiones Q1 y Q2)                 | Solo `paid → preparing → shipped` → también `paid → shipped`; el desafío 3-D Secure viaja en `OrderPayment.challenge` | Pedido de Lucas; retomar el 3-D Secure desde el pedido                  |
+| Concurrencia (Q3)                            | Sin control → `expectedUpdatedAt` solo en productos                                                                   | Un único administrador; el resto gana el último guardado                |
+| Producto archivado (Ruling P4-13)            | Sin definir → guardar lo pasa a borrador, con aviso                                                                   | Para la tienda son lo mismo y es reversible                             |
+| `product_changed` (Ruling P4-14)             | Escape descartaba → Escape cierra y conserva; "Ver la versión guardada" descarta                                      | Escape no puede borrar trabajo                                          |
+| `409` al cambiar el estado de un pedido      | En el diálogo → toast con el motivo y el pedido se recarga                                                            | Después de recargar, la acción del diálogo ya no corresponde            |
+
+### Lecciones: qué haríamos distinto
+
+1. **El índice de git compartido mezcló dos commits** (T8 y T9 en la ola 2). Desde entonces cada task commitea con `git commit -- <rutas>`, que guarda solo lo suyo aunque otro agente haya agregado archivos al índice.
+2. **Los cortes (red, límite de uso, reinicios de la sesión) siguen tirando olas**: tres veces en P4. Funcionó retomar sobre lo que quedó en disco con un brief de "trabajo cortado", y conviene commitear en cuanto algo queda en verde.
+3. **Los E2E y las capturas encontraron lo que los tests de pantalla no ven**: un `sr-only` absoluto que se escapa del scroll de la tabla y estira la página a 390 px, el foco que queda en el `body` al cerrar un diálogo sin `Trigger` de Radix, y el nombre accesible de los contadores del menú. Igual que en P3: el E2E y la captura de cada pantalla conviene escribirlos con la pantalla, no al final.
+4. **Esperar a que termine de cargar antes de medir**: las primeras capturas y auditorías salieron con los `Skeleton` de la tabla y con la lista de líneas vacía; `gotoAdmin` ahora espera `aria-busy`, los `Skeleton` y las listas desplegables con opciones.
+5. **La demora de la API simulada destapa carreras**: tildar "Solo sin leer" mientras se guarda el "leído" muestra la lista vieja (desvío 7).
+
+### Pendientes que quedaron anotados
+
+- **Los 7 desvíos a corregir de `CHECKLIST-P4.md`**, cada uno con su archivo: contadores del menú y axe (`AdminSidebar.tsx`), scroll horizontal de Productos a 390 px (`DataTable.tsx`), foco al cerrar un `Dialog` (`Dialog.tsx`, y `ConfirmDialog` abierto desde un menú), ingreso fuera del kit (`LoginForm.tsx`), dos `main` en el 404 dentro de la estructura (`__root.tsx`), identificadores cortados en el guion (`MessageItem.tsx`, `ShipOrderDialog.tsx`) y la carrera de "Solo sin leer" (`use-mark-message.ts`). Las pruebas que los delatan están marcadas y avisan cuando se corrijan.
+- **De la revisión de la ola 3**: el diálogo de `product_changed` arranca con el foco en "Ver la versión guardada" (Enter enseguida descarta); revisar en la revisión final una opción `initialFocus` del kit (Ruling P4-14).
+- **Limitación conocida**: un aviso que sale mientras hay un diálogo abierto no se anuncia (Radix oculta el resto de la página a los lectores de pantalla).
+- **Base simulada guardada de antes**: `MOCK_DB_VERSION` no cambió, así que una base del admin guardada en la pestaña antes de P4 recibe los datos de demostración recién al reiniciarla.
+- **Con el back**: implementar los cambios de contrato de P4 (§12 del spec), confirmar que el `detail` de las líneas de un pedido no repite las opciones, la cuenta de Cloudinary y la firma, y verificar con la cuenta real el enlace "Ver en Mercado Pago" del pedido (decisión Q4, fila pendiente de la lista de control).
+
+## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
 
@@ -140,7 +192,7 @@ Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las 
 | **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
 | **P5 · Etapa 2 y cierre** | Escena 3D, cursor y brillo, Lighthouse, accesibilidad, revisión visual final y README finales | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
 
-P2 y P3 ya están hechas (arriba): para el front quedan **8 a 10 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
+P2, P3 y P4 ya están hechas (arriba; P4 espera su revisión final y los desvíos de su lista de control): para el front queda P5, **3 a 4 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
 
 **Fase 2 (backend)**: tiene su propio diseño y su propio plan, en una conversación y un repo aparte (NestJS, PostgreSQL, Redis). Su estimación se hace cuando se escriba ese plan. Para salir a producción hacen falta las dos cosas: el front completo y el back, que se conectan cambiando variables de entorno.
 

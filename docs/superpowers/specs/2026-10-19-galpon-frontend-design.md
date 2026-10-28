@@ -412,12 +412,15 @@ apps/admin/src/
 ├─ app/                        Router, providers (QueryClient, sesión), layout con menú lateral
 ├─ routes/                     Rutas de TanStack Router por archivo (routeTree.gen.ts generado)
 ├─ features/
-│  ├─ auth/  dashboard/  products/  categories/  orders/  content/  settings/  reviews/  messages/
-│  └─ media/                   Subida a Cloudinary (XHR con progreso), orden y texto alternativo
-├─ components/ui/              DataTable (TanStack Table v9), Form, Field, Dialog, ConfirmDialog,
-│                              DropdownMenu, Tabs, Badge, Toast, EmptyState, Pagination, ImageDropzone
-└─ lib/                        api.ts, env.ts, format.ts
+│  └─ auth/  dashboard/  products/  categories/  orders/  content/  settings/  reviews/  messages/
+├─ components/ui/              DataTable (TanStack Table v9), Field, Dialog, ConfirmDialog, ActionsMenu,
+│                              Tabs, Badge, Toast, EmptyState, Pagination, FormActions, SortableList
+│                              y las piezas visuales de las fotos: ImageDropzone, ImageTile, SingleImageField
+├─ components/media/           Subida a Cloudinary: firma, XHR con progreso, validación, cola y reintento
+└─ lib/                        api.ts, env.ts, csp.ts, redirect.ts
 ```
+
+**Actualización P4 (Ruling P4-1)**: la subida de fotos no es una feature sino infraestructura compartida: la lógica vive en `components/media` y las piezas visuales en `components/ui`. Así productos, líneas y contenido la usan sin que ninguna feature importe a otra (las features se comunican solo por rutas y por la API).
 
 Cada tabla y formulario del admin define sus estados: cargando (esqueleto), vacío (`EmptyState` con acción), error (mensaje + reintentar), guardando (botón deshabilitado con spinner) y "cambios sin guardar" (aviso al salir).
 
@@ -426,7 +429,9 @@ Cada tabla y formulario del admin define sus estados: cargando (esqueleto), vac�
 - Un único administrador; lo crea el back con un comando (no hay alta desde el dashboard).
 - `POST /admin/auth/login` → cookie `__Host-galpon_admin` (`httpOnly`, `Secure`, `SameSite=Lax`, vencimiento).
 - **CSRF**: token ligado a la sesión (HMAC del id de sesión), rotado en cada login y enviado en `X-CSRF-Token` en cada petición que modifica. `POST /admin/auth/login` lo devuelve en su respuesta `{ email, csrfToken, expiresAt }` (no hay sesión previa desde la cual pedirlo) y `GET /admin/auth/csrf` lo vuelve a entregar después de una recarga.
-- Un `401` cierra la sesión y lleva a `/login?redirect=`.
+- Un `401` al navegar (el `beforeLoad` de las rutas con sesión) lleva a `/login?redirect=`.
+- **Actualización P4 (Ruling P4-3)**: un `401` de una consulta o una escritura con una pantalla abierta no redirige: abre el diálogo "Tu sesión venció" con el formulario de ingreso, sin salir de la pantalla. Lo escrito se conserva y, después de volver a ingresar, "Guardar cambios" funciona. Un `401` de la consulta de sesión no abre el diálogo. La sesión dura 8 horas.
+- **CSRF rotado**: si otro ingreso rotó el token, la escritura responde `403` con `type: csrf_invalid`; el admin vuelve a pedir el token y avisa "Actualizamos tu sesión. Probá de nuevo." No reintenta solo, porque repetir una escritura podría duplicar un efecto.
 - Despliegue previsto: admin en `admin.galponmates.com.ar`, API en `api.galponmates.com.ar`. CORS de `/api/v1/admin/*` acepta solo el origen del admin con credenciales (`credentials: 'include'`).
 
 ### 11.4 Fotos (Cloudinary)
@@ -435,7 +440,7 @@ Cada tabla y formulario del admin define sus estados: cargando (esqueleto), vac�
 2. `POST /admin/media/signature { purpose: 'product'|'category'|'partner'|'site' }` → `{ timestamp, signature, apiKey, cloudName, folder }`.
 3. Subida directa a `https://api.cloudinary.com/v1_1/{cloudName}/image/upload` con **XMLHttpRequest** (progreso, cancelar, reintentar), enviando exactamente los parámetros firmados. No pasa por `api-client`.
 4. Se guarda `{ publicId, width, height, alt }`; texto alternativo obligatorio (3–120). Se reordenan arrastrando; la primera es la principal.
-- En modo de prueba la subida se simula y la vista previa usa una URL `blob:`.
+- En modo de prueba la subida se simula y la vista previa usa una URL `blob:`. **Actualización P4 (Ruling P4-4)**: lo que se guarda en la base simulada es un data URL reducido (lado mayor 640 px, WebP 0,8, hasta 200 000 caracteres), registrado con la ruta interna `POST /__mock/media`, con `publicId = {carpeta}/mock-{uuid}` y las medidas de la original. La base del admin vive en `sessionStorage` y sobrevive a las recargas; una `blob:` no. Un archivo cuyo nombre empieza con `error-` falla en el primer intento (para probar "Reintentar"). Detalle en el ADR 0005.
 
 ### 11.5 Pedidos y pagos
 
@@ -450,6 +455,18 @@ pending_payment ──(pago aprobado)──► paid ──► preparing ──�
 
 - El estado del pago lo escribe solo el back a partir de Mercado Pago (sección 14.3). El admin no lo edita.
 - Acciones del admin: "En preparación", "Despachado" (exige empresa y número de seguimiento), "Entregado", "Cancelar" (solo sin pago).
+- **Actualización P4**: las transiciones que ofrece el admin salen de `adminOrderTargets` (`@galpon/domain`) y el back las valida igual:
+
+  | Estado del pedido | Destinos que ofrece el admin |
+  |---|---|
+  | `paid` | `preparing`, `shipped` (se puede despachar sin pasar por preparación) |
+  | `preparing` | `shipped` |
+  | `shipped` | `delivered` |
+  | `pending_payment` con pago `none`, `rejected` o `cancelled` | `cancelled` (libera la reserva de stock) |
+  | `pending_payment` con pago `pending` o `action_required` | ninguno (`409 payment_in_progress` si se pide cancelar) |
+  | `delivered`, `cancelled`, `expired`, `refunded` | ninguno |
+
+  Cualquier otro cambio responde `409 invalid_status_transition`. Si otra pestaña ya movió el pedido, el `409` se muestra con su motivo y el pedido se recarga. Cancelar y marcar entregado piden confirmación; pasar a preparación no. "Para despachar" son los pedidos `paid` y `preparing` (`?estado=para-despachar` en el admin, `?status=paid&status=preparing` en la API).
 - Alertas: contracargo, disputa y segundo pago aprobado para un pedido ya pagado (para devolver).
 - Las devoluciones de dinero se hacen desde Mercado Pago en esta versión; el pedido muestra el link al pago.
 
@@ -489,6 +506,18 @@ OpenAPI 3.1, prefijo `/api/v1`. Fuente de verdad: `api-client` genera sus tipos 
 **Admin** (prefijo `/admin`, cookie de admin + `X-CSRF-Token`)
 
 `POST /admin/auth/login` (→ `{ email, csrfToken, expiresAt }`) · `POST /admin/auth/logout` · `GET /admin/auth/me` · `GET /admin/auth/csrf` (vuelve a entregar el token después de una recarga) · `POST /admin/auth/password` · `GET /admin/dashboard/summary` · `GET|POST /admin/products` · `GET|PATCH /admin/products/{id}` · `POST /admin/products/{id}/archive` · `GET|POST /admin/categories` · `PATCH|DELETE /admin/categories/{id}` (`409` si tiene productos) · `PUT /admin/categories/order` · `POST /admin/media/signature` · `GET /admin/orders` · `GET /admin/orders/{number}` · `POST /admin/orders/{number}/status` · `GET|PUT /admin/content/home` · `/about` · `/faq` · `/footer` · `/product-tabs` · `/legal/{document}` (`terms` \| `privacy`) · `GET|PUT /admin/settings` · `GET /admin/reviews` · `PATCH /admin/reviews/{id}` · `GET /admin/messages` · `PATCH /admin/messages/{id}`
+
+**Cambios de contrato de P4** (Ola 0; el YAML es la fuente):
+
+- `AdminProductInput.expectedUpdatedAt` (opcional, solo en `PATCH`): si no coincide con el `updatedAt` guardado, `409 product_changed` y el admin ofrece ver la versión guardada o guardar encima. En líneas, contenido y ajustes gana el último guardado (hay un único administrador).
+- `PUT /admin/content/about` recibe `AboutContentInput`: la foto de cada socio es un `ImageInput` (`{ publicId, width, height, alt }`) y el back arma la `url`, como en productos y líneas.
+- Los contenidos editables tienen límites (`maxLength`, `minItems`, `maxItems`) en el YAML y en los `*ContentFormSchema` de `@galpon/schemas`.
+- `GET /admin/orders` acepta varios `status` (`?status=paid&status=preparing`).
+- `POST /admin/orders/{number}/status` documenta `409 invalid_status_transition` y `409 payment_in_progress` (tabla de 11.5).
+- El `403` del admin documenta `type: csrf_invalid` (token rotado por otro ingreso).
+- `OrderPayment.challenge: { url } | null` (decisión Q1): el desafío 3-D Secure pendiente viaja en el pedido, con el mismo `PaymentChallenge` que el pago con tarjeta.
+- Una escritura idempotente con datos inválidos responde `422` (`IdempotentValidationError`).
+- El webhook de Mercado Pago queda como operación solo del back (`501` "Lo atiende solo el back" en la API simulada); no quedan operaciones pendientes en el mock.
 
 **Modelos** (resumen; el detalle está en el YAML)
 
@@ -543,6 +572,8 @@ packages/api-client/src/
 - Para armar escenarios, el mock tiene rutas de control fuera del contrato (`MOCK_CONTROL_ROUTES`, solo en modo de prueba): `POST /__mock/orders/{number}/expire` vence la reserva de un pedido y `POST /__mock/products/{id}` cambia el precio o el stock de un producto; el simulador de Mercado Pago resuelve el pago con `POST /__mock/mercadopago/resolve`.
 - En modo de prueba, `initPoint` apunta a `/checkout/mp-simulado?pedido=…`: una página con botones Aprobar / Dejar pendiente / Rechazar que redirige a `/checkout/resultado` como lo haría MP.
 - Tienda y admin no comparten datos simulados (procesos distintos): un cambio en el admin no se ve en la tienda hasta que exista el back. Documentado en el README.
+- **Actualización P4**: el admin registra las fotos simuladas con `POST /__mock/media` (data URL reducido, 11.4); es una ruta interna del modo de prueba, fuera del contrato.
+- **Datos de demostración del admin (Ruling P4-8)**: `createMockDb({ …, demo: 'admin' })` siembra solo en el admin 12 pedidos (`GLP-09001` a `GLP-09012`, con todos los estados que muestra el dashboard y alertas de pago duplicado, mediación y contracargo), 8 mensajes (3 sin leer, 3 arrepentimientos con código) y 5 reseñas a moderar (4 pendientes y 1 oculta). La tienda no pasa `demo` y sigue sin pedidos. La tabla de pedidos está en el README del admin.
 
 ### 13.3 Variables de entorno (validadas con Zod al arrancar; si falta una, la app no levanta)
 
@@ -701,7 +732,7 @@ Los errores aparecen al salir del campo y al intentar avanzar (no mientras se es
 - Variables de entorno validadas al arrancar; al navegador llegan solo las `NEXT_PUBLIC_*` / `VITE_*` de la tabla 13.3.
 - **CSP de la tienda** (en `headers()` de `next.config`, sin nonce para conservar el render estático):
   `default-src 'self'` · `script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com` (+ `'unsafe-eval'` solo en desarrollo) · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com` · `font-src 'self'` · `connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com` · `frame-src 'self' https://*.mercadopago.com https://*.mercadolibre.com https:` (el desafío 3-D Secure carga páginas del banco; `'self'` es para el simulador del modo de prueba, que es una página de la tienda) · `object-src 'none'` · `base-uri 'self'` · `form-action 'self' https://*.mercadopago.com` · `frame-ancestors 'none'` (solo `/checkout/mp-simulado` lleva `frame-ancestors 'self'`, porque el 3-D Secure simulado la abre en un iframe del mismo origen; ver `src/lib/csp.ts`) · `upgrade-insecure-requests`.
-- **CSP del admin** (estricta; la SPA no tiene scripts inline): `default-src 'self'` · `script-src 'self'` · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com` · `connect-src 'self' {VITE_API_BASE_URL} https://api.cloudinary.com` · `frame-ancestors 'none'`. Se aplica en el servidor que sirva el admin (documentado en su README) y en `vite preview` para los tests.
+- **CSP del admin** (estricta; la SPA no tiene scripts inline; final de P4, `buildAdminCsp` en `apps/admin/src/lib/csp.ts`): `default-src 'self'` · `script-src 'self'` · `style-src 'self' 'unsafe-inline'` · `img-src 'self' data: blob: https://res.cloudinary.com` (`data:` para las fotos guardadas del modo de prueba, `blob:` para la vista previa de una subida) · `connect-src 'self' {origen de VITE_API_BASE_URL} https://api.cloudinary.com` · `object-src 'none'` · `base-uri 'self'` · `form-action 'self'` · `frame-ancestors 'none'`. Se aplica en el servidor que sirva el admin (documentado en su README, junto con `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` y `Strict-Transport-Security`) y en `vite preview` para los tests.
 - Además, en las dos: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictiva (`payment` solo para MP).
 - Los E2E fallan si aparece una violación de CSP en la consola.
 - Nada de HTML crudo: los textos editables se renderizan como texto con párrafos.
