@@ -130,7 +130,7 @@ export function ProductTabsContentScreen(): ReactNode {
           void content.refetch()
         }}
       >
-        {content.isSuccess && <ProductTabsForm content={content.data} />}
+        {content.data !== undefined && <ProductTabsForm content={content.data} />}
       </ContentLoader>
     </ContentLayout>
   )

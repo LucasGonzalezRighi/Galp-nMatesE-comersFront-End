@@ -20,7 +20,10 @@ frecuentes, pestañas de la ficha, pie y legales). `/contenido` redirige a `/con
   ("Secciones del contenido", enlaces con estilo de pestaña; `Link` pone `aria-current="page"`).
 - `ContentLoader`: esqueleto mientras carga, "No pudimos cargar el contenido." con "Reintentar" o
   el formulario (`combinedLoadState` junta varias consultas: el inicio también pide los productos
-  publicados, `adminProductsQuery` con `status: 'published'` y `pageSize: 100`).
+  publicados, `adminProductsQuery` con `status: 'published'` y `pageSize: 100`). El error solo
+  reemplaza al formulario si nunca hubo datos: una recarga en segundo plano que falla (sesión
+  vencida, corte de red) lo deja montado, con lo escrito; por eso las pantallas dibujan el
+  formulario con `data !== undefined` y no con `isSuccess`.
 - Un formulario por pantalla con React Hook Form, `zodResolver(*ContentFormSchema)` de
   `@galpon/schemas` (mensajes y límites de ahí), `mode: 'onTouched'`, `FormProvider`,
   `FormActions` ("Guardar cambios") y `UnsavedChangesGuard`.

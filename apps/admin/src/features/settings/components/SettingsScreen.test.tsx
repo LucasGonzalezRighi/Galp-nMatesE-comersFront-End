@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { TestApp } from '../../../test/render'
@@ -31,6 +31,21 @@ function shippingGroup(name: string): HTMLElement {
 async function retype(user: ReturnType<typeof userEvent.setup>, field: HTMLElement, text: string) {
   await user.clear(field)
   await user.type(field, text)
+}
+
+/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
+async function failBackgroundReload(app: TestApp): Promise<void> {
+  app.mockDb.db.adminSession = null
+  await act(async () => {
+    await app.queryClient.refetchQueries({ type: 'active' })
+    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  })
+  const failed = app.queryClient
+    .getQueryCache()
+    .findAll()
+    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
+  expect(failed.length).toBeGreaterThan(0)
 }
 
 afterEach(() => {
@@ -133,5 +148,19 @@ describe('SettingsScreen', () => {
 
     expect(email).toHaveValue('galpon.mates@gmail.com')
     expect(screen.queryByText('Cambios sin guardar')).not.toBeInTheDocument()
+  })
+
+  it('si la recarga en segundo plano falla, el formulario conserva lo escrito', async () => {
+    const { app, user } = await setup()
+    const email = screen.getByRole('textbox', { name: /^Email de contacto/ })
+    await retype(user, email, 'otro@galpon.com.ar')
+
+    await failBackgroundReload(app)
+
+    expect(screen.queryByText('No pudimos cargar los ajustes.')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /^Email de contacto/ })).toHaveValue(
+      'otro@galpon.com.ar',
+    )
+    expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
   })
 })

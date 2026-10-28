@@ -51,6 +51,34 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('cerrado')).toBeInTheDocument()
   })
 
+  it('con onEscape, Escape llama a onEscape sin cerrar y "Cancelar" sigue cerrando', async () => {
+    const user = userEvent.setup()
+    const onEscape = vi.fn()
+    const onOpenChange = vi.fn()
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={onOpenChange}
+        onEscape={onEscape}
+        title="¿Archivar «Mate imperial»?"
+        description="Deja de verse en la tienda."
+        confirmLabel="Archivar"
+        tone="danger"
+        isPending={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+    await screen.findByRole('alertdialog')
+
+    await user.keyboard('{Escape}')
+    expect(onEscape).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onEscape).toHaveBeenCalledTimes(1)
+  })
+
   it('confirmar llama a onConfirm sin cerrar el diálogo', async () => {
     const user = userEvent.setup()
     const onConfirm = vi.fn()

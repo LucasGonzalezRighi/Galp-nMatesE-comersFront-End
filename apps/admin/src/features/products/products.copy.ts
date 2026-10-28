@@ -100,6 +100,8 @@ export const PRODUCT_FORM_COPY = {
   draft: 'Borrador',
   published: 'Publicado',
   archived: 'Archivado',
+  archivedSaveHint:
+    'Si guardás cambios, el producto pasa a borrador. Para publicarlo, usá «Volver a publicar».',
   photosSection: 'Fotos',
   photosHint: 'Hasta 8 fotos; la primera es la principal.',
   photosList: 'Fotos del producto',
@@ -114,6 +116,7 @@ export const PRODUCT_FORM_COPY = {
   create: 'Crear producto',
   created: 'Producto creado.',
   saved: 'Cambios guardados.',
+  savedAsDraft: 'Cambios guardados. El producto pasó de archivado a borrador.',
   uploadsInProgress: 'Esperá a que terminen de subir las fotos.',
   uploadsWithErrors: 'Hay fotos que no se subieron: reintentá o quitalas.',
   slugTaken: 'Ese slug ya lo usa otro producto, o lo usó antes.',

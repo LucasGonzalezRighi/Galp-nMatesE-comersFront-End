@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { HomeContent } from '@galpon/api-client'
@@ -18,6 +18,21 @@ async function renderHome(app: TestApp) {
   )
   await screen.findByRole('region', { name: 'Portada' })
   return result
+}
+
+/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
+async function failBackgroundReload(app: TestApp): Promise<void> {
+  app.mockDb.db.adminSession = null
+  await act(async () => {
+    await app.queryClient.refetchQueries({ type: 'active' })
+    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  })
+  const failed = app.queryClient
+    .getQueryCache()
+    .findAll()
+    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
+  expect(failed.length).toBeGreaterThan(0)
 }
 
 /** Una copia del inicio guardado, para armar lo que se espera después de guardar. */
@@ -170,5 +185,22 @@ describe('HomeContentScreen', () => {
 
     expect(await screen.findByText('No pudimos cargar el contenido.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+
+  it('si la recarga en segundo plano falla, el formulario conserva lo escrito', async () => {
+    const user = userEvent.setup()
+    const app = await createTestApp()
+    await renderHome(app)
+    const hero = screen.getByRole('region', { name: 'Portada' })
+    await user.clear(within(hero).getByLabelText('Línea 2'))
+    await user.type(within(hero).getByLabelText('Línea 2'), 'tu yerba.')
+
+    await failBackgroundReload(app)
+
+    expect(screen.queryByText('No pudimos cargar el contenido.')).not.toBeInTheDocument()
+    expect(
+      within(screen.getByRole('region', { name: 'Portada' })).getByLabelText('Línea 2'),
+    ).toHaveValue('tu yerba.')
+    expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
   })
 })

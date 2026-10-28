@@ -35,8 +35,10 @@ export function SettingsScreen(): ReactNode {
   const api = useApiClient()
   const settings = useQuery(adminSettingsQuery(api))
 
+  // El error solo reemplaza al formulario si nunca hubo datos: una recarga en segundo plano que
+  // falla (sesión vencida, corte de red) lo deja como está, con lo escrito.
   let content: ReactNode
-  if (settings.isPending) content = <SettingsSkeleton />
+  if (settings.data !== undefined) content = <SettingsForm settings={settings.data} />
   else if (settings.isError) {
     content = (
       <ErrorState
@@ -45,7 +47,7 @@ export function SettingsScreen(): ReactNode {
         className="bg-surface rounded-lg shadow-sm"
       />
     )
-  } else content = <SettingsForm settings={settings.data} />
+  } else content = <SettingsSkeleton />
 
   return (
     <div className="flex flex-col gap-6">

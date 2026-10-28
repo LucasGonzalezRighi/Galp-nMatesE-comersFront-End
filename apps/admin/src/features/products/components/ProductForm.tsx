@@ -69,8 +69,9 @@ const STATUS_OPTIONS: readonly SegmentedOption<ProductFormValues['status']>[] = 
  *   "Producto creado." y lleva a `/productos/$id`.
  * - Al editar manda `expectedUpdatedAt` (la versión que se abrió): si otra pestaña guardó antes,
  *   el `409 product_changed` ofrece "Guardar mis cambios igual" (sin `expectedUpdatedAt`) o "Ver
- *   la versión guardada" (recarga y descarta). Un archivado muestra el aviso con "Volver a
- *   publicar".
+ *   la versión guardada" (recarga y descarta); Escape solo cierra el aviso y conserva lo escrito.
+ * - Un archivado muestra el aviso con "Volver a publicar". Guardarle cambios lo pasa a borrador
+ *   (la API solo recibe `draft` o `published`): el formulario lo avisa antes y en el toast.
  * - No envía con fotos subiendo o con error. `409 slug_taken` va al slug; un `422`, a cada campo.
  *
  * @param props - Ver {@link ProductFormProps}.
@@ -176,7 +177,11 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
         }
         reset(toProductFormValues(saved))
         setBaseUpdatedAt(saved.updatedAt)
-        toast.success(PRODUCT_FORM_COPY.saved)
+        toast.success(
+          product?.status === 'archived' && saved.status !== 'archived'
+            ? PRODUCT_FORM_COPY.savedAsDraft
+            : PRODUCT_FORM_COPY.saved,
+        )
       },
       onError: (error) => {
         handleSaveError(error, values)
@@ -401,7 +406,10 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
 
         <Section title={PRODUCT_FORM_COPY.statusSection} description={PRODUCT_FORM_COPY.statusHint}>
           {product?.status === 'archived' ? (
-            <p className="text-sm">{PRODUCT_FORM_COPY.archived}</p>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm">{PRODUCT_FORM_COPY.archived}</p>
+              <p className="text-xs text-neutral-400">{PRODUCT_FORM_COPY.archivedSaveHint}</p>
+            </div>
           ) : (
             <Controller
               control={control}
@@ -443,7 +451,12 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
       <ConfirmDialog
         open={conflict !== null}
         onOpenChange={(open) => {
+          // "Ver la versión guardada" es el botón de cancelar: descartar es una elección explícita.
           if (!open) void showSavedVersion()
+        }}
+        onEscape={() => {
+          // Escape solo cierra: lo editado se conserva (se puede volver a guardar y ver el aviso).
+          setConflict(null)
         }}
         title={PRODUCT_FORM_COPY.changedTitle}
         description={PRODUCT_FORM_COPY.changedDescription}

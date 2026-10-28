@@ -5,13 +5,17 @@ export type ContentLoadState = 'pending' | 'error' | 'success'
 export interface QueryStatusLike {
   /** `true` mientras no hay datos. */
   isPending: boolean
-  /** `true` si falló. */
+  /** `true` si falló (incluida una recarga en segundo plano que falló con datos ya cargados). */
   isError: boolean
+  /** Los datos, o `undefined` si todavía no llegaron: una recarga que falla los conserva. */
+  data: unknown
 }
 
 /**
- * Estado de una pantalla que necesita varias consultas: error si alguna falló, cargando si
- * alguna todavía no tiene datos y listo si todas los tienen.
+ * Estado de una pantalla que necesita varias consultas: error si alguna falló sin tener datos,
+ * cargando si alguna todavía no los tiene y listo si todas los tienen. Una recarga en segundo
+ * plano que falla (sesión vencida, corte de red) no cuenta como error mientras haya datos: así
+ * el formulario no se desmonta con lo escrito.
  *
  * @param queries - Las consultas de la pantalla.
  * @returns `error`, `pending` o `success`.
@@ -21,7 +25,7 @@ export function combinedLoadState(queries: readonly QueryStatusLike[]): ContentL
   if (queries.length === 0) {
     throw new RangeError('Hace falta al menos una consulta para saber el estado de la pantalla.')
   }
-  if (queries.some((query) => query.isError)) return 'error'
+  if (queries.some((query) => query.isError && query.data === undefined)) return 'error'
   if (queries.some((query) => query.isPending)) return 'pending'
   return 'success'
 }

@@ -21,7 +21,7 @@ export function AboutContentScreen(): ReactNode {
           void content.refetch()
         }}
       >
-        {content.isSuccess && <AboutContentForm content={content.data} />}
+        {content.data !== undefined && <AboutContentForm content={content.data} />}
       </ContentLoader>
     </ContentLayout>
   )

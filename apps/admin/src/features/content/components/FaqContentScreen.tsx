@@ -18,7 +18,7 @@ export function FaqContentScreen(): ReactNode {
           void content.refetch()
         }}
       >
-        {content.isSuccess && <FaqContentForm content={content.data} />}
+        {content.data !== undefined && <FaqContentForm content={content.data} />}
       </ContentLoader>
     </ContentLayout>
   )

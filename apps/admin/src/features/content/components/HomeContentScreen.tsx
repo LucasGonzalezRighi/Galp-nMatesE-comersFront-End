@@ -30,7 +30,7 @@ export function HomeContentScreen(): ReactNode {
           void products.refetch()
         }}
       >
-        {content.isSuccess && products.isSuccess && (
+        {content.data !== undefined && products.data !== undefined && (
           <HomeContentForm content={content.data} products={products.data.items} />
         )}
       </ContentLoader>

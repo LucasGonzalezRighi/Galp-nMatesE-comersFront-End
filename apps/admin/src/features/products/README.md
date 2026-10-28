@@ -38,11 +38,14 @@ pide confirmación (`ConfirmDialog`) y usa `useArchiveProduct`.
   versión que se abrió (no el de la caché, que puede haberse recargado). `409 slug_taken` va al
   campo "Slug"; `409 product_changed` abre "Este producto cambió mientras lo editabas" con
   "Guardar mis cambios igual" (sin `expectedUpdatedAt`) y "Ver la versión guardada" (recarga y
-  descarta; también Escape, como todo "Cancelar" de un `ConfirmDialog`). Un `422` va a cada campo
-  (`images.N.alt`); un `401` o un `403` los maneja la estructura.
+  descarta, solo con el botón). Escape (`onEscape` de `ConfirmDialog`) cierra el aviso y conserva
+  lo escrito. Un `422` va a cada campo (`images.N.alt`); un `401` o un `403` los maneja la
+  estructura.
 - Un archivado muestra el aviso con "Volver a publicar" (`useRepublishProduct`: lo guardado con
   `status: 'published'`; lo editado y sin guardar se conserva). Guardar cambios de un archivado lo
-  deja en borrador: el formulario solo elige borrador o publicado.
+  deja en borrador (la API solo recibe borrador o publicado; en la tienda se ven igual, ninguno):
+  el estado "Archivado" lo avisa de antemano y el toast dice "Cambios guardados. El producto pasó
+  de archivado a borrador.".
 - Después de escribir, `refreshProductCaches` deja el producto en la caché e invalida la lista,
   las líneas (`productCount`) y el resumen.
 

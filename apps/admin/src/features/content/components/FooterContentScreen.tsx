@@ -112,7 +112,7 @@ export function FooterContentScreen(): ReactNode {
           void content.refetch()
         }}
       >
-        {content.isSuccess && <FooterForm content={content.data} />}
+        {content.data !== undefined && <FooterForm content={content.data} />}
       </ContentLoader>
     </ContentLayout>
   )

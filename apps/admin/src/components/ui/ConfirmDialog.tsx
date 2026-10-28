@@ -28,6 +28,13 @@ export interface ConfirmDialogProps {
   open: boolean
   /** Se llama al abrir o cerrar ("Cancelar" o Escape). Mientras `isPending`, no se cierra. */
   onOpenChange: (open: boolean) => void
+  /**
+   * Si se pasa, Escape llama a esto en lugar de a `onOpenChange(false)` y "Cancelar" sigue
+   * llamando a `onOpenChange(false)`: sirve cuando "Cancelar" hace algo más que cerrar (por
+   * ejemplo descartar lo editado) y Escape tiene que ser solo cerrar. Mientras `isPending`, Escape
+   * no hace nada.
+   */
+  onEscape?: () => void
   /** Pregunta o título, por ejemplo "¿Archivar «Mate imperial»?". */
   title: string
   /** Qué pasa si se confirma. */
@@ -58,9 +65,10 @@ function hasContent(node: ReactNode): boolean {
 
 /**
  * Diálogo de confirmación sobre Radix `AlertDialog`, para toda acción irreversible o que saca
- * algo de la tienda. El foco arranca en "Cancelar"; Escape y "Cancelar" lo cierran; confirmar
- * llama a `onConfirm` y deja el diálogo abierto hasta que quien lo usa lo cierre. Al cerrarse, el
- * foco vuelve al elemento que lo tenía al abrirse (si sigue en pantalla).
+ * algo de la tienda. El foco arranca en "Cancelar"; Escape y "Cancelar" lo cierran (con
+ * `onEscape`, Escape avisa por separado); confirmar llama a `onConfirm` y deja el diálogo abierto
+ * hasta que quien lo usa lo cierre. Al cerrarse, el foco vuelve al elemento que lo tenía al
+ * abrirse (si sigue en pantalla).
  *
  * @param props - Ver {@link ConfirmDialogProps}.
  * @throws {RangeError} Si `tone` no es `default` ni `danger`.
@@ -79,6 +87,7 @@ function hasContent(node: ReactNode): boolean {
 export function ConfirmDialog({
   open,
   onOpenChange,
+  onEscape,
   title,
   description,
   confirmLabel,
@@ -123,7 +132,15 @@ export function ConfirmDialog({
             })
           }}
           onEscapeKeyDown={(event) => {
-            if (isPending) event.preventDefault()
+            if (isPending) {
+              event.preventDefault()
+              return
+            }
+            if (onEscape !== undefined) {
+              // Radix no cierra si se frena el evento: quien lo usa decide qué hace Escape.
+              event.preventDefault()
+              onEscape()
+            }
           }}
         >
           <div className="flex flex-col gap-1">

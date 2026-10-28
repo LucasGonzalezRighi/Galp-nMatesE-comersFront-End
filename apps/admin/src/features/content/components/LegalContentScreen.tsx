@@ -169,7 +169,7 @@ export function LegalContentScreen({ tab, onTabChange }: LegalContentScreenProps
             void content.refetch()
           }}
         >
-          {content.isSuccess && (
+          {content.data !== undefined && (
             <LegalForm
               key={document}
               document={document}

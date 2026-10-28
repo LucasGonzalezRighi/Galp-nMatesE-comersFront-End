@@ -39,11 +39,23 @@ describe('textos de Contenido', () => {
 
 describe('combinedLoadState', () => {
   it('da error si alguna falló, cargando si alguna espera y listo si están todas', () => {
-    const done = { isPending: false, isError: false }
-    expect(combinedLoadState([done, { isPending: false, isError: true }])).toBe('error')
-    expect(combinedLoadState([done, { isPending: true, isError: false }])).toBe('pending')
+    const done = { isPending: false, isError: false, data: {} }
+    expect(combinedLoadState([done, { isPending: false, isError: true, data: undefined }])).toBe(
+      'error',
+    )
+    expect(combinedLoadState([done, { isPending: true, isError: false, data: undefined }])).toBe(
+      'pending',
+    )
     expect(combinedLoadState([done, done])).toBe('success')
     expect(() => combinedLoadState([])).toThrow(RangeError)
+  })
+
+  it('no da error si una recarga falló pero la consulta ya tenía datos', () => {
+    const reloadFailed = { isPending: false, isError: true, data: {} }
+    expect(combinedLoadState([reloadFailed])).toBe('success')
+    expect(
+      combinedLoadState([reloadFailed, { isPending: false, isError: true, data: undefined }]),
+    ).toBe('error')
   })
 })
 

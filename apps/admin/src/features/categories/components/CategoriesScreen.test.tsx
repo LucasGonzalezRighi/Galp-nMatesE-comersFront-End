@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { MockCategory } from '@galpon/api-client/mock'
@@ -36,6 +36,21 @@ async function setup(app?: TestApp) {
     { app: testApp, path: '/lineas' },
   )
   return { ...result, app: testApp, user }
+}
+
+/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
+async function failBackgroundReload(app: TestApp): Promise<void> {
+  app.mockDb.db.adminSession = null
+  await act(async () => {
+    await app.queryClient.refetchQueries({ type: 'active' })
+    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  })
+  const failed = app.queryClient
+    .getQueryCache()
+    .findAll()
+    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
+  expect(failed.length).toBeGreaterThan(0)
 }
 
 /** Nombres de las líneas en el orden en que se ven (sale de la agarradera de cada una). */
@@ -332,5 +347,15 @@ describe('CategoriesScreen', () => {
     app.mockDb.db.adminSession = session
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(await screen.findByRole('list', { name: 'Líneas' })).toBeInTheDocument()
+  })
+
+  it('si la recarga en segundo plano falla, la lista sigue a la vista', async () => {
+    const { app } = await setup()
+    await screen.findByRole('list', { name: 'Líneas' })
+
+    await failBackgroundReload(app)
+
+    expect(screen.queryByText('No pudimos cargar las líneas.')).not.toBeInTheDocument()
+    expect(shownOrder()).toEqual(DEMO_ORDER)
   })
 })

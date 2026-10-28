@@ -73,8 +73,10 @@ export function CategoriesScreen(): ReactNode {
   }
 
   function renderList(): ReactNode {
-    if (categories.isPending) return <CategoriesSkeleton />
-    if (categories.isError) {
+    // El error solo reemplaza a la lista si nunca hubo datos: una recarga en segundo plano que
+    // falla la deja como está.
+    if (categories.data === undefined) {
+      if (!categories.isError) return <CategoriesSkeleton />
       return (
         <ErrorState
           title={CATEGORIES_COPY.loadError}

@@ -257,6 +257,56 @@ describe('ProductScreen', () => {
     expect(stored(app).name).toBe('Otra pestaña')
   })
 
+  it('Escape sobre el aviso de otra versión solo lo cierra y conserva lo editado', async () => {
+    const { app, user } = await setup()
+
+    await user.clear(screen.getByLabelText(/^Nombre/))
+    await user.type(screen.getByLabelText(/^Nombre/), 'Mate Imperial Editado')
+    Object.assign(stored(app), { name: 'Otra pestaña', updatedAt: '2026-10-27T14:00:00Z' })
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await screen.findByRole('alertdialog', { name: 'Este producto cambió mientras lo editabas' })
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    })
+    expect(screen.getByLabelText(/^Nombre/)).toHaveValue('Mate Imperial Editado')
+    expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
+    expect(stored(app).name).toBe('Otra pestaña')
+
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(
+      await screen.findByRole('alertdialog', { name: 'Este producto cambió mientras lo editabas' }),
+    ).toBeInTheDocument()
+  })
+
+  it('guardar cambios de un archivado lo avisa y lo deja en borrador', async () => {
+    const { app, user } = await setup({
+      prepare: (testApp) => {
+        stored(testApp).status = 'archived'
+      },
+    })
+
+    expect(
+      screen.getByText(
+        'Si guardás cambios, el producto pasa a borrador. Para publicarlo, usá «Volver a publicar».',
+      ),
+    ).toBeInTheDocument()
+    await user.clear(screen.getByLabelText(/^Nombre/))
+    await user.type(screen.getByLabelText(/^Nombre/), 'Mate Imperial Corregido')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(
+      await screen.findByText('Cambios guardados. El producto pasó de archivado a borrador.'),
+    ).toBeInTheDocument()
+    expect(stored(app)).toMatchObject({ name: 'Mate Imperial Corregido', status: 'draft' })
+    expect(await screen.findByRole('radio', { name: 'Borrador' })).toBeChecked()
+    expect(
+      screen.queryByText('Este producto está archivado: no se ve en la tienda.'),
+    ).not.toBeInTheDocument()
+  })
+
   it('un producto archivado se vuelve a publicar', async () => {
     const { app, user } = await setup({
       prepare: (testApp) => {
