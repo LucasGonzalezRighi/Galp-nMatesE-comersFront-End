@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { AlertDialog } from 'radix-ui'
+import { useRef } from 'react'
 import type { ButtonVariant } from './button-class'
 import { Button } from './Button'
 import { OVERLAY_COPY } from './overlay.copy'
@@ -58,7 +59,8 @@ function hasContent(node: ReactNode): boolean {
 /**
  * Diálogo de confirmación sobre Radix `AlertDialog`, para toda acción irreversible o que saca
  * algo de la tienda. El foco arranca en "Cancelar"; Escape y "Cancelar" lo cierran; confirmar
- * llama a `onConfirm` y deja el diálogo abierto hasta que quien lo usa lo cierre.
+ * llama a `onConfirm` y deja el diálogo abierto hasta que quien lo usa lo cierre. Al cerrarse, el
+ * foco vuelve al elemento que lo tenía al abrirse (si sigue en pantalla).
  *
  * @param props - Ver {@link ConfirmDialogProps}.
  * @throws {RangeError} Si `tone` no es `default` ni `danger`.
@@ -86,6 +88,8 @@ export function ConfirmDialog({
   onConfirm,
   children,
 }: ConfirmDialogProps): ReactNode {
+  // Sin `Trigger` (el diálogo es controlado), Radix no sabe adónde devolver el foco al cerrar.
+  const openerRef = useRef<HTMLElement | null>(null)
   if (!Object.hasOwn(CONFIRM_VARIANT, tone)) {
     throw new RangeError(
       `El tono del diálogo tiene que ser default o danger; se recibió "${tone}".`,
@@ -102,6 +106,17 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className={OVERLAY_CLASS} />
         <AlertDialog.Content
           className={PANEL_CLASS}
+          onOpenAutoFocus={() => {
+            const active = document.activeElement
+            openerRef.current = active instanceof HTMLElement ? active : null
+          }}
+          onCloseAutoFocus={(event) => {
+            const opener = openerRef.current
+            openerRef.current = null
+            if (!opener?.isConnected) return
+            event.preventDefault()
+            opener.focus()
+          }}
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault()
           }}

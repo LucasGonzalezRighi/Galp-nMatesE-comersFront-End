@@ -9,6 +9,7 @@ import type { TestApp } from '../test/render'
 import { PageHeader } from '../components/ui/PageHeader'
 import { toast } from '../components/ui/toast'
 import { Toaster } from '../components/ui/Toaster'
+import { UnsavedChangesGuard } from '../components/ui/UnsavedChangesGuard'
 import { useSessionExpiredStore } from '../features/auth'
 import { renderWithApp } from '../test/render'
 import { createAdminTestApp } from './admin-test-app.test-helper'
@@ -188,6 +189,49 @@ describe('AdminLayout: estructura', () => {
     expect(router.state.location.pathname).toBe('/pedidos')
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Pantalla /pedidos' })).toHaveFocus()
+    })
+  })
+
+  it('si el enlace es el de la sección actual, el foco vuelve a "Menú" y no se pierde', async () => {
+    const { router, user } = await renderLayout({ path: '/pedidos', routePath: '/$section' })
+
+    await user.click(screen.getByRole('button', { name: 'Menú' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Menú' })
+    await user.click(within(drawer).getByRole('link', { name: /^Pedidos/ }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Menú' })).not.toBeInTheDocument()
+    })
+    expect(router.state.location.pathname).toBe('/pedidos')
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Menú' })).toHaveFocus()
+    })
+  })
+
+  it('si UnsavedChangesGuard frena la navegación, el foco no queda en el body', async () => {
+    const { router, user } = await renderLayout({
+      path: '/cuenta',
+      routePath: '/$section',
+      children: (
+        <>
+          <Heading />
+          <UnsavedChangesGuard when />
+        </>
+      ),
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Menú' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Menú' })
+    await user.click(within(drawer).getByRole('link', { name: /^Pedidos/ }))
+    const guard = await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' })
+    await user.click(within(guard).getByRole('button', { name: 'Seguir editando' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    })
+    expect(router.state.location.pathname).toBe('/cuenta')
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Menú' })).toHaveFocus()
     })
   })
 

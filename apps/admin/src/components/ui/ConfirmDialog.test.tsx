@@ -77,6 +77,42 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('alertdialog')).toBeInTheDocument()
   })
 
+  it('al cerrarse devuelve el foco al elemento que lo tenía al abrirse', async () => {
+    const user = userEvent.setup()
+    function WithOpener() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Archivar mate
+          </button>
+          <ConfirmDialog
+            open={open}
+            onOpenChange={setOpen}
+            title="¿Archivar «Mate imperial»?"
+            description="Deja de verse en la tienda."
+            confirmLabel="Archivar"
+            tone="danger"
+            isPending={false}
+            onConfirm={vi.fn()}
+          />
+        </>
+      )
+    }
+    render(<WithOpener />)
+
+    await user.click(screen.getByRole('button', { name: 'Archivar mate' }))
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Archivar mate' })).toHaveFocus()
+  })
+
   it('muestra el error en línea con role="alert"', async () => {
     render(<Harness error="La línea tiene productos." />)
 

@@ -4,6 +4,7 @@ import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Dialog as RadixDialog } from 'radix-ui'
 import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { adminLogout, isApiError } from '@galpon/api-client'
 import { adminDashboardQuery } from '@galpon/api-client/react'
 import type { RouterContext } from '../features/auth'
@@ -44,6 +45,7 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
   const navigate = useNavigate()
   const [isMenuOpen, setMenuOpen] = useState(false)
   const closedByNavigation = useRef(false)
+  const menuTriggerRef = useRef<HTMLButtonElement>(null)
   const mainRef = useFocusHeadingOnNavigate()
   const summary = useQuery({ ...adminDashboardQuery(api), refetchInterval: COUNTERS_REFRESH_MS })
   // Una escritura puede dejar el modo de prueba sin persistencia: al terminar, se vuelve a dibujar
@@ -69,7 +71,13 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
 
   function closeMenuOnNavigate() {
     closedByNavigation.current = true
-    setMenuOpen(false)
+    // El foco vuelve a "Menú" antes de que el router resuelva (o frene) la navegación: si la ruta
+    // cambia, el hook lo lleva al `h1`; si no cambia (el enlace de la sección actual o
+    // `UnsavedChangesGuard`), ya está en "Menú" y el diálogo de salida lo recupera al cerrarse.
+    flushSync(() => {
+      setMenuOpen(false)
+    })
+    menuTriggerRef.current?.focus()
   }
 
   const sidebarProps: AdminSidebarProps = {
@@ -100,6 +108,7 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
         <header className="bg-surface border-divider sticky top-0 z-20 flex h-14 items-center gap-2 border-b px-2 sm:px-4 lg:hidden">
           <RadixDialog.Root open={isMenuOpen} onOpenChange={setMenuOpen}>
             <RadixDialog.Trigger
+              ref={menuTriggerRef}
               aria-label={APP_COPY.openMenu}
               className={buttonClass('icon', 'md')}
             >
@@ -110,7 +119,8 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
               <RadixDialog.Content
                 aria-describedby={undefined}
                 onCloseAutoFocus={(event) => {
-                  // Al navegar, el foco va al `h1` de la pantalla nueva y no vuelve a "Menú".
+                  // Al navegar, el foco ya se puso en "Menú" (ver `closeMenuOnNavigate`): si no se
+                  // cancela el autofoco, llegaría tarde y pisaría al `h1` de la pantalla nueva.
                   if (!closedByNavigation.current) return
                   closedByNavigation.current = false
                   event.preventDefault()
