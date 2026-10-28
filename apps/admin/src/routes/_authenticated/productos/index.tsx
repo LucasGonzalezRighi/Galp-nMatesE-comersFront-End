@@ -1,16 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { ProductsScreen, productsSearchSchema } from '../../../features/products'
 
-/** Ruta `/productos`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 10. */
+/**
+ * Ruta `/productos`: la tabla de productos. `?q=`, `?linea=`, `?estado=`, `?sinStock=`, `?orden=`
+ * y `?pagina=` se validan con `productsSearchSchema` (lo que no sirve se descarta).
+ */
 export const Route = createFileRoute('/_authenticated/productos/')({
+  validateSearch: productsSearchSchema,
   component: ProductsPage,
 })
 
-// Marcadora de P4: la reemplaza la Task 10.
 function ProductsPage() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { storeUrl } = Route.useRouteContext()
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Productos</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
+    <ProductsScreen
+      search={search}
+      onSearchChange={(next) => {
+        void navigate({ search: next })
+      }}
+      storeUrl={storeUrl}
+    />
   )
 }
