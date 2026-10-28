@@ -108,14 +108,15 @@ export interface StoryStageProps {
 }
 
 /**
- * El paseo del mate (spec 9.5, desde 1024 px): la historia del inicio como un escenario fijo a la
- * altura de la ventana donde el scroll mueve las paradas de costado. Cada parada se queda quieta
+ * El paseo del mate (spec 9.5): la historia del inicio como un escenario fijo a la altura de la
+ * ventana donde el scroll mueve las paradas de costado. Cada parada se queda quieta
  * el 55 % de su tramo para leer y desliza a la siguiente en el resto (`stageLayout`). El mate
  * queda a la derecha como referencia y cambia de pieza en cada parada (`StoryMate`); los fondos se
  * funden; el raíl de la derecha marca la parada actual y lleva a cualquiera (`StoryRail`); la pista
  * "Deslizá para recorrer" se esconde al empezar. Solo se animan `transform` y `opacity`.
  *
- * Lo monta `HomeStory` después de hidratar, en escritorio y sin `prefers-reduced-motion`.
+ * Lo monta `HomeStory` después de hidratar, desde 1024 px de ancho y 700 de alto y sin
+ * `prefers-reduced-motion`.
  *
  * @param props - Ver {@link StoryStageProps}.
  */

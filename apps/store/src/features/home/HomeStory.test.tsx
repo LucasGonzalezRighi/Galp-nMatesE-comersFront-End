@@ -17,13 +17,25 @@ vi.mock('next/navigation', () => ({
 
 cleanUpAfterEach()
 
-/** Simula la ventana: ancho de escritorio o no, y la preferencia de movimiento. */
-function mockWindow({ wide, reduced }: { wide: boolean; reduced: boolean }): void {
+/** Opciones de {@link mockWindow}. */
+interface WindowOptions {
+  /** Si la ventana tiene ancho de escritorio (1024 px o más). */
+  wide: boolean
+  /** Si la preferencia de movimiento es `reduce`. */
+  reduced: boolean
+  /** Si la ventana tiene el alto que pide el paseo (700 px o más); por omisión sí. */
+  tall?: boolean
+}
+
+/** Simula la ventana: ancho de escritorio o no, alto suficiente o no, y la preferencia de movimiento. */
+function mockWindow({ wide, reduced, tall = true }: WindowOptions): void {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
     value: (query: string): Partial<MediaQueryList> => ({
-      matches: query.includes('min-width') ? wide : reduced && query.includes('reduced-motion'),
+      matches: query.includes('min-width')
+        ? wide && (tall || !query.includes('min-height'))
+        : reduced && query.includes('reduced-motion'),
       media: query,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
@@ -50,7 +62,7 @@ describe('HomeStory', () => {
     expect(html).toContain('Tres piezas.')
   })
 
-  it('desde 1024 px y con movimiento, el cliente monta el paseo del mate', () => {
+  it('desde 1024 px de ancho y 700 de alto y con movimiento, el cliente monta el paseo del mate', () => {
     mockWindow({ wide: true, reduced: false })
     render(<HomeStory data={data} />)
     expect(screen.getByRole('region', STAGE)).toBeInTheDocument()
@@ -74,6 +86,14 @@ describe('HomeStory', () => {
 
   it('por debajo de 1024 px quedan las escenas apiladas, sin raíl', () => {
     mockWindow({ wide: false, reduced: false })
+    render(<HomeStory data={data} />)
+    expect(screen.queryByRole('region', STAGE)).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Paradas del paseo' })).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6)
+  })
+
+  it('con ancho de escritorio pero menos de 700 px de alto quedan las escenas apiladas', () => {
+    mockWindow({ wide: true, reduced: false, tall: false })
     render(<HomeStory data={data} />)
     expect(screen.queryByRole('region', STAGE)).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Paradas del paseo' })).toBeNull()

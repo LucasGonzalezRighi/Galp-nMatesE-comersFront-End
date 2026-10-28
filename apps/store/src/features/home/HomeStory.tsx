@@ -10,8 +10,13 @@ import { StoryScene } from './StoryScene'
 import { StoryStage } from './StoryStage'
 import { StoryVisual } from './StoryVisual'
 
-/** Desde qué ancho la historia es el paseo del mate (en celulares y tabletas, escenas apiladas). */
-const STAGE_QUERY = '(min-width: 1024px)'
+/**
+ * Desde qué ventana la historia es el paseo del mate: 1024 px de ancho y 700 px de alto (en
+ * celulares, tabletas y ventanas bajas, escenas apiladas). Cada parada necesita cerca de 600 px de
+ * alto y el panel no tiene scroll interno; con menos alto el contador y la última fila de productos
+ * quedan fuera de la ventana y no hay cómo llegar a ellos.
+ */
+const STAGE_QUERY = '(min-width: 1024px) and (min-height: 700px)'
 
 /** Busca la escena por su clave; si el contenido no la trae, esa escena no se dibuja. */
 function sceneOf(scenes: readonly Scene[], key: Scene['key']): Scene | undefined {
@@ -113,8 +118,9 @@ export interface HomeStoryProps {
  * comprar). Una escena que el contenido no trae no se dibuja.
  *
  * El servidor y la hidratación dibujan las escenas apiladas (lo que ve el celular y la lectura sin
- * movimiento). Después de hidratar, desde 1024 px y sin `prefers-reduced-motion`, la historia pasa
- * a ser el paseo del mate (`StoryStage`), antes de que se llegue a ella con el scroll.
+ * movimiento). Después de hidratar, desde 1024 px de ancho y 700 px de alto y sin
+ * `prefers-reduced-motion`, la historia pasa a ser el paseo del mate (`StoryStage`), antes de que se
+ * llegue a ella con el scroll.
  *
  * @param props - Ver {@link HomeStoryProps}.
  */
