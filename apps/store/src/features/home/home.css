@@ -1,7 +1,8 @@
 /*
  * Estilos propios del inicio (los del diseño que no se arman con utilidades): alturas de las
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
- * entrada del título de la portada, relleno de los botones de la portada y palabra fantasma.
+ * entrada del título de la portada, relleno de los botones de la portada, palabra fantasma y la
+ * línea de la pista del paseo del mate.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -154,9 +155,38 @@
   }
 }
 
+/* Paseo del mate: línea de la pista "Deslizá para recorrer", con un brillo que baja una y otra vez. */
+.home-hint-line {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 32px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentcolor 24%, transparent);
+}
+
+.home-hint-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentcolor;
+  animation: home-hint 2400ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+}
+
+@keyframes home-hint {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-rise,
-  .home-ghost {
+  .home-ghost,
+  .home-hint-line::after {
     animation: none;
   }
 

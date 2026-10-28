@@ -27,7 +27,9 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
 | `DrawCheck`                | Check que se dibuja                                                                      | `size`, `color`, `label`                                                                 |
 | `Shake`                    | Temblor de un campo con error; `shake()` por `ref`                                       | `ref`                                                                                    |
 | `HorizontalScroll`         | Sección fija con la pista de tarjetas que avanza con el scroll                           | `header`, `HorizontalScrollProgress`                                                     |
+| `ScrollStage`              | Escenario fijo a la altura de la ventana; `useScrollStage()` da avance y `scrollToStop`  | `stops`, `label`                                                                         |
 | `useScrollTopOnStep(step)` | Sube suavemente al cambiar de paso (kit, checkout)                                       | `step`                                                                                   |
+| `useMediaQuery(query)`     | Si se cumple una consulta de medios (`false` en el servidor y al hidratar)               | `query`                                                                                  |
 
 ## Cosas a tener en cuenta
 
@@ -37,6 +39,10 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
 - `usePrefersReducedMotion` (propio) reemplaza a `useReducedMotion` de Motion: el primer render de la
   hidratación coincide con el del servidor y recién después se aplica la preferencia, para no dejar
   oculto el contenido que el servidor ya había dibujado oculto.
+- `ScrollStage` no dibuja nada propio: mide `(paradas + 1) × 100svh` y quien dibuja adentro decide
+  qué se mueve con `progress`. Un elemento con `data-stage-stop="n"` marca la parada `n`: al
+  enfocar algo adentro con el teclado, la página va a esa parada. No se adapta a
+  `prefers-reduced-motion` (salvo el salto de `scrollToStop`): quien lo monta decide si corresponde.
 - `Reveal` sin `IntersectionObserver` muestra el contenido sin animar (en lugar de dejarlo oculto).
 - `Tilt`: `max` es el recorrido total, como el `tiltStrength` del diseño; en los bordes llega a
   `max / 2`.

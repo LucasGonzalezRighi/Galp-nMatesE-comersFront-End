@@ -119,6 +119,16 @@ Todo el 2026-10-26: plan a las 19:06 y rama desde `1ef9630`. Cuatro olas con el 
 - **Decisión pendiente de Lucas:** el carrito queda solo con el ícono y el contador por debajo de 410 px, y el diseño muestra "Carrito" con texto a 390 px. La alternativa es llevar el acceso a la cuenta al menú del celular y volver a "Carrito" con texto; se cambian 2 archivos.
 - **Con el back**: aceptar `expectedUnitPriceArs`, sumar `challenge` a `OrderPayment` si se quiere retomar el 3-D Secure desde otra pestaña, y probar a mano Mercado Pago con credenciales de prueba.
 
+## Paseo del mate (2026-10-27)
+
+**Pedido de Lucas**: que la historia del inicio deje de ser seis escenas que bajan y pase a moverse de costado con el scroll, con el mate como referencia. Referencia: el "scroll world" de la landing de Arko (midudev) y la skill `landing-page-design` (Parte B).
+
+**Qué quedó**: desde 1024 px y sin `prefers-reduced-motion`, la historia es una sección fija (`ScrollStage`, nuevo en `components/motion`) donde las seis paradas pasan de costado: cada una se queda quieta el 55 % de su tramo y desliza en el resto (`stageLayout`). El mate queda a la derecha y cambia de pieza con un fundido (mate, mate más grande, bombillón, yerba, mate, mate; si una pieza no tiene foto sigue la última), los fondos de cada parada se funden, el raíl de la derecha marca la actual y lleva a cualquiera, y "Deslizá para recorrer" se esconde al empezar. El contenido de cada escena es el mismo (`SceneBody`, compartido con las escenas apiladas). Con Tab, la página sigue al foco parada por parada.
+
+**Decisiones**: el servidor y la hidratación dibujan las escenas apiladas y el cliente cambia al paseo después de hidratar (`useMediaQuery`), así el celular y la lectura sin movimiento reciben el HTML de siempre. Sin dependencias nuevas ni video. Desde 1280 px el mate se corre 104 px a la izquierda para que el nombre de la parada actual en el raíl no lo tape; entre 1024 y 1279 px el raíl muestra solo los puntos (el nombre aparece al pasar el mouse o con el foco).
+
+**Para P5**: el mate 3D entra en `StoryMate` (la capa del mate, separada de la pista y del raíl). Si Lucas genera clips con Higgsfield, también entran ahí, como capa de fondo del escenario movida por el avance del scroll.
+
 ## Próximos pasos: P4 a P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

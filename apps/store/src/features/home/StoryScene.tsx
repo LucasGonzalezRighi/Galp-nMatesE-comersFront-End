@@ -22,8 +22,8 @@ export interface StorySceneProps {
   children: ReactNode
 }
 
-/** Clase del resplandor de fondo de cada escena oscura. */
-const BACKGROUND_CLASSES: Record<SceneBackground, string> = {
+/** Clase del resplandor de fondo de cada escena oscura (también la usan las paradas del paseo del mate). */
+export const SCENE_BACKGROUND_CLASSES: Record<SceneBackground, string> = {
   hero: 'home-bg-hero',
   gourd: 'home-bg-gourd',
   bombilla: 'home-bg-bombilla',
@@ -53,7 +53,10 @@ export function StoryScene({
       {background === undefined ? null : (
         <div
           aria-hidden="true"
-          className={cx('pointer-events-none absolute inset-0', BACKGROUND_CLASSES[background])}
+          className={cx(
+            'pointer-events-none absolute inset-0',
+            SCENE_BACKGROUND_CLASSES[background],
+          )}
         />
       )}
       {ghostWord === undefined ? null : (

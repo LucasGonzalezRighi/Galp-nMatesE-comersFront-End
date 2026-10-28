@@ -1,3 +1,4 @@
+import type { HomeContent } from '@galpon/api-client'
 import { pluralize } from '@galpon/domain'
 
 /** Microtextos del inicio, tal como están en el diseño. Los títulos y párrafos salen del contenido de la API. */
@@ -33,6 +34,21 @@ export const HOME_COPY = {
   cartLimit: 'Ya tenés el máximo disponible en el carrito',
   /** Nombre accesible de la lista de productos de una escena. */
   storyProducts: 'Productos de la escena',
+  /** Paseo del mate (la historia en escritorio): nombre accesible de la sección fija. */
+  stageLabel: 'El paseo del mate',
+  /** Paseo del mate: nombre accesible del raíl de paradas. */
+  railLabel: 'Paradas del paseo',
+  /** Paseo del mate: pista que invita a hacer scroll y desaparece al empezar. */
+  scrollHint: 'Deslizá para recorrer',
+  /** Paseo del mate: nombre de cada parada, por la clave de su escena. */
+  stopNames: {
+    pieces: 'Las tres piezas',
+    gourd: 'La calabaza',
+    bombilla: 'El bombillón',
+    yerba: 'La yerba',
+    ritual: 'El ritual',
+    leather: 'El cuero',
+  } satisfies Record<HomeContent['scenes'][number]['key'], string>,
 } as const
 
 /**
@@ -111,4 +127,40 @@ export function orderLabel(position: number): string {
     )
   }
   return String(position).padStart(2, '0')
+}
+
+/**
+ * Contador de una parada del paseo del mate, para su encabezado y la leyenda del mate.
+ *
+ * @param position - Posición de la parada, un entero de 1 a `total`.
+ * @param total - Cantidad de paradas, un entero mayor o igual a 1.
+ * @returns Por ejemplo `03 / 06`.
+ * @throws {RangeError} Si `position` no es un entero de 1 a `total` o `total` no es un entero mayor o igual a 1.
+ */
+export function stopCounter(position: number, total: number): string {
+  if (
+    !Number.isInteger(total) ||
+    total < 1 ||
+    !Number.isInteger(position) ||
+    position < 1 ||
+    position > total
+  ) {
+    throw new RangeError(
+      `La parada tiene que ser un entero de 1 a la cantidad de paradas; se recibió ${String(position)} de ${String(total)}.`,
+    )
+  }
+  return `${orderLabel(position)} / ${orderLabel(total)}`
+}
+
+/**
+ * Encabezado de una parada del paseo del mate: su contador y su nombre.
+ *
+ * @param position - Posición de la parada, un entero de 1 a `total`.
+ * @param total - Cantidad de paradas, un entero mayor o igual a 1.
+ * @param name - Nombre de la parada.
+ * @returns Por ejemplo `03 / 06 · El bombillón`.
+ * @throws {RangeError} Si `position` o `total` no son válidos (ver {@link stopCounter}).
+ */
+export function stopHeading(position: number, total: number, name: string): string {
+  return `${stopCounter(position, total)} · ${name}`
 }

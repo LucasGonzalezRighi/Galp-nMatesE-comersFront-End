@@ -23,7 +23,10 @@ export async function HomePage(): Promise<ReactNode> {
   return (
     <main>
       <HomeHero data={data} />
-      <HomeStory data={data} />
+      {/* La historia es un Client Component: recibe solo lo que usa, no todos los datos del inicio. */}
+      <HomeStory
+        data={{ content: data.content, story: data.story, stats: data.stats, lines: data.lines }}
+      />
       <HomeCollection data={data} />
       <HomeFeatured data={data} />
       <HomeManifesto data={data} />
