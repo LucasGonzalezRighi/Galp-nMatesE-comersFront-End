@@ -50,12 +50,12 @@ La SPA no tiene scripts inline, así que la política es estricta (`src/lib/csp.
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob: https://res.cloudinary.com;
 connect-src 'self' <origen de VITE_API_BASE_URL> https://api.cloudinary.com;
-frame-ancestors 'none'
+object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
-- `vite preview` la manda sola (`vite.config.ts`, leyendo `VITE_API_BASE_URL` con `loadEnv`). `vite dev` no, porque Vite inyecta scripts inline para el HMR.
-- **El servidor que sirva `dist/` en producción tiene que mandar la misma cabecera** `Content-Security-Policy`, además de `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y una `Permissions-Policy` restrictiva (spec §16), y servir `index.html` para cualquier ruta (es una SPA).
-- `buildAdminCsp(apiOrigin)` arma la cabecera: se le puede pasar el origen (o una URL con ruta) de la API.
+- `vite preview` la manda sola (`vite.config.ts`, leyendo `VITE_API_BASE_URL` con `loadEnv`), junto con `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` (`ADMIN_SECURITY_HEADERS` en `src/lib/csp.ts`). `vite dev` no, porque Vite inyecta scripts inline para el HMR.
+- **El servidor que sirva `dist/` en producción tiene que mandar las mismas cabeceras**, más `Strict-Transport-Security` (no va en `vite preview` porque sirve `http://localhost`), y servir `index.html` para cualquier ruta (es una SPA).
+- `buildAdminCsp(apiOrigin)` arma la CSP: se le puede pasar el origen (o una URL con ruta) de la API. La subida de fotos va directo a `api.cloudinary.com` (ver `src/components/media/README.md`); en modo de prueba no sale a la red.
 
 ## Estructura
 
