@@ -1,16 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { OrdersScreen, ordersSearchSchema } from '../../../features/orders'
 
-/** Ruta `/pedidos`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 8. */
+/**
+ * Ruta `/pedidos`: la tabla de pedidos. `?estado=`, `?pago=` y `?pagina=` se validan con
+ * `ordersSearchSchema` (lo que no sirve se descarta); la búsqueda por texto no va en la URL.
+ */
 export const Route = createFileRoute('/_authenticated/pedidos/')({
+  validateSearch: ordersSearchSchema,
   component: OrdersPage,
 })
 
-// Marcadora de P4: la reemplaza la Task 8.
 function OrdersPage() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { storeUrl } = Route.useRouteContext()
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Pedidos</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
+    <OrdersScreen
+      search={search}
+      onSearchChange={(next) => {
+        void navigate({ search: next })
+      }}
+      storeUrl={storeUrl}
+    />
   )
 }
