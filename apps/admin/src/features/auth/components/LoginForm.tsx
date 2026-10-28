@@ -11,6 +11,8 @@ import { adminLoginSchema } from '@galpon/schemas'
 export interface LoginFormProps {
   /** Se llama con la sesión recién abierta cuando el login sale bien. */
   onSuccess: (session: AdminLoginResult) => void
+  /** Email con el que arranca el campo (por ejemplo, el de la sesión que venció). */
+  defaultEmail?: string
 }
 
 const INPUT_CLASS =
@@ -25,7 +27,7 @@ const INPUT_CLASS =
  *
  * @param props - Ver {@link LoginFormProps}.
  */
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm({ onSuccess, defaultEmail = '' }: LoginFormProps) {
   const api = useApiClient()
   const [formError, setFormError] = useState<string | null>(null)
   const emailId = useId()
@@ -38,7 +40,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   } = useForm<AdminLoginInput, undefined, AdminLogin>({
     resolver: zodResolver(adminLoginSchema),
     mode: 'onTouched',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: defaultEmail, password: '' },
   })
 
   const submit = handleSubmit(async (values) => {

@@ -1,9 +1,15 @@
 import { QueryClient } from '@tanstack/react-query'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { adminLogin } from '@galpon/api-client'
+import { adminCsrfQuery, adminSessionQuery } from '@galpon/api-client/react'
 import { createAdminApi } from '../../lib/api'
 import { parseAdminEnv } from '../../lib/env'
-import { ensureAdminSession } from './session'
+import { ensureAdminSession, storeAdminSession } from './session'
+import { useSessionExpiredStore } from './session-expired.store'
+
+beforeEach(() => {
+  useSessionExpiredStore.setState({ hasSession: false, isExpired: false })
+})
 
 const env = parseAdminEnv({ VITE_MOCK_LATENCY_MS: '0' })
 
@@ -45,5 +51,47 @@ describe('ensureAdminSession', () => {
 
     expect(session.email).toBe(env.mockAdminEmail)
     expect(spy).toHaveBeenCalledWith(csrfToken)
+    expect(useSessionExpiredStore.getState().hasSession).toBe(true)
+  })
+
+  it('no cierra el aviso de sesión vencida que ya está abierto', async () => {
+    const { api, context } = setup()
+    await adminLogin(api, { email: env.mockAdminEmail, password: env.mockAdminPassword })
+    useSessionExpiredStore.setState({ hasSession: true, isExpired: true })
+
+    await ensureAdminSession(context)
+
+    expect(useSessionExpiredStore.getState().isExpired).toBe(true)
+  })
+})
+
+describe('storeAdminSession', () => {
+  it('guarda el token, la sesión y el CSRF en la caché y marca la sesión abierta', async () => {
+    const { api, context, spy } = setup()
+    useSessionExpiredStore.setState({ hasSession: true, isExpired: true })
+    const result = await adminLogin(api, {
+      email: env.mockAdminEmail,
+      password: env.mockAdminPassword,
+    })
+
+    storeAdminSession(context, result)
+
+    expect(spy).toHaveBeenCalledWith(result.csrfToken)
+    expect(context.queryClient.getQueryData(adminSessionQuery(api).queryKey)).toEqual({
+      email: result.email,
+      expiresAt: result.expiresAt,
+    })
+    expect(context.queryClient.getQueryData(adminCsrfQuery(api).queryKey)).toEqual({
+      csrfToken: result.csrfToken,
+    })
+    expect(useSessionExpiredStore.getState()).toMatchObject({ hasSession: true, isExpired: false })
+  })
+
+  it('sin token CSRF lanza RangeError', () => {
+    const { context } = setup()
+
+    expect(() => {
+      storeAdminSession(context, { email: env.mockAdminEmail, expiresAt: '', csrfToken: ' ' })
+    }).toThrow(RangeError)
   })
 })

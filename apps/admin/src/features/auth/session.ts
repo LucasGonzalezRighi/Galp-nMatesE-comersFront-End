@@ -1,8 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { AdminSession, ApiClient } from '@galpon/api-client'
+import type { AdminLoginResult, AdminSession, ApiClient } from '@galpon/api-client'
 import { adminCsrfQuery, adminSessionQuery } from '@galpon/api-client/react'
 import type { MockStatus, RegisterMockImage } from '../../lib/api'
 import type { AdminEnv } from '../../lib/env'
+import { useSessionExpiredStore } from './session-expired.store'
 
 /** Contexto que el router le da a cada ruta (`beforeLoad`, `loader` y componentes). */
 export interface RouterContext {
@@ -44,5 +45,36 @@ export async function ensureAdminSession(context: RouterContext): Promise<AdminS
     staleTime: 'static',
   })
   context.setCsrfToken(csrfToken)
+  // Solo la primera vez: si la sesión ya venció en esta pestaña, el aviso sigue abierto hasta
+  // que se vuelva a entrar (una sesión en la caché no prueba que siga viva en el servidor).
+  const store = useSessionExpiredStore.getState()
+  if (!store.hasSession) store.markSessionStarted()
   return session
+}
+
+/** Lo que necesita {@link storeAdminSession} del contexto del router. */
+export type SessionContext = Pick<RouterContext, 'api' | 'queryClient' | 'setCsrfToken'>
+
+/**
+ * Guarda la sesión recién abierta (en `/login` o en "Tu sesión venció"): le pasa el token
+ * anti-CSRF al cliente, deja la sesión y el token en la caché (así `ensureAdminSession` no los
+ * vuelve a pedir) y marca la sesión abierta, lo que cierra el aviso de vencida.
+ *
+ * @param context - `api`, `queryClient` y `setCsrfToken` del contexto del router.
+ * @param result - Lo que devolvió `adminLogin`.
+ * @throws {RangeError} Si el resultado no trae el token anti-CSRF.
+ */
+export function storeAdminSession(context: SessionContext, result: AdminLoginResult): void {
+  if (result.csrfToken.trim() === '') {
+    throw new RangeError('El ingreso no devolvió el token anti-CSRF de la sesión.')
+  }
+  context.setCsrfToken(result.csrfToken)
+  context.queryClient.setQueryData(adminSessionQuery(context.api).queryKey, {
+    email: result.email,
+    expiresAt: result.expiresAt,
+  })
+  context.queryClient.setQueryData(adminCsrfQuery(context.api).queryKey, {
+    csrfToken: result.csrfToken,
+  })
+  useSessionExpiredStore.getState().markSessionStarted()
 }

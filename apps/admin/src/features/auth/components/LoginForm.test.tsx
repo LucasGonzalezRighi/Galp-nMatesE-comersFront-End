@@ -109,4 +109,15 @@ describe('LoginForm', () => {
     expect(session?.csrfToken).toBeTruthy()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it('con defaultEmail arranca con el email cargado', () => {
+    render(
+      <ApiClientProvider client={createAdminApi(env, null).api}>
+        <LoginForm defaultEmail={env.mockAdminEmail} onSuccess={vi.fn()} />
+      </ApiClientProvider>,
+    )
+
+    expect(screen.getByLabelText('Email')).toHaveValue(env.mockAdminEmail)
+    expect(screen.getByLabelText('Contraseña')).toHaveValue('')
+  })
 })

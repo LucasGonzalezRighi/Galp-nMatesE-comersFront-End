@@ -12,10 +12,10 @@ async function logIn(page: Page, email: string, password: string): Promise<void>
   await page.getByRole('button', { name: 'Ingresar' }).click()
 }
 
-/** Entra con las credenciales de prueba y espera a ver el saludo. */
+/** Entra con las credenciales de prueba y espera a ver el resumen. */
 async function logInAsAdmin(page: Page): Promise<void> {
   await logIn(page, ADMIN_EMAIL, ADMIN_PASSWORD)
-  await expect(page.getByRole('heading', { name: `Hola, ${ADMIN_EMAIL}` })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Resumen' })).toBeVisible()
 }
 
 test.describe('dashboard: acceso', () => {
@@ -23,6 +23,7 @@ test.describe('dashboard: acceso', () => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/login/)
     await expect(page.getByRole('button', { name: 'Ingresar' })).toBeVisible()
+    await expect(page).toHaveTitle('Ingresar · Galpón Admin')
   })
 
   test('con la contraseña incorrecta avisa y no deja entrar', async ({ page }) => {
@@ -31,18 +32,19 @@ test.describe('dashboard: acceso', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 
-  test('con las credenciales de prueba muestra el saludo y los productos cargados', async ({
+  test('con las credenciales de prueba muestra el resumen y los contadores del menú', async ({
     page,
   }) => {
     await logInAsAdmin(page)
-    await expect(page.getByText('Productos cargados: 27')).toBeVisible()
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    await expect(nav.getByRole('link', { name: 'Pedidos, 3 para despachar' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Alertas de pago' })).toBeVisible()
   })
 
   test('recargar la página mantiene la sesión', async ({ page }) => {
     await logInAsAdmin(page)
     await page.reload()
-    await expect(page.getByRole('heading', { name: `Hola, ${ADMIN_EMAIL}` })).toBeVisible()
-    await expect(page.getByText('Productos cargados: 27')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Resumen' })).toBeVisible()
   })
 
   test('Cerrar sesión vuelve a /login', async ({ page }) => {

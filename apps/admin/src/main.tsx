@@ -1,11 +1,12 @@
 import '@fontsource-variable/inter'
 import './styles.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { safeSessionStorage } from '@galpon/api-client/mock'
 import { ApiClientProvider } from '@galpon/api-client/react'
+import { createAdminQueryClient } from './app/query-client'
 import { createAdminApi } from './lib/api'
 import { parseAdminEnv } from './lib/env'
 import { routeTree } from './routeTree.gen'
@@ -17,7 +18,8 @@ function createAppRouter() {
     env,
     safeSessionStorage(),
   )
-  const queryClient = new QueryClient()
+  // La caché abre "Tu sesión venció" ante un 401 y vuelve a pedir el token CSRF ante un 403.
+  const queryClient = createAdminQueryClient({ api, setCsrfToken })
   const router = createRouter({
     routeTree,
     context: {
