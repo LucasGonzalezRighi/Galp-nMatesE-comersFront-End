@@ -12,9 +12,10 @@ import { StoryVisual } from './StoryVisual'
 
 /**
  * Desde qué ventana la historia es el paseo del mate: 1024 px de ancho y 700 px de alto (en
- * celulares, tabletas y ventanas bajas, escenas apiladas). Cada parada necesita cerca de 600 px de
- * alto y el panel no tiene scroll interno; con menos alto el contador y la última fila de productos
- * quedan fuera de la ventana y no hay cómo llegar a ellos.
+ * celulares, tabletas y ventanas bajas, escenas apiladas). El panel de cada parada no tiene scroll
+ * interno: desde ese alto entra entera a cualquier ancho porque el título, los espacios y las filas
+ * de productos escalan también con el alto (`.home-stop` en `home.css`); con menos, el contador y
+ * la última fila quedarían fuera de la ventana sin cómo llegar a ellos.
  */
 const STAGE_QUERY = '(min-width: 1024px) and (min-height: 700px)'
 

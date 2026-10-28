@@ -89,6 +89,31 @@ test.describe('tienda: el paseo del mate', () => {
     })
   })
 
+  // El contenido de una parada crece con el ancho (el título escala con `vw`) y el panel no tiene
+  // scroll interno: en ventanas anchas y bajas tiene que seguir entrando entre el header y el borde.
+  for (const viewport of [
+    { width: 1600, height: 750 },
+    { width: 1920, height: 700 },
+  ]) {
+    test.describe(`en una ventana ancha y baja (${String(viewport.width)} × ${String(viewport.height)})`, () => {
+      test.use({ viewport, reducedMotion: 'no-preference' })
+
+      test('las paradas más altas entran enteras entre el header y el borde', async ({ page }) => {
+        await gotoStore(page, '/')
+        await expect(page.getByRole('region', STAGE)).toBeAttached()
+        // Las tres piezas (tres productos) y la yerba (rótulo y tres productos) son las más altas.
+        for (const index of [0, 3]) {
+          await scrollToStops(page, index + 0.2)
+          const column = page.locator(`[data-stage-stop="${String(index)}"] > div > div`)
+          const box = await column.boundingBox()
+          if (box === null) throw new Error(`La parada ${String(index)} no tiene columna.`)
+          expect(box.y).toBeGreaterThanOrEqual(64)
+          expect(box.y + box.height).toBeLessThanOrEqual(viewport.height)
+        }
+      })
+    })
+  }
+
   test.describe('con menos movimiento (1440 × 900)', () => {
     test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
 

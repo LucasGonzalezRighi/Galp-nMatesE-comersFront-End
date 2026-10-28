@@ -63,7 +63,8 @@ export function StoryMate({ stops, current, progress }: StoryMateProps): ReactNo
     pieces[0] ??
     null
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-[clamp(20px,7vw,120px)] flex items-center pt-16 xl:right-[calc(clamp(20px,7vw,120px)+104px)]">
+    // Va por encima de la pista: al deslizar, el texto que entra pasa por detrás del mate.
+    <div className="pointer-events-none absolute inset-y-0 right-[clamp(20px,7vw,120px)] z-[1] flex items-center pt-16 xl:right-[calc(clamp(20px,7vw,120px)+104px)]">
       <m.figure
         className="m-0 flex w-[min(30vw,420px)] flex-col items-center gap-[calc(16px+min(30vw,420px)*0.075)] will-change-transform"
         style={{ x: drift }}
@@ -104,7 +105,8 @@ export function StoryMate({ stops, current, progress }: StoryMateProps): ReactNo
             stop.tone === 'light' ? 'text-background/70' : 'text-neutral-400',
           )}
         >
-          {shown === null ? null : <span>{shown.name}</span>}
+          {/* El nombre solo cuando la foto es la pieza de esta parada (si falta, sigue la última con foto). */}
+          {shown !== null && shown.id === stop.visual?.id ? <span>{shown.name}</span> : null}
           <span aria-hidden="true" className="tabular-nums">
             {stopCounter(current + 1, stops.length)}
           </span>

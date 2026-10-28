@@ -98,9 +98,10 @@ export function StoryTitle({ lines, tone, size = 'lg' }: StoryTitleProps): React
   return (
     <h2
       className={cx(
+        // Las variables las define `.home-stop` en el paseo (escalan con el alto); si no, el ancho manda.
         size === 'lg'
-          ? 'text-[clamp(44px,6.4vw,104px)] leading-[0.92] tracking-[-0.05em]'
-          : 'text-[clamp(30px,3.6vw,54px)] leading-[1.02] tracking-[-0.04em] whitespace-nowrap',
+          ? 'text-[clamp(44px,var(--story-title-lg,6.4vw),104px)] leading-[0.92] tracking-[-0.05em]'
+          : 'text-[clamp(30px,var(--story-title-md,3.6vw),54px)] leading-[1.02] tracking-[-0.04em] whitespace-nowrap',
         tone === 'dark' ? 'text-foreground' : 'text-background',
       )}
     >

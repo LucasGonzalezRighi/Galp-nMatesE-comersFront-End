@@ -38,7 +38,7 @@ export function StoryProductRow({ product, tone }: StoryProductRowProps): ReactN
   return (
     <li
       className={cx(
-        'home-row flex items-center justify-between gap-[14px] py-[14px]',
+        'home-row flex items-center justify-between gap-[14px] py-[var(--story-row-pad,14px)]',
         tone === 'dark' ? 'home-row--dark' : 'home-row--light',
       )}
     >

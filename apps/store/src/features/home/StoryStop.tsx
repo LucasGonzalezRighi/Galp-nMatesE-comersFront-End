@@ -21,7 +21,9 @@ export interface StoryStopProps {
  * Un panel del paseo del mate, del ancho de la ventana: la columna de texto de 520 px a la
  * izquierda, con el encabezado "01 / 06 · Las tres piezas" arriba del contenido de la escena. La
  * derecha queda libre para el mate. Lleva `data-stage-stop` para que `ScrollStage` traiga la parada
- * cuando el teclado enfoca algo adentro.
+ * cuando el teclado enfoca algo adentro. La clase `home-stop` (en `home.css`) hace que el título,
+ * los espacios y las filas de productos escalen también con el alto de la ventana: el panel no
+ * tiene scroll interno, así que todo tiene que entrar entre el header y el borde de abajo.
  *
  * @param props - Ver {@link StoryStopProps}.
  * @throws {RangeError} Si `index` o `total` no forman una parada válida.
@@ -32,12 +34,12 @@ export function StoryStop({ index, total, name, tone, children }: StoryStopProps
     <article
       data-stage-stop={index}
       className={cx(
-        'relative h-full w-screen shrink-0 overflow-hidden',
+        'home-stop relative h-full w-screen shrink-0 overflow-hidden',
         tone === 'light' ? 'text-background' : 'text-foreground',
       )}
     >
       <div className={cx(HOME_CONTAINER, 'relative flex h-full items-center pt-16 pb-6')}>
-        <div className="flex w-[min(100%,520px)] flex-col gap-6">
+        <div className="flex w-[min(100%,520px)] flex-col gap-[var(--story-gap,24px)]">
           <p
             className={cx(
               'm-0 text-[12px] tabular-nums',
