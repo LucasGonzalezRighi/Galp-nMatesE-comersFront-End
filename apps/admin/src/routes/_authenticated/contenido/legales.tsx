@@ -1,16 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
+import {
+  LEGAL_SEARCH_DEFAULTS,
+  LegalContentScreen,
+  legalSearchSchema,
+} from '../../../features/content'
 
-/** Ruta `/contenido/legales`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 12. */
+/**
+ * Ruta `/contenido/legales`: los documentos legales, con el elegido en `?documento=terminos|privacidad`
+ * (validado con `legalSearchSchema`; los términos, por omisión, no quedan en la URL).
+ */
 export const Route = createFileRoute('/_authenticated/contenido/legales')({
+  validateSearch: legalSearchSchema,
+  search: { middlewares: [stripSearchParams(LEGAL_SEARCH_DEFAULTS)] },
   component: LegalContentPage,
 })
 
-// Marcadora de P4: la reemplaza la Task 12.
 function LegalContentPage() {
+  const { documento } = Route.useSearch()
+  const navigate = Route.useNavigate()
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Legales</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
+    <LegalContentScreen
+      tab={documento}
+      onTabChange={(next) => void navigate({ search: { documento: next } })}
+    />
   )
 }
