@@ -1,6 +1,6 @@
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getDashboardSummary } from '@galpon/api-client'
 import { formatPesos, pesos } from '@galpon/domain'
 import type { TestApp } from '../../../test/render'
@@ -28,6 +28,18 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('Martes 27 de octubre')).toBeInTheDocument()
     expect(screen.getByText(MOCK_NOTE)).toBeInTheDocument()
     expect(document.title).toBe('Resumen · Galpón Admin')
+  })
+
+  it('mientras carga lo anuncia y los títulos no saltan niveles', async () => {
+    await setup()
+
+    expect(screen.getByText('Cargando el resumen…')).toHaveAttribute('role', 'status')
+    await screen.findByRole('region', { name: 'Para despachar' })
+    expect(screen.getByRole('heading', { level: 2, name: 'Ventas' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Para atender' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Ventas de hoy' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Para despachar' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Poco stock' })).toBeInTheDocument()
   })
 
   it('en vivo no muestra la nota del modo de prueba', async () => {
@@ -124,5 +136,34 @@ describe('DashboardScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
     expect(await screen.findByRole('region', { name: 'Para despachar' })).toBeInTheDocument()
+  })
+})
+
+describe('DashboardScreen: la fecha de hoy', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('sin `today` se vuelve a calcular cada minuto y al volver a la pestaña', async () => {
+    // Solo el reloj y el intervalo son falsos: la API simulada y el router siguen con los reales.
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
+    vi.setSystemTime(TEST_NOW)
+    const app = await createTestApp()
+    await renderWithApp(<DashboardScreen isMockMode />, { app, path: '/' })
+    expect(screen.getByText('Martes 27 de octubre')).toBeInTheDocument()
+
+    // Pasa la medianoche de Buenos Aires: al minuto siguiente cambia la fecha.
+    vi.setSystemTime(new Date('2026-10-28T03:00:30Z'))
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(screen.getByText('Miércoles 28 de octubre')).toBeInTheDocument()
+
+    // Con la pestaña en segundo plano el intervalo puede no correr: al volver se recalcula.
+    vi.setSystemTime(new Date('2026-10-29T12:00:00Z'))
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(screen.getByText('Jueves 29 de octubre')).toBeInTheDocument()
   })
 })

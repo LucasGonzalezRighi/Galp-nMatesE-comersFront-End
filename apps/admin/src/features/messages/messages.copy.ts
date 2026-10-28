@@ -13,6 +13,8 @@ export const MESSAGES_COPY = {
   onlyUnread: 'Solo sin leer',
   /** Nombre accesible de la lista de mensajes. */
   listLabel: 'Mensajes',
+  /** Aviso oculto (`role="status"`) mientras carga la lista. */
+  loading: 'Cargando los mensajes…',
   /** Texto oculto junto al punto de los mensajes sin leer. */
   unread: 'Sin leer',
   kinds: {

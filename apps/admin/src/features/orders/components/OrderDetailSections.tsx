@@ -101,8 +101,14 @@ function ShippingSection({ order }: OrderDetailSectionsProps): ReactNode {
   )
 }
 
+/** Props de {@link LineItem}. */
+interface LineItemProps {
+  /** La línea, copiada al momento de la compra. */
+  line: OrderLine
+}
+
 /** Una línea del pedido: nombre, opciones o detalle, piezas del kit, cantidad × precio y total. */
-function LineItem({ line }: { line: OrderLine }): ReactNode {
+function LineItem({ line }: LineItemProps): ReactNode {
   // `detail` repite las opciones o las piezas del kit: se muestra solo si no hay datos sueltos.
   const showDetail = line.options === null && line.kitItems === null && line.detail !== ''
   return (
@@ -145,16 +151,18 @@ function LinesSection({ order }: OrderDetailSectionsProps): ReactNode {
   )
 }
 
-/** Fila de los totales. */
-function TotalRow({
-  term,
-  value,
-  strong = false,
-}: {
+/** Props de {@link TotalRow}. */
+interface TotalRowProps {
+  /** Qué suma la fila, por ejemplo "Subtotal". */
   term: string
+  /** El monto, ya formateado. */
   value: string
+  /** Con `true` (el total), término y monto van en `font-medium`. */
   strong?: boolean
-}): ReactNode {
+}
+
+/** Fila de los totales. */
+function TotalRow({ term, value, strong = false }: TotalRowProps): ReactNode {
   return (
     <div className="flex justify-between gap-4">
       <dt className={strong ? 'font-medium' : 'text-neutral-400'}>{term}</dt>

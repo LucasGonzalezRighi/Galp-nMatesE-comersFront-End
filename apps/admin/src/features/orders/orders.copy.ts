@@ -95,6 +95,8 @@ export const ORDERS_COPY = {
   listError: 'No pudimos cargar los pedidos.',
   back: 'Pedidos',
   detailError: 'No pudimos cargar el pedido.',
+  /** Aviso oculto (`role="status"`) mientras carga el detalle. */
+  detailLoading: 'Cargando el pedido…',
   backToList: 'Volver a pedidos',
   chargedBack: 'Contracargo: el cliente desconoció el pago en su banco. Revisalo en Mercado Pago.',
   inDispute: 'Mediación abierta en Mercado Pago: respondé desde Mercado Pago.',
@@ -138,6 +140,8 @@ export const ORDERS_COPY = {
   refundsNote: 'Las devoluciones se hacen desde Mercado Pago.',
   actions: {
     prepare: 'Pasar a preparación',
+    /** "Pasar a preparación" mientras se guarda. */
+    preparing: 'Pasando a preparación…',
     prepared: 'El pedido pasó a preparación.',
     ship: 'Marcar como despachado',
     shipped: 'Pedido despachado.',

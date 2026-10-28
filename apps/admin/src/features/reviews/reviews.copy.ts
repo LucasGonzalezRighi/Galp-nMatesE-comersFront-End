@@ -12,8 +12,8 @@ export const REVIEWS_COPY = {
     aprobadas: 'Aprobadas',
     ocultas: 'Ocultas',
   } satisfies Record<ReviewsTab, string>,
-  /** Lista de reseñas mientras carga (se anuncia con `aria-busy`). */
-  listLabel: 'Reseñas',
+  /** Aviso oculto (`role="status"`) mientras carga la lista. */
+  loading: 'Cargando las reseñas…',
   verifiedPurchase: 'Compra verificada',
   featured: 'Destacada',
   /** Aviso oculto del enlace a la ficha. */

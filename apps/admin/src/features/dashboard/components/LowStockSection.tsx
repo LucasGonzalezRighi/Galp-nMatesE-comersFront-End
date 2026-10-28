@@ -44,7 +44,7 @@ export function LowStockSection({ items, threshold }: LowStockSectionProps): Rea
               <Link
                 to="/productos/$id"
                 params={{ id: item.id }}
-                className={buttonClass('ghost', 'sm')}
+                className={buttonClass('ghost', 'md')}
               >
                 {`${DASHBOARD_COPY.edit} `}
                 <span className="sr-only">{item.name}</span>

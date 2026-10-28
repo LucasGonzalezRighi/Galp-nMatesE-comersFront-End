@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 import { Dialog as RadixDialog } from 'radix-ui'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { AdminLoginResult } from '@galpon/api-client'
 import { queryKeys } from '@galpon/api-client/react'
 import type { SessionContext } from '../session'
@@ -31,7 +31,8 @@ function preventClose(event: Event): void {
  * de ingreso con el email cargado; al entrar guarda la sesión, se cierra, vuelve a pedir los datos
  * del dashboard y avisa "Listo, ya podés seguir.". Lo editado sigue en pantalla para volver a
  * guardarlo. "Ir a la pantalla de ingreso" lleva a `/login?redirect=` con la ruta actual (si la
- * pantalla tiene cambios sin guardar, `UnsavedChangesGuard` pregunta antes).
+ * pantalla tiene cambios sin guardar, `UnsavedChangesGuard` pregunta antes) y saca la sesión vieja
+ * de la caché recién cuando la navegación sigue: si se cancela, la caché la conserva.
  *
  * @param props - Ver {@link SessionExpiredDialogProps}.
  */
@@ -39,7 +40,19 @@ export function SessionExpiredDialog({ context, email }: SessionExpiredDialogPro
   const isExpired = useSessionExpiredStore((state) => state.isExpired)
   const href = useLocation({ select: (location) => location.href })
   const navigate = useNavigate()
+  const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
+  // Deja de esperar la navegación a `/login` que pidió "Ir a la pantalla de ingreso".
+  const stopWaitingRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    if (!isExpired) return
+    // Si se vuelve a entrar desde el diálogo (o se desmonta), la espera ya no corresponde.
+    return () => {
+      stopWaitingRef.current?.()
+      stopWaitingRef.current = null
+    }
+  }, [isExpired])
 
   function handleSuccess(result: AdminLoginResult) {
     storeAdminSession(context, result)
@@ -48,9 +61,18 @@ export function SessionExpiredDialog({ context, email }: SessionExpiredDialogPro
   }
 
   function goToLogin() {
+    stopWaitingRef.current?.()
     // Sin la sesión vieja en la caché, `/login` no la toma por vigente y muestra el formulario.
-    context.queryClient.removeQueries({ queryKey: queryKeys.adminSession() })
-    context.queryClient.removeQueries({ queryKey: queryKeys.adminCsrf() })
+    // Se saca cuando la navegación ya pasó `UnsavedChangesGuard` (`onBeforeNavigate` llega antes
+    // del `beforeLoad` de `/login`): si ahí se elige "Seguir editando", la caché la conserva.
+    const unsubscribe = router.subscribe('onBeforeNavigate', ({ toLocation }) => {
+      unsubscribe()
+      stopWaitingRef.current = null
+      if (toLocation.pathname !== '/login') return
+      context.queryClient.removeQueries({ queryKey: queryKeys.adminSession() })
+      context.queryClient.removeQueries({ queryKey: queryKeys.adminCsrf() })
+    })
+    stopWaitingRef.current = unsubscribe
     void navigate({ to: '/login', search: { redirect: href } })
   }
 

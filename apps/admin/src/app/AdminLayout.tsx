@@ -14,8 +14,10 @@ import { buttonClass } from '../components/ui/button-class'
 import { cx } from '../components/ui/cx'
 import { toast } from '../components/ui/toast'
 import { SessionExpiredDialog, useSessionExpiredStore } from '../features/auth'
+import { resetOrdersSearch } from '../features/orders'
 import { AdminSidebar } from './AdminSidebar'
 import { APP_COPY } from './app.copy'
+import { QUIET_CSRF_REFRESH_META } from './query-client'
 import { useFocusHeadingOnNavigate } from './use-focus-heading-on-navigate'
 
 /** Cada cuánto se actualizan los contadores del menú (60 s). */
@@ -36,7 +38,8 @@ export interface AdminLayoutProps {
  * lateral fija de 240 px; debajo, barra superior pegada de 56 px con "Menú" (abre la barra
  * lateral en un cajón que se cierra al navegar), la marca y el aviso de modo. El contenido va en
  * `main#contenido` (`max-w-6xl`) y, al cambiar de ruta, el foco pasa al `h1` de la pantalla.
- * Incluye "Tu sesión venció" y "Cerrar sesión" (si falla, un toast).
+ * Incluye "Tu sesión venció" y "Cerrar sesión", que vacía la caché y la búsqueda de pedidos (si
+ * falla, un solo toast: el `403` renueva el token CSRF sin su aviso propio).
  *
  * @param props - Ver {@link AdminLayoutProps}.
  */
@@ -62,8 +65,12 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
       useSessionExpiredStore.getState().markLoggedOut()
       setCsrfToken(undefined)
       queryClient.clear()
+      // La búsqueda de pedidos vive en memoria y puede tener emails y nombres.
+      resetOrdersSearch()
       await navigate({ to: '/login' })
     },
+    // Un `403` (token CSRF rotado) se avisa con "No pudimos cerrar la sesión…", no dos veces.
+    meta: QUIET_CSRF_REFRESH_META,
     onError: () => {
       toast.error(APP_COPY.logoutFailed)
     },
@@ -107,12 +114,9 @@ export function AdminLayout({ context, email, children }: AdminLayoutProps): Rea
       <div className="lg:pl-60">
         <header className="bg-surface border-divider sticky top-0 z-20 flex h-14 items-center gap-2 border-b px-2 sm:px-4 lg:hidden">
           <RadixDialog.Root open={isMenuOpen} onOpenChange={setMenuOpen}>
-            <RadixDialog.Trigger
-              ref={menuTriggerRef}
-              aria-label={APP_COPY.openMenu}
-              className={buttonClass('icon', 'md')}
-            >
+            <RadixDialog.Trigger ref={menuTriggerRef} className={buttonClass('ghost', 'md')}>
               <ListIcon size={18} weight="regular" aria-hidden="true" />
+              {APP_COPY.openMenu}
             </RadixDialog.Trigger>
             <RadixDialog.Portal>
               <RadixDialog.Overlay className="bg-background/70 fixed inset-0 z-40 transition-opacity duration-150 ease-out motion-reduce:transition-none starting:opacity-0" />

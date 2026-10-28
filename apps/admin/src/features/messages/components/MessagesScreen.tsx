@@ -33,21 +33,25 @@ function isKindFilter(value: string): value is MessagesKindFilter {
   return (MESSAGES_KIND_FILTERS as readonly string[]).includes(value)
 }
 
-/** Renglones grises con la forma de un mensaje, mientras carga. */
+/**
+ * Mientras carga: "Cargando los mensajes…" oculto (`role="status"`, se anuncia) y renglones
+ * grises decorativos con la forma de un mensaje.
+ */
 function MessagesSkeleton(): ReactNode {
   return (
-    <div
-      aria-busy="true"
-      aria-label={MESSAGES_COPY.listLabel}
-      className="bg-surface divide-divider flex flex-col divide-y rounded-lg shadow-sm"
-    >
-      {[0, 1, 2, 3].map((index) => (
-        <div key={index} className="flex flex-col gap-2 px-4 py-3 sm:pl-9">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-      ))}
-    </div>
+    <>
+      <p role="status" className="sr-only">
+        {MESSAGES_COPY.loading}
+      </p>
+      <div className="bg-surface divide-divider flex flex-col divide-y rounded-lg shadow-sm">
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="flex flex-col gap-2 px-4 py-3 sm:pl-9">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
 

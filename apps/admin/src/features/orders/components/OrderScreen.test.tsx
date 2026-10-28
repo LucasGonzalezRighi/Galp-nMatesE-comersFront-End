@@ -36,6 +36,32 @@ function detailOf(region: HTMLElement, term: string): HTMLElement {
   return dd
 }
 
+/** Middleware del cliente de la API (`api.use`). */
+type ApiMiddleware = Parameters<TestApp['api']['use']>[0]
+
+/**
+ * Frena las escrituras (`POST`) de la API hasta que se llame a `release`, para ver la pantalla
+ * mientras guarda.
+ */
+function holdWrites(app: TestApp): { release: () => void } {
+  let open: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    open = resolve
+  })
+  const middleware: ApiMiddleware = {
+    async onRequest({ request }) {
+      if (request.method === 'POST') await held
+    },
+  }
+  app.api.use(middleware)
+  return {
+    release: () => {
+      open()
+      app.api.eject(middleware)
+    },
+  }
+}
+
 beforeEach(() => {
   useToastStore.setState({ toasts: [] })
 })
@@ -122,6 +148,33 @@ describe('OrderScreen', () => {
 
     expect(actionNames()).toEqual(actions)
     if (message !== null) expect(screen.getByText(message)).toBeInTheDocument()
+  })
+
+  it('mientras carga anuncia "Cargando el pedido…"', async () => {
+    const app = await createTestApp()
+    await renderWithApp(<OrderScreen number="GLP-09001" />, {
+      app,
+      path: '/pedidos/GLP-09001',
+      routePath: '/pedidos/$numero',
+    })
+
+    expect(screen.getByText('Cargando el pedido…')).toHaveAttribute('role', 'status')
+    await screen.findByRole('region', { name: 'Cliente' })
+    expect(screen.queryByText('Cargando el pedido…')).not.toBeInTheDocument()
+  })
+
+  it('"Pasar a preparación" dice "Pasando a preparación…" mientras guarda', async () => {
+    const app = await createTestApp()
+    const user = userEvent.setup()
+    await renderOrder(app, 'GLP-09001')
+    const writes = holdWrites(app)
+
+    await user.click(screen.getByRole('button', { name: 'Pasar a preparación' }))
+
+    const saving = await screen.findByRole('button', { name: 'Pasando a preparación…' })
+    expect(saving).toBeDisabled()
+    writes.release()
+    expect(await screen.findByText('El pedido pasó a preparación.')).toBeInTheDocument()
   })
 
   it('"Pasar a preparación" no pide confirmación y avisa', async () => {

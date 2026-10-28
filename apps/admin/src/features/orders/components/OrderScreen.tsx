@@ -42,10 +42,16 @@ function paymentAlerts(order: Order, duplicates: readonly string[]): string[] {
   return [...alerts, ...duplicates]
 }
 
-/** Esqueleto del detalle mientras carga: encabezado y secciones. */
+/**
+ * Mientras carga el detalle: "Cargando el pedido…" oculto (`role="status"`, se anuncia) y la
+ * forma decorativa de las secciones.
+ */
 function OrderSkeleton(): ReactNode {
   return (
-    <div aria-hidden="true" className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
+      <p role="status" className="sr-only">
+        {ORDERS_COPY.detailLoading}
+      </p>
       <div className="grid gap-6 lg:grid-cols-2">
         <Skeleton className="h-40 rounded-lg" />
         <Skeleton className="h-40 rounded-lg" />

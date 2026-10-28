@@ -10,6 +10,7 @@ import {
 import type { TestApp } from '../test/render'
 import { toast } from '../components/ui/toast'
 import { Toaster } from '../components/ui/Toaster'
+import { UnsavedChangesGuard } from '../components/ui/UnsavedChangesGuard'
 import { AccountScreen, useSessionExpiredStore } from '../features/auth'
 import { parseAdminEnv } from '../lib/env'
 import { renderWithApp } from '../test/render'
@@ -19,13 +20,17 @@ import { AdminLayout } from './AdminLayout'
 const env = parseAdminEnv({ VITE_MOCK_LATENCY_MS: '0' })
 const NEW_PASSWORD = 'mate-amargo-2026'
 
-/** Dibuja "Mi cuenta" dentro de la estructura, con el `Toaster`. */
-async function renderAccount(app: TestApp) {
+/**
+ * Dibuja "Mi cuenta" dentro de la estructura, con el `Toaster`; con `unsaved`, como si la
+ * pantalla tuviera cambios sin guardar (`UnsavedChangesGuard`).
+ */
+async function renderAccount(app: TestApp, unsaved = false) {
   const user = userEvent.setup()
   const result = await renderWithApp(
     <>
       <AdminLayout context={app.context} email={env.mockAdminEmail}>
         <AccountScreen />
+        <UnsavedChangesGuard when={unsaved} />
       </AdminLayout>
       <Toaster />
     </>,
@@ -113,6 +118,34 @@ describe('sesión vencida con una pantalla abierta', () => {
     expect(await screen.findByText('Ruta de prueba: /login')).toBeInTheDocument()
     expect(router.state.location.search).toEqual({ redirect: '/cuenta' })
     expect(app.queryClient.getQueryData(adminSessionQuery(app.api).queryKey)).toBeUndefined()
+  })
+
+  it('si "Ir a la pantalla de ingreso" se cancela por cambios sin guardar, la caché conserva la sesión', async () => {
+    const app = await createAdminTestApp()
+    const { router, user } = await renderAccount(app, true)
+    await expireWhileQuerying(app)
+    const dialog = await screen.findByRole('dialog', { name: 'Tu sesión venció' })
+
+    await user.click(within(dialog).getByRole('button', { name: 'Ir a la pantalla de ingreso' }))
+    const guard = await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' })
+    await user.click(within(guard).getByRole('button', { name: 'Seguir editando' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    })
+    expect(router.state.location.pathname).toBe('/cuenta')
+    expect(screen.getByRole('dialog', { name: 'Tu sesión venció' })).toBeInTheDocument()
+    expect(app.queryClient.getQueryData(adminSessionQuery(app.api).queryKey)).toEqual(app.session)
+    expect(app.queryClient.getQueryData(adminCsrfQuery(app.api).queryKey)).toBeDefined()
+
+    // Si después sale sin guardar, llega a /login ya sin la sesión vieja.
+    await user.click(within(dialog).getByRole('button', { name: 'Ir a la pantalla de ingreso' }))
+    const again = await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' })
+    await user.click(within(again).getByRole('button', { name: 'Salir sin guardar' }))
+
+    expect(await screen.findByText('Ruta de prueba: /login')).toBeInTheDocument()
+    expect(app.queryClient.getQueryData(adminSessionQuery(app.api).queryKey)).toBeUndefined()
+    expect(app.queryClient.getQueryData(adminCsrfQuery(app.api).queryKey)).toBeUndefined()
   })
 
   it('un 401 de la consulta de la sesión o del CSRF no abre el diálogo; el de otra consulta sí', async () => {

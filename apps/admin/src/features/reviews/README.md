@@ -4,7 +4,7 @@ Moderación de reseñas del dashboard (`/resenas`): solo las aprobadas se ven en
 
 ## Qué exporta (`index.ts`)
 
-- **`ReviewsScreen({ search, onSearchChange, storeUrl })`**: la pantalla. `PageHeader` "Reseñas", `Tabs` "Pendientes" (con `pendingReviews` de `adminDashboardQuery`) · "Aprobadas" · "Ocultas" y una tarjeta por reseña (de a 20, con `Pagination`): estrellas con "{n} de 5 estrellas" oculto, el producto (enlace a `{storeUrl}/producto/{slug}` en una pestaña nueva), autor, fecha (`formatDate`), "Compra verificada" y "Destacada", el texto en párrafos y las acciones de su estado.
+- **`ReviewsScreen({ search, onSearchChange, storeUrl })`**: la pantalla. `PageHeader` "Reseñas", `Tabs` "Pendientes" (con `pendingReviews` de `adminDashboardQuery`) · "Aprobadas" · "Ocultas" y una tarjeta por reseña (de a 20, con `Pagination`): estrellas con "{n} de 5 estrellas" oculto, el producto (`h2`, enlace a `{storeUrl}/producto/{slug}` en una pestaña nueva), autor, fecha (`formatDate`), "Compra verificada" y "Destacada", el texto en párrafos y las acciones de su estado.
 - **`reviewsSearchSchema`**, **`ReviewsSearch`**, **`ReviewsTab`** y **`REVIEWS_SEARCH_DEFAULTS`**: la búsqueda de la URL, `?estado=pendientes|aprobadas|ocultas` y `?pagina=`; lo que no sirve vuelve a pendientes y a la página 1 (`.catch`). La ruta saca los valores por omisión de la URL con `stripSearchParams`.
 
 ## Moderar
@@ -21,6 +21,6 @@ Las reglas viven en `review-actions.ts` (`availableReviewActions`, `REVIEW_ACTIO
 
 ## Estados
 
-Cargando: tarjetas `Skeleton`. Vacío: "No hay reseñas para moderar." · "Todavía no hay reseñas aprobadas." · "No hay reseñas ocultas.", con un atajo a otra pestaña (o "Ir a la primera página" si la página quedó vacía). Error: "No pudimos cargar las reseñas." con "Reintentar".
+Cargando: "Cargando las reseñas…" oculto (`role="status"`) y tarjetas `Skeleton` decorativas. Vacío: "No hay reseñas para moderar." · "Todavía no hay reseñas aprobadas." · "No hay reseñas ocultas.", con un atajo a otra pestaña (o "Ir a la primera página" si la página quedó vacía). Error: "No pudimos cargar las reseñas." con "Reintentar".
 
 Importá la feature solo por su `index.ts`.

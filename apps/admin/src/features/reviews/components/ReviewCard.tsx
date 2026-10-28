@@ -36,8 +36,8 @@ function focusNeighbor(card: HTMLElement | null): void {
 
 /**
  * Tarjeta de una reseña para moderar: estrellas, etiquetas ("Compra verificada", "Destacada"),
- * el producto (enlace a su ficha en una pestaña nueva), autor, fecha, el texto completo en
- * párrafos y las acciones que corresponden a su estado.
+ * el producto (`h2` con el enlace a su ficha en una pestaña nueva: la pantalla tiene su `h1` y
+ * nada en el medio), autor, fecha, el texto completo en párrafos y las acciones de su estado.
  *
  * @param props - Ver {@link ReviewCardProps}.
  * @throws {RangeError} Si la puntuación no es de 1 a 5, el estado no se conoce o falta el slug.
@@ -69,7 +69,7 @@ export function ReviewCard({
           {review.verifiedPurchase && <Badge tone="success">{REVIEWS_COPY.verifiedPurchase}</Badge>}
           {review.featured && <Badge tone="accent">{REVIEWS_COPY.featured}</Badge>}
         </div>
-        <h3 id={titleId} className="text-h5">
+        <h2 id={titleId} className="text-h5">
           <a
             href={storeProductUrl(storeUrl, review.product.slug)}
             target="_blank"
@@ -80,7 +80,7 @@ export function ReviewCard({
             <ArrowSquareOutIcon size={18} weight="regular" aria-hidden="true" />
             <span className="sr-only">{REVIEWS_COPY.opensInNewTab}</span>
           </a>
-        </h3>
+        </h2>
         <p className="flex flex-wrap gap-x-3 text-sm text-neutral-400">
           <span>{review.authorName}</span>
           <time dateTime={review.createdAt} className="tabular-nums">

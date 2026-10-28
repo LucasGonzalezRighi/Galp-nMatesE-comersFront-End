@@ -90,6 +90,10 @@ describe('ReviewsScreen', () => {
       `${app.context.storeUrl}/producto/mate-imperial-premium`,
     )
     expect(product).toHaveAttribute('target', '_blank')
+    // Debajo del `h1` de la pantalla, sin saltar niveles.
+    expect(
+      within(card).getByRole('heading', { level: 2, name: /Mate Imperial Premium/ }),
+    ).toBeInTheDocument()
     expect(within(card).getByText('27/10/2026')).toBeInTheDocument()
     expect(
       within(card).getByText(
@@ -194,6 +198,14 @@ describe('ReviewsScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Ver aprobadas' }))
 
     expect(router.state.location.search).toEqual({ estado: 'aprobadas', pagina: 1 })
+  })
+
+  it('mientras carga anuncia "Cargando las reseñas…"', async () => {
+    await setup()
+
+    expect(screen.getByText('Cargando las reseñas…')).toHaveAttribute('role', 'status')
+    await findCard('Rocío V.')
+    expect(screen.queryByText('Cargando las reseñas…')).not.toBeInTheDocument()
   })
 
   it('si la carga falla muestra el error con "Reintentar"', async () => {

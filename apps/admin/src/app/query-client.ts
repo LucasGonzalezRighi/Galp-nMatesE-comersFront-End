@@ -17,6 +17,13 @@ export interface AdminQueryClientOptions {
   setCsrfToken: (token: string | undefined) => void
 }
 
+/**
+ * `meta` de una escritura que ya avisa su propio error (por ejemplo "Cerrar sesión"): ante un
+ * `403` la caché vuelve a pedir el token CSRF igual, pero sin el toast "Actualizamos tu sesión.
+ * Probá de nuevo.", así no salen dos avisos por el mismo error.
+ */
+export const QUIET_CSRF_REFRESH_META = { quietCsrfRefresh: true } as const
+
 /** Abre "Tu sesión venció" (si hay una sesión abierta; si no, no hace nada). */
 function markSessionExpired(): void {
   useSessionExpiredStore.getState().markSessionExpired()
@@ -32,7 +39,7 @@ function markSessionExpired(): void {
  * - **`403` en una escritura** (el token CSRF se rotó, por ejemplo por otro ingreso): vuelve a pedir
  *   el token sin caché, se lo pasa al cliente y avisa "Actualizamos tu sesión. Probá de nuevo."; no
  *   reintenta solo, porque repetir una escritura podría duplicar su efecto. Si ese pedido da `401`,
- *   abre el diálogo.
+ *   abre el diálogo. Una escritura con {@link QUIET_CSRF_REFRESH_META} renueva el token sin avisar.
  *
  * @param options - Ver {@link AdminQueryClientOptions}.
  * @returns La caché, para el `QueryClientProvider` y el contexto del router.
@@ -43,11 +50,11 @@ export function createAdminQueryClient({
 }: AdminQueryClientOptions): QueryClient {
   const sessionHashes = new Set([hashKey(queryKeys.adminSession()), hashKey(queryKeys.adminCsrf())])
 
-  async function refreshCsrfToken(): Promise<void> {
+  async function refreshCsrfToken(notify: boolean): Promise<void> {
     try {
       const { csrfToken } = await queryClient.query({ ...adminCsrfQuery(api), staleTime: 0 })
       setCsrfToken(csrfToken)
-      toast.error(APP_COPY.csrfRefreshed)
+      if (notify) toast.error(APP_COPY.csrfRefreshed)
     } catch (error) {
       if (isApiError(error) && error.kind === 'unauthorized') markSessionExpired()
       // Con otro error (red, servidor) no hay nada que agregar: la pantalla ya avisó que falló.
@@ -63,10 +70,12 @@ export function createAdminQueryClient({
       },
     }),
     mutationCache: new MutationCache({
-      onError: (error) => {
+      onError: (error, _variables, _onMutateResult, mutation) => {
         if (!isApiError(error)) return
         if (error.kind === 'unauthorized') markSessionExpired()
-        if (error.kind === 'forbidden') void refreshCsrfToken()
+        if (error.kind === 'forbidden') {
+          void refreshCsrfToken(mutation.meta?.quietCsrfRefresh !== true)
+        }
       },
     }),
     defaultOptions: { queries: { retry: shouldRetryQuery, staleTime: STALE_TIME_MS } },

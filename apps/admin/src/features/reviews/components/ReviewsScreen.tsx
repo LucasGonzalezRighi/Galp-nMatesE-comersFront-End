@@ -29,10 +29,16 @@ function isReviewsTab(value: string): value is ReviewsTab {
   return (REVIEWS_TABS as readonly string[]).includes(value)
 }
 
-/** Tarjetas grises con la forma de una reseña, mientras carga. */
+/**
+ * Mientras carga: "Cargando las reseñas…" oculto (`role="status"`, se anuncia) y tarjetas grises
+ * decorativas con la forma de una reseña.
+ */
 function ReviewsSkeleton(): ReactNode {
   return (
-    <div aria-busy="true" aria-label={REVIEWS_COPY.listLabel} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <p role="status" className="sr-only">
+        {REVIEWS_COPY.loading}
+      </p>
       {[0, 1, 2].map((index) => (
         <div key={index} className="bg-surface flex flex-col gap-4 rounded-lg p-4 shadow-sm lg:p-6">
           <Skeleton className="h-5 w-28" />

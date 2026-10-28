@@ -3,17 +3,24 @@ import { useMutation } from '@tanstack/react-query'
 import { useLocation } from '@tanstack/react-router'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { queryKeys } from '@galpon/api-client/react'
 import type { TestApp } from '../test/render'
 import { PageHeader } from '../components/ui/PageHeader'
-import { toast } from '../components/ui/toast'
+import { toast, useToastStore } from '../components/ui/toast'
 import { Toaster } from '../components/ui/Toaster'
 import { UnsavedChangesGuard } from '../components/ui/UnsavedChangesGuard'
 import { useSessionExpiredStore } from '../features/auth'
+import { resetOrdersSearch } from '../features/orders'
 import { renderWithApp } from '../test/render'
 import { createAdminTestApp } from './admin-test-app.test-helper'
 import { AdminLayout } from './AdminLayout'
+
+// Se espía la limpieza de la búsqueda de pedidos (sigue haciendo lo suyo).
+vi.mock(import('../features/orders'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, resetOrdersSearch: vi.fn(actual.resetOrdersSearch) }
+})
 
 const NOT_PERSISTENT = 'Sin persistencia: los cambios se pierden al recargar.'
 
@@ -53,6 +60,7 @@ async function renderLayout(options: RenderLayoutOptions = {}) {
 beforeEach(() => {
   useSessionExpiredStore.setState({ hasSession: false, isExpired: false })
   toast.dismissAll()
+  vi.mocked(resetOrdersSearch).mockClear()
 })
 
 describe('AdminLayout: barra lateral', () => {
@@ -142,7 +150,7 @@ describe('AdminLayout: barra lateral', () => {
     expect(screen.getByText('admin@galponmates.com.ar')).toBeInTheDocument()
   })
 
-  it('Cerrar sesión cierra la sesión y vuelve a /login', async () => {
+  it('Cerrar sesión cierra la sesión, olvida la búsqueda de pedidos y vuelve a /login', async () => {
     const { app, user } = await renderLayout()
 
     await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
@@ -150,11 +158,13 @@ describe('AdminLayout: barra lateral', () => {
     expect(await screen.findByText('Ruta de prueba: /login')).toBeInTheDocument()
     expect(app.mockDb.db.adminSession).toBeNull()
     expect(useSessionExpiredStore.getState().hasSession).toBe(false)
+    expect(resetOrdersSearch).toHaveBeenCalledOnce()
   })
 
-  it('si cerrar la sesión falla, avisa y se queda', async () => {
+  it('si cerrar la sesión falla por el token CSRF, avisa una sola vez y el reintento funciona', async () => {
     const { app, user } = await renderLayout()
     app.context.setCsrfToken('token-viejo')
+    const csrfBefore = app.queryClient.getQueryState(queryKeys.adminCsrf())?.dataUpdatedAt ?? 0
 
     await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
 
@@ -162,6 +172,19 @@ describe('AdminLayout: barra lateral', () => {
       await screen.findByText('No pudimos cerrar la sesión, probá de nuevo.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Pantalla /' })).toBeInTheDocument()
+    // El token se renovó sin el aviso genérico del 403.
+    await waitFor(() => {
+      expect(app.queryClient.getQueryState(queryKeys.adminCsrf())?.dataUpdatedAt).toBeGreaterThan(
+        csrfBefore,
+      )
+    })
+    expect(useToastStore.getState().toasts.map((item) => item.text)).toEqual([
+      'No pudimos cerrar la sesión, probá de nuevo.',
+    ])
+    expect(resetOrdersSearch).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    expect(await screen.findByText('Ruta de prueba: /login')).toBeInTheDocument()
   })
 })
 
@@ -174,6 +197,15 @@ describe('AdminLayout: estructura', () => {
       '#contenido',
     )
     expect(screen.getByRole('main')).toHaveAttribute('id', 'contenido')
+  })
+
+  it('"Menú" muestra su texto al lado del ícono', async () => {
+    await renderLayout()
+
+    const menu = screen.getByRole('button', { name: 'Menú' })
+    expect(menu).toHaveTextContent('Menú')
+    expect(menu).not.toHaveAttribute('aria-label')
+    expect(menu.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('el cajón del celular abre el menú, se cierra al navegar y el foco va al título', async () => {

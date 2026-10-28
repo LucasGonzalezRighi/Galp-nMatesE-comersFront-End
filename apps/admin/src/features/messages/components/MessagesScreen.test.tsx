@@ -186,6 +186,14 @@ describe('MessagesScreen', () => {
     expect(await screen.findByText('No hay mensajes.')).toBeInTheDocument()
   })
 
+  it('mientras carga anuncia "Cargando los mensajes…"', async () => {
+    await setup()
+
+    expect(screen.getByText('Cargando los mensajes…')).toHaveAttribute('role', 'status')
+    await findMessage(/Martín Gómez/)
+    expect(screen.queryByText('Cargando los mensajes…')).not.toBeInTheDocument()
+  })
+
   it('si la carga falla muestra el error con "Reintentar"', async () => {
     const app = await createTestApp()
     app.mockDb.db.adminSession = null

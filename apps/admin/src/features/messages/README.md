@@ -19,6 +19,6 @@ Desplegar un mensaje sin leer lo marca leído sin confirmación (y sin toast: es
 
 ## Estados
 
-Cargando: renglones `Skeleton`. Vacío: "No hay mensajes."; con filtros: "No hay mensajes con estos filtros." y "Limpiar filtros" (o "Ir a la primera página" si la página quedó vacía). Error: "No pudimos cargar los mensajes." con "Reintentar".
+Cargando: "Cargando los mensajes…" oculto (`role="status"`) y renglones `Skeleton` decorativos. Vacío: "No hay mensajes."; con filtros: "No hay mensajes con estos filtros." y "Limpiar filtros" (o "Ir a la primera página" si la página quedó vacía). Error: "No pudimos cargar los mensajes." con "Reintentar".
 
 Importá la feature solo por su `index.ts`.

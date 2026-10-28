@@ -52,6 +52,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
   const [dialog, setDialog] = useState<OpenDialog>(null)
   const targets = adminOrderTargets(status, paymentStatus)
   const isPending = mutation.isPending
+  const isPreparing = isPending && mutation.variables.status === 'preparing'
 
   function change(
     next: OrderStatusChange,
@@ -92,12 +93,12 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         <Button
           variant="secondary"
           disabled={isPending}
-          isLoading={isPending && mutation.variables.status === 'preparing'}
+          isLoading={isPreparing}
           onClick={() => {
             change(plainChange('preparing'))
           }}
         >
-          {ORDERS_COPY.actions.prepare}
+          {isPreparing ? ORDERS_COPY.actions.preparing : ORDERS_COPY.actions.prepare}
         </Button>
       )}
       {targets.includes('shipped') && (
