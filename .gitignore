@@ -48,3 +48,4 @@ next-env.d.ts
 .vitest/
 *.local
 .env.local
+dist-e2e

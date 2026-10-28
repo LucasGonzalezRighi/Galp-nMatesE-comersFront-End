@@ -12,3 +12,4 @@ docs/superpowers/**
 .superpowers
 # Skills de terceros instaladas para Claude Code: se dejan tal cual vienen
 .claude/skills/**
+dist-e2e
