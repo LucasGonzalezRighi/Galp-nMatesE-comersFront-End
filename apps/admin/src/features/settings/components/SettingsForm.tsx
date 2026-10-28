@@ -33,7 +33,7 @@ export interface SettingsFormProps {
  * "Precio sin impuestos nacionales", "Vendedor y atención al cliente", "Contacto" y "Stock", con
  * `FormActions` abajo y `UnsavedChangesGuard`. Al guardar avisa "Ajustes guardados.", vuelve a
  * arrancar con lo guardado e invalida los ajustes y el resumen; un `422` va a cada campo y otro
- * error, a un toast.
+ * error, o un `422` con alguna ruta que el formulario no dibuja, también a un toast.
  *
  * @param props - Ver {@link SettingsFormProps}.
  */
@@ -73,7 +73,9 @@ export function SettingsForm({ settings }: SettingsFormProps): ReactNode {
       if (error.kind === 'unauthorized' || error.kind === 'forbidden') return
       const withError = SETTINGS_FIELDS.filter((field) => error.fieldErrors[field] !== undefined)
       for (const field of withError) setError(field, { message: error.fieldErrors[field] })
-      if (withError.length === 0) toast.error(error.message)
+      // Sin campos, o con alguno que el formulario no dibuja: el mensaje general no se pierde.
+      const pathCount = Object.keys(error.fieldErrors).length
+      if (withError.length === 0 || withError.length < pathCount) toast.error(error.message)
     },
   })
   const submit = handleSubmit((values) => {

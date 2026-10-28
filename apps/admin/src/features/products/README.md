@@ -7,17 +7,25 @@ Productos del dashboard: la tabla `/productos` y el formulario de `/productos/nu
 
 - **`ProductsScreen({ search, onSearchChange, storeUrl })`**: "Nuevo producto", los filtros, la
   tabla (24 por página), el orden y la paginación. `search` son los filtros de la URL ya validados.
-- **`productsSearchSchema`** y el tipo **`ProductsSearch`**: `?q=`, `?linea=` (slug de la línea),
-  `?estado=` (sin él, publicados y borradores), `?sinStock=1`, `?orden=` (`az`, `menor`,
-  `mayor`; sin él, por código) y `?pagina=`, con `.catch` para descartar lo que no sirve.
+- **`productsSearchSchema`**: `?q=`, `?linea=` (slug de la línea), `?estado=` (sin él,
+  publicados y borradores), `?sinStock=1`, `?orden=` (`az`, `menor`, `mayor`; sin él, por código)
+  y `?pagina=`, con `.catch` para descartar lo que no sirve. El tipo `ProductsSearch` queda
+  adentro de la feature (la ruta lo infiere del schema).
 - **`NewProductScreen()`** y **`ProductScreen({ id })`**: el formulario vacío y el de un producto
   guardado (con su código y sus fechas; "No encontramos ese producto." si no existe).
 
 ## Listado
 
 "Buscar" pasa a la URL 300 ms después de la última tecla (`use-debounced-value.ts`). La tabla
-marca "Sin stock" con 0 y "Poco stock" hasta el `lowStockThreshold` de los ajustes. "Archivar"
-pide confirmación (`ConfirmDialog`) y usa `useArchiveProduct`.
+marca "Sin stock" con 0 y, solo en los publicados, "Poco stock" hasta el `lowStockThreshold` de
+los ajustes. "Archivar" pide confirmación (`ConfirmDialog`) y usa `useArchiveProduct`.
+
+Una `?pagina=` más allá de la última (por ejemplo, después de archivar el último producto de la
+última página) muestra "Esta página ya no tiene productos." con "Ir a la primera página", en vez
+de "Todavía no hay productos.". No redirige sola: `onSearchChange` agrega una entrada al historial
+y "Atrás" volvería a la página vacía. Si una recarga en segundo plano falla, la tabla sigue con
+los datos que tenía y arriba se avisa "No pudimos actualizar la lista…" con "Reintentar"; el error
+solo reemplaza a la tabla si nunca cargó.
 
 ## Formulario (`ProductForm`)
 
@@ -42,7 +50,8 @@ pide confirmación (`ConfirmDialog`) y usa `useArchiveProduct`.
   lo escrito. Un `422` va a cada campo (`images.N.alt`); un `401` o un `403` los maneja la
   estructura.
 - Un archivado muestra el aviso con "Volver a publicar" (`useRepublishProduct`: lo guardado con
-  `status: 'published'`; lo editado y sin guardar se conserva). Guardar cambios de un archivado lo
+  `status: 'published'`; lo editado y sin guardar se conserva; mientras guarda dice
+  "Publicando…"). Guardar cambios de un archivado lo
   deja en borrador (la API solo recibe borrador o publicado; en la tienda se ven igual, ninguno):
   el estado "Archivado" lo avisa de antemano y el toast dice "Cambios guardados. El producto pasó
   de archivado a borrador.".

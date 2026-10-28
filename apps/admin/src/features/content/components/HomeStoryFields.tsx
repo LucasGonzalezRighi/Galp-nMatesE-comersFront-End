@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { StoryScene } from '@galpon/api-client'
 import type { HomeContentFormInput } from '@galpon/schemas'
 import { Section } from '../../../components/ui/Section'
+import { HOME_LIMITS } from '../content-limits'
 import { CONTENT_COPY } from '../content.copy'
 import { fieldIndex } from '../list-utils'
 import { FieldGroup } from './FieldGroup'
@@ -35,19 +36,19 @@ export function HomeStoryFields({ sceneKeys }: HomeStoryFieldsProps): ReactNode 
           <HomeText
             name={`scenes.${fieldIndex(index)}.eyebrow`}
             label={CONTENT_COPY.eyebrow}
-            maxLength={60}
+            maxLength={HOME_LIMITS.eyebrow}
           />
           <HomeTitleLines name={`scenes.${fieldIndex(index)}.titleLines`} />
           <HomeText
             name={`scenes.${fieldIndex(index)}.text`}
             label={CONTENT_COPY.text}
-            maxLength={600}
+            maxLength={HOME_LIMITS.text}
             multiline
           />
           <HomeText
             name={`scenes.${fieldIndex(index)}.ctaLabel`}
             label={CONTENT_COPY.optionalCta}
-            maxLength={40}
+            maxLength={HOME_LIMITS.buttonLabel}
           />
         </FieldGroup>
       ))}

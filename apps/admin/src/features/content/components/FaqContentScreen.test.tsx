@@ -161,12 +161,25 @@ describe('FaqContentScreen', { timeout: 20_000 }, () => {
     const app = await createFaqApp()
     await renderFaq(app)
 
+    // Una guardada no sigue al nombre: su ayuda no dice que se completa sola.
+    const saved = within(screen.getByRole('group', { name: 'Pagos y cuotas' })).getByLabelText(
+      'Identificador',
+    )
+    expect(saved).toHaveAccessibleDescription('Va en la dirección de la página.')
+    expect(saved).toHaveClass('font-mono')
+
     const pickup = await addCategory(user, 'Retiro en persona')
     expect(within(pickup).getByLabelText('Identificador')).toHaveValue('retiro-en-persona')
+    expect(within(pickup).getByLabelText('Identificador')).toHaveAccessibleDescription(
+      'Va en la dirección de la página. Se completa solo a partir del nombre.',
+    )
     await user.clear(within(pickup).getByLabelText('Identificador'))
     await user.type(within(pickup).getByLabelText('Identificador'), 'retiro')
     await user.type(within(pickup).getByLabelText('Nombre'), ' o envío')
     expect(within(pickup).getByLabelText('Identificador')).toHaveValue('retiro')
+    expect(within(pickup).getByLabelText('Identificador')).toHaveAccessibleDescription(
+      'Va en la dirección de la página.',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText('Contenido guardado.')).toBeInTheDocument()

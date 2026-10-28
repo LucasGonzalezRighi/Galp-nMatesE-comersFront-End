@@ -14,6 +14,7 @@ import { FormActions } from '../../../components/ui/FormActions'
 import { Section } from '../../../components/ui/Section'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { footerFormValues } from '../content-form-values'
+import { FOOTER_LIMITS } from '../content-limits'
 import { combinedLoadState } from '../content-load-state'
 import { CONTENT_COPY, removePaymentMethodLabel } from '../content.copy'
 import { useSaveContent } from '../use-save-content'
@@ -24,9 +25,6 @@ import { TextListField } from './TextListField'
 
 /** Campo de texto del formulario del pie. */
 const FooterText = TextField<FooterContentFormInput>
-
-/** Más medios de pago que admite el pie (los de `footerContentFormSchema`). */
-const MAX_PAYMENT_METHODS = 10
 
 /** Props de {@link FooterForm}. */
 interface FooterFormProps {
@@ -46,6 +44,7 @@ function FooterForm({ content }: FooterFormProps): ReactNode {
     queryKey: queryKeys.adminContent('footer'),
     save: (body: FooterContentValues) => updateAdminFooterContent(api, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       form.reset(footerFormValues(saved))
     },
@@ -65,8 +64,17 @@ function FooterForm({ content }: FooterFormProps): ReactNode {
         className="flex flex-col gap-6"
       >
         <Section title={CONTENT_COPY.footer}>
-          <FooterText name="tagline" label={CONTENT_COPY.phrase} maxLength={80} />
-          <FooterText name="text" label={CONTENT_COPY.text} maxLength={300} multiline />
+          <FooterText
+            name="tagline"
+            label={CONTENT_COPY.phrase}
+            maxLength={FOOTER_LIMITS.tagline}
+          />
+          <FooterText
+            name="text"
+            label={CONTENT_COPY.text}
+            maxLength={FOOTER_LIMITS.text}
+            multiline
+          />
           <TextListField<FooterContentFormInput>
             name="paymentMethods"
             legend={CONTENT_COPY.paymentMethods}
@@ -74,14 +82,14 @@ function FooterForm({ content }: FooterFormProps): ReactNode {
             addLabel={CONTENT_COPY.addPaymentMethod}
             removeLabel={removePaymentMethodLabel}
             min={0}
-            max={MAX_PAYMENT_METHODS}
-            maxLength={40}
+            max={FOOTER_LIMITS.paymentMethods}
+            maxLength={FOOTER_LIMITS.paymentMethod}
           />
           <FooterText
             name="consumerDefenseUrl"
             label={CONTENT_COPY.consumerDefense}
             type="url"
-            maxLength={2048}
+            maxLength={FOOTER_LIMITS.consumerDefenseUrl}
           />
         </Section>
         <FormActions

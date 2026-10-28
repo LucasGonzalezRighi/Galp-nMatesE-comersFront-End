@@ -13,13 +13,11 @@ import { Section } from '../../../components/ui/Section'
 import { SortableList } from '../../../components/ui/SortableList'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { faqFormValues } from '../content-form-values'
+import { FAQ_LIMITS } from '../content-limits'
 import { CONTENT_COPY } from '../content.copy'
 import { fieldIndex, findMove, repeatedIndexes } from '../list-utils'
 import { useSaveContent } from '../use-save-content'
 import { FaqCategoryFields } from './FaqCategoryFields'
-
-/** Más categorías que admite la página (las de `faqContentFormSchema`). */
-const MAX_CATEGORIES = 10
 
 /** Props de {@link FaqContentForm}. */
 export interface FaqContentFormProps {
@@ -47,6 +45,7 @@ export function FaqContentForm({ content }: FaqContentFormProps): ReactNode {
     queryKey: queryKeys.adminContent('faq'),
     save: (body: FaqContentValues) => updateAdminFaqContent(api, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       form.reset(faqFormValues(saved))
     },
@@ -105,7 +104,7 @@ export function FaqContentForm({ content }: FaqContentFormProps): ReactNode {
               )
             }}
           />
-          {categories.fields.length < MAX_CATEGORIES && (
+          {categories.fields.length < FAQ_LIMITS.categories && (
             <Button
               variant="secondary"
               size="sm"

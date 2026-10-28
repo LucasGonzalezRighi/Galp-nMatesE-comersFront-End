@@ -62,12 +62,23 @@ export const CATEGORIES_COPY = {
 } as const
 
 /**
+ * Revisa que un texto que va dentro de un mensaje no esté vacío.
+ *
+ * @throws {RangeError} Si está vacío o tiene solo espacios.
+ */
+function assertText(value: string, name: string): void {
+  if (value.trim() === '') throw new RangeError(`${name} no puede estar vacío.`)
+}
+
+/**
  * Nombre de la agarradera de una línea.
  *
  * @param name - Nombre de la línea.
  * @returns "Arrastrar {nombre}".
+ * @throws {RangeError} Si el nombre está vacío.
  */
 export function dragLabel(name: string): string {
+  assertText(name, 'El nombre de la línea')
   return `Arrastrar ${name}`
 }
 
@@ -76,8 +87,10 @@ export function dragLabel(name: string): string {
  *
  * @param name - Nombre de la línea.
  * @returns "Subir {nombre}".
+ * @throws {RangeError} Si el nombre está vacío.
  */
 export function moveUpLabel(name: string): string {
+  assertText(name, 'El nombre de la línea')
   return `Subir ${name}`
 }
 
@@ -86,8 +99,10 @@ export function moveUpLabel(name: string): string {
  *
  * @param name - Nombre de la línea.
  * @returns "Bajar {nombre}".
+ * @throws {RangeError} Si el nombre está vacío.
  */
 export function moveDownLabel(name: string): string {
+  assertText(name, 'El nombre de la línea')
   return `Bajar ${name}`
 }
 
@@ -96,8 +111,10 @@ export function moveDownLabel(name: string): string {
  *
  * @param name - Nombre de la línea.
  * @returns "Acciones de {nombre}".
+ * @throws {RangeError} Si el nombre está vacío.
  */
 export function actionsLabel(name: string): string {
+  assertText(name, 'El nombre de la línea')
   return `Acciones de ${name}`
 }
 
@@ -106,8 +123,10 @@ export function actionsLabel(name: string): string {
  *
  * @param slug - Slug de la línea.
  * @returns "/tienda/{slug}".
+ * @throws {RangeError} Si el slug está vacío.
  */
 export function storePath(slug: string): string {
+  assertText(slug, 'El slug de la línea')
   return `/tienda/${slug}`
 }
 
@@ -132,7 +151,9 @@ export function publishedCount(count: number): string {
  *
  * @param name - Nombre de la línea.
  * @returns "¿Borrar la línea «{nombre}»?".
+ * @throws {RangeError} Si el nombre está vacío.
  */
 export function deleteTitle(name: string): string {
+  assertText(name, 'El nombre de la línea')
   return `¿Borrar la línea «${name}»?`
 }

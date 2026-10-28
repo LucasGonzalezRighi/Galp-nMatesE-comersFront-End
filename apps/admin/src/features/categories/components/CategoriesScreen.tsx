@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { PlusIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Category } from '@galpon/api-client'
 import { adminCategoriesQuery, useApiClient } from '@galpon/api-client/react'
 import { Button } from '../../../components/ui/Button'
@@ -59,8 +59,11 @@ export function CategoriesScreen(): ReactNode {
   const api = useApiClient()
   const categories = useQuery(adminCategoriesQuery(api))
   const reorder = useReorderCategories()
-  // Orden que se está guardando: se muestra hasta que termina (bien o mal) el guardado.
+  // Orden que se está guardando: se muestra hasta que terminan (bien o mal) todos los guardados.
   const [order, setOrder] = useState<Category[] | null>(null)
+  // Guardados del orden en curso. Con dos movimientos seguidos, el primero que termina no limpia
+  // el orden local: la caché podría tener todavía el orden intermedio (o el anterior, si falló).
+  const pendingReorders = useRef(0)
   const [editor, setEditor] = useState<DialogState>(CLOSED)
   const [deleting, setDeleting] = useState<DialogState>(CLOSED)
 
@@ -112,11 +115,15 @@ export function CategoriesScreen(): ReactNode {
           // El orden nuevo se pasa en el mismo cuadro (SortableList lo pide): si se esperara a la
           // caché y el guardado fallara antes de dibujarla, la lista no vería volver el anterior.
           setOrder(next)
-          reorder.mutate(next, {
-            onSettled: () => {
-              setOrder(null)
-            },
-          })
+          pendingReorders.current += 1
+          // `mutateAsync` termina por cada guardado (los callbacks de `mutate` solo avisan del
+          // último), y después de que `onSettled` recargó las líneas: la caché ya es la del servidor.
+          const settle = () => {
+            pendingReorders.current -= 1
+            if (pendingReorders.current === 0) setOrder(null)
+          }
+          // El error ya lo avisa `useReorderCategories`.
+          reorder.mutateAsync(next).then(settle, settle)
         }}
         renderItem={(category, helpers) => (
           <CategoryRow

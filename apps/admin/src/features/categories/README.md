@@ -17,7 +17,10 @@ las flechas desde la agarradera). El orden es optimista: la pantalla pasa el ord
 lista en el mismo cuadro (estado local, porque si se esperara a la caché y el guardado fallara
 antes de dibujarla, la lista no vería volver el anterior) y `useReorderCategories` lo pone en la
 caché y hace `PUT /admin/categories/order` con todos los ids. Si falla, vuelve al anterior y
-avisa "No pudimos guardar el orden. Volvimos al anterior."; si sale bien, "Orden guardado.".
+avisa "No pudimos guardar el orden. Volvimos al anterior."; si sale bien, "Orden guardado.". El
+orden local se limpia recién cuando no queda ningún guardado del orden en curso (un contador con
+`mutateAsync`): con dos movimientos seguidos, el que termina primero no deja ver un orden
+intermedio ni el anterior que repuso un guardado fallido.
 
 ## Crear y editar
 
@@ -25,8 +28,10 @@ avisa "No pudimos guardar el orden. Volvimos al anterior."; si sale bien, "Orden
 hasta que se lo toca a mano; la foto usa `useSingleImageUpload({ purpose: 'category' })` y, al
 terminar de subir, pasa al formulario (su texto alternativo vacío toma el nombre). No guarda con
 una foto subiendo o con error. `409 slug_taken` (no trae `fieldErrors`) va al campo "Slug" por
-su `type`; un `422`, a cada campo (`image.publicId` se muestra en la foto). Cerrar con cambios
-pregunta "¿Descartar los cambios?". La pantalla le cambia la `key` en cada apertura.
+su `type`; un `422`, a cada campo (`image.publicId` se muestra en la foto) y, si trae alguna ruta
+que el formulario no dibuja, además un toast con el mensaje general. El slug va en `font-mono`.
+Cerrar con cambios pregunta "¿Descartar los cambios?". La pantalla le cambia la `key` en cada
+apertura.
 
 ## Borrar
 

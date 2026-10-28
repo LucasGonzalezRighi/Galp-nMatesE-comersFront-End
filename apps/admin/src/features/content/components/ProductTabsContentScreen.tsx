@@ -14,6 +14,7 @@ import { FormActions } from '../../../components/ui/FormActions'
 import { Section } from '../../../components/ui/Section'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { productTabsFormValues } from '../content-form-values'
+import { PRODUCT_TABS_LIMITS } from '../content-limits'
 import { combinedLoadState } from '../content-load-state'
 import { CONTENT_COPY } from '../content.copy'
 import { useSaveContent } from '../use-save-content'
@@ -45,6 +46,7 @@ function ProductTabsForm({ content }: ProductTabsFormProps): ReactNode {
     queryKey: queryKeys.adminContent('product-tabs'),
     save: (body: ProductTabsContentValues) => updateAdminProductTabsContent(api, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       form.reset(productTabsFormValues(saved))
     },
@@ -68,26 +70,30 @@ function ProductTabsForm({ content }: ProductTabsFormProps): ReactNode {
             <TabsText
               name={`${group}.descriptionNote`}
               label={CONTENT_COPY.descriptionNote}
-              maxLength={600}
+              maxLength={PRODUCT_TABS_LIMITS.descriptionNote}
               multiline
             />
             <TabsText
               name={`${group}.materialsTitle`}
               label={CONTENT_COPY.materialsTitle}
-              maxLength={30}
+              maxLength={PRODUCT_TABS_LIMITS.tabTitle}
             />
             <TabsText
               name={`${group}.materials`}
               label={CONTENT_COPY.materials}
-              maxLength={2000}
+              maxLength={PRODUCT_TABS_LIMITS.tabText}
               multiline
               rows={5}
             />
-            <TabsText name={`${group}.careTitle`} label={CONTENT_COPY.careTitle} maxLength={30} />
+            <TabsText
+              name={`${group}.careTitle`}
+              label={CONTENT_COPY.careTitle}
+              maxLength={PRODUCT_TABS_LIMITS.tabTitle}
+            />
             <TabsText
               name={`${group}.care`}
               label={CONTENT_COPY.care}
-              maxLength={2000}
+              maxLength={PRODUCT_TABS_LIMITS.tabText}
               multiline
               rows={5}
             />
@@ -97,7 +103,7 @@ function ProductTabsForm({ content }: ProductTabsFormProps): ReactNode {
           <TabsText
             name="shipping"
             label={CONTENT_COPY.shipping}
-            maxLength={2000}
+            maxLength={PRODUCT_TABS_LIMITS.tabText}
             multiline
             rows={5}
           />

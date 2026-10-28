@@ -82,7 +82,10 @@ export const CONTENT_COPY = {
   category: 'Categoría',
   categoryName: 'Nombre',
   categoryId: 'Identificador',
-  categoryIdHint: 'Va en la dirección de la página. Se completa solo a partir del nombre.',
+  /** Ayuda del identificador de una categoría ya guardada (o que se cambió a mano). */
+  categoryIdHint: 'Va en la dirección de la página.',
+  /** Ayuda del identificador de una categoría nueva, mientras sigue al nombre. */
+  categoryIdAutoHint: 'Va en la dirección de la página. Se completa solo a partir del nombre.',
   addCategory: 'Agregar categoría',
   question: 'Pregunta',
   answer: 'Respuesta',

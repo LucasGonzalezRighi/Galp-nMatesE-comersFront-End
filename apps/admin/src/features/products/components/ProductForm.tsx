@@ -264,7 +264,7 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
               republishProduct(product)
             }}
           >
-            {PRODUCT_FORM_COPY.republish}
+            {republish.isPending ? PRODUCT_FORM_COPY.republishing : PRODUCT_FORM_COPY.republish}
           </Button>
         </div>
       )}

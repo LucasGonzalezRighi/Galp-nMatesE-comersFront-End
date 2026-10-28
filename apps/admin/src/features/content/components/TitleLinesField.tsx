@@ -1,16 +1,8 @@
 import type { ReactNode } from 'react'
 import type { FieldPathByValue, FieldValues } from 'react-hook-form'
+import { TITLE_LINES_LIMITS } from '../content-limits'
 import { CONTENT_COPY, removeLineLabel } from '../content.copy'
 import { TextListField } from './TextListField'
-
-/** Menos líneas que puede tener un título. */
-const MIN_LINES = 1
-
-/** Más líneas que puede tener un título (las de `homeContentFormSchema`). */
-const MAX_LINES = 3
-
-/** Largo máximo de cada línea. */
-const LINE_MAX_LENGTH = 60
 
 /** Props de {@link TitleLinesField}. */
 export interface TitleLinesFieldProps<T extends FieldValues> {
@@ -34,9 +26,9 @@ export function TitleLinesField<T extends FieldValues>({
       itemNoun={CONTENT_COPY.line}
       addLabel={CONTENT_COPY.addLine}
       removeLabel={removeLineLabel}
-      min={MIN_LINES}
-      max={MAX_LINES}
-      maxLength={LINE_MAX_LENGTH}
+      min={TITLE_LINES_LIMITS.minLines}
+      max={TITLE_LINES_LIMITS.maxLines}
+      maxLength={TITLE_LINES_LIMITS.line}
     />
   )
 }

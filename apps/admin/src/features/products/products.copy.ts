@@ -65,7 +65,13 @@ export const PRODUCTS_COPY = {
   empty: 'Todavía no hay productos.',
   createFirst: 'Crear el primero',
   noMatches: 'Ningún producto coincide con los filtros.',
+  /** `?pagina=` más allá de la última (por ejemplo, después de archivar el último de ella). */
+  pastLastPage: 'Esta página ya no tiene productos.',
+  firstPage: 'Ir a la primera página',
   listError: 'No pudimos cargar los productos.',
+  /** Una recarga en segundo plano falló: la tabla sigue con lo último que cargó. */
+  staleListError: 'No pudimos actualizar la lista: se ven los últimos datos que cargaron.',
+  retry: 'Reintentar',
   unexpectedError: 'No pudimos completar la acción. Probá de nuevo.',
 } as const
 
@@ -81,6 +87,7 @@ export const PRODUCT_FORM_COPY = {
   backToList: 'Volver a productos',
   archivedNotice: 'Este producto está archivado: no se ve en la tienda.',
   republish: 'Volver a publicar',
+  republishing: 'Publicando…',
   republished: 'Producto publicado de nuevo.',
   dataSection: 'Datos',
   name: 'Nombre',

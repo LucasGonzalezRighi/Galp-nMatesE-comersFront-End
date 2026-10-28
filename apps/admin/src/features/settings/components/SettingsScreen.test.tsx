@@ -1,9 +1,11 @@
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { TestApp } from '../../../test/render'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { failBackgroundReload } from '../../../test/fail-background-reload'
+import { validationProblem } from '../../../test/problem-response'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { SettingsScreen } from './SettingsScreen'
 
@@ -31,21 +33,6 @@ function shippingGroup(name: string): HTMLElement {
 async function retype(user: ReturnType<typeof userEvent.setup>, field: HTMLElement, text: string) {
   await user.clear(field)
   await user.type(field, text)
-}
-
-/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
-async function failBackgroundReload(app: TestApp): Promise<void> {
-  app.mockDb.db.adminSession = null
-  await act(async () => {
-    await app.queryClient.refetchQueries({ type: 'active' })
-    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  })
-  const failed = app.queryClient
-    .getQueryCache()
-    .findAll()
-    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
-  expect(failed.length).toBeGreaterThan(0)
 }
 
 afterEach(() => {
@@ -137,6 +124,31 @@ describe('SettingsScreen', () => {
       within(shippingGroup('Envío a domicilio')).getByRole('textbox', { name: /^Costo/ }),
     ).toHaveValue('$0')
     expect(screen.getByRole('textbox', { name: /^CUIT/ })).toHaveValue('20-12345678-6')
+  })
+
+  it('un 422 va a su campo y, si trae una ruta sin campo, también avisa el mensaje', async () => {
+    const { app, user } = await setup()
+    app.api.use({
+      onRequest: ({ request }) =>
+        request.method === 'PUT' && request.url.includes('/admin/settings')
+          ? validationProblem(
+              [
+                { field: 'contactEmail', message: 'Ese email no recibe mensajes.' },
+                { field: 'currency', message: 'La moneda no es válida.' },
+              ],
+              'Revisá los ajustes marcados.',
+            )
+          : undefined,
+    })
+    const email = screen.getByRole('textbox', { name: /^Email de contacto/ })
+
+    await retype(user, email, 'otro@galpon.com.ar')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Ese email no recibe mensajes.')).toBeInTheDocument()
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Revisá los ajustes marcados.')
+    expect(screen.queryByText('La moneda no es válida.')).not.toBeInTheDocument()
   })
 
   it('"Descartar" vuelve a lo guardado', async () => {

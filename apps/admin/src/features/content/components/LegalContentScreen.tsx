@@ -16,6 +16,7 @@ import { Section } from '../../../components/ui/Section'
 import { Tabs } from '../../../components/ui/Tabs'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { legalFormValues } from '../content-form-values'
+import { LEGAL_LIMITS } from '../content-limits'
 import { combinedLoadState } from '../content-load-state'
 import { CONTENT_COPY } from '../content.copy'
 import { LEGAL_TAB_DOCUMENTS, LEGAL_TABS } from '../legal-search'
@@ -62,6 +63,7 @@ function LegalForm({ document, title, content }: LegalFormProps): ReactNode {
     queryKey: queryKeys.adminLegalContent(document),
     save: (body: LegalContentValues) => updateAdminLegalContent(api, document, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       dateEdited.current = false
       form.reset(legalFormValues(saved))
@@ -82,7 +84,7 @@ function LegalForm({ document, title, content }: LegalFormProps): ReactNode {
         className="flex flex-col gap-6"
       >
         <Section title={title}>
-          <LegalText name="title" label={CONTENT_COPY.heading} maxLength={120} />
+          <LegalText name="title" label={CONTENT_COPY.heading} maxLength={LEGAL_LIMITS.title} />
           <LegalText
             name="updatedAt"
             label={CONTENT_COPY.updatedAt}
@@ -95,7 +97,7 @@ function LegalForm({ document, title, content }: LegalFormProps): ReactNode {
           <LegalText
             name="body"
             label={CONTENT_COPY.text}
-            maxLength={60_000}
+            maxLength={LEGAL_LIMITS.body}
             multiline
             rows={20}
             onValueChange={() => {

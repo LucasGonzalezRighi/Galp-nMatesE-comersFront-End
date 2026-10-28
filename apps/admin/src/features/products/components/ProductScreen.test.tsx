@@ -7,6 +7,7 @@ import { ImageUploaderProvider } from '../../../components/media/ImageUploaderPr
 import { createSimulatedUploader } from '../../../components/media/simulated-uploader'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { validationProblem } from '../../../test/problem-response'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { ProductScreen } from './ProductScreen'
 
@@ -201,6 +202,31 @@ describe('ProductScreen', () => {
     expect(screen.getByLabelText(/^Slug/)).toHaveFocus()
   })
 
+  it('un 422 en el texto alternativo de una foto va a ese campo', async () => {
+    const { app, user } = await setup()
+    app.api.use({
+      onRequest: ({ request }) =>
+        request.method === 'PATCH'
+          ? validationProblem([
+              { field: 'images.0.alt', message: 'Ese texto no describe la foto.' },
+            ])
+          : undefined,
+    })
+
+    await user.type(screen.getByLabelText(/^Nombre/), ' Edición')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Ese texto no describe la foto.')).toBeInTheDocument()
+    const [alt] = within(
+      screen.getByRole('list', { name: 'Fotos del producto' }),
+    ).getAllByLabelText('Texto alternativo')
+    expect(alt).toHaveAttribute('aria-invalid', 'true')
+    expect(alt).toHaveFocus()
+    // Todos los errores tenían su campo: no hace falta el aviso general.
+    expect(screen.queryByText('Revisá los campos marcados.')).not.toBeInTheDocument()
+    expect(stored(app).name).toBe('Mate Imperial Premium')
+  })
+
   it('un slug nuevo deja el anterior en las direcciones que redirigen', async () => {
     const { app, user } = await setup()
 
@@ -319,9 +345,22 @@ describe('ProductScreen', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: 'Publicado' })).not.toBeInTheDocument()
     expect(screen.getByText('Archivado')).toBeInTheDocument()
+    // El guardado queda frenado hasta `release`, para ver el botón mientras publica.
+    let release: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    app.api.use({
+      async onRequest({ request }) {
+        if (request.method === 'PATCH') await held
+        return undefined
+      },
+    })
 
     await user.click(screen.getByRole('button', { name: 'Volver a publicar' }))
 
+    expect(await screen.findByRole('button', { name: 'Publicando…' })).toBeDisabled()
+    release()
     expect(await screen.findByText('Producto publicado de nuevo.')).toBeInTheDocument()
     expect(stored(app).status).toBe('published')
     expect(await screen.findByRole('radio', { name: 'Publicado' })).toBeChecked()

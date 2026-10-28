@@ -2,9 +2,11 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
+import type { MockProduct } from '@galpon/api-client/mock'
 import type { TestApp } from '../../../test/render'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { failBackgroundReload } from '../../../test/fail-background-reload'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { productsSearchSchema } from '../products-search'
 import { ProductsScreen } from './ProductsScreen'
@@ -37,6 +39,16 @@ function rowNames(): string[] {
   return within(table)
     .queryAllByRole('link')
     .map((link) => link.textContent)
+}
+
+/** Aviso de arriba de la tabla cuando una recarga en segundo plano falla. */
+const STALE_LIST_ERROR = 'No pudimos actualizar la lista: se ven los últimos datos que cargaron.'
+
+/** El producto de la base simulada que se llama `name`. */
+function productInDb(app: TestApp, name: string): MockProduct {
+  const product = app.mockDb.db.products.find((candidate) => candidate.name === name)
+  if (product === undefined) throw new Error(`Falta el producto ${name}.`)
+  return product
 }
 
 /** La fila de un producto. */
@@ -182,6 +194,91 @@ describe('ProductsScreen', () => {
     expect(app.mockDb.db.products.find((product) => product.id === 'prd-galleta')?.status).toBe(
       'archived',
     )
+  })
+
+  it('"Poco stock" se marca solo en los publicados', async () => {
+    const app = await createTestApp()
+    productInDb(app, 'Mate Coquito Criollo').status = 'draft'
+    productInDb(app, 'Mate Imperial Premium').stock = 1
+    await renderProducts(app)
+
+    // El umbral sale de los ajustes: se espera a que carguen con un publicado que lo marca.
+    await waitFor(() => {
+      expect(within(rowOf('Mate Imperial Premium')).getByText('Poco stock')).toBeInTheDocument()
+    })
+    const draft = rowOf('Mate Coquito Criollo')
+    expect(within(draft).getByText('Borrador')).toBeInTheDocument()
+    expect(within(draft).queryByText('Poco stock')).not.toBeInTheDocument()
+  })
+
+  it('al archivar el último de la última página lo dice y lleva a la primera', async () => {
+    const app = await createTestApp()
+    const user = userEvent.setup()
+    const { router } = await renderProducts(app, '/productos?pagina=2')
+    await waitFor(() => {
+      expect(rowNames()).toHaveLength(3)
+    })
+    const [first, second, last] = rowNames()
+    if (first === undefined || second === undefined || last === undefined) {
+      throw new Error('Faltan los productos de la página 2.')
+    }
+    // Los dos primeros se archivan en otra pestaña; el último, desde la tabla.
+    productInDb(app, first).status = 'archived'
+    productInDb(app, second).status = 'archived'
+
+    await user.click(screen.getByRole('button', { name: `Acciones de ${last}` }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Archivar' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Archivar' }))
+
+    expect(await screen.findByText('Esta página ya no tiene productos.')).toBeInTheDocument()
+    expect(screen.queryByText('Todavía no hay productos.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Mostrando/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Ir a la primera página' }))
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({})
+    })
+    await waitFor(() => {
+      expect(rowNames()).toHaveLength(24)
+    })
+  })
+
+  it('una página que ya no existe lleva a la primera sin perder los filtros', async () => {
+    const app = await createTestApp()
+    const user = userEvent.setup()
+    const { router } = await renderProducts(app, '/productos?q=canarias&pagina=4')
+
+    expect(await screen.findByText('Esta página ya no tiene productos.')).toBeInTheDocument()
+    expect(screen.queryByText('Ningún producto coincide con los filtros.')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Ir a la primera página' }))
+
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ q: 'canarias' })
+    })
+    await waitFor(() => {
+      expect(rowNames()).toHaveLength(3)
+    })
+  })
+
+  it('si la recarga en segundo plano falla, la tabla sigue con sus datos y avisa arriba', async () => {
+    const app = await createTestApp()
+    const user = userEvent.setup()
+    await renderProducts(app)
+    await screen.findByRole('link', { name: 'Mate Imperial Premium' })
+    const session = app.mockDb.db.adminSession
+
+    await failBackgroundReload(app)
+
+    expect(rowNames()).toHaveLength(24)
+    expect(screen.queryByText('No pudimos cargar los productos.')).not.toBeInTheDocument()
+    expect(screen.getByText(STALE_LIST_ERROR)).toHaveAttribute('role', 'alert')
+
+    app.mockDb.db.adminSession = session
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => {
+      expect(screen.queryByText(STALE_LIST_ERROR)).not.toBeInTheDocument()
+    })
+    expect(rowNames()).toHaveLength(24)
   })
 
   it('sin productos invita a crear el primero', async () => {

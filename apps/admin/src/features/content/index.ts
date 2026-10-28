@@ -1,5 +1,4 @@
 export type { LegalContentScreenProps } from './components/LegalContentScreen'
-export type { LegalSearch, LegalTab } from './legal-search'
 export { AboutContentScreen } from './components/AboutContentScreen'
 export { FaqContentScreen } from './components/FaqContentScreen'
 export { FooterContentScreen } from './components/FooterContentScreen'

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { TestApp } from '../../../test/render'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { validationProblem } from '../../../test/problem-response'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { FooterContentScreen } from './FooterContentScreen'
 
@@ -53,6 +54,32 @@ describe('FooterContentScreen', () => {
       await screen.findByText('Ingresá una URL válida, con http:// o https://'),
     ).toBeInTheDocument()
     expect(app.mockDb.db.content.footer).toEqual(before)
+  })
+
+  it('un 422 va a su campo y, si trae una ruta sin campo, también avisa el mensaje', async () => {
+    const user = userEvent.setup()
+    const app = await createTestApp()
+    app.api.use({
+      onRequest: ({ request }) =>
+        request.method === 'PUT'
+          ? validationProblem(
+              [
+                { field: 'tagline', message: 'Esa frase no se puede usar.' },
+                { field: 'brand.logo', message: 'Falta el logo.' },
+              ],
+              'Revisá el pie de página.',
+            )
+          : undefined,
+    })
+    await renderFooter(app)
+
+    await user.type(screen.getByLabelText('Frase'), ' Siempre.')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Esa frase no se puede usar.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Frase')).toHaveAttribute('aria-invalid', 'true')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Revisá el pie de página.')
+    expect(screen.queryByText('Falta el logo.')).not.toBeInTheDocument()
   })
 
   it('agrega y quita medios de pago y guarda el pie entero', async () => {

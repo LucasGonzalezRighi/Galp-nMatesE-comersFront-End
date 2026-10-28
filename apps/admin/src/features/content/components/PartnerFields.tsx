@@ -8,6 +8,7 @@ import { MEDIA_COPY } from '../../../components/media/media.copy'
 import { useSingleImageUpload } from '../../../components/media/use-single-image-upload'
 import { Button } from '../../../components/ui/Button'
 import { SingleImageField } from '../../../components/ui/SingleImageField'
+import { ABOUT_LIMITS } from '../content-limits'
 import { CONTENT_COPY, positionLabel, removePartnerLabel } from '../content.copy'
 import { fieldIndex } from '../list-utils'
 import { FieldGroup } from './FieldGroup'
@@ -15,9 +16,6 @@ import { TextField } from './TextField'
 
 /** Campo de texto del formulario de Nosotros. */
 const AboutText = TextField<AboutContentFormInput>
-
-/** Largo mínimo del texto alternativo (el de `imageFormSchema`). */
-const ALT_MIN_LENGTH = 3
 
 /** Props de {@link PartnerFields}. */
 export interface PartnerFieldsProps {
@@ -69,7 +67,12 @@ export function PartnerFields({
     onPhotoUploaded(publicId, url)
     setValue(
       `partners.${fieldIndex(index)}.photo`,
-      { publicId, width, height, alt: currentName.length >= ALT_MIN_LENGTH ? currentName : '' },
+      {
+        publicId,
+        width,
+        height,
+        alt: currentName.length >= ABOUT_LIMITS.photoAltMin ? currentName : '',
+      },
       { shouldDirty: true },
     )
     remove()
@@ -111,12 +114,12 @@ export function PartnerFields({
         <AboutText
           name={`partners.${fieldIndex(index)}.name`}
           label={CONTENT_COPY.partnerName}
-          maxLength={60}
+          maxLength={ABOUT_LIMITS.partnerName}
         />
         <AboutText
           name={`partners.${fieldIndex(index)}.role`}
           label={CONTENT_COPY.partnerRole}
-          maxLength={80}
+          maxLength={ABOUT_LIMITS.partnerRole}
         />
       </div>
       <SingleImageField
@@ -148,7 +151,7 @@ export function PartnerFields({
             <AboutText
               name={`partners.${fieldIndex(index)}.photo.alt`}
               label={CONTENT_COPY.photoAlt}
-              maxLength={120}
+              maxLength={ABOUT_LIMITS.photoAlt}
             />
           )
         }

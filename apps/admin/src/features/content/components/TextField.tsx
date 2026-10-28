@@ -21,6 +21,11 @@ export interface TextFieldProps<T extends FieldValues> {
   type?: 'text' | 'url' | 'date'
   /** Ayuda debajo del campo. */
   hint?: string
+  /**
+   * Para identificadores y slugs: letra monoespaciada (`font-mono`) y sin corrector ni
+   * autocompletado. Solo en un campo de una línea.
+   */
+  monospace?: boolean
   /** Se llama con el texto nuevo cada vez que la persona lo cambia. */
   onValueChange?: (value: string) => void
 }
@@ -41,6 +46,7 @@ export function TextField<T extends FieldValues>({
   rows,
   type = 'text',
   hint,
+  monospace = false,
   onValueChange,
 }: TextFieldProps<T>): ReactNode {
   const { register, getFieldState, formState } = useFormContext<T>()
@@ -56,7 +62,15 @@ export function TextField<T extends FieldValues>({
         multiline ? (
           <Textarea {...control} maxLength={maxLength} rows={rows} {...registration} />
         ) : (
-          <TextInput {...control} type={type} maxLength={maxLength} {...registration} />
+          <TextInput
+            {...control}
+            type={type}
+            maxLength={maxLength}
+            className={monospace ? 'font-mono' : undefined}
+            spellCheck={monospace ? false : undefined}
+            autoComplete={monospace ? 'off' : undefined}
+            {...registration}
+          />
         )
       }
     </Field>

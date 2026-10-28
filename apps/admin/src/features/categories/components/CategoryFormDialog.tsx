@@ -33,6 +33,14 @@ const CATEGORY_FIELDS = [
   'image.publicId',
 ] as const
 
+/** Una ruta de {@link CATEGORY_FIELDS}. */
+type CategoryFieldPath = (typeof CATEGORY_FIELDS)[number]
+
+/** Indica si una ruta de un `422` es la de un campo que el formulario dibuja. */
+function isCategoryFieldPath(path: string): path is CategoryFieldPath {
+  return (CATEGORY_FIELDS as readonly string[]).includes(path)
+}
+
 /** Opciones del grupo, en el orden del dominio. */
 const GROUP_OPTIONS = PRODUCT_GROUPS.map((group) => ({
   value: group,
@@ -55,8 +63,9 @@ export interface CategoryFormDialogProps {
  * texto alternativo (`useSingleImageUpload({ purpose: 'category' })`; al terminar de subir, el
  * texto se completa con el nombre si estaba vacío).
  *
- * Un `409 slug_taken` va al campo "Slug" y un `422`, a cada campo; otro error, a un toast. No
- * guarda con una foto subiendo o con error. Cerrarlo con cambios pregunta "¿Descartar los
+ * Un `409 slug_taken` va al campo "Slug" y un `422`, a cada campo; otro error, o un `422` con
+ * alguna ruta que el formulario no dibuja, también a un toast con su mensaje. No guarda con una
+ * foto subiendo o con error. Cerrarlo con cambios pregunta "¿Descartar los
  * cambios?". Quien lo usa le cambia la `key` en cada apertura, así arranca de cero.
  *
  * @param props - Ver {@link CategoryFormDialogProps}.
@@ -139,9 +148,11 @@ export function CategoryFormDialog({
       setError('slug', { message: CATEGORIES_COPY.form.slugTaken }, { shouldFocus: true })
       return
     }
-    const withError = CATEGORY_FIELDS.filter((field) => error.fieldErrors[field] !== undefined)
+    const paths = Object.keys(error.fieldErrors)
+    const withError = paths.filter(isCategoryFieldPath)
     for (const field of withError) setError(field, { message: error.fieldErrors[field] })
-    if (withError.length === 0) toast.error(error.message)
+    // Sin campos, o con alguno que el formulario no dibuja: el mensaje general no se pierde.
+    if (withError.length === 0 || withError.length < paths.length) toast.error(error.message)
   }
 
   const submit = handleSubmit((values) => {
@@ -204,7 +215,15 @@ export function CategoryFormDialog({
             {(field) => <TextInput {...field} autoComplete="off" {...nameField} />}
           </Field>
           <Field label={CATEGORIES_COPY.form.slug} error={errors.slug?.message} required>
-            {(field) => <TextInput {...field} autoComplete="off" {...slugField} />}
+            {(field) => (
+              <TextInput
+                {...field}
+                autoComplete="off"
+                spellCheck={false}
+                className="font-mono"
+                {...slugField}
+              />
+            )}
           </Field>
           <Field label={CATEGORIES_COPY.form.group} error={errors.group?.message} required>
             {(field) => <Select {...field} options={GROUP_OPTIONS} {...register('group')} />}

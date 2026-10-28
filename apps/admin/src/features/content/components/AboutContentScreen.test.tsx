@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TestApp } from '../../../test/render'
@@ -6,6 +6,7 @@ import { ImageUploaderProvider } from '../../../components/media/ImageUploaderPr
 import { createSimulatedUploader } from '../../../components/media/simulated-uploader'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { failBackgroundReload } from '../../../test/fail-background-reload'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { AboutContentScreen } from './AboutContentScreen'
 
@@ -23,21 +24,6 @@ async function renderAbout(app: TestApp) {
   )
   await screen.findByRole('region', { name: 'Socios' })
   return result
-}
-
-/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
-async function failBackgroundReload(app: TestApp): Promise<void> {
-  app.mockDb.db.adminSession = null
-  await act(async () => {
-    await app.queryClient.refetchQueries({ type: 'active' })
-    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  })
-  const failed = app.queryClient
-    .getQueryCache()
-    .findAll()
-    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
-  expect(failed.length).toBeGreaterThan(0)
 }
 
 /** El `input type="file"` (oculto) de la foto de un socio. */

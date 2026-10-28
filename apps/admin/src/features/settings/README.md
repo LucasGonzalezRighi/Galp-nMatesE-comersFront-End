@@ -16,8 +16,9 @@ vendedor), "Vendedor y atención al cliente" (`SellerFields`), "Contacto" y "Sto
 
 Al guardar avisa "Ajustes guardados.", vuelve a arrancar con lo guardado e invalida los ajustes
 y el resumen. Un `422` va a cada campo por su ruta (`SETTINGS_FIELDS`: `seller.cuit`,
-`shippingOptions.0.costArs`); otro error, a un toast. El `401` y el `403` los maneja la
-estructura del dashboard.
+`shippingOptions.0.costArs`) y, si trae alguna ruta que el formulario no dibuja, además un toast
+con el mensaje general; otro error, a un toast. El `401` y el `403` los maneja la estructura del
+dashboard.
 
 ## Archivos
 

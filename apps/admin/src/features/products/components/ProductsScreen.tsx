@@ -133,7 +133,11 @@ function productColumns(options: ColumnOptions) {
     helper.accessor('stock', {
       header: PRODUCTS_COPY.columns.stock,
       cell: (info) => {
-        const badge = stockBadge(info.getValue(), options.lowStockThreshold)
+        const badge = stockBadge(
+          info.getValue(),
+          options.lowStockThreshold,
+          info.row.original.status,
+        )
         return (
           <span className="inline-flex items-center gap-2">
             <span className="tabular-nums">{info.getValue()}</span>
@@ -169,6 +173,12 @@ function productColumns(options: ColumnOptions) {
  * Pantalla `/productos`: "Nuevo producto", los filtros (en la URL), la tabla de a 24 con su orden
  * y la paginación. "Archivar" pide confirmación y avisa "Producto archivado.".
  *
+ * Una `?pagina=` más allá de la última (por ejemplo, después de archivar el último producto de la
+ * última página) muestra "Esta página ya no tiene productos." con "Ir a la primera página" (no
+ * redirige sola: `onSearchChange` agrega una entrada al historial y "Atrás" volvería a la página
+ * vacía, que redirigiría otra vez). Si una recarga en segundo plano falla, la tabla sigue con lo
+ * último que cargó y arriba se avisa, con "Reintentar".
+ *
  * @param props - Ver {@link ProductsScreenProps}.
  */
 export function ProductsScreen({
@@ -201,30 +211,57 @@ export function ProductsScreen({
   )
   const page = productsQuery.data
   const sorting = sortingOfOrder(search.orden)
+  // Una página vacía con productos en total es una `?pagina=` fuera de rango.
+  const isPastLastPage = page?.items.length === 0 && page.total > 0
+  // El error reemplaza a la tabla solo si nunca hubo datos; si no, se avisa arriba.
+  const isStale = productsQuery.isError && page !== undefined
 
   function clearFilters() {
     onSearchChange({ orden: search.orden })
   }
 
-  const emptyState = hasProductFilters(search) ? (
-    <EmptyState
-      title={PRODUCTS_COPY.noMatches}
-      action={
-        <Button variant="secondary" onClick={clearFilters}>
-          {PRODUCTS_COPY.clearFilters}
-        </Button>
-      }
-    />
-  ) : (
-    <EmptyState
-      title={PRODUCTS_COPY.empty}
-      action={
-        <Link to="/productos/nuevo" className={buttonClass('primary', 'md')}>
-          {PRODUCTS_COPY.createFirst}
-        </Link>
-      }
-    />
-  )
+  /** Vacío de la tabla: página fuera de rango, sin coincidencias o sin productos. */
+  function renderEmptyState(): ReactNode {
+    if (isPastLastPage) {
+      return (
+        <EmptyState
+          title={PRODUCTS_COPY.pastLastPage}
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onSearchChange({ ...search, pagina: undefined })
+              }}
+            >
+              {PRODUCTS_COPY.firstPage}
+            </Button>
+          }
+        />
+      )
+    }
+    if (hasProductFilters(search)) {
+      return (
+        <EmptyState
+          title={PRODUCTS_COPY.noMatches}
+          action={
+            <Button variant="secondary" onClick={clearFilters}>
+              {PRODUCTS_COPY.clearFilters}
+            </Button>
+          }
+        />
+      )
+    }
+    return (
+      <EmptyState
+        title={PRODUCTS_COPY.empty}
+        action={
+          <Link to="/productos/nuevo" className={buttonClass('primary', 'md')}>
+            {PRODUCTS_COPY.createFirst}
+          </Link>
+        }
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -242,17 +279,33 @@ export function ProductsScreen({
           onSearchChange={onSearchChange}
           categories={categoriesQuery.data ?? []}
         />
+        {isStale && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p role="alert" className="text-danger text-sm">
+              {PRODUCTS_COPY.staleListError}
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                void productsQuery.refetch()
+              }}
+            >
+              {PRODUCTS_COPY.retry}
+            </Button>
+          </div>
+        )}
         <DataTable
           caption={PRODUCTS_COPY.tableCaption}
           columns={columns}
           data={page?.items ?? []}
           getRowId={(product) => product.id}
           isLoading={productsQuery.isPending}
-          error={productsQuery.isError ? PRODUCTS_COPY.listError : null}
+          error={productsQuery.isError && page === undefined ? PRODUCTS_COPY.listError : null}
           onRetry={() => {
             void productsQuery.refetch()
           }}
-          emptyState={emptyState}
+          emptyState={renderEmptyState()}
           sorting={{
             columnId: sorting?.columnId ?? CODE_ORDER_COLUMN,
             direction: sorting?.direction ?? 'asc',
@@ -265,7 +318,7 @@ export function ProductsScreen({
             },
           }}
         />
-        {page !== undefined && (
+        {page !== undefined && !isPastLastPage && (
           <Pagination
             page={page.page}
             pageSize={page.pageSize}

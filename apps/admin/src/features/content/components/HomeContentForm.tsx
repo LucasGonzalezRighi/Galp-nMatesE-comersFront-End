@@ -12,6 +12,7 @@ import { NumberInput } from '../../../components/ui/NumberInput'
 import { Section } from '../../../components/ui/Section'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { homeFormValues } from '../content-form-values'
+import { HOME_LIMITS } from '../content-limits'
 import { CONTENT_COPY, positionLabel } from '../content.copy'
 import { fieldIndex } from '../list-utils'
 import { useSaveContent } from '../use-save-content'
@@ -30,9 +31,6 @@ const SECTION_HEADINGS = [
   { name: 'featured', label: CONTENT_COPY.featured },
   { name: 'reviews', label: CONTENT_COPY.reviews },
 ] as const
-
-/** Cantidad de pasos del ritual (la de `homeContentFormSchema`). */
-const RITUAL_STEPS = 4
 
 /** Props de {@link HomeContentForm}. */
 export interface HomeContentFormProps {
@@ -60,6 +58,7 @@ export function HomeContentForm({ content, products }: HomeContentFormProps): Re
     queryKey: queryKeys.adminContent('home'),
     save: (body: HomeContentValues) => updateAdminHomeContent(api, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       form.reset(homeFormValues(saved))
     },
@@ -79,27 +78,40 @@ export function HomeContentForm({ content, products }: HomeContentFormProps): Re
         className="flex flex-col gap-6"
       >
         <Section title={CONTENT_COPY.hero}>
-          <HomeText name="hero.eyebrow" label={CONTENT_COPY.eyebrow} maxLength={60} />
+          <HomeText
+            name="hero.eyebrow"
+            label={CONTENT_COPY.eyebrow}
+            maxLength={HOME_LIMITS.eyebrow}
+          />
           <TitleLinesField<HomeContentFormInput> name="hero.titleLines" />
-          <HomeText name="hero.text" label={CONTENT_COPY.text} maxLength={600} multiline />
+          <HomeText
+            name="hero.text"
+            label={CONTENT_COPY.text}
+            maxLength={HOME_LIMITS.text}
+            multiline
+          />
           <div className="grid gap-4 sm:grid-cols-2">
-            <HomeText name="hero.primaryCtaLabel" label={CONTENT_COPY.primaryCta} maxLength={40} />
+            <HomeText
+              name="hero.primaryCtaLabel"
+              label={CONTENT_COPY.primaryCta}
+              maxLength={HOME_LIMITS.buttonLabel}
+            />
             <HomeText
               name="hero.secondaryCtaLabel"
               label={CONTENT_COPY.secondaryCta}
-              maxLength={40}
+              maxLength={HOME_LIMITS.buttonLabel}
             />
           </div>
         </Section>
         <HomeStoryFields sceneKeys={content.scenes.map((scene) => scene.key)} />
         <Section title={CONTENT_COPY.ritualSteps}>
           <div className="grid gap-4 sm:grid-cols-2">
-            {Array.from({ length: RITUAL_STEPS }, (_, index) => (
+            {Array.from({ length: HOME_LIMITS.ritualSteps }, (_, index) => (
               <HomeText
                 key={index}
                 name={`ritualSteps.${fieldIndex(index)}`}
                 label={positionLabel(CONTENT_COPY.step, index + 1)}
-                maxLength={80}
+                maxLength={HOME_LIMITS.ritualStep}
               />
             ))}
           </div>
@@ -109,16 +121,37 @@ export function HomeContentForm({ content, products }: HomeContentFormProps): Re
           {SECTION_HEADINGS.map(({ name, label }) => (
             <FieldGroup key={name} title={label}>
               <div className="grid gap-4 sm:grid-cols-2">
-                <HomeText name={`${name}.eyebrow`} label={CONTENT_COPY.eyebrow} maxLength={60} />
-                <HomeText name={`${name}.title`} label={CONTENT_COPY.heading} maxLength={60} />
+                <HomeText
+                  name={`${name}.eyebrow`}
+                  label={CONTENT_COPY.eyebrow}
+                  maxLength={HOME_LIMITS.eyebrow}
+                />
+                <HomeText
+                  name={`${name}.title`}
+                  label={CONTENT_COPY.heading}
+                  maxLength={HOME_LIMITS.title}
+                />
               </div>
             </FieldGroup>
           ))}
         </Section>
         <Section title={CONTENT_COPY.manifesto}>
-          <HomeText name="manifesto.eyebrow" label={CONTENT_COPY.eyebrow} maxLength={60} />
-          <HomeText name="manifesto.text" label={CONTENT_COPY.phrase} maxLength={400} multiline />
-          <HomeText name="manifesto.ctaLabel" label={CONTENT_COPY.linkText} maxLength={40} />
+          <HomeText
+            name="manifesto.eyebrow"
+            label={CONTENT_COPY.eyebrow}
+            maxLength={HOME_LIMITS.eyebrow}
+          />
+          <HomeText
+            name="manifesto.text"
+            label={CONTENT_COPY.phrase}
+            maxLength={HOME_LIMITS.manifestoText}
+            multiline
+          />
+          <HomeText
+            name="manifesto.ctaLabel"
+            label={CONTENT_COPY.linkText}
+            maxLength={HOME_LIMITS.buttonLabel}
+          />
         </Section>
         <Section title={CONTENT_COPY.stats}>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -143,10 +176,27 @@ export function HomeContentForm({ content, products }: HomeContentFormProps): Re
           </div>
         </Section>
         <Section title={CONTENT_COPY.kitBlock}>
-          <HomeText name="kitBlock.eyebrow" label={CONTENT_COPY.eyebrow} maxLength={60} />
-          <HomeText name="kitBlock.title" label={CONTENT_COPY.heading} maxLength={60} />
-          <HomeText name="kitBlock.text" label={CONTENT_COPY.text} maxLength={600} multiline />
-          <HomeText name="kitBlock.ctaLabel" label={CONTENT_COPY.button} maxLength={40} />
+          <HomeText
+            name="kitBlock.eyebrow"
+            label={CONTENT_COPY.eyebrow}
+            maxLength={HOME_LIMITS.eyebrow}
+          />
+          <HomeText
+            name="kitBlock.title"
+            label={CONTENT_COPY.heading}
+            maxLength={HOME_LIMITS.title}
+          />
+          <HomeText
+            name="kitBlock.text"
+            label={CONTENT_COPY.text}
+            maxLength={HOME_LIMITS.text}
+            multiline
+          />
+          <HomeText
+            name="kitBlock.ctaLabel"
+            label={CONTENT_COPY.button}
+            maxLength={HOME_LIMITS.buttonLabel}
+          />
         </Section>
         <FormActions
           isDirty={isDirty}

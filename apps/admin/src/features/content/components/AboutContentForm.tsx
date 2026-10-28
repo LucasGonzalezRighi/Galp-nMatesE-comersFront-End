@@ -15,6 +15,7 @@ import { Section } from '../../../components/ui/Section'
 import { toast } from '../../../components/ui/toast'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { aboutFormValues, aboutPhotoUrls } from '../content-form-values'
+import { ABOUT_LIMITS } from '../content-limits'
 import { CONTENT_COPY, positionLabel } from '../content.copy'
 import { fieldIndex } from '../list-utils'
 import { useSaveContent } from '../use-save-content'
@@ -25,12 +26,6 @@ import { TitleLinesField } from './TitleLinesField'
 
 /** Campo de texto del formulario de Nosotros. */
 const AboutText = TextField<AboutContentFormInput>
-
-/** Más socios que admite la página (los de `aboutContentFormSchema`). */
-const MAX_PARTNERS = 8
-
-/** Cantidad de pasos de "Cómo trabajamos". */
-const STEPS = 3
 
 /** Props de {@link AboutContentForm}. */
 export interface AboutContentFormProps {
@@ -59,6 +54,7 @@ export function AboutContentForm({ content }: AboutContentFormProps): ReactNode 
     queryKey: queryKeys.adminContent('about'),
     save: (body: AboutContentValues) => updateAdminAboutContent(api, body),
     setError: form.setError,
+    getValues: form.getValues,
     onSaved: (saved) => {
       setPhotoUrls((urls) => ({ ...urls, ...aboutPhotoUrls(saved) }))
       form.reset(aboutFormValues(saved))
@@ -94,9 +90,18 @@ export function AboutContentForm({ content }: AboutContentFormProps): ReactNode 
     <FormProvider {...form}>
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Section title={CONTENT_COPY.hero}>
-          <AboutText name="hero.eyebrow" label={CONTENT_COPY.eyebrow} maxLength={60} />
+          <AboutText
+            name="hero.eyebrow"
+            label={CONTENT_COPY.eyebrow}
+            maxLength={ABOUT_LIMITS.eyebrow}
+          />
           <TitleLinesField<AboutContentFormInput> name="hero.titleLines" />
-          <AboutText name="hero.text" label={CONTENT_COPY.text} maxLength={600} multiline />
+          <AboutText
+            name="hero.text"
+            label={CONTENT_COPY.text}
+            maxLength={ABOUT_LIMITS.text}
+            multiline
+          />
         </Section>
         <Section title={CONTENT_COPY.partners} description={CONTENT_COPY.partnersHint}>
           {partners.fields.map((field, index) => (
@@ -112,7 +117,7 @@ export function AboutContentForm({ content }: AboutContentFormProps): ReactNode 
               }}
             />
           ))}
-          {partners.fields.length < MAX_PARTNERS && (
+          {partners.fields.length < ABOUT_LIMITS.partners && (
             <Button
               variant="secondary"
               size="sm"
@@ -127,28 +132,41 @@ export function AboutContentForm({ content }: AboutContentFormProps): ReactNode 
           )}
         </Section>
         <Section title={CONTENT_COPY.phrase}>
-          <AboutText name="quote" label={CONTENT_COPY.phrase} maxLength={300} multiline />
+          <AboutText
+            name="quote"
+            label={CONTENT_COPY.phrase}
+            maxLength={ABOUT_LIMITS.quote}
+            multiline
+          />
         </Section>
         <Section title={CONTENT_COPY.howWeWork}>
-          <AboutText name="stepsEyebrow" label={CONTENT_COPY.eyebrow} maxLength={60} />
-          {Array.from({ length: STEPS }, (_, index) => (
+          <AboutText
+            name="stepsEyebrow"
+            label={CONTENT_COPY.eyebrow}
+            maxLength={ABOUT_LIMITS.eyebrow}
+          />
+          {Array.from({ length: ABOUT_LIMITS.steps }, (_, index) => (
             <FieldGroup key={index} title={positionLabel(CONTENT_COPY.step, index + 1)}>
               <AboutText
                 name={`steps.${fieldIndex(index)}.title`}
                 label={CONTENT_COPY.heading}
-                maxLength={60}
+                maxLength={ABOUT_LIMITS.stepTitle}
               />
               <AboutText
                 name={`steps.${fieldIndex(index)}.text`}
                 label={CONTENT_COPY.text}
-                maxLength={400}
+                maxLength={ABOUT_LIMITS.stepText}
                 multiline
               />
             </FieldGroup>
           ))}
         </Section>
         <Section title={CONTENT_COPY.storeButton}>
-          <AboutText name="ctaLabel" label={CONTENT_COPY.buttonText} maxLength={40} />
+          <AboutText
+            name="ctaLabel"
+            label={CONTENT_COPY.buttonText}
+            maxLength={ABOUT_LIMITS.buttonLabel}
+          />
         </Section>
         <FormActions
           isDirty={isDirty}

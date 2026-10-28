@@ -7,6 +7,7 @@ import { slugify } from '@galpon/domain'
 import type { SortableItemHelpers } from '../../../components/ui/SortableList'
 import { Button } from '../../../components/ui/Button'
 import { SortableList } from '../../../components/ui/SortableList'
+import { FAQ_LIMITS } from '../content-limits'
 import { CONTENT_COPY, positionLabel, questionName, questionsListLabel } from '../content.copy'
 import { fieldIndex, findMove } from '../list-utils'
 import { FieldGroup } from './FieldGroup'
@@ -15,9 +16,6 @@ import { TextField } from './TextField'
 
 /** Campo de texto del formulario de preguntas. */
 const FaqText = TextField<FaqContentFormInput>
-
-/** Más preguntas por categoría (las de `faqContentFormSchema`). */
-const MAX_QUESTIONS = 30
 
 /** Props de {@link FaqCategoryFields}. */
 export interface FaqCategoryFieldsProps {
@@ -30,10 +28,11 @@ export interface FaqCategoryFieldsProps {
 }
 
 /**
- * Una categoría de preguntas frecuentes: "Nombre", "Identificador" (en una categoría nueva sigue
- * a `slugify(nombre)` hasta que se lo cambia a mano) y sus preguntas ("Pregunta" y "Respuesta"),
- * que se reordenan con `SortableList` y se agregan con "Agregar pregunta". Va dentro del
- * `FormProvider` de preguntas.
+ * Una categoría de preguntas frecuentes: "Nombre", "Identificador" (en `font-mono`; en una
+ * categoría nueva sigue a `slugify(nombre)` hasta que se lo cambia a mano, y la ayuda dice que se
+ * completa solo mientras lo sigue) y sus preguntas ("Pregunta" y "Respuesta"), que se reordenan
+ * con `SortableList` y se agregan con "Agregar pregunta". Va dentro del `FormProvider` de
+ * preguntas.
  *
  * @param props - Ver {@link FaqCategoryFieldsProps}.
  */
@@ -56,7 +55,7 @@ export function FaqCategoryFields({ index, helpers, onRemove }: FaqCategoryField
         <FaqText
           name={`categories.${fieldIndex(index)}.label`}
           label={CONTENT_COPY.categoryName}
-          maxLength={40}
+          maxLength={FAQ_LIMITS.categoryLabel}
           onValueChange={(value) => {
             if (!followsLabel) return
             const idPath = `categories.${fieldIndex(index)}.id` as const
@@ -69,8 +68,9 @@ export function FaqCategoryFields({ index, helpers, onRemove }: FaqCategoryField
         <FaqText
           name={`categories.${fieldIndex(index)}.id`}
           label={CONTENT_COPY.categoryId}
-          hint={CONTENT_COPY.categoryIdHint}
-          maxLength={80}
+          hint={followsLabel ? CONTENT_COPY.categoryIdAutoHint : CONTENT_COPY.categoryIdHint}
+          maxLength={FAQ_LIMITS.categoryId}
+          monospace
           onValueChange={() => {
             setFollowsLabel(false)
           }}
@@ -111,12 +111,12 @@ export function FaqCategoryFields({ index, helpers, onRemove }: FaqCategoryField
               <FaqText
                 name={`categories.${fieldIndex(index)}.items.${fieldIndex(at)}.question`}
                 label={CONTENT_COPY.question}
-                maxLength={200}
+                maxLength={FAQ_LIMITS.question}
               />
               <FaqText
                 name={`categories.${fieldIndex(index)}.items.${fieldIndex(at)}.answer`}
                 label={CONTENT_COPY.answer}
-                maxLength={2000}
+                maxLength={FAQ_LIMITS.answer}
                 multiline
                 rows={4}
               />
@@ -124,7 +124,7 @@ export function FaqCategoryFields({ index, helpers, onRemove }: FaqCategoryField
           )
         }}
       />
-      {items.fields.length < MAX_QUESTIONS && (
+      {items.fields.length < FAQ_LIMITS.questions && (
         <Button
           variant="secondary"
           size="sm"

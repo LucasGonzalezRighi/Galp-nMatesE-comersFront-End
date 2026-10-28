@@ -7,6 +7,8 @@ import { ImageUploaderProvider } from '../../../components/media/ImageUploaderPr
 import { createSimulatedUploader } from '../../../components/media/simulated-uploader'
 import { useToastStore } from '../../../components/ui/toast'
 import { Toaster } from '../../../components/ui/Toaster'
+import { failBackgroundReload } from '../../../test/fail-background-reload'
+import { validationProblem } from '../../../test/problem-response'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { CategoriesScreen } from './CategoriesScreen'
 
@@ -36,21 +38,6 @@ async function setup(app?: TestApp) {
     { app: testApp, path: '/lineas' },
   )
   return { ...result, app: testApp, user }
-}
-
-/** Hace que la recarga en segundo plano falle (sesión vencida) y espera a que termine. */
-async function failBackgroundReload(app: TestApp): Promise<void> {
-  app.mockDb.db.adminSession = null
-  await act(async () => {
-    await app.queryClient.refetchQueries({ type: 'active' })
-    // React Query avisa a las pantallas en el próximo ciclo: se espera a que ya lo hayan hecho.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  })
-  const failed = app.queryClient
-    .getQueryCache()
-    .findAll()
-    .filter((query) => query.state.status === 'error' && query.state.data !== undefined)
-  expect(failed.length).toBeGreaterThan(0)
 }
 
 /** Nombres de las líneas en el orden en que se ven (sale de la agarradera de cada una). */
@@ -186,6 +173,67 @@ describe('CategoriesScreen', () => {
     expect(savedOrder(app)).toEqual(DEMO_ORDER)
   })
 
+  it('con dos órdenes seguidos, la lista no vuelve atrás si el primero falla al final', async () => {
+    const { app, user } = await setup()
+    await screen.findByRole('list', { name: 'Líneas' })
+    // El primer guardado del orden queda frenado hasta `releaseFirst` y después falla (500) sin
+    // llegar al servidor; con `holdReloads`, las recargas de las líneas esperan a `releaseReloads`.
+    let releaseFirst: () => void = () => undefined
+    const firstHeld = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    let releaseReloads: () => void = () => undefined
+    const reloadsHeld = new Promise<void>((resolve) => {
+      releaseReloads = resolve
+    })
+    let holdReloads = false
+    let orderSaves = 0
+    app.api.use({
+      async onRequest({ request }) {
+        const { pathname } = new URL(request.url)
+        if (request.method === 'PUT' && pathname.endsWith('/admin/categories/order')) {
+          orderSaves += 1
+          if (orderSaves === 1) {
+            await firstHeld
+            return new Response(null, { status: 500 })
+          }
+        }
+        if (holdReloads && request.method === 'GET' && pathname.endsWith('/admin/categories')) {
+          await reloadsHeld
+        }
+        return undefined
+      },
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Bajar Imperiales' }))
+    await user.click(screen.getByRole('button', { name: 'Bajar Imperiales' }))
+    const expected = ['Torpedos', 'Camioneros', 'Imperiales', ...DEMO_ORDER.slice(3)]
+    expect(await screen.findByText('Orden guardado.')).toBeInTheDocument()
+    // El segundo terminó del todo (con su recarga); el primero sigue en curso.
+    await waitFor(() => {
+      expect(app.queryClient.isMutating()).toBe(1)
+    })
+    expect(savedOrder(app)).toEqual(expected)
+    expect(shownOrder()).toEqual(expected)
+
+    holdReloads = true
+    releaseFirst()
+    expect(
+      await screen.findByText('No pudimos guardar el orden. Volvimos al anterior.'),
+    ).toBeInTheDocument()
+    // El primero puso en la caché el orden de antes de los dos: la lista no lo tiene que mostrar.
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    })
+    expect(shownOrder()).toEqual(expected)
+
+    releaseReloads()
+    await waitFor(() => {
+      expect(app.queryClient.isMutating()).toBe(0)
+    })
+    expect(shownOrder()).toEqual(expected)
+  })
+
   it('crea una línea con foto: el slug sigue al nombre y la foto se guarda con su texto', async () => {
     const { app, user } = await setup()
     await user.click(await screen.findByRole('button', { name: 'Nueva línea' }))
@@ -195,6 +243,7 @@ describe('CategoriesScreen', () => {
     expect(name).toHaveFocus()
     await user.type(name, 'Calabazas Criollas')
     expect(within(dialog).getByRole('textbox', { name: /^Slug/ })).toHaveValue('calabazas-criollas')
+    expect(within(dialog).getByRole('textbox', { name: /^Slug/ })).toHaveClass('font-mono')
     await user.selectOptions(within(dialog).getByRole('combobox', { name: /^Grupo/ }), 'Mates')
     await user.type(within(dialog).getByRole('textbox', { name: /^Bajada/ }), 'Calabaza curada.')
     expect(within(dialog).getByText('Texto corto que acompaña la línea (hasta 200).')).toBeVisible()
@@ -242,6 +291,33 @@ describe('CategoriesScreen', () => {
       'true',
     )
     expect(app.mockDb.db.categories).toHaveLength(6)
+  })
+
+  it('un 422 con una ruta que el formulario no dibuja también avisa el mensaje general', async () => {
+    const { app, user } = await setup()
+    await screen.findByRole('list', { name: 'Líneas' })
+    app.api.use({
+      onRequest: ({ request }) =>
+        request.method !== 'GET' && request.url.includes('/admin/categories/cat-torpedos')
+          ? validationProblem(
+              [
+                { field: 'name', message: 'Ese nombre no se puede usar.' },
+                { field: 'position', message: 'La posición no es válida.' },
+              ],
+              'Revisá los datos de la línea.',
+            )
+          : undefined,
+    })
+    await chooseAction(user, 'Torpedos', 'Editar')
+    const dialog = await screen.findByRole('dialog', { name: 'Editar línea' })
+
+    await user.type(within(dialog).getByRole('textbox', { name: /^Nombre/ }), ' nuevos')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+
+    expect(await within(dialog).findByText('Ese nombre no se puede usar.')).toBeVisible()
+    // El diálogo modal esconde el resto para el lector (`aria-hidden`): el aviso se busca por texto.
+    expect(await screen.findByText('Revisá los datos de la línea.')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Editar línea' })).toBeInTheDocument()
   })
 
   it('edita una línea sin tocar el slug al cambiar el nombre', async () => {

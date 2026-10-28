@@ -82,7 +82,7 @@ botones ni estados propios: usan los de acá (y `src/components/media` para subi
 ## Kit B — tablas, diálogos, avisos, orden e imágenes (Task 5)
 
 - `Dialog`: diálogo de Radix con título, descripción, cuerpo con scroll y pie; ancho `sm`, `md` o `lg`. "Cerrar" se ve arriba a la derecha pero va último en el DOM, así el foco inicial cae en el primer campo del cuerpo.
-- `ConfirmDialog`: confirmación antes de una acción irreversible; el foco arranca en "Cancelar" y `isPending` deshabilita los dos botones.
+- `ConfirmDialog`: confirmación antes de una acción irreversible; el foco arranca en "Cancelar" y `isPending` deshabilita los dos botones. Por omisión Escape hace lo mismo que "Cancelar" (`onOpenChange(false)`); con `onEscape`, Escape llama a esa función en su lugar y "Cancelar" sigue llamando a `onOpenChange(false)`. Sirve cuando "Cancelar" hace algo más que cerrar y Escape tiene que ser solo cerrar: en el aviso de "Este producto cambió mientras lo editabas", "Ver la versión guardada" (el botón de cancelar) descarta lo editado y Escape cierra el aviso y lo conserva. Mientras `isPending`, Escape no hace nada.
 - `ActionsMenu`: menú de acciones de Radix detrás de un botón ícono (`DotsThree`).
 - `Tabs`: pestañas controladas de Radix, con un contador opcional por pestaña; el panel siempre está (vacío sin `children`), porque `aria-controls` lo nombra.
 - `DataTable`: tabla de TanStack Table con orden manual, `caption` oculta, columnas que se esconden por ancho y estados de carga, error y vacío. El contenedor con scroll horizontal es una región con el nombre de `caption` que toma el foco (para desplazarla con el teclado).
