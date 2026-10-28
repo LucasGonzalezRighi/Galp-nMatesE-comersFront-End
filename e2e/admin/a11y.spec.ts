@@ -83,6 +83,36 @@ test.describe('dashboard: accesibilidad (axe)', () => {
     expect(await violations(page)).toEqual([])
   })
 
+  test('teclado: Enter abre un diálogo con el foco en el primer campo y Escape lo cierra', async ({
+    page,
+  }) => {
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/lineas', heading: 'Líneas' })
+    await page.getByRole('button', { name: 'Nueva línea' }).focus()
+    await page.keyboard.press('Enter')
+    const dialog = page.getByRole('dialog', { name: 'Nueva línea' })
+    await expect(dialog.getByRole('textbox', { name: 'Nombre' })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+  })
+
+  test('teclado: al cerrar un diálogo el foco vuelve al botón que lo abrió', async ({ page }) => {
+    test.fail(
+      true,
+      'Desvío 3 de CHECKLIST-P4: Dialog.tsx no recuerda quién lo abrió y el foco queda en el body.',
+    )
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/lineas', heading: 'Líneas' })
+    const open = page.getByRole('button', { name: 'Nueva línea' })
+    await open.focus()
+    await page.keyboard.press('Enter')
+    const dialog = page.getByRole('dialog', { name: 'Nueva línea' })
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(open).toBeFocused({ timeout: 2000 })
+  })
+
   test('el diálogo de sesión vencida', async ({ page }) => {
     await page.clock.install()
     await logInAsAdmin(page)

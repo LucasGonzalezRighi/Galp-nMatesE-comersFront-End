@@ -14,7 +14,8 @@ const VIEWPORTS = [
 ] as const
 
 /**
- * Guarda la captura `admin-{nombre}-{ancho}.png`, después de que carguen las fuentes.
+ * Guarda la captura `admin-{nombre}-{ancho}.png`, después de que carguen las fuentes y, si se ve la
+ * barra lateral, los contadores del menú.
  *
  * @param page - Página en el estado a capturar.
  * @param name - Nombre de la pantalla.
@@ -23,6 +24,10 @@ const VIEWPORTS = [
  */
 async function capture(page: Page, name: string, label: string, fullPage = true): Promise<void> {
   await page.evaluate(() => document.fonts.ready)
+  const nav = page.getByRole('navigation', { name: 'Principal' })
+  if (await nav.isVisible()) {
+    await expect(nav.getByRole('link', { name: /^Pedidos, / })).toBeVisible()
+  }
   mkdirSync(OUTPUT_DIR, { recursive: true })
   await page.screenshot({ path: join(OUTPUT_DIR, `admin-${name}-${label}.png`), fullPage })
 }

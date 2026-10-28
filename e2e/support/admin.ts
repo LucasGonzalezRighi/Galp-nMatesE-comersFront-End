@@ -89,7 +89,9 @@ export function screenHeading(page: Page, name: string): Locator {
 
 /**
  * Abre una pantalla del dashboard (con la sesión ya iniciada) y espera a que termine de cargar: a
- * ver su `h1` y a que no quede ningún aviso de "Cargando…".
+ * ver su `h1` y a que no quede ningún aviso de "Cargando…", ninguna tabla ocupada (`aria-busy`),
+ * ningún `Skeleton` (`animate-pulse`) ni ninguna lista desplegable sin sus opciones (la línea de un
+ * producto llega con su propia consulta).
  *
  * @param page - Página de Playwright.
  * @param screen - Ruta y título de la pantalla.
@@ -101,6 +103,16 @@ export async function gotoAdmin(
   await page.goto(screen.path)
   await expect(screenHeading(page, screen.heading)).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: /^Cargando/ })).toHaveCount(0)
+  await expect(page.locator('[aria-busy="true"], .animate-pulse')).toHaveCount(0)
+  await expect
+    .poll(() =>
+      page
+        .locator('main select')
+        .evaluateAll((selects) =>
+          selects.every((select) => select instanceof HTMLSelectElement && select.length > 1),
+        ),
+    )
+    .toBe(true)
 }
 
 /**
