@@ -10,3 +10,5 @@ test-results
 # Spec, plan y notas de trabajo del flujo de desarrollo: se editan como texto y no se reformatean
 docs/superpowers/**
 .superpowers
+# Skills de terceros instaladas para Claude Code: se dejan tal cual vienen
+.claude/skills/**
