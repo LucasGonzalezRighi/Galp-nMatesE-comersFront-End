@@ -228,6 +228,27 @@ describe('useSingleImageUpload', () => {
     expect(result.current.error).toBe('b.gif: Formato no admitido: usá JPG, PNG o WebP.')
   })
 
+  it('cancelar quita la foto aunque haya quedado con error y revoca su blob:', async () => {
+    const { wrapper } = await setup()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    const { result } = renderHook(() => useSingleImageUpload({ purpose: 'partner' }), {
+      wrapper,
+    })
+    await act(() => result.current.add([photo('error-socio.jpg')]))
+    await waitFor(() => {
+      expect(result.current.item?.status).toBe('error')
+    })
+    const failed = result.current.item
+    expect(result.current.hasErrors).toBe(true)
+
+    act(() => {
+      result.current.cancel()
+    })
+    expect(result.current.item).toBeNull()
+    expect(result.current.hasErrors).toBe(false)
+    expect(revoke).toHaveBeenCalledWith(failed?.previewUrl)
+  })
+
   it('reintenta y quita sin identificador', async () => {
     const { wrapper } = await setup()
     const { result } = renderHook(() => useSingleImageUpload({ purpose: 'site' }), { wrapper })

@@ -39,6 +39,11 @@ export interface SingleImageFieldProps {
   image: SingleImageValue | null
   /** La subida actual, o `null`. Mientras está en curso o con error, tapa a `image`. */
   upload: SingleImageUpload | null
+  /**
+   * Por qué no se tomó el último archivo (formato, peso, medidas), por ejemplo el `error` de
+   * `useSingleImageUpload`. Se muestra con `role="alert"` tanto sin foto como con foto.
+   */
+  error?: string
   /** Se llama con el archivo elegido o soltado (uno solo). */
   onFiles: (files: File[]) => void
   /** "Cancelar" la subida en curso, o "Quitar" la que falló (vuelve la foto anterior). */
@@ -59,14 +64,15 @@ export interface SingleImageFieldProps {
  * @param props - Ver {@link SingleImageFieldProps}.
  * @example
  * <SingleImageField label="Foto" hint={MEDIA_COPY.hint} image={photo} upload={upload.item}
- *   onFiles={upload.add} onCancel={upload.cancel} onRetry={upload.retry}
- *   onRemove={clearPhoto} altField={<TextInput … />} />
+ *   error={upload.error ?? undefined} onFiles={upload.add} onCancel={upload.cancel}
+ *   onRetry={upload.retry} onRemove={clearPhoto} altField={<TextInput … />} />
  */
 export function SingleImageField({
   label,
   hint,
   image,
   upload,
+  error,
   onFiles,
   onCancel,
   onRetry,
@@ -74,7 +80,13 @@ export function SingleImageField({
   altField,
 }: SingleImageFieldProps): ReactNode {
   const inputRef = useRef<HTMLInputElement>(null)
-  const hintId = useId()
+  const id = useId()
+  const hintId = `${id}-hint`
+  const errorId = `${id}-error`
+  const describedBy =
+    [hint === undefined ? null : hintId, error === undefined ? null : errorId]
+      .filter((value) => value !== null)
+      .join(' ') || undefined
   const pending = upload !== null && upload.status !== 'done' ? upload : null
   const isUploading = pending?.status === 'uploading'
 
@@ -86,7 +98,7 @@ export function SingleImageField({
 
   let content: ReactNode
   if (upload === null && image === null) {
-    content = <ImageDropzone multiple={false} hint={hint} onFiles={onFiles} />
+    content = <ImageDropzone multiple={false} hint={hint} error={error} onFiles={onFiles} />
   } else {
     content = (
       <div className="flex max-w-60 flex-col gap-2">
@@ -105,7 +117,7 @@ export function SingleImageField({
         <Button
           variant="secondary"
           disabled={isUploading}
-          aria-describedby={hint === undefined ? undefined : hintId}
+          aria-describedby={describedBy}
           onClick={() => {
             inputRef.current?.click()
           }}
@@ -125,6 +137,11 @@ export function SingleImageField({
         {hint !== undefined && (
           <p id={hintId} className="text-xs text-neutral-400">
             {hint}
+          </p>
+        )}
+        {error !== undefined && (
+          <p id={errorId} role="alert" className="text-danger text-xs">
+            {error}
           </p>
         )}
       </div>

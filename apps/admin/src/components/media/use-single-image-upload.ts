@@ -17,7 +17,10 @@ export interface SingleImageUpload {
    * (revoca su `blob:`). Un archivo inválido no reemplaza nada.
    */
   add: (files: Iterable<File> | ArrayLike<File>) => Promise<void>
-  /** Cancela la subida en curso y quita la foto. */
+  /**
+   * Cancela la subida en curso o quita la que falló (es una cola de una foto: cancelar es quitar,
+   * en cualquier estado). Es lo que cablea el "Cancelar" y el "Quitar" de `SingleImageField`.
+   */
   cancel: () => void
   /** Vuelve a subir la foto si quedó con error (pide una firma nueva). */
   retry: () => void
@@ -48,7 +51,7 @@ export function useSingleImageUpload({ purpose }: UseSingleImageUploadOptions): 
     item,
     add: uploads.add,
     cancel: () => {
-      if (id !== null) uploads.cancel(id)
+      if (id !== null) uploads.remove(id)
     },
     retry: () => {
       if (id !== null) uploads.retry(id)

@@ -51,6 +51,29 @@ describe('SingleImageField', () => {
     expect(onRemove).toHaveBeenCalledTimes(1)
   })
 
+  it('sin foto muestra el error de la última elección debajo de la zona', () => {
+    renderField({ error: 'mate.gif: Formato no admitido: usá JPG, PNG o WebP.' })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'mate.gif: Formato no admitido: usá JPG, PNG o WebP.',
+    )
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveAccessibleDescription(
+      'JPG, PNG o WebP. mate.gif: Formato no admitido: usá JPG, PNG o WebP.',
+    )
+  })
+
+  it('con foto muestra el error de la última elección junto a "Cambiar foto"', () => {
+    renderField({
+      image: { src: 'data:image/webp;base64,AAAA', alt: 'Socio en el galpón' },
+      error: 'grande.jpg: La foto pesa más de 10 MB.',
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('grande.jpg: La foto pesa más de 10 MB.')
+    expect(screen.getByRole('button', { name: 'Cambiar foto' })).toHaveAccessibleDescription(
+      'JPG, PNG o WebP. grande.jpg: La foto pesa más de 10 MB.',
+    )
+  })
+
   it('mientras sube muestra la vista previa con el progreso y no deja cambiar la foto', async () => {
     const user = userEvent.setup()
     const { onCancel } = renderField({
