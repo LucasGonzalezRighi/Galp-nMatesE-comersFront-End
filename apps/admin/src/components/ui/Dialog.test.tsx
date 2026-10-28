@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import { Dialog } from './Dialog'
 
@@ -91,6 +91,46 @@ describe('Dialog', () => {
     // El foco vuelve un cuadro después (por si otro código ya lo movió).
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Nueva línea' })).toHaveFocus()
+    })
+  })
+
+  it('con returnFocusTo, al cerrarse el foco va al elemento que devuelve', async () => {
+    const user = userEvent.setup()
+    function WithTarget() {
+      const [open, setOpen] = useState(false)
+      const headingRef = useRef<HTMLHeadingElement>(null)
+      return (
+        <>
+          <h1 ref={headingRef} tabIndex={-1}>
+            Pedido GLP-09001
+          </h1>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Marcar como despachado
+          </button>
+          <Dialog
+            open={open}
+            onOpenChange={setOpen}
+            title="Despachar el pedido"
+            returnFocusTo={() => headingRef.current}
+          >
+            <input aria-label="Empresa" />
+          </Dialog>
+        </>
+      )
+    }
+    render(<WithTarget />)
+
+    await user.click(screen.getByRole('button', { name: 'Marcar como despachado' }))
+    await screen.findByRole('dialog', { name: 'Despachar el pedido' })
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
     })
   })
 })

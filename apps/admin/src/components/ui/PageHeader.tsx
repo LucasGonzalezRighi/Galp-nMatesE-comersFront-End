@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { CaretLeftIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -26,6 +26,11 @@ export interface PageHeaderProps {
   actions?: ReactNode
   /** Enlace con `CaretLeft` para volver, arriba del título. */
   back?: PageHeaderBack
+  /**
+   * Ref del `h1`, para devolverle el foco cuando una acción saca de la pantalla el botón que la
+   * hizo (por ejemplo, con `returnFocusTo` de `ConfirmDialog`).
+   */
+  headingRef?: Ref<HTMLHeadingElement>
 }
 
 /**
@@ -39,7 +44,13 @@ export interface PageHeaderProps {
  * @example
  * <PageHeader title="Pedido GLP-09001" back={{ to: '/pedidos', label: 'Pedidos' }} />
  */
-export function PageHeader({ title, description, actions, back }: PageHeaderProps): ReactNode {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  back,
+  headingRef,
+}: PageHeaderProps): ReactNode {
   useEffect(() => {
     document.title = `${title}${UI_COPY.documentTitleSuffix}`
   }, [title])
@@ -59,7 +70,7 @@ export function PageHeader({ title, description, actions, back }: PageHeaderProp
       )}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 tabIndex={-1} className="text-h3 break-words">
+          <h1 ref={headingRef} tabIndex={-1} className="text-h3 break-words">
             {title}
           </h1>
           {description !== undefined && <div className="text-neutral-400">{description}</div>}

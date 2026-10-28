@@ -138,6 +138,26 @@ describe('FaqContentScreen', { timeout: 20_000 }, () => {
     })
   })
 
+  it('al quitar una pregunta o una categoría el foco va al primer campo de la que queda', async () => {
+    const user = userEvent.setup()
+    const app = await createFaqApp()
+    await renderFaq(app)
+
+    const shipping = screen.getByRole('group', { name: 'Envíos' })
+    await user.click(
+      within(shipping).getByRole('button', { name: 'Quitar la pregunta 1 de Envíos' }),
+    )
+    // La segunda pasa al lugar de la quitada: su "Pregunta" tiene el foco, no el body.
+    const question = within(shipping).getByLabelText('Pregunta')
+    expect(question).toHaveValue('¿Cuánto tarda?')
+    expect(question).toHaveFocus()
+
+    // La última categoría no tiene siguiente: el foco va al nombre de la anterior.
+    await user.click(screen.getByRole('button', { name: 'Quitar Pagos y cuotas' }))
+    expect(categoryNames()).toEqual(['Envíos'])
+    expect(within(shipping).getByLabelText('Nombre')).toHaveFocus()
+  })
+
   it('reordena las categorías con "Bajar" y guarda el orden nuevo', async () => {
     const user = userEvent.setup()
     const app = await createFaqApp()

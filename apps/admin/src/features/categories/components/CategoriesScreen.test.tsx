@@ -386,13 +386,21 @@ describe('CategoriesScreen', () => {
     expect(app.mockDb.db.categories.some((category) => category.id === 'cat-imperiales')).toBe(true)
   })
 
-  it('borra una línea sin productos', async () => {
+  it('borra una línea sin productos y el foco va al título', async () => {
     const app = await createTestApp()
     app.mockDb.db.categories.push(emptyCategory(7))
     const { user } = await setup(app)
     await screen.findByRole('list', { name: 'Líneas' })
-    await chooseAction(user, 'Sin productos', 'Borrar')
+    const menu = screen.getByRole('button', { name: 'Acciones de Sin productos' })
 
+    // Al cancelar, el foco vuelve al menú de la fila.
+    await chooseAction(user, 'Sin productos', 'Borrar')
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(menu).toHaveFocus()
+    })
+
+    await chooseAction(user, 'Sin productos', 'Borrar')
     const confirm = await screen.findByRole('alertdialog')
     await user.click(within(confirm).getByRole('button', { name: 'Borrar' }))
 
@@ -401,6 +409,8 @@ describe('CategoriesScreen', () => {
       expect(shownOrder()).toEqual(DEMO_ORDER)
     })
     expect(app.mockDb.db.categories).toHaveLength(6)
+    // La fila salió de la lista después de cerrar: el foco quedó en el título, no en el body.
+    expect(screen.getByRole('heading', { level: 1, name: 'Líneas' })).toHaveFocus()
   })
 
   it('sin líneas invita a crear la primera', async () => {

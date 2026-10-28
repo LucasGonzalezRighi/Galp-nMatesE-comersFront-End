@@ -66,6 +66,7 @@ export function CategoriesScreen(): ReactNode {
   const pendingReorders = useRef(0)
   const [editor, setEditor] = useState<DialogState>(CLOSED)
   const [deleting, setDeleting] = useState<DialogState>(CLOSED)
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   const openEditor = (category: Category | null) => {
     setEditor((current) => ({ open: true, category, session: current.session + 1 }))
@@ -144,6 +145,7 @@ export function CategoriesScreen(): ReactNode {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        headingRef={headingRef}
         title={CATEGORIES_COPY.title}
         description={CATEGORIES_COPY.description}
         actions={
@@ -173,6 +175,7 @@ export function CategoriesScreen(): ReactNode {
         onClose={() => {
           setDeleting((current) => ({ ...current, open: false }))
         }}
+        focusAfterDelete={() => headingRef.current}
       />
     </div>
   )

@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form'
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFieldArray, useWatch } from 'react-hook-form'
 import type { ImageUploads } from '../../../components/media/use-image-uploads'
 import type { ProductFormOutput, ProductFormValues } from '../product-form-values'
 import { MEDIA_COPY } from '../../../components/media/media.copy'
 import { Button } from '../../../components/ui/Button'
 import { Field } from '../../../components/ui/Field'
+import { focusListNeighbor } from '../../../components/ui/focus-list-neighbor'
 import { ImageDropzone } from '../../../components/ui/ImageDropzone'
 import { ImageTile } from '../../../components/ui/ImageTile'
 import { Section } from '../../../components/ui/Section'
@@ -47,6 +48,9 @@ export interface ProductPhotosFieldProps {
  * alternativo y sale de la cola (`remove(id)`), así el cupo no la cuenta dos veces. El área para
  * elegir fotos se ve mientras quede cupo.
  *
+ * Al quitar (o cancelar) una foto, el foco va a la vecina de su misma lista (el texto alternativo
+ * de una guardada, el primer botón de una que sube) o, si no queda ninguna, a "Elegir archivos".
+ *
  * @param props - Ver {@link ProductPhotosFieldProps}.
  */
 export function ProductPhotosField({
@@ -59,6 +63,20 @@ export function ProductPhotosField({
   const { fields, append, remove, move } = useFieldArray({ control, name: 'images' })
   const images = useWatch({ control, name: 'images' })
   const { items, remove: removeUpload } = uploads
+  const dropzoneRef = useRef<HTMLDivElement>(null)
+  // Se quitó la última foto de una lista: después de dibujar, el foco va a "Elegir archivos".
+  const focusDropzone = useRef(false)
+
+  useEffect(() => {
+    if (!focusDropzone.current) return
+    focusDropzone.current = false
+    dropzoneRef.current?.querySelector<HTMLElement>('button')?.focus()
+  })
+
+  /** Antes de quitar una foto, pasa el foco a su vecina o, si no hay, a "Elegir archivos". */
+  function moveFocusFrom(button: HTMLButtonElement, selector: string) {
+    if (!focusListNeighbor(button, selector)) focusDropzone.current = true
+  }
 
   useEffect(() => {
     const done = items.flatMap((item) =>
@@ -120,7 +138,8 @@ export function ProductPhotosField({
                   status="done"
                   isMain={index === 0}
                   removeLabel={removePhotoLabel(position)}
-                  onRemove={() => {
+                  onRemove={(event) => {
+                    moveFocusFrom(event.currentTarget, 'input')
                     remove(formIndex)
                   }}
                 >
@@ -177,13 +196,15 @@ export function ProductPhotosField({
                 status={item.status}
                 progress={item.progress}
                 errorMessage={item.errorMessage ?? undefined}
-                onCancel={() => {
+                onCancel={(event) => {
+                  moveFocusFrom(event.currentTarget, 'button')
                   uploads.cancel(item.id)
                 }}
                 onRetry={() => {
                   uploads.retry(item.id)
                 }}
-                onRemove={() => {
+                onRemove={(event) => {
+                  moveFocusFrom(event.currentTarget, 'button')
                   removeUpload(item.id)
                 }}
               />
@@ -192,13 +213,15 @@ export function ProductPhotosField({
         </ul>
       )}
       {hasRoom ? (
-        <ImageDropzone
-          multiple
-          error={uploads.error ?? undefined}
-          onFiles={(files) => {
-            void uploads.add(files)
-          }}
-        />
+        <div ref={dropzoneRef}>
+          <ImageDropzone
+            multiple
+            error={uploads.error ?? undefined}
+            onFiles={(files) => {
+              void uploads.add(files)
+            }}
+          />
+        </div>
       ) : (
         uploads.error !== null && (
           <p role="alert" className="text-danger text-sm">

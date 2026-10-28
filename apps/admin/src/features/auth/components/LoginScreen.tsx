@@ -25,7 +25,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps): ReactNode {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-6 p-6">
       <header className="flex flex-col gap-1">
-        <h1>{AUTH_COPY.loginTitle}</h1>
+        <h1 className="text-h3">{AUTH_COPY.loginTitle}</h1>
         <p className="text-neutral-400">{AUTH_COPY.loginDescription}</p>
       </header>
       <LoginForm onSuccess={onSuccess} />

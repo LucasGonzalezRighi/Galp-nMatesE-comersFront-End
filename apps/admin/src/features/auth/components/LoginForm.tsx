@@ -1,11 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { AdminLoginResult } from '@galpon/api-client'
 import type { AdminLogin, AdminLoginInput } from '@galpon/schemas'
 import { adminLogin, isApiError } from '@galpon/api-client'
 import { useApiClient } from '@galpon/api-client/react'
 import { adminLoginSchema } from '@galpon/schemas'
+import { Button } from '../../../components/ui/Button'
+import { Field } from '../../../components/ui/Field'
+import { TextInput } from '../../../components/ui/TextInput'
+import { AUTH_COPY } from '../auth.copy'
 
 /** Props de {@link LoginForm}. */
 export interface LoginFormProps {
@@ -15,11 +19,9 @@ export interface LoginFormProps {
   defaultEmail?: string
 }
 
-const INPUT_CLASS =
-  'w-full rounded-md bg-background px-3 py-2 text-foreground shadow-sm placeholder:text-neutral-600 aria-invalid:shadow-[0_0_0_1px_var(--color-danger-border)]'
-
 /**
- * Formulario de inicio de sesión del dashboard.
+ * Formulario de inicio de sesión del dashboard (también dentro de "Tu sesión venció"), con los
+ * campos y el botón del kit (`Field`, `TextInput` y `Button` con "Ingresando…" mientras envía).
  *
  * Valida con `adminLoginSchema` al salir de cada campo y al enviar. Si la API responde 401 muestra
  * "Email o contraseña incorrectos"; sin conexión, "No pudimos conectar, probá de nuevo"; con 422
@@ -30,8 +32,6 @@ const INPUT_CLASS =
 export function LoginForm({ onSuccess, defaultEmail = '' }: LoginFormProps) {
   const api = useApiClient()
   const [formError, setFormError] = useState<string | null>(null)
-  const emailId = useId()
-  const passwordId = useId()
   const {
     register,
     handleSubmit,
@@ -50,9 +50,9 @@ export function LoginForm({ onSuccess, defaultEmail = '' }: LoginFormProps) {
     } catch (error) {
       if (!isApiError(error)) throw error
       if (error.kind === 'unauthorized') {
-        setFormError('Email o contraseña incorrectos')
+        setFormError(AUTH_COPY.wrongCredentials)
       } else if (error.kind === 'network') {
-        setFormError('No pudimos conectar, probá de nuevo')
+        setFormError(AUTH_COPY.networkError)
       } else {
         const emailMessage = error.fieldErrors.email
         const passwordMessage = error.fieldErrors.password
@@ -82,53 +82,26 @@ export function LoginForm({ onSuccess, defaultEmail = '' }: LoginFormProps) {
         </p>
       )}
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor={emailId} className="text-neutral-300">
-          Email
-        </label>
-        <input
-          id={emailId}
-          type="email"
-          autoComplete="username"
-          aria-invalid={errors.email !== undefined}
-          aria-describedby={errors.email === undefined ? undefined : `${emailId}-error`}
-          className={INPUT_CLASS}
-          {...register('email')}
-        />
-        {errors.email !== undefined && (
-          <p id={`${emailId}-error`} className="text-danger">
-            {errors.email.message}
-          </p>
+      <Field label={AUTH_COPY.email} error={errors.email?.message}>
+        {(control) => (
+          <TextInput {...control} type="email" autoComplete="username" {...register('email')} />
         )}
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor={passwordId} className="text-neutral-300">
-          Contraseña
-        </label>
-        <input
-          id={passwordId}
-          type="password"
-          autoComplete="current-password"
-          aria-invalid={errors.password !== undefined}
-          aria-describedby={errors.password === undefined ? undefined : `${passwordId}-error`}
-          className={INPUT_CLASS}
-          {...register('password')}
-        />
-        {errors.password !== undefined && (
-          <p id={`${passwordId}-error`} className="text-danger">
-            {errors.password.message}
-          </p>
+      <Field label={AUTH_COPY.password} error={errors.password?.message}>
+        {(control) => (
+          <TextInput
+            {...control}
+            type="password"
+            autoComplete="current-password"
+            {...register('password')}
+          />
         )}
-      </div>
+      </Field>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="bg-accent-500 text-background hover:bg-accent-400 rounded-md px-4 py-2 font-medium disabled:opacity-60"
-      >
-        {isSubmitting ? 'Ingresando…' : 'Ingresar'}
-      </button>
+      <Button type="submit" isLoading={isSubmitting}>
+        {isSubmitting ? AUTH_COPY.loggingIn : AUTH_COPY.logIn}
+      </Button>
     </form>
   )
 }

@@ -152,22 +152,24 @@ Las features no se importan entre sí: se comunican por rutas (`Link` tipado y p
 
 Proyecto `admin-desktop` de `playwright.config.ts`, contra el admin compilado y servido con `vite preview` (con la CSP; el fixture `cspGuard` hace fallar la prueba ante cualquier violación). Cada prueba abre un contexto nuevo, o sea una base de demostración nueva.
 
+`playwright.config.ts` levanta los dos servidores aunque se pida un solo proyecto (la tienda con `npm run start -w @galpon/store` y el admin con `npm run preview -w @galpon/admin`), así que hace falta compilar los dos (o tener la tienda ya levantada en el puerto 3000):
+
 ```bash
-npm run build -w @galpon/admin
+npm run build
 npx playwright test --project=admin-desktop
 ```
 
-| Archivo (`e2e/admin/`)                                   | Qué prueba                                                                                                                                                                        |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth.spec.ts`                                           | Ingreso, contraseña incorrecta, contadores, recarga y cerrar sesión                                                                                                               |
-| `session.spec.ts`                                        | La sesión vence mientras se edita un producto (`page.clock`): re-ingreso sin salir y lo editado se guarda                                                                         |
-| `products.spec.ts`                                       | Producto nuevo con dos fotos (una con `error-` y "Reintentar"), una de 1 × 1 rechazada, "Mover antes" y texto alternativo; cambio de slug con aviso; archivar y volver a publicar |
-| `categories.spec.ts`                                     | Línea nueva y "Subir"; no se borra "Imperiales"                                                                                                                                   |
-| `orders.spec.ts`                                         | `GLP-09001` de pagado a entregado; cancelar `GLP-09006`; `GLP-09007` con pago en curso; "Ver pedidos" del Resumen; búsqueda por email fuera de la URL                             |
-| `reviews.spec.ts`, `messages.spec.ts`                    | Aprobar y destacar (contador de 4 a 3); "Solo sin leer" y abrir uno (contador de 3 a 2)                                                                                           |
-| `content.spec.ts`, `settings.spec.ts`, `account.spec.ts` | Pregunta nueva que sobrevive a la recarga y "¿Salir sin guardar?"; CUIT inválido e IVA "10,5"; cambio de contraseña                                                               |
-| `a11y.spec.ts`                                           | axe (sin violaciones serias ni críticas) en cada pantalla, con el diálogo de una línea y el de sesión vencida; teclado en los diálogos                                            |
-| `mobile.spec.ts`                                         | A 390 × 844: "Menú" abre el cajón y navega; ninguna pantalla con scroll horizontal                                                                                                |
-| `visual.spec.ts`                                         | Capturas `test-results/visual/admin-{pantalla}-{1440\|390}.png` para la lista de control                                                                                          |
+| Archivo (`e2e/admin/`)                                   | Qué prueba                                                                                                                                                                                                                       |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.spec.ts`                                           | Ingreso, contraseña incorrecta, contadores, recarga y cerrar sesión                                                                                                                                                              |
+| `session.spec.ts`                                        | La sesión vence mientras se edita un producto (`page.clock`): re-ingreso sin salir y lo editado se guarda                                                                                                                        |
+| `products.spec.ts`                                       | Producto nuevo con dos fotos (una con `error-` y "Reintentar"), una de 1 × 1 rechazada, "Mover antes" y texto alternativo; cambio de slug con aviso; archivar y volver a publicar                                                |
+| `categories.spec.ts`                                     | Línea nueva y "Subir"; no se borra "Imperiales"                                                                                                                                                                                  |
+| `orders.spec.ts`                                         | `GLP-09001` de pagado a entregado; cancelar `GLP-09006`; `GLP-09007` con pago en curso; "Ver pedidos" del Resumen; búsqueda por email fuera de la URL                                                                            |
+| `reviews.spec.ts`, `messages.spec.ts`                    | Aprobar y destacar (contador de 4 a 3); "Solo sin leer" y abrir uno (contador de 3 a 2)                                                                                                                                          |
+| `content.spec.ts`, `settings.spec.ts`, `account.spec.ts` | Pregunta nueva que sobrevive a la recarga y "¿Salir sin guardar?"; CUIT inválido e IVA "10,5"; cambio de contraseña                                                                                                              |
+| `a11y.spec.ts`                                           | axe (sin violaciones serias ni críticas) en el ingreso, en cada pantalla con sesión, en el 404 y con los diálogos de una línea, de despacho y de sesión vencida; teclado en los diálogos y el foco al título después de archivar |
+| `mobile.spec.ts`                                         | A 390 × 844: "Menú" abre el cajón y navega; ninguna pantalla con scroll horizontal                                                                                                                                               |
+| `visual.spec.ts`                                         | Capturas `test-results/visual/admin-{pantalla}-{1440\|390}.png` para la lista de control                                                                                                                                         |
 
-La lista de control visual está en [`docs/design/admin/CHECKLIST-P4.md`](../../docs/design/admin/CHECKLIST-P4.md), con los desvíos a corregir. Las pruebas que delatan un desvío conocido están marcadas en el propio archivo (`test.fail` o una exclusión puntual de axe) y dicen qué desvío es.
+La lista de control visual está en [`docs/design/admin/CHECKLIST-P4.md`](../../docs/design/admin/CHECKLIST-P4.md), con sus desvíos: los que quedan abiertos (6 y 7) son para P5. Ninguna prueba está marcada con `test.fail` ni excluye reglas de axe.

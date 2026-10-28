@@ -148,6 +148,27 @@ describe('ProductScreen', () => {
     expect(stored(app).images.map((image) => image.alt)).toEqual(['Foto B', 'Foto A'])
   })
 
+  it('al quitar una foto el foco va a la vecina y, sin fotos, a "Elegir archivos"', async () => {
+    const { user, container } = await setup()
+
+    await user.upload(fileInput(container), [photo('a.jpg')])
+    await waitFor(() => {
+      expect(altTexts()).toHaveLength(2)
+    })
+    await user.click(screen.getByRole('button', { name: 'Quitar la foto 1' }))
+    // La subida pasa al primer lugar: su texto alternativo tiene el foco, no el body.
+    const list = screen.getByRole('list', { name: 'Fotos del producto' })
+    expect(within(list).getByLabelText('Texto alternativo')).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Quitar la foto 1' }))
+    expect(screen.getByRole('button', { name: 'Elegir archivos' })).toHaveFocus()
+
+    // Lo mismo con una subida que falló: "Quitar" la saca de la cola.
+    await user.upload(fileInput(container), [photo('error-mate.jpg')])
+    await user.click(await screen.findByRole('button', { name: 'Quitar' }))
+    expect(screen.getByRole('button', { name: 'Elegir archivos' })).toHaveFocus()
+  })
+
   it('no deja guardar mientras una foto se está subiendo', async () => {
     const { user, container, patches } = await setup({ uploadMs: 60_000 })
 
@@ -281,6 +302,27 @@ describe('ProductScreen', () => {
     })
     expect(screen.queryByText('Cambios sin guardar')).not.toBeInTheDocument()
     expect(stored(app).name).toBe('Otra pestaña')
+  })
+
+  it('el aviso de otra versión arranca con el foco en el panel: un Enter no descarta lo editado', async () => {
+    const { app, user } = await setup()
+
+    await user.clear(screen.getByLabelText(/^Nombre/))
+    await user.type(screen.getByLabelText(/^Nombre/), 'Mate Imperial Editado')
+    Object.assign(stored(app), { name: 'Otra pestaña', updatedAt: '2026-10-27T14:00:00Z' })
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: 'Este producto cambió mientras lo editabas',
+    })
+    expect(dialog).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Nombre/)).toHaveValue('Mate Imperial Editado')
+    // Con Tab se llega a las dos opciones, primero "Ver la versión guardada".
+    await user.tab()
+    expect(within(dialog).getByRole('button', { name: 'Ver la versión guardada' })).toHaveFocus()
   })
 
   it('Escape sobre el aviso de otra versión solo lo cierra y conserva lo editado', async () => {

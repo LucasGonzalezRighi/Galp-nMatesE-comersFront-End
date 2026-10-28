@@ -4,7 +4,7 @@ Sesión del administrador en el dashboard: iniciar sesión, asegurarse de que ha
 
 ## Qué exporta (`index.ts`)
 
-- **`LoginForm({ onSuccess, defaultEmail? })`**: formulario con React Hook Form y `adminLoginSchema`. Muestra "Email o contraseña incorrectos" ante un 401, "No pudimos conectar, probá de nuevo" si no hay red y el mensaje del servidor en cada campo ante un 422. Llama a `onSuccess` con el `AdminLoginResult`.
+- **`LoginForm({ onSuccess, defaultEmail? })`**: formulario con React Hook Form y `adminLoginSchema`, con `Field`, `TextInput` y `Button` del kit ("Ingresando…" con `Spinner` mientras envía). Muestra "Email o contraseña incorrectos" ante un 401, "No pudimos conectar, probá de nuevo" si no hay red y el mensaje del servidor en cada campo ante un 422. Llama a `onSuccess` con el `AdminLoginResult`.
 - **`LoginScreen({ onSuccess })`**: la pantalla de `/login` ("Galpón Mates", "Ingresá para administrar la tienda.") con `document.title` "Ingresar · Galpón Admin".
 - **`ensureAdminSession(context)`**: consulta la sesión y el token CSRF (desde la caché si ya los tiene), le pasa el token al cliente con `setCsrfToken`, marca la sesión abierta en el store (solo la primera vez: no cierra un aviso de vencida) y devuelve la sesión. Si no hay sesión propaga el `ApiError` `unauthorized`; la decisión de ir a `/login` la toma `routes/_authenticated.tsx`.
 - **`storeAdminSession(context, result)`**: guarda la sesión recién abierta (token al cliente, sesión y CSRF en la caché) y la marca abierta. La usan `/login` y "Tu sesión venció".

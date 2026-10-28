@@ -78,7 +78,7 @@ Se construyó la tienda pública sobre la API simulada: layout con la barra de a
 
 ## P3 · Checkout y cuenta (2026-10-26)
 
-**Estado**: implementada, con todos los E2E de compra en verde; falta la revisión final de la rama (`feat/p3-checkout`).
+**Estado**: cerrada tras la revisión final (`6ea92c9`), con todos los E2E de compra en verde.
 
 ### Qué se construyó
 
@@ -133,7 +133,7 @@ Todo el 2026-10-26: plan a las 19:06 y rama desde `1ef9630`. Cuatro olas con el 
 
 ## P4 · Dashboard (2026-10-27 a 2026-10-28)
 
-**Estado**: implementada, con los E2E del admin en verde (105 pruebas; dos marcadas con `test.fail` y una exclusión puntual de axe señalan desvíos conocidos de la lista de control); faltan la revisión final de la rama (`feat/p3-checkout`) y los siete "Desvíos a corregir" de [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md).
+**Estado**: cerrada tras la revisión final (commit "fix: ajustes de la revisión final de P4", rama `feat/p3-checkout`), con los 113 E2E del admin en verde, sin pruebas marcadas con `test.fail` ni exclusiones de axe. De los siete desvíos de [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md), cuatro están corregidos, uno no se reproduce y dos (6 y 7) pasan a P5.
 
 ### Qué se construyó
 
@@ -143,11 +143,11 @@ Todo el 2026-10-26: plan a las 19:06 y rama desde `1ef9630`. Cuatro olas con el 
 | Pre-wire                                 | Dependencias, las 17 rutas como marcadoras, `cx`, `Button` y `Spinner`, el contexto del router (`apiMode`, `storeUrl`, `registerMockImage`) y `createTestApp` para los tests de pantalla                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Kit (Ola 1)                              | `components/ui`: tabla con orden, páginas y columnas que se esconden en el celular, campos, diálogos, confirmación, menú de acciones, pestañas, `FormActions` y `UnsavedChangesGuard`, lista ordenable con teclado, avisos y estados (cargando, vacío, error). `components/media`: validar, firmar, subir con `XMLHttpRequest` (o simulada), cola, cancelar y reintentar                                                                                                                                                                                                                                                                              |
 | Pantallas (Olas 2 y 3)                   | Estructura con barra lateral, cajón del celular, contadores y "Tu sesión venció"; resumen; pedidos y su detalle con el cambio de estado; reseñas y mensajes; productos con fotos, filtros y ediciones concurrentes; líneas y ajustes; las seis pantallas de contenido; mi cuenta                                                                                                                                                                                                                                                                                                                                                                      |
-| Pruebas y cierre (Ola 4)                 | E2E de todos los flujos del brief, axe en cada pantalla, celular a 390 px sin scroll horizontal, capturas a 1440 y 390 px y la lista de control [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md); README del admin, spec (§11 a §13 y §16) y la actualización del ADR 0005                                                                                                                                                                                                                                                                                                                                                                           |
+| Pruebas y cierre (Ola 4)                 | E2E de todos los flujos del brief, axe en cada pantalla (y en el 404 y los diálogos de una línea, de despacho y de sesión vencida), celular a 390 px sin scroll horizontal, capturas a 1440 y 390 px y la lista de control [`CHECKLIST-P4.md`](design/admin/CHECKLIST-P4.md); README del admin, spec (§11 a §13 y §16) y la actualización del ADR 0005                                                                                                                                                                                                                                                                                                |
 
 ### Cuándo
 
-Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corrió en paralelo con los pulidos de la tienda. Ola 0 en serie (T1 → T2 → T3, 7 agentes, unas 5,8 h) y después el pre-wire B. La ola 1 se cortó dos veces (un error de red a los 44 min y un reinicio de la sesión durante el fix) y se retomó sobre lo que había en disco. Ola 2 (6 agentes, 67 min) y ola 3 (6 agentes, 72 min), cada una con su revisión, su fix y los menores en paralelo con la ola siguiente. Ola 4 (Task 15): la primera corrida se cortó por un reinicio después de una hora y se retomó el 2026-10-28.
+Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corrió en paralelo con los pulidos de la tienda. Ola 0 en serie (T1 → T2 → T3, 7 agentes, unas 5,8 h) y después el pre-wire B. La ola 1 se cortó dos veces (un error de red a los 44 min y un reinicio de la sesión durante el fix) y se retomó sobre lo que había en disco. Ola 2 (6 agentes, 67 min) y ola 3 (6 agentes, 72 min), cada una con su revisión, su fix y los menores en paralelo con la ola siguiente. Ola 4 (Task 15): la primera corrida se cortó por un reinicio después de una hora y se retomó el 2026-10-28. La revisión final, con su fix, cerró P4 ese mismo día.
 
 - **Tasks 13 y 14 (deudas de la tienda)**: se hicieron antes, como una sola tarea (`ba22fb6` y `033e75e`; ver P3 y `CHECKLIST-P3.md`).
 - **El paseo del mate** entró en el medio, como trabajo aparte de la tienda (ver su sección).
@@ -177,11 +177,11 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 ### Pendientes que quedaron anotados
 
-- **Los 7 desvíos a corregir de `CHECKLIST-P4.md`**, cada uno con su archivo: contadores del menú y axe (`AdminSidebar.tsx`), scroll horizontal de Productos a 390 px (`DataTable.tsx`), foco al cerrar un `Dialog` (`Dialog.tsx`, y `ConfirmDialog` abierto desde un menú), ingreso fuera del kit (`LoginForm.tsx`), dos `main` en el 404 dentro de la estructura (`__root.tsx`), identificadores cortados en el guion (`MessageItem.tsx`, `ShipOrderDialog.tsx`) y la carrera de "Solo sin leer" (`use-mark-message.ts`). Las pruebas que los delatan están marcadas y avisan cuando se corrijan.
-- **De la revisión de la ola 3**: el diálogo de `product_changed` arranca con el foco en "Ver la versión guardada" (Enter enseguida descarta); revisar en la revisión final una opción `initialFocus` del kit (Ruling P4-14).
+- **Arreglado en la revisión final**: el foco que caía en el `body` cuando una acción saca el botón que la hizo (confirmar "Archivar" o "Borrar" una línea, cambiar el estado de un pedido, "Quitar" una pregunta, una categoría o una foto): `ConfirmDialog` y `Dialog` aceptan `returnFocusTo` (las pantallas pasan su `h1`) y las listas pasan el foco al vecino (`focusListNeighbor`). El aviso de `product_changed` arranca con el foco en el panel (`initialFocus="dialog"`, Ruling P4-14), así un Enter apurado no descarta lo editado. El ingreso y "Tu sesión venció" usan el kit (desvío 4). El desvío 5 (dos `main` en el 404 dentro de la estructura) no se reproduce: solo la raíz dibuja el 404 y los errores.
+- **Para P5** (de `CHECKLIST-P4.md`): identificadores que se cortan en el guion a 390 px y el código de arrepentimiento sin `font-mono` (desvío 6: `MessageItem.tsx`, `ShipOrderDialog.tsx`), y la carrera de "Solo sin leer" (desvío 7: `use-mark-message.ts`). También: `wcag22aa` en `e2e/support/axe.ts`, el recorrido con Tab a mano de cada pantalla, una política de ESLint que prohíba feature → feature dentro del admin e `isLowStock` en `@galpon/domain`.
 - **Limitación conocida**: un aviso que sale mientras hay un diálogo abierto no se anuncia (Radix oculta el resto de la página a los lectores de pantalla).
 - **Base simulada guardada de antes**: `MOCK_DB_VERSION` no cambió, así que una base del admin guardada en la pestaña antes de P4 recibe los datos de demostración recién al reiniciarla.
-- **Con el back**: implementar los cambios de contrato de P4 (§12 del spec), confirmar que el `detail` de las líneas de un pedido no repite las opciones, la cuenta de Cloudinary y la firma, y verificar con la cuenta real el enlace "Ver en Mercado Pago" del pedido (decisión Q4, fila pendiente de la lista de control).
+- **Con el back**: implementar los cambios de contrato de P4 (§12 del spec), confirmar que el `detail` de las líneas de un pedido no repite las opciones, la cuenta de Cloudinary y la firma, verificar con la cuenta real el enlace "Ver en Mercado Pago" del pedido (decisión Q4, fila pendiente de la lista de control) y no dejar en los logs el email o el nombre de `GET /admin/orders?q=`.
 
 ## Próximos pasos: P5
 
@@ -192,7 +192,7 @@ Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las 
 | **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
 | **P5 · Etapa 2 y cierre** | Escena 3D, cursor y brillo, Lighthouse, accesibilidad, revisión visual final y README finales | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
 
-P2, P3 y P4 ya están hechas (arriba; P4 espera su revisión final y los desvíos de su lista de control): para el front queda P5, **3 a 4 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
+P2, P3 y P4 ya están hechas y cerradas con su revisión final (arriba): para el front queda P5, **3 a 4 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
 
 **Fase 2 (backend)**: tiene su propio diseño y su propio plan, en una conversación y un repo aparte (NestJS, PostgreSQL, Redis). Su estimación se hace cuando se escriba ese plan. Para salir a producción hacen falta las dos cosas: el front completo y el back, que se conectan cambiando variables de entorno.
 

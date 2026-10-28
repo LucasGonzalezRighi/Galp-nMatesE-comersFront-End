@@ -89,7 +89,7 @@ describe('LoginForm', () => {
 
     expect(await screen.findByText('Ese email no puede iniciar sesión')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByLabelText('Contraseña')).toHaveAttribute('aria-invalid', 'false')
+    expect(screen.getByLabelText('Contraseña')).not.toHaveAttribute('aria-invalid')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(onSuccess).not.toHaveBeenCalled()
   })
@@ -119,5 +119,34 @@ describe('LoginForm', () => {
 
     expect(screen.getByLabelText('Email')).toHaveValue(env.mockAdminEmail)
     expect(screen.getByLabelText('Contraseña')).toHaveValue('')
+  })
+
+  it('usa el kit: labels de 12 px al 70 % y "Ingresando…" deshabilitado mientras envía', async () => {
+    let release: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { user } = setup(
+      apiWithFetch(() => held.then(() => Promise.reject(new TypeError('Failed to fetch')))),
+    )
+    expect(screen.getByText('Email', { selector: 'label' })).toHaveClass(
+      'text-xs',
+      'text-foreground/70',
+    )
+    expect(screen.getByText('Contraseña', { selector: 'label' })).toHaveClass('text-xs')
+    await user.type(screen.getByLabelText('Email'), env.mockAdminEmail)
+    await user.type(screen.getByLabelText('Contraseña'), env.mockAdminPassword)
+
+    await user.click(screen.getByRole('button', { name: 'Ingresar' }))
+
+    const sending = await screen.findByRole('button', { name: 'Ingresando…' })
+    expect(sending).toBeDisabled()
+    expect(sending).toHaveAttribute('aria-busy', 'true')
+    expect(sending).toHaveClass('min-h-9')
+    release()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No pudimos conectar, probá de nuevo',
+    )
+    expect(screen.getByRole('button', { name: 'Ingresar' })).toBeEnabled()
   })
 })

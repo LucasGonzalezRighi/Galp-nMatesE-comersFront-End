@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react'
-import { useId, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import type { ImageTileStatus } from './ImageTile'
 import { Button } from './Button'
 import { IMAGE_ACCEPT } from './image-accept'
@@ -65,6 +65,9 @@ export interface SingleImageFieldProps {
  * lector y el único control con nombre es el botón. Solo es presentación: la subida es de
  * `components/media`.
  *
+ * Al quitar la foto o cancelar (o quitar) una subida, el botón tocado desaparece: el foco pasa a
+ * "Cambiar foto" si vuelve la foto anterior o, sin foto, al botón para elegir una.
+ *
  * @param props - Ver {@link SingleImageFieldProps}.
  * @example
  * <SingleImageField label="Foto" hint={MEDIA_COPY.hint} image={photo} upload={upload.item}
@@ -84,6 +87,10 @@ export function SingleImageField({
   altField,
 }: SingleImageFieldProps): ReactNode {
   const inputRef = useRef<HTMLInputElement>(null)
+  const fieldsetRef = useRef<HTMLFieldSetElement>(null)
+  const changeRef = useRef<HTMLButtonElement>(null)
+  // Se quitó o canceló: después de dibujar, el foco va a "Cambiar foto" o a elegir una.
+  const focusAfterRemove = useRef(false)
   const id = useId()
   const hintId = `${id}-hint`
   const errorId = `${id}-error`
@@ -93,6 +100,19 @@ export function SingleImageField({
       .join(' ') || undefined
   const pending = upload !== null && upload.status !== 'done' ? upload : null
   const isUploading = pending?.status === 'uploading'
+
+  useEffect(() => {
+    if (!focusAfterRemove.current) return
+    focusAfterRemove.current = false
+    const target = changeRef.current ?? fieldsetRef.current?.querySelector('button')
+    target?.focus()
+  })
+
+  /** Envuelve "Quitar" y "Cancelar" para mover el foco cuando el botón tocado desaparece. */
+  const removing = (action: () => void) => () => {
+    focusAfterRemove.current = true
+    action()
+  }
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -112,13 +132,14 @@ export function SingleImageField({
           status={upload?.status ?? 'done'}
           progress={upload?.progress}
           errorMessage={upload?.errorMessage ?? undefined}
-          onCancel={onCancel}
+          onCancel={removing(onCancel)}
           onRetry={onRetry}
-          onRemove={pending === null ? onRemove : onCancel}
+          onRemove={removing(pending === null ? onRemove : onCancel)}
         >
           {altField}
         </ImageTile>
         <Button
+          ref={changeRef}
           variant="secondary"
           disabled={isUploading}
           aria-describedby={describedBy}
@@ -153,7 +174,7 @@ export function SingleImageField({
   }
 
   return (
-    <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+    <fieldset ref={fieldsetRef} className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
       <legend className="text-foreground/70 mb-2 p-0 text-xs">{label}</legend>
       {content}
     </fieldset>

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { WarningCircleIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useRef } from 'react'
 import type { Order } from '@galpon/api-client'
 import { isApiError } from '@galpon/api-client'
 import { adminDashboardQuery, adminOrderQuery, useApiClient } from '@galpon/api-client/react'
@@ -78,6 +79,7 @@ export function OrderScreen({ number }: OrderScreenProps): ReactNode {
   const isValid = isOrderNumber(number)
   const orderQuery = useQuery({ ...adminOrderQuery(api, number), enabled: isValid })
   const dashboardQuery = useQuery({ ...adminDashboardQuery(api), enabled: isValid })
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const title = orderTitle(number)
 
   const notFound =
@@ -133,6 +135,7 @@ export function OrderScreen({ number }: OrderScreenProps): ReactNode {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        headingRef={headingRef}
         title={title}
         back={BACK}
         description={
@@ -149,7 +152,7 @@ export function OrderScreen({ number }: OrderScreenProps): ReactNode {
             )}
           </div>
         }
-        actions={<OrderStatusActions order={order} />}
+        actions={<OrderStatusActions order={order} focusAfterChange={() => headingRef.current} />}
       />
       {alerts.map((alert) => (
         <div

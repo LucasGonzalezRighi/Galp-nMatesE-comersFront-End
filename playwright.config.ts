@@ -9,10 +9,12 @@ const ADMIN_URL = 'http://localhost:5173'
 const isCi = Boolean(process.env.CI)
 
 /**
- * Pruebas de humo de punta a punta: la tienda en escritorio y celular y el dashboard en escritorio.
+ * Pruebas de punta a punta: la tienda en escritorio y celular y el dashboard en escritorio (flujos,
+ * accesibilidad con axe, celular y capturas para las listas de control).
  *
- * Prueban lo compilado, no el servidor de desarrollo, así que hay que correr `npm run build` antes.
- * Fuera del CI reutilizan los servidores que ya estén levantados en esos puertos.
+ * Prueban lo compilado, no el servidor de desarrollo, así que hay que correr `npm run build` antes:
+ * se levantan los dos servidores aunque se pida un solo proyecto. Fuera del CI reutilizan los
+ * servidores que ya estén levantados en esos puertos.
  */
 export default defineConfig({
   testDir: './e2e',

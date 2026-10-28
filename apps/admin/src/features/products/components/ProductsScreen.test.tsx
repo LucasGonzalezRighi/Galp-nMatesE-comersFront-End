@@ -196,6 +196,32 @@ describe('ProductsScreen', () => {
     )
   })
 
+  it('después de archivar el foco va al título; al cancelar vuelve al menú de la fila', async () => {
+    const app = await createTestApp()
+    const user = userEvent.setup()
+    await renderProducts(app)
+    await screen.findByRole('link', { name: 'Mate Galleta' })
+    const menu = screen.getByRole('button', { name: 'Acciones de Mate Galleta' })
+
+    await user.click(menu)
+    await user.click(screen.getByRole('menuitem', { name: 'Archivar' }))
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(menu).toHaveFocus()
+    })
+
+    await user.click(menu)
+    await user.click(screen.getByRole('menuitem', { name: 'Archivar' }))
+    const dialog = await screen.findByRole('alertdialog', { name: '¿Archivar «Mate Galleta»?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Archivar' }))
+
+    // La fila (con el menú que abrió la confirmación) sale de la tabla: el foco no cae al body.
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Productos' })).toHaveFocus()
+    })
+    expect(screen.queryByRole('link', { name: 'Mate Galleta' })).not.toBeInTheDocument()
+  })
+
   it('"Poco stock" se marca solo en los publicados', async () => {
     const app = await createTestApp()
     productInDb(app, 'Mate Coquito Criollo').status = 'draft'

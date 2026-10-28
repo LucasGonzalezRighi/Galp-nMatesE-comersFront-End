@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ArrowDownIcon, ArrowUpIcon, TrashIcon } from '@phosphor-icons/react'
 import type { SortableItemHelpers } from '../../../components/ui/SortableList'
 import { Button } from '../../../components/ui/Button'
+import { focusListNeighbor } from '../../../components/ui/focus-list-neighbor'
 import { actionLabel, CONTENT_COPY } from '../content.copy'
 
 /** Props de {@link ItemActions}. */
@@ -16,7 +17,9 @@ export interface ItemActionsProps {
 
 /**
  * Acciones de un elemento de una lista reordenable de contenido: la agarradera para arrastrar,
- * "Subir", "Bajar" (deshabilitados en los extremos) y "Quitar".
+ * "Subir", "Bajar" (deshabilitados en los extremos) y "Quitar". Al quitar, el foco va al primer
+ * campo del elemento que queda en ese lugar (o del anterior, si era el último), como en
+ * `TextListField`.
  *
  * @param props - Ver {@link ItemActionsProps}.
  */
@@ -45,7 +48,10 @@ export function ItemActions({ name, helpers, onRemove }: ItemActionsProps): Reac
           variant="ghost"
           size="sm"
           aria-label={actionLabel(CONTENT_COPY.remove, name)}
-          onClick={onRemove}
+          onClick={(event) => {
+            focusListNeighbor(event.currentTarget, 'input, textarea')
+            onRemove()
+          }}
         >
           <TrashIcon size={18} weight="regular" aria-hidden="true" />
           {CONTENT_COPY.remove}

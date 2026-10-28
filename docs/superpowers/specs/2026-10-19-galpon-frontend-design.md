@@ -393,7 +393,7 @@ Por la **Disposición 954/2025** de la Subsecretaría de Defensa del Consumidor 
 |---|---|
 | `/login` | Ingreso |
 | `/` | Resumen: ventas de hoy y de los últimos 7 días (zona Buenos Aires, las calcula el back), pedidos pagados sin despachar, stock bajo, reseñas pendientes, mensajes sin leer, alertas de pagos (contracargos, disputas, cobros duplicados) |
-| `/productos` | Tabla: búsqueda, filtro por línea, estado (borrador / publicado) y "sin stock"; orden por columnas; paginación |
+| `/productos` | Tabla: búsqueda, filtro por línea, estado (publicados y borradores, por omisión; publicados; borradores o archivados) y "sin stock"; orden por columnas; paginación |
 | `/productos/nuevo` · `/productos/$id` | Nombre, slug (autogenerado, editable, único; los anteriores redirigen), línea, descripción, textos propios de pestañas (opcionales), precio o "a consultar", stock, destacado, estado, fotos. "Archivar" en lugar de borrar |
 | `/lineas` | Nombre, slug, grupo, bajada, foto, orden (arrastrar). No se borra una línea con productos |
 | `/pedidos` | Tabla: filtro por estado del pedido y estado del pago; búsqueda por número, email o nombre |

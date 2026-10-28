@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { XIcon } from '@phosphor-icons/react'
 import { useId } from 'react'
 import { Button } from './Button'
@@ -23,12 +23,18 @@ export interface ImageTileProps {
   errorMessage?: string
   /** Muestra la insignia "Principal" (la primera foto de un producto). */
   isMain?: boolean
-  /** "Cancelar" mientras sube. */
-  onCancel?: () => void
+  /**
+   * "Cancelar" mientras sube. Recibe el clic, para que quien lo usa mueva el foco antes de que el
+   * botón desaparezca.
+   */
+  onCancel?: (event: MouseEvent<HTMLButtonElement>) => void
   /** "Reintentar" después de un error. */
   onRetry?: () => void
-  /** "Quitar foto" (lista) o "Quitar" (con error). */
-  onRemove: () => void
+  /**
+   * "Quitar foto" (lista) o "Quitar" (con error). Recibe el clic, para que quien lo usa mueva el
+   * foco antes de que el botón desaparezca.
+   */
+  onRemove: (event: MouseEvent<HTMLButtonElement>) => void
   /**
    * Nombre accesible del botón que quita una foto lista; por omisión "Quitar foto". En una lista
    * de varias fotos conviene distinguirlas, por ejemplo "Quitar la foto 3".

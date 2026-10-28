@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { AdminProduct } from '@galpon/api-client'
 import {
   adminCategoriesQuery,
@@ -171,7 +171,8 @@ function productColumns(options: ColumnOptions) {
 
 /**
  * Pantalla `/productos`: "Nuevo producto", los filtros (en la URL), la tabla de a 24 con su orden
- * y la paginación. "Archivar" pide confirmación y avisa "Producto archivado.".
+ * y la paginación. "Archivar" pide confirmación y avisa "Producto archivado."; después de archivar
+ * el foco va al `h1` (la fila, con su menú, puede salir de la tabla), y al cancelar vuelve al menú.
  *
  * Una `?pagina=` más allá de la última (por ejemplo, después de archivar el último producto de la
  * última página) muestra "Esta página ya no tiene productos." con "Ir a la primera página" (no
@@ -197,6 +198,10 @@ export function ProductsScreen({
   const archive = useArchiveProduct()
   const [archiveTarget, setArchiveTarget] = useState<AdminProduct | null>(null)
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  // Si se archivó, el foco va al título al cerrar la confirmación; si no, vuelve al menú de la fila.
+  // Se lee y se limpia al cerrar, así la próxima confirmación arranca sin archivar.
+  const archivedRef = useRef(false)
   const columns = useMemo(
     () =>
       productColumns({
@@ -266,6 +271,7 @@ export function ProductsScreen({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        headingRef={headingRef}
         title={PRODUCTS_COPY.listTitle}
         actions={
           <Link to="/productos/nuevo" className={buttonClass('primary', 'md')}>
@@ -338,9 +344,15 @@ export function ProductsScreen({
           confirmLabel={PRODUCTS_COPY.archive}
           tone="danger"
           isPending={archive.isPending}
+          returnFocusTo={() => {
+            const archived = archivedRef.current
+            archivedRef.current = false
+            return archived ? headingRef.current : null
+          }}
           onConfirm={() => {
             archive.mutate(archiveTarget.id, {
               onSuccess: () => {
+                archivedRef.current = true
                 toast.success(PRODUCTS_COPY.archived)
               },
               onSettled: () => {

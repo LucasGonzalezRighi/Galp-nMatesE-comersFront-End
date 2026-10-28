@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import type { OrderStatusChange } from '@galpon/api-client'
 import type { OrderStatusChangeForm, OrderStatusChangeFormInput } from '@galpon/schemas'
 import { orderStatusChangeSchema } from '@galpon/schemas'
+import type { ReturnFocusTarget } from '../../../components/ui/use-restore-focus'
 import { Button } from '../../../components/ui/Button'
 import { Dialog } from '../../../components/ui/Dialog'
 import { Field } from '../../../components/ui/Field'
@@ -42,6 +43,11 @@ export interface ShipOrderDialogProps {
     change: OrderStatusChange,
     setFieldErrors: (errors: Readonly<Record<string, string>>) => void,
   ) => void
+  /**
+   * Adónde va el foco al cerrarse, en lugar de "Marcar como despachado" (que desaparece cuando el
+   * pedido queda despachado); `null` vuelve a ese botón.
+   */
+  returnFocusTo?: ReturnFocusTarget
 }
 
 /**
@@ -57,6 +63,7 @@ export function ShipOrderDialog({
   onOpenChange,
   isPending,
   onSubmit,
+  returnFocusTo,
 }: ShipOrderDialogProps): ReactNode {
   const formId = useId()
   const {
@@ -90,6 +97,7 @@ export function ShipOrderDialog({
         if (!isPending) onOpenChange(next)
       }}
       title={shipTitle(number)}
+      returnFocusTo={returnFocusTo}
       footer={
         <>
           <Button

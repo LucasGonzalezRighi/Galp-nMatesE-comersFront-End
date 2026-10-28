@@ -1,12 +1,21 @@
 import type { ReactNode } from 'react'
 import { AlertDialog } from 'radix-ui'
+import { useRef } from 'react'
 import type { ButtonVariant } from './button-class'
+import type { ReturnFocusTarget } from './use-restore-focus'
 import { Button } from './Button'
 import { OVERLAY_COPY } from './overlay.copy'
 import { useRestoreFocus } from './use-restore-focus'
 
 /** Tono de un diálogo de confirmación: `danger` pinta de rojo el botón de confirmar. */
 export type ConfirmDialogTone = 'default' | 'danger'
+
+/**
+ * Dónde arranca el foco al abrirse: `cancel` en el botón de cancelar (por omisión) o `dialog` en
+ * el panel, cuando cancelar también descarta algo y un Enter apurado no tiene que elegir por
+ * nadie.
+ */
+export type ConfirmDialogInitialFocus = 'cancel' | 'dialog'
 
 /** Variante del botón de confirmar de cada tono. */
 const CONFIRM_VARIANT: Record<ConfirmDialogTone, ButtonVariant> = {
@@ -49,6 +58,16 @@ export interface ConfirmDialogProps {
   isPending: boolean
   /** Se llama al confirmar; el diálogo no se cierra solo (lo cierra quien lo usa al terminar). */
   onConfirm: () => void
+  /**
+   * Dónde arranca el foco: en "Cancelar" (por omisión) o en el panel (ver
+   * {@link ConfirmDialogInitialFocus}).
+   */
+  initialFocus?: ConfirmDialogInitialFocus
+  /**
+   * Adónde va el foco al cerrarse, en lugar del elemento que lo abrió; `null` vuelve a ese
+   * elemento. Por ejemplo, el `h1` de la pantalla cuando lo confirmado saca la fila del abridor.
+   */
+  returnFocusTo?: ReturnFocusTarget
   /** Error en línea (por ejemplo un `409`), que se muestra con `role="alert"`. */
   children?: ReactNode
 }
@@ -65,10 +84,11 @@ function hasContent(node: ReactNode): boolean {
 
 /**
  * Diálogo de confirmación sobre Radix `AlertDialog`, para toda acción irreversible o que saca
- * algo de la tienda. El foco arranca en "Cancelar"; Escape y "Cancelar" lo cierran (con
- * `onEscape`, Escape avisa por separado); confirmar llama a `onConfirm` y deja el diálogo abierto
- * hasta que quien lo usa lo cierre. Al cerrarse, el foco vuelve al elemento que lo tenía al
- * abrirse (si sigue en pantalla).
+ * algo de la tienda. El foco arranca en "Cancelar" (o en el panel, con `initialFocus="dialog"`);
+ * Escape y "Cancelar" lo cierran (con `onEscape`, Escape avisa por separado); confirmar llama a
+ * `onConfirm` y deja el diálogo abierto hasta que quien lo usa lo cierre. Al cerrarse, el foco
+ * vuelve al elemento que lo tenía al abrirse (si sigue en pantalla) o al que elija
+ * `returnFocusTo`.
  *
  * @param props - Ver {@link ConfirmDialogProps}.
  * @throws {RangeError} Si `tone` no es `default` ni `danger`.
@@ -95,10 +115,13 @@ export function ConfirmDialog({
   tone,
   isPending,
   onConfirm,
+  initialFocus = 'cancel',
+  returnFocusTo,
   children,
 }: ConfirmDialogProps): ReactNode {
   // Sin `Trigger` (el diálogo es controlado), Radix no sabe adónde devolver el foco al cerrar.
-  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus()
+  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus(returnFocusTo)
+  const panelRef = useRef<HTMLDivElement>(null)
   if (!Object.hasOwn(CONFIRM_VARIANT, tone)) {
     throw new RangeError(
       `El tono del diálogo tiene que ser default o danger; se recibió "${tone}".`,
@@ -114,8 +137,16 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={OVERLAY_CLASS} />
         <AlertDialog.Content
+          ref={panelRef}
           className={PANEL_CLASS}
-          onOpenAutoFocus={onOpenAutoFocus}
+          onOpenAutoFocus={(event) => {
+            onOpenAutoFocus()
+            if (initialFocus === 'dialog') {
+              // Radix enfoca "Cancelar" salvo que se frene el evento; el panel tiene tabIndex -1.
+              event.preventDefault()
+              panelRef.current?.focus()
+            }
+          }}
           onCloseAutoFocus={onCloseAutoFocus}
           onEscapeKeyDown={(event) => {
             if (isPending) {

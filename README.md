@@ -13,7 +13,7 @@ Este repo es la carpeta `frontend/` de `E-comers Marcos/`. El proyecto tiene dos
 
 ## Estado
 
-La **fase 1 (P1: fundaciones y contrato)** está cerrada tras la revisión final: reglas de negocio y validaciones con tests, tokens de diseño, el contrato OpenAPI completo, el cliente de la API con modo de prueba, y las dos apps arrancando como esqueletos. Las pantallas reales llegan en los planes P2 a P5. El recorrido, las decisiones que cambiaron y lo que sigue están en la [bitácora](docs/BITACORA.md).
+Del front están hechos **P1** (fundaciones y contrato), **P2** (tienda pública), **P3** (checkout y cuenta) y **P4** (dashboard), todo contra la API simulada (modo de prueba), cada uno cerrado con su revisión final. Queda **P5** (escena 3D, rendimiento, accesibilidad y revisión visual final); el back es la fase 2, en su propio repo. El recorrido, las decisiones que cambiaron y lo que sigue están en la [bitácora](docs/BITACORA.md).
 
 ## Requisitos
 
@@ -46,31 +46,31 @@ Notas:
 
 Se corren desde esta carpeta.
 
-| Script                  | Qué hace                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`           | Tienda (:3000) y dashboard (:5173) juntos, en modo de prueba                                                                                            |
-| `npm run dev:store`     | Solo la tienda                                                                                                                                          |
-| `npm run dev:admin`     | Solo el dashboard                                                                                                                                       |
-| `npm run build`         | Compila la tienda y el dashboard                                                                                                                        |
-| `npm run typecheck`     | TypeScript en todos los workspaces y en la raíz                                                                                                         |
-| `npm run lint`          | Chequea que las versiones de las dependencias sean las fijadas y corre ESLint                                                                           |
-| `npm run format`        | Aplica Prettier a todo el repo                                                                                                                          |
-| `npm run format:check`  | Comprueba el formato sin cambiar archivos                                                                                                               |
-| `npm test`              | Tests unitarios y de componentes (Vitest)                                                                                                               |
-| `npm run test:coverage` | Lo mismo con cobertura; `domain` y `schemas` exigen 100 % de líneas, funciones y sentencias, y 95 % de ramas                                            |
-| `npm run test:e2e`      | Pruebas de humo de punta a punta con Playwright, sobre lo compilado (necesita `npm run build` antes y `npx playwright install chromium` la primera vez) |
-| `npm run api:lint`      | Valida `docs/api/openapi.yaml` con Redocly                                                                                                              |
-| `npm run api:generate`  | Regenera los tipos de `packages/api-client` desde el contrato                                                                                           |
-| `npm run api:check`     | Falla si los tipos commiteados no coinciden con el contrato                                                                                             |
+| Script                  | Qué hace                                                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`           | Tienda (:3000) y dashboard (:5173) juntos, en modo de prueba                                                                                    |
+| `npm run dev:store`     | Solo la tienda                                                                                                                                  |
+| `npm run dev:admin`     | Solo el dashboard                                                                                                                               |
+| `npm run build`         | Compila la tienda y el dashboard                                                                                                                |
+| `npm run typecheck`     | TypeScript en todos los workspaces y en la raíz                                                                                                 |
+| `npm run lint`          | Chequea que las versiones de las dependencias sean las fijadas y corre ESLint                                                                   |
+| `npm run format`        | Aplica Prettier a todo el repo                                                                                                                  |
+| `npm run format:check`  | Comprueba el formato sin cambiar archivos                                                                                                       |
+| `npm test`              | Tests unitarios y de componentes (Vitest)                                                                                                       |
+| `npm run test:coverage` | Lo mismo con cobertura; `domain` y `schemas` exigen 100 % de líneas, funciones y sentencias, y 95 % de ramas                                    |
+| `npm run test:e2e`      | Pruebas de punta a punta con Playwright, sobre lo compilado (necesita `npm run build` antes y `npx playwright install chromium` la primera vez) |
+| `npm run api:lint`      | Valida `docs/api/openapi.yaml` con Redocly                                                                                                      |
+| `npm run api:generate`  | Regenera los tipos de `packages/api-client` desde el contrato                                                                                   |
+| `npm run api:check`     | Falla si los tipos commiteados no coinciden con el contrato                                                                                     |
 
 Al instalar, `lefthook` deja un hook de **pre-commit** (Prettier y ESLint sobre lo que se commitea) y uno de **pre-push** (`typecheck`, para que los commits sigan siendo rápidos).
 
 ## Pruebas de punta a punta y CI
 
-Las pruebas de `e2e/` (Playwright, configuradas en `playwright.config.ts`) son de humo: corren sobre lo compilado, en modo de prueba.
+Las pruebas de `e2e/` (Playwright, configuradas en `playwright.config.ts`) corren sobre lo compilado, en modo de prueba.
 
-- **Tienda** (`e2e/store`, en Chrome de escritorio y en un Pixel 7): el título y las seis líneas, el descuento del kit (el camino del navegador por `/api/v1`), `GET /api/v1/categories` y la cabecera `Content-Security-Policy`.
-- **Dashboard** (`e2e/admin`, en Chrome de escritorio): la redirección a `/login`, el aviso de contraseña incorrecta, el ingreso con las credenciales de prueba, la sesión que sobrevive a una recarga y el cierre de sesión.
+- **Tienda** (`e2e/store`, en Chrome de escritorio y en un Pixel 7): humo (`smoke.spec.ts`: el título y las seis líneas, el kit por `/api/v1` y `GET /api/v1/categories`), navegación, carrito y kit, búsqueda, reseñas, contacto, arrepentimiento, las compras del checkout (Mercado Pago, tarjeta, 3-D Secure, `409` y vencimiento) y con cuenta, la cabecera `Content-Security-Policy`, movimiento reducido, axe (también en el checkout y la cuenta), capturas para la lista de control (`visual.spec.ts`) y el paseo del mate del inicio (`home.spec.ts`: paradas legibles, teclado, sin movimiento y celular).
+- **Dashboard** (`e2e/admin`, en Chrome de escritorio): los flujos de cada pantalla (ingreso, sesión vencida mientras se edita, productos con fotos, líneas, pedidos, reseñas, mensajes, contenido, ajustes y mi cuenta), axe en todas las pantallas y en los diálogos de una línea, de despacho y de sesión vencida, el teclado en los diálogos (`a11y.spec.ts`), el celular a 390 px sin scroll horizontal (`mobile.spec.ts`) y las capturas a 1440 y 390 px (`visual.spec.ts`). El detalle está en el [README del dashboard](apps/admin/README.md#e2e-playwright).
 - Todos los tests importan `test` de `e2e/support/test.ts`, que suma un fixture automático (`cspGuard`): si la consola de la página informa una violación de la CSP, el test falla.
 
 Para correrlas: `npm run build`, `npx playwright install chromium` (la primera vez) y `npm run test:e2e`. Playwright levanta la tienda (`npm run start -w @galpon/store`) y el dashboard (`npm run preview -w @galpon/admin`), o reutiliza los que ya estén en los puertos 3000 y 5173.
@@ -90,7 +90,7 @@ frontend/
 │  ├─ domain/                   Reglas de negocio puras: dinero, kit, carrito, envío, cuotas, búsqueda
 │  ├─ design-tokens/            Tokens del diseño (tema de Tailwind v4 y constantes)
 │  └─ config/                   Configuración base de TypeScript y Prettier
-├─ e2e/                         Pruebas de humo de punta a punta (Playwright): tienda y dashboard
+├─ e2e/                         Pruebas de punta a punta (Playwright): tienda y dashboard
 ├─ docs/
 │  ├─ api/                      Contrato OpenAPI, la fuente de verdad entre front y back
 │  ├─ adr/                      Decisiones de arquitectura
@@ -145,7 +145,7 @@ Resumen (la versión completa es la [sección 6 del diseño](docs/superpowers/sp
 
 ## Documentación
 
-- [Bitácora](docs/BITACORA.md): qué se construyó en P1 y cuándo, decisiones que cambiaron, lecciones y próximos pasos.
+- [Bitácora](docs/BITACORA.md): qué se construyó en cada plan (P1 a P4) y cuándo, decisiones que cambiaron, lecciones y próximos pasos.
 - [Decisiones de arquitectura](docs/adr/README.md): siete ADRs.
 - [Diseño del frontend](docs/superpowers/specs/2026-10-19-galpon-frontend-design.md) y [diseño del backend](docs/superpowers/specs/2026-10-20-galpon-backend-design.md).
 - [Plan de implementación de P1](docs/superpowers/plans/2026-10-20-p1-fundaciones-y-contrato.md).

@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import type { SingleImageFieldProps } from './SingleImageField'
+import type {
+  SingleImageFieldProps,
+  SingleImageUploadState,
+  SingleImageValue,
+} from './SingleImageField'
 import { SingleImageField } from './SingleImageField'
 
 function renderField(props: Partial<SingleImageFieldProps> = {}) {
@@ -23,6 +28,36 @@ function renderField(props: Partial<SingleImageFieldProps> = {}) {
     />,
   )
   return { ...handlers, container }
+}
+
+/** Una subida que falló, tapando a la foto guardada (si hay). */
+const FAILED_UPLOAD: SingleImageUploadState = {
+  previewUrl: 'blob:http://localhost/mock-5',
+  status: 'error',
+  progress: 0,
+  errorMessage: 'La subida tardó demasiado.',
+}
+
+/** El campo con estado, como lo usa un formulario: "Quitar foto" la borra y cancelar, la subida. */
+function StatefulField({ initial }: { initial: SingleImageValue | null }) {
+  const [image, setImage] = useState(initial)
+  const [upload, setUpload] = useState<SingleImageUploadState | null>(FAILED_UPLOAD)
+  return (
+    <SingleImageField
+      label="Foto"
+      image={image}
+      upload={upload}
+      altField={<input aria-label="Texto alternativo" />}
+      onFiles={vi.fn()}
+      onRetry={vi.fn()}
+      onCancel={() => {
+        setUpload(null)
+      }}
+      onRemove={() => {
+        setImage(null)
+      }}
+    />
+  )
 }
 
 /** El `input type="file"` oculto (no tiene nombre: se busca por selector). */
@@ -118,5 +153,26 @@ describe('SingleImageField', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('La subida tardó demasiado.')
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('al quitar una subida fallida el foco va a "Cambiar foto" y al quitar la foto, a elegir otra', async () => {
+    const user = userEvent.setup()
+    render(<StatefulField initial={{ src: 'data:image/webp;base64,AAAA', alt: 'Socio' }} />)
+
+    // La subida que falló se quita: vuelve la foto anterior y el foco no cae al body.
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+    expect(screen.getByRole('button', { name: 'Cambiar foto' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Quitar foto' }))
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveFocus()
+  })
+
+  it('al cancelar una subida sin foto anterior el foco va al botón para elegir una', async () => {
+    const user = userEvent.setup()
+    render(<StatefulField initial={null} />)
+
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveFocus()
   })
 })

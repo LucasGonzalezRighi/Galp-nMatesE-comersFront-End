@@ -463,6 +463,8 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
         confirmLabel={PRODUCT_FORM_COPY.saveAnyway}
         cancelLabel={PRODUCT_FORM_COPY.viewSaved}
         tone="danger"
+        // El botón de cancelar descarta lo editado: el foco arranca en el panel (Ruling P4-14).
+        initialFocus="dialog"
         isPending={save.isPending}
         onConfirm={() => {
           if (conflict !== null) saveValues(conflict, true)

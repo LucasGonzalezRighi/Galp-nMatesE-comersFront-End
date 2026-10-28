@@ -1,8 +1,18 @@
-import { ADMIN_SCREENS, expireSession, gotoAdmin, logInAsAdmin } from '../support/admin'
+import {
+  ADMIN_SCREENS,
+  expireSession,
+  gotoAdmin,
+  logInAsAdmin,
+  screenHeading,
+  toast,
+} from '../support/admin'
 import { seriousViolations } from '../support/axe'
 import { expect, test } from '../support/test'
 
-/** Pantallas con sesión que revisa axe (las de Contenido, solo Inicio y Legales). */
+/**
+ * Pantallas con sesión que revisa axe: todas las de `ADMIN_SCREENS` salvo Líneas, que se revisa
+ * en su propio caso junto con el diálogo de una línea nueva.
+ */
 const AUDITED = [
   'dashboard',
   'products',
@@ -11,6 +21,10 @@ const AUDITED = [
   'orders',
   'order',
   'content-home',
+  'content-about',
+  'content-faq',
+  'content-tabs',
+  'content-footer',
   'content-legal',
   'settings',
   'reviews',
@@ -45,6 +59,21 @@ test.describe('dashboard: accesibilidad (axe)', () => {
     expect(await seriousViolations(page)).toEqual([])
     await page.getByRole('button', { name: 'Nueva línea' }).click()
     await expect(page.getByRole('dialog', { name: 'Nueva línea' })).toBeVisible()
+    expect(await seriousViolations(page)).toEqual([])
+  })
+
+  test('pedido con el diálogo de despacho abierto', async ({ page }) => {
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/pedidos/GLP-09001', heading: 'Pedido GLP-09001' })
+    await page.getByRole('button', { name: 'Marcar como despachado' }).click()
+    await expect(page.getByRole('dialog', { name: 'Despachar el pedido GLP-09001' })).toBeVisible()
+    expect(await seriousViolations(page)).toEqual([])
+  })
+
+  test('la página que no existe', async ({ page }) => {
+    await logInAsAdmin(page)
+    await page.goto('/no-existe')
+    await expect(page.getByText('No encontramos esa página').first()).toBeVisible()
     expect(await seriousViolations(page)).toEqual([])
   })
 
@@ -88,6 +117,22 @@ test.describe('dashboard: accesibilidad (axe)', () => {
     await page.keyboard.press('Escape')
     await expect(confirm).toBeHidden()
     await expect(menu).toBeFocused({ timeout: 2000 })
+  })
+
+  test('teclado: al confirmar "Archivar" el foco va al título y no al body', async ({ page }) => {
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/productos', heading: 'Productos' })
+    await page
+      .getByRole('button', { name: /^Acciones de / })
+      .first()
+      .focus()
+    await page.keyboard.press('Enter')
+    await page.getByRole('menuitem', { name: 'Archivar' }).click()
+    const confirm = page.getByRole('alertdialog')
+    await confirm.getByRole('button', { name: 'Archivar' }).click()
+    await expect(toast(page, 'Producto archivado.')).toBeVisible()
+    await expect(confirm).toBeHidden()
+    await expect(screenHeading(page, 'Productos')).toBeFocused({ timeout: 2000 })
   })
 
   test('el diálogo de sesión vencida', async ({ page }) => {

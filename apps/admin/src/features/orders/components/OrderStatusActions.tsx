@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Order, OrderStatusChange } from '@galpon/api-client'
 import type { AdminOrderTarget } from '@galpon/domain'
 import { isApiError } from '@galpon/api-client'
@@ -15,6 +15,11 @@ import { ShipOrderDialog } from './ShipOrderDialog'
 export interface OrderStatusActionsProps {
   /** El pedido, tal como lo devolvió la API. */
   order: Order
+  /**
+   * Adónde va el foco después de un cambio de estado (el `h1` del pedido): el botón que actuó
+   * desaparece cuando el pedido recargado ya no ofrece esa acción.
+   */
+  focusAfterChange: () => HTMLElement | null
 }
 
 /** Diálogo abierto: el de despacho o una confirmación. */
@@ -42,14 +47,35 @@ function plainChange(status: Exclude<AdminOrderTarget, 'shipped'>): OrderStatusC
  * Botones para mover el pedido a los destinos de `adminOrderTargets` de `@galpon/domain`:
  * "Pasar a preparación" (sin confirmar), "Marcar como despachado" (diálogo con el seguimiento),
  * "Marcar como entregado" y "Cancelar pedido" (con `ConfirmDialog`). Con un pago en curso o sin
- * destinos lo explica en un texto. Mientras se guarda, todos quedan deshabilitados.
+ * destinos lo explica en un texto. Mientras se guarda, todos quedan deshabilitados. Después de un
+ * cambio (o de un `409` que recarga el pedido) el foco va a `focusAfterChange`; al cancelar un
+ * diálogo, vuelve al botón que lo abrió.
  *
  * @param props - Ver {@link OrderStatusActionsProps}.
  */
-export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNode {
+export function OrderStatusActions({
+  order,
+  focusAfterChange,
+}: OrderStatusActionsProps): ReactNode {
   const { number, status, paymentStatus } = order
   const mutation = useOrderStatusChange(number)
   const [dialog, setDialog] = useState<OpenDialog>(null)
+  // Si el último pedido de cambio terminó (bien o con un 409), al cerrar el diálogo el foco va a
+  // `focusAfterChange`; si se canceló, vuelve al botón que lo abrió.
+  const changedRef = useRef(false)
+  const returnFocusTo = () => (changedRef.current ? focusAfterChange() : null)
+
+  function openDialog(next: Exclude<OpenDialog, null>) {
+    changedRef.current = false
+    setDialog(next)
+  }
+
+  /** Marca el cambio como hecho, cierra el diálogo y, sin diálogo, mueve el foco enseguida. */
+  function settle(target: AdminOrderTarget) {
+    changedRef.current = true
+    setDialog(null)
+    if (target === 'preparing') focusAfterChange()?.focus()
+  }
   const targets = adminOrderTargets(status, paymentStatus)
   const isPending = mutation.isPending
   const isPreparing = isPending && mutation.variables.status === 'preparing'
@@ -61,12 +87,12 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
     mutation.mutate(next, {
       onSuccess: () => {
         toast.success(SUCCESS_TEXT[next.status])
-        setDialog(null)
+        settle(next.status)
       },
       onError: (error) => {
         if (!isApiError(error)) return
         // El pedido cambió en otro lado: el diálogo ya no corresponde (el toast dice por qué).
-        if (error.kind === 'conflict') setDialog(null)
+        if (error.kind === 'conflict') settle(next.status)
         if (error.kind === 'validation') setFieldErrors?.(error.fieldErrors)
       },
     })
@@ -105,7 +131,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         <Button
           disabled={isPending}
           onClick={() => {
-            setDialog('shipped')
+            openDialog('shipped')
           }}
         >
           {ORDERS_COPY.actions.ship}
@@ -115,7 +141,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         <Button
           disabled={isPending}
           onClick={() => {
-            setDialog('delivered')
+            openDialog('delivered')
           }}
         >
           {ORDERS_COPY.actions.deliver}
@@ -126,7 +152,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
           variant="danger"
           disabled={isPending}
           onClick={() => {
-            setDialog('cancelled')
+            openDialog('cancelled')
           }}
         >
           {ORDERS_COPY.actions.cancel}
@@ -138,6 +164,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         onOpenChange={closeDialog}
         isPending={isPending}
         onSubmit={change}
+        returnFocusTo={returnFocusTo}
       />
       <ConfirmDialog
         open={dialog === 'delivered'}
@@ -147,6 +174,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         confirmLabel={ORDERS_COPY.actions.deliver}
         tone="default"
         isPending={isPending}
+        returnFocusTo={returnFocusTo}
         onConfirm={() => {
           change(plainChange('delivered'))
         }}
@@ -160,6 +188,7 @@ export function OrderStatusActions({ order }: OrderStatusActionsProps): ReactNod
         cancelLabel={ORDERS_COPY.actions.cancelBack}
         tone="danger"
         isPending={isPending}
+        returnFocusTo={returnFocusTo}
         onConfirm={() => {
           change(plainChange('cancelled'))
         }}

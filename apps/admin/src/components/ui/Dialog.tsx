@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { XIcon } from '@phosphor-icons/react'
 import { Dialog as RadixDialog } from 'radix-ui'
+import type { ReturnFocusTarget } from './use-restore-focus'
 import { buttonClass } from './button-class'
 import { cx } from './cx'
 import { OVERLAY_COPY } from './overlay.copy'
@@ -43,6 +44,11 @@ export interface DialogProps {
   footer?: ReactNode
   /** Ancho máximo: `sm` 400 px, `md` 560 px (por omisión) o `lg` 720 px. */
   size?: DialogSize
+  /**
+   * Adónde va el foco al cerrarse, en lugar del elemento que lo abrió; `null` vuelve a ese
+   * elemento. Por ejemplo, el `h1` de la pantalla cuando lo guardado saca el botón que lo abrió.
+   */
+  returnFocusTo?: ReturnFocusTarget
 }
 
 /**
@@ -50,7 +56,8 @@ export interface DialogProps {
  * botón "Cerrar" se ve arriba a la derecha. Si el contenido no entra, el cuerpo hace scroll y el
  * título y el pie quedan fijos.
  *
- * Al cerrarse, el foco vuelve al elemento que lo tenía al abrirse (si sigue en pantalla).
+ * Al cerrarse, el foco vuelve al elemento que lo tenía al abrirse (si sigue en pantalla) o al que
+ * elija `returnFocusTo`.
  *
  * "Cerrar" va último en el DOM (después del cuerpo y del pie, ubicado con CSS): así el foco
  * inicial de Radix cae en el primer elemento enfocable del cuerpo (el primer campo de un
@@ -71,9 +78,10 @@ export function Dialog({
   children,
   footer,
   size = 'md',
+  returnFocusTo,
 }: DialogProps): ReactNode {
   // Sin `Trigger` (el diálogo es controlado), Radix no sabe adónde devolver el foco al cerrar.
-  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus()
+  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus(returnFocusTo)
   if (!Object.hasOwn(SIZE_CLASSES, size)) {
     throw new RangeError(`El tamaño del diálogo tiene que ser sm, md o lg; se recibió "${size}".`)
   }

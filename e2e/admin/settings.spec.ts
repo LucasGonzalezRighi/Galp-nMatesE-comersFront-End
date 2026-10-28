@@ -11,6 +11,7 @@ test.describe('dashboard: ajustes', () => {
     await page.getByRole('textbox', { name: 'CUIT' }).fill('20-12345678-5')
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await expect(page.getByText('CUIT inválido', { exact: true })).toBeVisible()
+    await expect(toast(page, 'Ajustes guardados.')).toHaveCount(0)
   })
 
   test('la alícuota de IVA con coma decimal se guarda', async ({ page }) => {

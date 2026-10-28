@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Category } from '@galpon/api-client'
 import { deleteAdminCategory, isApiError } from '@galpon/api-client'
 import { queryKeys, useApiClient } from '@galpon/api-client/react'
@@ -16,14 +16,20 @@ export interface DeleteCategoryDialogProps {
   category: Category | null
   /** Se llama para cerrarlo: al cancelar o al borrar. */
   onClose: () => void
+  /**
+   * Adónde va el foco después de borrar (el `h1` de la pantalla): la fila con el botón que abrió
+   * el diálogo sale de la lista con la recarga. Al cancelar, el foco vuelve a ese botón.
+   */
+  focusAfterDelete: () => HTMLElement | null
 }
 
 /**
  * Confirmación "¿Borrar la línea «{nombre}»?". Solo el servidor sabe si tiene productos (cuenta
  * también borradores y archivados, mientras `productCount` cuenta solo los publicados), así que
  * no se decide con el contador: un `409` se explica dentro del diálogo con `role="alert"` y el
- * diálogo sigue abierto. Al borrar avisa "Línea borrada." e invalida las líneas. Quien lo usa le
- * cambia la `key` en cada apertura, así el error de la vez anterior no queda.
+ * diálogo sigue abierto. Al borrar avisa "Línea borrada.", invalida las líneas y el foco va a
+ * `focusAfterDelete`. Quien lo usa le cambia la `key` en cada apertura, así el error de la vez
+ * anterior no queda.
  *
  * @param props - Ver {@link DeleteCategoryDialogProps}.
  */
@@ -31,14 +37,19 @@ export function DeleteCategoryDialog({
   open,
   category,
   onClose,
+  focusAfterDelete,
 }: DeleteCategoryDialogProps): ReactNode {
   const api = useApiClient()
   const queryClient = useQueryClient()
   const [conflict, setConflict] = useState<string | null>(null)
+  // El diálogo cierra antes de recargar: el botón de la fila sigue en pantalla al cerrarse y
+  // desaparece después, así que el destino del foco se decide por lo que pasó, no por el abridor.
+  const deletedRef = useRef(false)
   const remove = useMutation({
     mutationFn: (id: string) => deleteAdminCategory(api, id),
     onSuccess: async () => {
       toast.success(CATEGORIES_COPY.remove.deleted)
+      deletedRef.current = true
       onClose()
       await queryClient.invalidateQueries({ queryKey: queryKeys.adminCategories() })
     },
@@ -73,6 +84,7 @@ export function DeleteCategoryDialog({
       confirmLabel={CATEGORIES_COPY.remove.confirm}
       tone="danger"
       isPending={remove.isPending}
+      returnFocusTo={() => (deletedRef.current ? focusAfterDelete() : null)}
       onConfirm={() => {
         setConflict(null)
         remove.mutate(category.id)

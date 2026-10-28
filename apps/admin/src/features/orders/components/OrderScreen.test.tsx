@@ -28,6 +28,11 @@ function actionNames(): string[] {
     .map((button) => button.textContent)
 }
 
+/** El `h1` del pedido, adonde va el foco después de un cambio de estado. */
+function orderHeading(): HTMLElement {
+  return screen.getByRole('heading', { level: 1 })
+}
+
 /** Detalle (`dd`) de un dato de una lista, buscado por su término (`dt`). */
 function detailOf(region: HTMLElement, term: string): HTMLElement {
   const dt = within(region).getByText(term, { selector: 'dt' })
@@ -177,7 +182,7 @@ describe('OrderScreen', () => {
     expect(await screen.findByText('El pedido pasó a preparación.')).toBeInTheDocument()
   })
 
-  it('"Pasar a preparación" no pide confirmación y avisa', async () => {
+  it('"Pasar a preparación" no pide confirmación, avisa y deja el foco en el título', async () => {
     const app = await createTestApp()
     const user = userEvent.setup()
     await renderOrder(app, 'GLP-09001')
@@ -189,6 +194,8 @@ describe('OrderScreen', () => {
       expect(actionNames()).toEqual(['Marcar como despachado'])
     })
     expect(within(screen.getByRole('banner')).getByText('En preparación')).toBeInTheDocument()
+    // El botón que actuó ya no está: el foco no cae al body.
+    expect(orderHeading()).toHaveFocus()
   })
 
   it('despachar valida la empresa y el seguimiento con los rangos del schema', async () => {
@@ -229,7 +236,7 @@ describe('OrderScreen', () => {
     expect((await getAdminOrder(app.api, 'GLP-09003')).status).toBe('preparing')
   })
 
-  it('despacha con empresa, seguimiento y nota', async () => {
+  it('despacha con empresa, seguimiento y nota, y el foco va al título', async () => {
     const app = await createTestApp()
     const user = userEvent.setup()
     await renderOrder(app, 'GLP-09003')
@@ -253,6 +260,9 @@ describe('OrderScreen', () => {
     const history = screen.getByRole('region', { name: 'Historial' })
     expect(within(history).getByText('Sale hoy')).toBeVisible()
     expect(actionNames()).toEqual(['Marcar como entregado'])
+    await waitFor(() => {
+      expect(orderHeading()).toHaveFocus()
+    })
   })
 
   it('un 409 por doble despacho avisa con el motivo y recarga el pedido', async () => {
@@ -287,7 +297,7 @@ describe('OrderScreen', () => {
     expect(actionNames()).toEqual(['Marcar como entregado'])
   })
 
-  it('marcar como entregado pide confirmación', async () => {
+  it('marcar como entregado pide confirmación y después el foco va al título', async () => {
     const app = await createTestApp()
     const user = userEvent.setup()
     await renderOrder(app, 'GLP-09004')
@@ -304,9 +314,12 @@ describe('OrderScreen', () => {
       expect(actionNames()).toEqual([])
     })
     expect((await getAdminOrder(app.api, 'GLP-09004')).status).toBe('delivered')
+    await waitFor(() => {
+      expect(orderHeading()).toHaveFocus()
+    })
   })
 
-  it('cancela GLP-09006 después de confirmar', async () => {
+  it('cancela GLP-09006 después de confirmar; "Volver" devuelve el foco y cancelar lo lleva al título', async () => {
     const app = await createTestApp()
     const user = userEvent.setup()
     await renderOrder(app, 'GLP-09006')
@@ -325,6 +338,9 @@ describe('OrderScreen', () => {
     await waitFor(() => {
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Cancelar pedido' })).toHaveFocus()
+    })
 
     await user.click(screen.getByRole('button', { name: 'Cancelar pedido' }))
     const confirm = await screen.findByRole('alertdialog')
@@ -333,6 +349,9 @@ describe('OrderScreen', () => {
     expect(await screen.findByText('Pedido cancelado.')).toBeInTheDocument()
     expect((await getAdminOrder(app.api, 'GLP-09006')).status).toBe('cancelled')
     expect(await screen.findByText('No hay acciones para este estado.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(orderHeading()).toHaveFocus()
+    })
   })
 
   it('GLP-09007 no se puede cancelar: hay un pago en curso', async () => {
