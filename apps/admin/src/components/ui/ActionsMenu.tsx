@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import { ArrowSquareOutIcon, DotsThreeIcon } from '@phosphor-icons/react'
 import { useNavigate } from '@tanstack/react-router'
 import { DropdownMenu } from 'radix-ui'
+import { useRef } from 'react'
 import { buttonClass } from './button-class'
 import { cx } from './cx'
 import { OVERLAY_COPY } from './overlay.copy'
@@ -94,7 +95,9 @@ function InternalLinkItem({ href, className, children }: InternalLinkItemProps):
 /**
  * Menú de acciones de una fila o tarjeta, sobre Radix `DropdownMenu`. El disparador es un
  * botón de ícono (tres puntos) con `aria-label={label}`; las acciones se recorren con las
- * flechas y Escape lo cierra.
+ * flechas y Escape lo cierra. Al elegir una acción con `onSelect`, el foco vuelve primero al
+ * disparador (el elemento de la fila, que sigue en pantalla cuando el menú ya no existe): así un
+ * diálogo que abra la acción (archivar, borrar) sabe adónde devolver el foco al cerrarse.
  *
  * @param props - Ver {@link ActionsMenuProps}.
  * @throws {RangeError} Si `label` está vacío, no hay acciones o alguna no tiene exactamente uno
@@ -110,9 +113,14 @@ function InternalLinkItem({ href, className, children }: InternalLinkItemProps):
  */
 export function ActionsMenu({ label, items }: ActionsMenuProps): ReactNode {
   assertItems(label, items)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   return (
     <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger aria-label={label} className={buttonClass('icon', 'md')}>
+      <DropdownMenu.Trigger
+        ref={triggerRef}
+        aria-label={label}
+        className={buttonClass('icon', 'md')}
+      >
         <DotsThreeIcon size={18} weight="regular" aria-hidden="true" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -130,7 +138,15 @@ export function ActionsMenu({ label, items }: ActionsMenuProps): ReactNode {
             )
             if (item.href === undefined) {
               return (
-                <DropdownMenu.Item key={key} className={className} onSelect={item.onSelect}>
+                <DropdownMenu.Item
+                  key={key}
+                  className={className}
+                  onSelect={() => {
+                    // El ítem desaparece al cerrarse el menú: sin esto el foco quedaría en el body.
+                    triggerRef.current?.focus()
+                    item.onSelect?.()
+                  }}
+                >
                   {item.label}
                 </DropdownMenu.Item>
               )

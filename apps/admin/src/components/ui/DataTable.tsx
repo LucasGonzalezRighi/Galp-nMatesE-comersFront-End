@@ -201,7 +201,7 @@ export function DataTable<T extends RowData>({
       aria-label={caption}
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- una región con scroll tiene que poder recibir el foco para desplazarla con el teclado (WCAG 2.1.1, regla scrollable-region-focusable de axe)
       tabIndex={0}
-      className="focus-visible:outline-accent overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="focus-visible:outline-accent relative overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <table aria-busy={isLoading ? true : undefined} className="w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>

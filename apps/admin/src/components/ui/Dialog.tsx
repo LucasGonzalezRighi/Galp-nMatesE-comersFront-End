@@ -4,6 +4,7 @@ import { Dialog as RadixDialog } from 'radix-ui'
 import { buttonClass } from './button-class'
 import { cx } from './cx'
 import { OVERLAY_COPY } from './overlay.copy'
+import { useRestoreFocus } from './use-restore-focus'
 
 /** Ancho máximo de un diálogo: `sm` 400 px, `md` 560 px y `lg` 720 px. */
 export type DialogSize = 'sm' | 'md' | 'lg'
@@ -49,6 +50,8 @@ export interface DialogProps {
  * botón "Cerrar" se ve arriba a la derecha. Si el contenido no entra, el cuerpo hace scroll y el
  * título y el pie quedan fijos.
  *
+ * Al cerrarse, el foco vuelve al elemento que lo tenía al abrirse (si sigue en pantalla).
+ *
  * "Cerrar" va último en el DOM (después del cuerpo y del pie, ubicado con CSS): así el foco
  * inicial de Radix cae en el primer elemento enfocable del cuerpo (el primer campo de un
  * formulario) o, si no hay, en el pie, y no en la X.
@@ -69,6 +72,8 @@ export function Dialog({
   footer,
   size = 'md',
 }: DialogProps): ReactNode {
+  // Sin `Trigger` (el diálogo es controlado), Radix no sabe adónde devolver el foco al cerrar.
+  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus()
   if (!Object.hasOwn(SIZE_CLASSES, size)) {
     throw new RangeError(`El tamaño del diálogo tiene que ser sm, md o lg; se recibió "${size}".`)
   }
@@ -78,6 +83,8 @@ export function Dialog({
         <RadixDialog.Overlay className={OVERLAY_CLASS} />
         <RadixDialog.Content
           className={cx(PANEL_CLASS, SIZE_CLASSES[size])}
+          onOpenAutoFocus={onOpenAutoFocus}
+          onCloseAutoFocus={onCloseAutoFocus}
           {...(description === undefined ? { 'aria-describedby': undefined } : {})}
         >
           <div className="flex items-start gap-4 p-4 pr-17 pb-2 lg:px-6 lg:pt-6 lg:pr-19">

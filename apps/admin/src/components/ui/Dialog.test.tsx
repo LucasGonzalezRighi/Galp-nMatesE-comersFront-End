@@ -60,4 +60,37 @@ describe('Dialog', () => {
     expect(screen.getByRole('dialog').lastElementChild).toBe(close)
     expect(close).toHaveClass('absolute', 'top-4', 'right-4', 'lg:top-6', 'lg:right-6')
   })
+
+  it('al cerrarse devuelve el foco al elemento que lo tenía al abrirse', async () => {
+    const user = userEvent.setup()
+    function WithOpener() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Nueva línea
+          </button>
+          <Dialog open={open} onOpenChange={setOpen} title="Nueva línea de mates">
+            <input aria-label="Nombre" />
+          </Dialog>
+        </>
+      )
+    }
+    render(<WithOpener />)
+
+    await user.click(screen.getByRole('button', { name: 'Nueva línea' }))
+    await screen.findByRole('dialog', { name: 'Nueva línea de mates' })
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // El foco vuelve un cuadro después (por si otro código ya lo movió).
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Nueva línea' })).toHaveFocus()
+    })
+  })
 })

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { AlertDialog } from 'radix-ui'
-import { useRef } from 'react'
 import type { ButtonVariant } from './button-class'
 import { Button } from './Button'
 import { OVERLAY_COPY } from './overlay.copy'
+import { useRestoreFocus } from './use-restore-focus'
 
 /** Tono de un diálogo de confirmación: `danger` pinta de rojo el botón de confirmar. */
 export type ConfirmDialogTone = 'default' | 'danger'
@@ -98,7 +98,7 @@ export function ConfirmDialog({
   children,
 }: ConfirmDialogProps): ReactNode {
   // Sin `Trigger` (el diálogo es controlado), Radix no sabe adónde devolver el foco al cerrar.
-  const openerRef = useRef<HTMLElement | null>(null)
+  const { onOpenAutoFocus, onCloseAutoFocus } = useRestoreFocus()
   if (!Object.hasOwn(CONFIRM_VARIANT, tone)) {
     throw new RangeError(
       `El tono del diálogo tiene que ser default o danger; se recibió "${tone}".`,
@@ -115,22 +115,8 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className={OVERLAY_CLASS} />
         <AlertDialog.Content
           className={PANEL_CLASS}
-          onOpenAutoFocus={() => {
-            const active = document.activeElement
-            openerRef.current = active instanceof HTMLElement ? active : null
-          }}
-          onCloseAutoFocus={(event) => {
-            const opener = openerRef.current
-            openerRef.current = null
-            if (!opener?.isConnected) return
-            event.preventDefault()
-            // Un cuadro después: si al cerrarse otro código ya enfocó algo (el h1 de la pantalla
-            // nueva al navegar), se respeta; solo se vuelve al que lo tenía si quedó en el body.
-            requestAnimationFrame(() => {
-              const active = document.activeElement
-              if (active === null || active === document.body) opener.focus()
-            })
-          }}
+          onOpenAutoFocus={onOpenAutoFocus}
+          onCloseAutoFocus={onCloseAutoFocus}
           onEscapeKeyDown={(event) => {
             if (isPending) {
               event.preventDefault()

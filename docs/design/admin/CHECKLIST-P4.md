@@ -29,23 +29,23 @@ Cada fila se revisó con sus dos capturas (`admin-{captura}-1440.png` y `admin-{
 | Pantalla (captura) | Estructura | Textos | Colores y tipografía | Estados | Teclado y foco | Accesibilidad (axe) | 390 px |
 |---|---|---|---|---|---|---|---|
 | Ingreso (`login`) | ✅ | ✅ | ❌ 4 | ✅ | ✅ | ✅ | ✅ |
-| Resumen (`dashboard`) | ✅ C2 C9 | ✅ C5 | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
-| Productos (`products`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ❌ 2 (C4) |
-| Producto nuevo (`product-new`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
-| Producto con fotos (`product-photos`) | ✅ C2 | ✅ | ✅ | ✅ C8 | ✅ | ✅ (salvo 1) | ✅ |
-| Líneas y su diálogo (`categories`, `categories-dialog`) | ✅ | ✅ | ✅ | ✅ | ❌ 3 | ✅ (salvo 1), también con el diálogo abierto | ✅ |
-| Pedidos (`orders`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C4 |
-| Pedido y el despacho (`order`, `order-ship`) | ✅ | ✅ | ✅ | ✅ | ❌ 3 | ✅ (salvo 1; el diálogo de despacho no se audita) | ❌ 6 |
-| Contenido · Inicio (`content-home`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C3 |
+| Resumen (`dashboard`) | ✅ C2 C9 | ✅ C5 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Productos (`products`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (C4) |
+| Producto nuevo (`product-new`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Producto con fotos (`product-photos`) | ✅ C2 | ✅ | ✅ | ✅ C8 | ✅ | ✅ | ✅ |
+| Líneas y su diálogo (`categories`, `categories-dialog`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅, también con el diálogo abierto | ✅ |
+| Pedidos (`orders`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ C4 |
+| Pedido y el despacho (`order`, `order-ship`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (el diálogo de despacho no se audita) | ❌ 6 |
+| Contenido · Inicio (`content-home`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ C3 |
 | Contenido · Nosotros (`content-about`) | ✅ C2 | ✅ C6 | ✅ | ✅ | ✅ | — | ✅ C3 |
 | Contenido · Preguntas (`content-faq`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
 | Contenido · Pestañas (`content-tabs`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
 | Contenido · Pie (`content-footer`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | — | ✅ C3 |
-| Contenido · Legales (`content-legal`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ C3 |
-| Ajustes (`settings`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
-| Reseñas (`reviews`) | ✅ C9 | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
-| Mensajes (`messages`) | ✅ | ✅ | ❌ 6 | ❌ 7 | ✅ | ✅ (salvo 1) | ❌ 6 |
-| Mi cuenta (`account`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (salvo 1) | ✅ |
+| Contenido · Legales (`content-legal`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ C3 |
+| Ajustes (`settings`) | ✅ C2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Reseñas (`reviews`) | ✅ C9 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Mensajes (`messages`) | ✅ | ✅ | ❌ 6 | ❌ 7 | ✅ | ✅ | ❌ 6 |
+| Mi cuenta (`account`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 404 (`not-found`) | ✅ C7 (❌ 5 dentro de la estructura) | ✅ | ✅ | — | ✅ | — | ✅ |
 | Sesión vencida (`session-expired`) | ✅ | ✅ | ❌ 4 | ✅ | ✅ | ✅ | ✅ |
 | Menú del celular (`menu-390`, solo 390) | ✅ | ✅ | ✅ | — | ✅ | — | ✅ |
@@ -55,11 +55,11 @@ Cada fila se revisó con sus dos capturas (`admin-{captura}-1440.png` y `admin-{
 
 ## Desvíos a corregir
 
-Ninguno se corrigió en esta task: los archivos son de otras tasks (la Task 15 es dueña solo de los E2E y los documentos). Las pruebas que los delatan quedan marcadas para que avisen cuando se arreglen.
+Los desvíos 1 a 3 se corrigieron en la revisión de la Ola 4; los demás siguen abiertos (son de archivos de otras tasks).
 
-1. **Los enlaces del menú con contador no cumplen "nombre que incluye lo visible" (WCAG 2.5.3, axe `label-content-name-mismatch`, serio).** Se ven como "Pedidos3" (el texto y el `Badge` sin espacio entre los dos) y se llaman "Pedidos, 3 para despachar". Archivo: `apps/admin/src/app/AdminSidebar.tsx`. Probablemente alcanza con un `{' '}` entre el `<span>` del nombre y el `Badge`: axe compara sin la puntuación, y "Pedidos 3" sí está dentro de "Pedidos, 3 para despachar". Al corregirlo, sacar `KNOWN_RULE` y `KNOWN_NODES` de `e2e/admin/a11y.spec.ts`.
-2. **Productos tiene scroll horizontal a 390 px (112 px de más).** El encabezado oculto (`sr-only`, posición absoluta) de la columna de acciones se escapa del scroll de la tabla porque el contenedor con `overflow-x-auto` no está posicionado, y estira la página. Archivo: `apps/admin/src/components/ui/DataTable.tsx` (agregar `relative` al contenedor con scroll). La prueba de Productos de `e2e/admin/mobile.spec.ts` está marcada con `test.fail` (`KNOWN_OVERFLOW`): al corregirlo, sacarla de ahí.
-3. **Al cerrar un `Dialog` el foco queda en el `body`** (Escape, "Cancelar" o la X): Radix devuelve el foco al `Dialog.Trigger`, y el kit abre los diálogos con `open` controlado, sin `Trigger`. Pasa en "Nueva línea", editar una línea y el despacho de un pedido. `ConfirmDialog` ya recuerda quién lo abrió, pero si lo abrió un ítem de `ActionsMenu` (Archivar, Borrar), ese ítem ya no existe y el foco también queda en el `body`. Archivos: `apps/admin/src/components/ui/Dialog.tsx` (recordar el elemento enfocado en `onOpenAutoFocus` y volver a él en `onCloseAutoFocus`, como `ConfirmDialog`) y `apps/admin/src/components/ui/ActionsMenu.tsx` o `ConfirmDialog.tsx` (volver al botón del menú). La prueba "al cerrar un diálogo el foco vuelve al botón que lo abrió" de `a11y.spec.ts` está marcada con `test.fail`.
+1. **Corregido.** Los enlaces del menú con contador no cumplían "nombre que incluye lo visible" (WCAG 2.5.3, axe `label-content-name-mismatch`): se veían como "Pedidos3". `AdminSidebar.tsx` pone ahora un espacio entre el nombre y el `Badge`, y `a11y.spec.ts` volvió a revisar toda la página con `seriousViolations`.
+2. **Corregido.** Productos tenía 112 px de scroll horizontal a 390 px: el encabezado oculto (`sr-only`, posición absoluta) de la columna de acciones se escapaba del `overflow-x-auto`. `DataTable.tsx` lleva ahora `relative` en el contenedor con scroll, y `mobile.spec.ts` ya no marca ninguna pantalla como desvío.
+3. **Corregido.** Al cerrar un `Dialog` el foco quedaba en el `body` (el kit abre los diálogos con `open` controlado, sin `Trigger`), y lo mismo con un `ConfirmDialog` abierto desde `ActionsMenu`. `Dialog` y `ConfirmDialog` comparten ahora `use-restore-focus.ts` (recuerdan quién tenía el foco al abrirse y vuelven a él si quedó en el `body`), y `ActionsMenu` pasa el foco a su disparador antes de ejecutar la acción elegida, porque el ítem desaparece al cerrarse el menú. `a11y.spec.ts` ya no marca el caso con `test.fail` y suma el de "Archivar".
 4. **El ingreso y el diálogo "Tu sesión venció" no usan el kit.** Labels de 15 px en `neutral-300` (la regla dice 12 px al 70 %), campos de 15 px y un botón propio en lugar de `Button` (sin `min-h-9` ni `Spinner`). Archivo: `apps/admin/src/features/auth/components/LoginForm.tsx` (pasar a `Field`, `TextInput` y `Button`, conservando los textos y los `id` que usan los tests).
 5. **El 404 y el error de ruta dentro de la estructura dejan dos `main`.** `NotFound` y `RouteError` dibujan su propio `<main>`, y dentro de `AdminLayout` (que ya tiene uno) quedan dos. Archivo: `apps/admin/src/routes/__root.tsx` (dibujarlos sin `main` cuando están dentro de la estructura). Conocido desde la revisión de la Ola 2.
 6. **Identificadores que se cortan en el guion.** A 390 px el título del diálogo de despacho parte el número ("Despachar el pedido GLP-" / "09001") y en Mensajes el código de arrepentimiento ("Código ARR-" / "000003"), que además no va en `font-mono` como los números de pedido. Archivos: `apps/admin/src/features/messages/components/MessageItem.tsx` (código en `font-mono` y sin corte) y `apps/admin/src/features/orders/components/ShipOrderDialog.tsx` (el número del título sin corte).

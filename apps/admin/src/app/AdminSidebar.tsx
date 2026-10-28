@@ -104,9 +104,13 @@ export function AdminSidebar({
                   <Icon {...ICON_PROPS} />
                   <span>{item.label}</span>
                   {accessibleName !== undefined && (
-                    <Badge tone="accent" aria-hidden="true" className="ml-auto tabular-nums">
-                      {count}
-                    </Badge>
+                    <>
+                      {/* El espacio deja el texto visible como "Pedidos 3", y el nombre accesible
+                          lo contiene (WCAG 2.5.3, regla label-content-name-mismatch de axe). */}{' '}
+                      <Badge tone="accent" aria-hidden="true" className="ml-auto tabular-nums">
+                        {count}
+                      </Badge>
+                    </>
                   )}
                 </Link>
               </li>

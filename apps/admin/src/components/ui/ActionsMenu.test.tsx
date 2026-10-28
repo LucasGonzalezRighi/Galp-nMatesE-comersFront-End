@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestApp, renderWithApp } from '../../test/render'
 import { ActionsMenu } from './ActionsMenu'
+import { ConfirmDialog } from './ConfirmDialog'
 
 describe('ActionsMenu', () => {
   it('el disparador es un botón ícono con aria-label y abre las acciones', async () => {
@@ -78,6 +80,49 @@ describe('ActionsMenu', () => {
     expect(first).not.toHaveBeenCalled()
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
+  })
+
+  it('al elegir una acción el foco pasa al disparador, y la confirmación que abre le devuelve el foco al cerrarse', async () => {
+    const user = userEvent.setup()
+    function WithConfirm() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <ActionsMenu
+            label="Acciones de Mate imperial"
+            items={[
+              {
+                label: 'Archivar',
+                tone: 'danger',
+                onSelect: () => {
+                  setOpen(true)
+                },
+              },
+            ]}
+          />
+          <ConfirmDialog
+            open={open}
+            onOpenChange={setOpen}
+            title="¿Archivar «Mate imperial»?"
+            description="Deja de verse en la tienda."
+            confirmLabel="Archivar"
+            tone="danger"
+            isPending={false}
+            onConfirm={vi.fn()}
+          />
+        </>
+      )
+    }
+    render(<WithConfirm />)
+
+    await user.click(screen.getByRole('button', { name: 'Acciones de Mate imperial' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Archivar' }))
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Acciones de Mate imperial' })).toHaveFocus()
+    })
   })
 
   it('rechaza una acción sin onSelect ni href', () => {
