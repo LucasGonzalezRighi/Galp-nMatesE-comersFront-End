@@ -1,16 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
+import {
+  MESSAGES_SEARCH_DEFAULTS,
+  MessagesScreen,
+  messagesSearchSchema,
+} from '../../features/messages'
 
-/** Ruta `/mensajes`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 9. */
+/** Ruta `/mensajes`: la bandeja, con el tipo (`?tipo=`), `?sinLeer=1` y la página en la URL. */
 export const Route = createFileRoute('/_authenticated/mensajes')({
+  validateSearch: messagesSearchSchema,
+  search: { middlewares: [stripSearchParams(MESSAGES_SEARCH_DEFAULTS)] },
   component: MessagesPage,
 })
 
-// Marcadora de P4: la reemplaza la Task 9.
 function MessagesPage() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Mensajes</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
+    <MessagesScreen search={search} onSearchChange={(next) => void navigate({ search: next })} />
   )
 }

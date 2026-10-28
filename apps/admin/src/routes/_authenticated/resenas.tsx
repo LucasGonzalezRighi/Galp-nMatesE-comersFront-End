@@ -1,16 +1,22 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
+import { REVIEWS_SEARCH_DEFAULTS, ReviewsScreen, reviewsSearchSchema } from '../../features/reviews'
 
-/** Ruta `/resenas`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 9. */
+/** Ruta `/resenas`: moderación de reseñas, con la pestaña (`?estado=`) y la página en la URL. */
 export const Route = createFileRoute('/_authenticated/resenas')({
+  validateSearch: reviewsSearchSchema,
+  search: { middlewares: [stripSearchParams(REVIEWS_SEARCH_DEFAULTS)] },
   component: ReviewsPage,
 })
 
-// Marcadora de P4: la reemplaza la Task 9.
 function ReviewsPage() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { storeUrl } = Route.useRouteContext()
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Reseñas</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
+    <ReviewsScreen
+      search={search}
+      storeUrl={storeUrl}
+      onSearchChange={(next) => void navigate({ search: next })}
+    />
   )
 }
