@@ -115,7 +115,12 @@ export function ConfirmDialog({
             openerRef.current = null
             if (!opener?.isConnected) return
             event.preventDefault()
-            opener.focus()
+            // Un cuadro después: si al cerrarse otro código ya enfocó algo (el h1 de la pantalla
+            // nueva al navegar), se respeta; solo se vuelve al que lo tenía si quedó en el body.
+            requestAnimationFrame(() => {
+              const active = document.activeElement
+              if (active === null || active === document.body) opener.focus()
+            })
           }}
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault()

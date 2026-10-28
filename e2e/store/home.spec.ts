@@ -20,8 +20,9 @@ async function horizontalOverflow(page: Page): Promise<number> {
 async function scrollToStops(page: Page, stops: number): Promise<void> {
   await page.getByRole('region', STAGE).evaluate(
     (section, [value, count]) => {
-      const top = section.getBoundingClientRect().top + window.scrollY
-      const span = (section.offsetHeight - window.innerHeight) / count
+      const box = section.getBoundingClientRect()
+      const top = box.top + window.scrollY
+      const span = (box.height - window.innerHeight) / count
       window.scrollTo(0, top + value * span)
     },
     [stops, STOPS] as const,

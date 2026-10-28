@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { ConfirmDialog } from './ConfirmDialog'
 
@@ -110,7 +110,63 @@ describe('ConfirmDialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Archivar mate' })).toHaveFocus()
+    // El foco vuelve un cuadro después (por si otro código ya lo movió).
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Archivar mate' })).toHaveFocus()
+    })
+  })
+
+  it('si al cerrarse otro elemento ya tomó el foco (el h1 al navegar), no lo pisa', async () => {
+    const user = userEvent.setup()
+    function WithNavigation() {
+      const [open, setOpen] = useState(false)
+      const [left, setLeft] = useState(false)
+      const headingRef = useRef<HTMLHeadingElement>(null)
+      useEffect(() => {
+        // Como al navegar: la pantalla nueva enfoca su h1 en un efecto, después de cerrarse el diálogo.
+        if (left) headingRef.current?.focus()
+      }, [left])
+      return (
+        <>
+          <h1 ref={headingRef} tabIndex={-1}>
+            Pantalla nueva
+          </h1>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Salir
+          </button>
+          <ConfirmDialog
+            open={open}
+            onOpenChange={setOpen}
+            title="¿Salir sin guardar?"
+            description="Se pierden los cambios."
+            confirmLabel="Salir sin guardar"
+            tone="danger"
+            isPending={false}
+            onConfirm={() => {
+              setOpen(false)
+              setLeft(true)
+            }}
+          />
+        </>
+      )
+    }
+    render(<WithNavigation />)
+
+    await user.click(screen.getByRole('button', { name: 'Salir' }))
+    await user.click(await screen.findByRole('button', { name: 'Salir sin guardar' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    })
+    // Y un cuadro después sigue en el h1: el diálogo no lo devolvió a "Salir".
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
   })
 
   it('muestra el error en línea con role="alert"', async () => {

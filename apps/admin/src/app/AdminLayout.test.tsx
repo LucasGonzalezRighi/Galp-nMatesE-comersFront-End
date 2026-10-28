@@ -235,6 +235,35 @@ describe('AdminLayout: estructura', () => {
     })
   })
 
+  it('si se sale sin guardar desde el cajón, el foco termina en el h1 de la pantalla nueva', async () => {
+    const { router, user } = await renderLayout({
+      path: '/cuenta',
+      routePath: '/$section',
+      children: (
+        <>
+          <Heading />
+          <UnsavedChangesGuard when />
+        </>
+      ),
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Menú' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Menú' })
+    await user.click(within(drawer).getByRole('link', { name: /^Pedidos/ }))
+    const guard = await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' })
+    await user.click(within(guard).getByRole('button', { name: 'Salir sin guardar' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/pedidos')
+    })
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Pantalla /pedidos' })).toHaveFocus()
+    })
+    // Y un cuadro después sigue ahí: el diálogo no devolvió el foco a "Menú".
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(screen.getByRole('heading', { level: 1, name: 'Pantalla /pedidos' })).toHaveFocus()
+  })
+
   it('"Cerrar menú" cierra el cajón', async () => {
     const { user } = await renderLayout()
 
