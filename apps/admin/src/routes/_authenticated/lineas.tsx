@@ -1,16 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { CategoriesScreen } from '../../features/categories'
 
-/** Ruta `/lineas`: marcadora de P4 ("En construcción") hasta que la reemplace la Task 11. */
+/** Ruta `/lineas`: las líneas de productos, su orden en la tienda, el alta, la edición y el borrado. */
 export const Route = createFileRoute('/_authenticated/lineas')({
-  component: CategoriesPage,
+  component: CategoriesScreen,
 })
-
-// Marcadora de P4: la reemplaza la Task 11.
-function CategoriesPage() {
-  return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 lg:p-8">
-      <h1 className="text-h3">Líneas</h1>
-      <p className="text-neutral-400">En construcción</p>
-    </main>
-  )
-}
