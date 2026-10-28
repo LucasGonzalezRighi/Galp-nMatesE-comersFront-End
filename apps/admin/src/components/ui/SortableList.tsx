@@ -34,7 +34,11 @@ export interface SortableListProps<T> {
   items: readonly T[]
   /** Clave estable y única de cada ítem. */
   getKey: (item: T) => string
-  /** Se llama con el orden nuevo al soltar un arrastre o al mover con un botón o las flechas. */
+  /**
+   * Se llama con el orden nuevo al soltar un arrastre o al mover con un botón o las flechas. El
+   * padre lo tiene que reflejar en `items`, aunque sea de forma asíncrona: hasta que cambien las
+   * claves de `items`, la lista sigue mostrando el orden nuevo.
+   */
   onReorder: (items: T[]) => void
   /** Nombre de la lista (su nombre accesible y el comienzo del anuncio), por ejemplo "Líneas". */
   label: string
@@ -127,12 +131,27 @@ interface PendingFocus {
   key: string
 }
 
+/** Orden ya avisado con `onReorder` que el padre todavía no pasó en `items`. */
+interface PendingOrder<T> {
+  /** Ítems en el orden nuevo. */
+  order: T[]
+  /** Claves de `items` al avisar (`JSON.stringify`); cuando cambian, manda otra vez `items`. */
+  base: string
+}
+
 /**
  * Lista reordenable con `Reorder` de `motion`: se arrastra desde la agarradera, se mueve con los
  * botones que dibuja `renderItem` (`moveUp`, `moveDown`) o con las flechas desde la agarradera.
  * Después de cada movimiento anuncia por `aria-live` "{label}: quedó en el lugar {n} de
  * {total}." y devuelve el foco a donde estaba. `onReorder` se llama una vez por movimiento
  * (al soltar, no en cada cuadro del arrastre). Con `prefers-reduced-motion`, sin animación.
+ *
+ * El orden nuevo queda como borrador hasta que cambien las claves de `items` (comparadas con
+ * `getKey`), así la lista no vuelve un cuadro al orden viejo cuando el padre actualiza `items`
+ * de forma asíncrona (por ejemplo en el `onMutate` de React Query, después de
+ * `await cancelQueries`). Si el padre descarta el cambio sin tocar `items`, la lista se queda
+ * con el orden nuevo hasta que `items` cambie. Si dos anuncios seguidos dicen lo mismo, el
+ * segundo lleva un espacio final para que el DOM cambie y el lector lo repita.
  *
  * @param props - Ver {@link SortableListProps}.
  * @throws {RangeError} Si `label` está vacío o dos ítems tienen la misma clave.
@@ -162,12 +181,19 @@ export function SortableList<T>({
   if (new Set(keys).size !== keys.length) {
     throw new RangeError(`Los ítems de "${label}" tienen claves repetidas.`)
   }
+  const signature = JSON.stringify(keys)
   const [draft, setDraft] = useState<T[] | null>(null)
+  const [pendingOrder, setPendingOrder] = useState<PendingOrder<T> | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const draftRef = useRef<T[] | null>(null)
   const handles = useRef(new Map<string, HTMLButtonElement>())
   const pendingFocus = useRef<PendingFocus | null>(null)
-  const shown: T[] = draft ?? [...items]
+  // El padre ya cambió `items` (aunque haya sido de forma asíncrona): se suelta el borrador.
+  if (pendingOrder !== null && pendingOrder.base !== signature) {
+    setPendingOrder(null)
+  }
+  const resting = pendingOrder?.base === signature ? pendingOrder.order : items
+  const shown: T[] = draft ?? [...resting]
 
   useLayoutEffect(() => {
     const pending = pendingFocus.current
@@ -189,9 +215,12 @@ export function SortableList<T>({
 
   const commit = (next: T[], key: string) => {
     const position = next.findIndex((item) => getKey(item) === key) + 1
+    const text = reorderAnnouncement(label, position, next.length)
     pendingFocus.current = { element: document.activeElement, key }
     updateDraft(null)
-    setAnnouncement(reorderAnnouncement(label, position, next.length))
+    setPendingOrder({ order: next, base: signature })
+    // Un texto igual al anterior no cambia el DOM y el lector no lo repite: se alterna un espacio.
+    setAnnouncement((previous) => (previous === text ? `${text} ` : text))
     onReorder(next)
   }
 
@@ -207,7 +236,8 @@ export function SortableList<T>({
   const handleDragEnd = (key: string) => {
     const next = draftRef.current
     if (next === null) return
-    if (next.every((item, index) => getKey(item) === keys[index])) {
+    const restingKeys = resting.map(getKey)
+    if (next.every((item, index) => getKey(item) === restingKeys[index])) {
       updateDraft(null)
       return
     }

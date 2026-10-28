@@ -39,4 +39,16 @@ describe('Tabs', () => {
       'true',
     )
   })
+
+  it('sin children dibuja el panel vacío al que apunta aria-controls', () => {
+    render(<Tabs value="aprobadas" onValueChange={vi.fn()} label="Estado" items={items} />)
+
+    const panel = screen.getByRole('tabpanel')
+    expect(panel).toBeEmptyDOMElement()
+    expect(screen.getByRole('tab', { name: 'Aprobadas' })).toHaveAttribute(
+      'aria-controls',
+      panel.id,
+    )
+    expect(panel).toHaveAccessibleName('Aprobadas')
+  })
 })

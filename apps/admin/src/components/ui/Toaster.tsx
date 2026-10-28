@@ -13,7 +13,9 @@ const DURATION_MS = { success: 5000, error: 8000 } as const
  * Muestra los avisos de {@link toast} con Radix `Toast`: abajo a la derecha desde 640 px y
  * abajo al centro en el celular. Los de éxito duran 5 s y son un `status`; los de error, 8 s y
  * son un `alert`. Cada uno tiene "Cerrar aviso". Se monta una sola vez, en la raíz de la app
- * (y en los tests que quieren ver avisos).
+ * (y en los tests que quieren ver avisos). El visor lleva `pointer-events-auto`: con un `Dialog`
+ * modal abierto, Radix deja `pointer-events: none` en `body` y sin eso los avisos no se podrían
+ * cerrar con el mouse.
  *
  * @example
  * <Toaster />
@@ -52,7 +54,7 @@ export function Toaster(): ReactNode {
       })}
       <Toast.Viewport
         label={OVERLAY_COPY.toastRegion}
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col gap-2 p-4 outline-none sm:right-0 sm:left-auto sm:mx-0"
+        className="pointer-events-auto fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col gap-2 p-4 outline-none sm:right-0 sm:left-auto sm:mx-0"
       />
     </Toast.Provider>
   )

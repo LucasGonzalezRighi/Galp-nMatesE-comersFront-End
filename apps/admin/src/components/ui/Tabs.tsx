@@ -21,13 +21,17 @@ export interface TabsProps {
   label: string
   /** Pestañas, en orden. */
   items: readonly TabItem[]
-  /** Contenido de la pestaña elegida (su `tabpanel`). */
+  /**
+   * Contenido de la pestaña elegida (su `tabpanel`). Sin él, el panel se dibuja igual, vacío, para
+   * que el `aria-controls` de las pestañas apunte a un elemento que existe.
+   */
   children?: ReactNode
 }
 
 /**
  * Pestañas controladas sobre Radix `Tabs`: se recorren con las flechas, la elegida lleva un
- * filete `accent` abajo y cada una puede mostrar un número.
+ * filete `accent` abajo y cada una puede mostrar un número. El panel (`tabpanel`) siempre está,
+ * vacío si no hay `children`, porque cada pestaña lo nombra en `aria-controls`.
  *
  * @param props - Ver {@link TabsProps}.
  * @throws {RangeError} Si no hay pestañas, `value` no es una de ellas o algún `count` no es un
@@ -72,11 +76,9 @@ export function Tabs({ value, onValueChange, label, items, children }: TabsProps
           </RadixTabs.Trigger>
         ))}
       </RadixTabs.List>
-      {children !== undefined && (
-        <RadixTabs.Content value={value} className="outline-none">
-          {children}
-        </RadixTabs.Content>
-      )}
+      <RadixTabs.Content value={value} className="outline-none">
+        {children}
+      </RadixTabs.Content>
     </RadixTabs.Root>
   )
 }

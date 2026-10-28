@@ -15,7 +15,11 @@ export interface UseImageUploadsOptions {
   purpose: MediaPurpose
   /** Cupo total de fotos (las que ya hay más las de la cola), un entero desde 1. */
   max: number
-  /** Fotos que ya están guardadas y cuentan para el cupo; por omisión 0. */
+  /**
+   * Fotos que ya están guardadas y cuentan para el cupo; por omisión 0. El cupo también cuenta las
+   * fotos de la cola ya subidas (`done`): si la pantalla copia su `result` al formulario y lo suma
+   * acá, tiene que sacarla de la cola con `remove(id)` para no contarla dos veces.
+   */
   current?: number
   /**
    * Si es `true`, cada foto nueva reemplaza a las de la cola en lugar de sumarse (lo usa
@@ -33,17 +37,23 @@ export interface ImageUploads {
    * subir, cada uno con su vista previa `blob:`. Se cumple cuando ya están en la cola.
    */
   add: (files: Iterable<File> | ArrayLike<File>) => Promise<void>
-  /** Cancela la subida en curso de una foto y la quita de la cola (revoca su `blob:`). */
+  /**
+   * Cancela la subida en curso de una foto y la quita de la cola (revoca su `blob:` y limpia
+   * `error`).
+   */
   cancel: (id: string) => void
   /** Vuelve a subir una foto con error (pide una firma nueva). */
   retry: (id: string) => void
-  /** Quita una foto de la cola (corta su subida si sigue y revoca su `blob:`). */
+  /** Quita una foto de la cola (corta su subida si sigue, revoca su `blob:` y limpia `error`). */
   remove: (id: string) => void
   /** `true` mientras alguna foto se está subiendo. */
   isUploading: boolean
   /** `true` si alguna foto quedó con error. */
   hasErrors: boolean
-  /** Por qué no se agregaron archivos en el último `add`, o `null` si entraron todos. */
+  /**
+   * Por qué no se agregaron archivos en el último `add`, o `null` si entraron todos. Se limpia al
+   * quitar o cancelar una foto (por ejemplo, después de "Ya hay 8 fotos…").
+   */
   error: string | null
 }
 
@@ -178,14 +188,23 @@ export function useImageUploads({
     [uploader, purpose, patch, onUnauthorized],
   )
 
-  const remove = useCallback((id: string) => {
+  /** Saca una foto de la cola sin tocar `error` (el reemplazo de `add` conserva su aviso). */
+  const discard = useCallback((id: string): boolean => {
     const entry = entriesRef.current.get(id)
-    if (entry === undefined) return
+    if (entry === undefined) return false
     entriesRef.current.delete(id)
     entry.controller?.abort()
     URL.revokeObjectURL(entry.previewUrl)
     setItems((list) => list.filter((item) => item.id !== id))
+    return true
   }, [])
+
+  const remove = useCallback(
+    (id: string) => {
+      if (discard(id)) setError(null)
+    },
+    [discard],
+  )
 
   const cancel = useCallback(
     (id: string) => {
@@ -224,7 +243,7 @@ export function useImageUploads({
       setError(messages.length === 0 ? null : messages.join(' '))
       if (accepted.length === 0) return
 
-      if (replace) for (const id of [...entries.keys()]) remove(id)
+      if (replace) for (const id of [...entries.keys()]) discard(id)
       const added = accepted.map((file): UploadItem => {
         nextIdRef.current += 1
         const id = `${idPrefix}${String(nextIdRef.current)}`
@@ -243,7 +262,7 @@ export function useImageUploads({
       setItems((previous) => [...previous, ...added])
       for (const item of added) start(item.id)
     },
-    [max, current, replace, idPrefix, remove, start],
+    [max, current, replace, idPrefix, discard, start],
   )
 
   return {

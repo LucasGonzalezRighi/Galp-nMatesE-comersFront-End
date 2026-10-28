@@ -97,7 +97,9 @@ const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const
 /**
  * Tabla de datos con TanStack Table 9 y orden manual (lo resuelve la API). Tiene `<caption>`
  * oculta, encabezados ordenables como botones con `aria-sort`, columnas secundarias que se
- * esconden en pantallas chicas y su propio scroll horizontal. Muestra los estados de carga
+ * esconden en pantallas chicas y su propio scroll horizontal (el contenedor es una región con el
+ * nombre de `caption` que toma el foco, para poder desplazarla con el teclado aunque ninguna
+ * celda tenga algo enfocable). Muestra los estados de carga
  * (5 filas con pulso), error (una fila con `role="alert"` y "Reintentar") y vacío
  * (`emptyState`).
  *
@@ -194,7 +196,13 @@ export function DataTable<T extends RowData>({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div
+      role="region"
+      aria-label={caption}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- una región con scroll tiene que poder recibir el foco para desplazarla con el teclado (WCAG 2.1.1, regla scrollable-region-focusable de axe)
+      tabIndex={0}
+      className="focus-visible:outline-accent overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
       <table aria-busy={isLoading ? true : undefined} className="w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -240,7 +248,7 @@ export function DataTable<T extends RowData>({
                         )}
                       >
                         <table.FlexRender header={header} />
-                        <SortIcon size={14} weight="regular" aria-hidden="true" />
+                        <SortIcon size={18} weight="regular" aria-hidden="true" />
                       </button>
                     ) : (
                       <table.FlexRender header={header} />

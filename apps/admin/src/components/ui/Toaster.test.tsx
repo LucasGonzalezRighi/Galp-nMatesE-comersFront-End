@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
+import { Dialog } from './Dialog'
 import { toast, useToastStore } from './toast'
 import { Toaster } from './Toaster'
 
@@ -52,5 +53,24 @@ describe('Toaster', () => {
 
     expect(screen.queryByText('Reseña aprobada.')).not.toBeInTheDocument()
     expect(useToastStore.getState().toasts).toEqual([])
+  })
+
+  it('con un Dialog modal abierto el visor sigue recibiendo el puntero', async () => {
+    render(
+      <>
+        <Toaster />
+        <Dialog open onOpenChange={() => undefined} title="Nueva línea">
+          <p>Contenido</p>
+        </Dialog>
+      </>,
+    )
+    await screen.findByRole('dialog', { name: 'Nueva línea' })
+    act(() => {
+      toast.error('No se pudo guardar.')
+    })
+
+    const viewport = (await screen.findByText('No se pudo guardar.')).closest('ol')
+    expect(document.body.style.pointerEvents).toBe('none')
+    expect(viewport).toHaveClass('pointer-events-auto')
   })
 })

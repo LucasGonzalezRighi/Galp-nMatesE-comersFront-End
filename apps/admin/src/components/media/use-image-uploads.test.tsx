@@ -143,6 +143,29 @@ describe('useImageUploads', () => {
     expect(Object.keys(app.mockDb.db.media)).toHaveLength(0)
   })
 
+  it('cancelar o quitar una foto limpia el error del último add', async () => {
+    const { wrapper } = await setup(200)
+    const { result } = renderHook(() => useImageUploads({ purpose: 'product', max: 2 }), {
+      wrapper,
+    })
+    await act(() => result.current.add([photo('a.jpg'), photo('b.jpg'), photo('c.jpg')]))
+    expect(result.current.error).toBe('Ya hay 2 fotos: quitá una para agregar otra.')
+    expect(result.current.items[0]?.status).toBe('uploading')
+
+    act(() => {
+      result.current.cancel(result.current.items[0]?.id ?? '')
+    })
+    expect(result.current.error).toBeNull()
+
+    await act(() => result.current.add([photo('mate.gif', 'image/gif')]))
+    expect(result.current.error).toBe('mate.gif: Formato no admitido: usá JPG, PNG o WebP.')
+    act(() => {
+      result.current.remove(result.current.items[0]?.id ?? '')
+    })
+    expect(result.current.error).toBeNull()
+    expect(result.current.items).toHaveLength(0)
+  })
+
   it('un 401 deja la foto en error con el aviso de sesión y avisa a la estructura', async () => {
     const { app, wrapper, onUnauthorized } = await setup()
     app.mockDb.db.adminSession = null
@@ -225,6 +248,17 @@ describe('useSingleImageUpload', () => {
     await act(() => result.current.add([photo('a.jpg')]))
     await act(() => result.current.add([photo('b.gif', 'image/gif')]))
     expect(result.current.item?.fileName).toBe('a.jpg')
+    expect(result.current.error).toBe('b.gif: Formato no admitido: usá JPG, PNG o WebP.')
+  })
+
+  it('al reemplazar la foto conserva el aviso de los archivos que no entraron', async () => {
+    const { wrapper } = await setup()
+    const { result } = renderHook(() => useSingleImageUpload({ purpose: 'partner' }), {
+      wrapper,
+    })
+    await act(() => result.current.add([photo('a.jpg')]))
+    await act(() => result.current.add([photo('b.gif', 'image/gif'), photo('c.jpg')]))
+    expect(result.current.item?.fileName).toBe('c.jpg')
     expect(result.current.error).toBe('b.gif: Formato no admitido: usá JPG, PNG o WebP.')
   })
 

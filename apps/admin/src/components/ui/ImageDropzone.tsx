@@ -3,10 +3,8 @@ import { ImageIcon } from '@phosphor-icons/react'
 import { useId, useRef, useState } from 'react'
 import { Button } from './Button'
 import { cx } from './cx'
+import { IMAGE_ACCEPT } from './image-accept'
 import { OVERLAY_COPY } from './overlay.copy'
-
-/** Formatos que acepta el selector de archivos. */
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp'
 
 /** Props de {@link ImageDropzone}. */
 export interface ImageDropzoneProps {
@@ -35,8 +33,9 @@ function hasFiles(event: DragEvent<HTMLElement>): boolean {
 /**
  * Zona para elegir o soltar fotos: borde punteado `divider` (que pasa a `accent` al arrastrar
  * encima), el texto "Arrastrá fotos acá o elegí archivos" y un botón real "Elegir archivos" que
- * abre el selector (JPG, PNG o WebP). Solo es presentación: validar y subir es de
- * `components/media`.
+ * abre el selector (JPG, PNG o WebP). El `input type="file"` queda oculto para el lector
+ * (`aria-hidden`, fuera del orden de tabulación): el único control con nombre es el botón. Solo
+ * es presentación: validar y subir es de `components/media`.
  *
  * @param props - Ver {@link ImageDropzoneProps}.
  * @example
@@ -118,10 +117,10 @@ export function ImageDropzone({
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPTED_TYPES}
+          accept={IMAGE_ACCEPT}
           multiple={multiple}
           disabled={disabled}
-          aria-label={chooseLabel}
+          aria-hidden="true"
           tabIndex={-1}
           onChange={handleChange}
           className="sr-only"

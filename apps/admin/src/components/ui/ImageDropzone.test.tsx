@@ -7,9 +7,16 @@ function photo(name: string): File {
   return new File(['x'], name, { type: 'image/jpeg' })
 }
 
+/** El `input type="file"` oculto (no tiene nombre: se busca por selector). */
+function fileInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+  if (input === null) throw new Error('Falta el input de archivos.')
+  return input
+}
+
 describe('ImageDropzone', () => {
   it('múltiple: textos en plural, ayuda y error asociados al botón', () => {
-    render(
+    const { container } = render(
       <ImageDropzone multiple hint="JPG, PNG o WebP." error="Ya hay 8 fotos." onFiles={vi.fn()} />,
     )
 
@@ -17,17 +24,27 @@ describe('ImageDropzone', () => {
     const button = screen.getByRole('button', { name: 'Elegir archivos' })
     expect(button).toHaveAccessibleDescription('JPG, PNG o WebP. Ya hay 8 fotos.')
     expect(screen.getByRole('alert')).toHaveTextContent('Ya hay 8 fotos.')
-    const input = screen.getByLabelText('Elegir archivos')
-    expect(input).toHaveAttribute('type', 'file')
+    const input = fileInput(container)
     expect(input).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
     expect(input).toHaveAttribute('multiple')
+  })
+
+  it('el input de archivos queda oculto para el lector: el único control con nombre es el botón', () => {
+    const { container } = render(<ImageDropzone multiple onFiles={vi.fn()} />)
+
+    const input = fileInput(container)
+    expect(input).toHaveAttribute('aria-hidden', 'true')
+    expect(input).toHaveAttribute('tabindex', '-1')
+    expect(input).not.toHaveAttribute('aria-label')
+    expect(screen.queryByLabelText('Elegir archivos')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Elegir archivos' })).toHaveLength(1)
   })
 
   it('el botón abre el selector y elegir archivos llama a onFiles', async () => {
     const user = userEvent.setup()
     const onFiles = vi.fn()
-    render(<ImageDropzone multiple onFiles={onFiles} />)
-    const input = screen.getByLabelText<HTMLInputElement>('Elegir archivos')
+    const { container } = render(<ImageDropzone multiple onFiles={onFiles} />)
+    const input = fileInput(container)
     const click = vi.spyOn(input, 'click')
 
     await user.click(screen.getByRole('button', { name: 'Elegir archivos' }))
@@ -40,11 +57,11 @@ describe('ImageDropzone', () => {
   })
 
   it('una sola: textos en singular', () => {
-    render(<ImageDropzone multiple={false} onFiles={vi.fn()} />)
+    const { container } = render(<ImageDropzone multiple={false} onFiles={vi.fn()} />)
 
     expect(screen.getByText('Arrastrá una foto acá o elegí un archivo')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Elegir archivo' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Elegir archivo')).not.toHaveAttribute('multiple')
+    expect(fileInput(container)).not.toHaveAttribute('multiple')
   })
 
   it('soltar archivos llama a onFiles y el borde cambia a accent al arrastrar encima', () => {

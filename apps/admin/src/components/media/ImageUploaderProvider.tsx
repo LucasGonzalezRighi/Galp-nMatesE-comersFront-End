@@ -24,7 +24,7 @@ export function ImageUploaderProvider({
   uploader,
   onUnauthorized,
   children,
-}: ImageUploaderProviderProps) {
+}: ImageUploaderProviderProps): ReactNode {
   const value = useMemo(
     () => ({ uploader, onUnauthorized: onUnauthorized ?? null }),
     [uploader, onUnauthorized],

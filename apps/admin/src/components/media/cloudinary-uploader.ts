@@ -78,6 +78,12 @@ function send(
     }
     xhr.onload = () => {
       settle(() => {
+        // Un estado fuera de 100–599 (por ejemplo 0) no es una respuesta HTTP sino un corte: así
+        // `MediaUploadError` no lanza dentro del manejador y la promesa siempre termina.
+        if (!Number.isInteger(xhr.status) || xhr.status < 100 || xhr.status > 599) {
+          reject(new MediaUploadError({ reason: 'network' }))
+          return
+        }
         const uploaded =
           xhr.status >= 200 && xhr.status < 300 ? parseUploaded(xhr.responseText) : null
         if (uploaded === null) {
@@ -123,8 +129,9 @@ function send(
  * el cliente de la API.
  *
  * El avance llega por `xhr.upload.onprogress`; la señal llama a `xhr.abort()`; el tiempo máximo es
- * de 120 s. Un `4xx` / `5xx` rechaza con `rejected`, un corte con `network`, el tiempo con
- * `timeout` y el `401` de la firma con `unauthorized`.
+ * de 120 s. Un `4xx` / `5xx` rechaza con `rejected`, un corte (o una respuesta con un estado
+ * fuera de 100–599, como 0) con `network`, el tiempo con `timeout` y el `401` de la firma con
+ * `unauthorized`.
  *
  * @param options - Ver {@link CloudinaryUploaderOptions}.
  * @returns El uploader.

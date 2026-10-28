@@ -11,7 +11,7 @@ function renderField(props: Partial<SingleImageFieldProps> = {}) {
     onRetry: vi.fn(),
     onRemove: vi.fn(),
   }
-  render(
+  const { container } = render(
     <SingleImageField
       label="Foto"
       hint="JPG, PNG o WebP."
@@ -22,7 +22,14 @@ function renderField(props: Partial<SingleImageFieldProps> = {}) {
       {...props}
     />,
   )
-  return handlers
+  return { ...handlers, container }
+}
+
+/** El `input type="file"` oculto (no tiene nombre: se busca por selector). */
+function fileInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+  if (input === null) throw new Error('Falta el input de archivos.')
+  return input
 }
 
 describe('SingleImageField', () => {
@@ -36,15 +43,19 @@ describe('SingleImageField', () => {
 
   it('con foto muestra la miniatura, el texto alternativo y "Cambiar foto"', async () => {
     const user = userEvent.setup()
-    const { onFiles, onRemove } = renderField({
+    const { onFiles, onRemove, container } = renderField({
       image: { src: 'data:image/webp;base64,AAAA', alt: 'Socio en el galpón' },
     })
 
     expect(screen.getByRole('img', { name: 'Socio en el galpón' })).toBeInTheDocument()
     expect(screen.getByLabelText('Texto alternativo')).toBeInTheDocument()
 
+    const input = fileInput(container)
+    expect(input).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
+    expect(input).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByLabelText('Cambiar foto')).not.toBeInTheDocument()
     const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
-    await user.upload(screen.getByLabelText('Cambiar foto'), file)
+    await user.upload(input, file)
     expect(onFiles).toHaveBeenCalledWith([file])
 
     await user.click(screen.getByRole('button', { name: 'Quitar foto' }))

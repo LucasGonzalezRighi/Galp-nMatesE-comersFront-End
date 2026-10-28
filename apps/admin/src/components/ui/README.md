@@ -25,7 +25,7 @@ botones ni estados propios: usan los de acá (y `src/components/media` para subi
   título vacío, opciones repetidas, un monto con decimales).
 - **`react-refresh`**: cada `.tsx` exporta solo componentes (y sus tipos); las funciones y
   constantes van en un `.ts` aparte (`button-class.ts`, `input-class.ts`, `numeric-text.ts`,
-  `toast.ts`).
+  `toast.ts`, `image-accept.ts`).
 
 ## Base (pre-wire)
 
@@ -81,15 +81,15 @@ botones ni estados propios: usan los de acá (y `src/components/media` para subi
 
 ## Kit B — tablas, diálogos, avisos, orden e imágenes (Task 5)
 
-- `Dialog`: diálogo de Radix con título, descripción, cuerpo con scroll y pie; ancho `sm`, `md` o `lg`.
+- `Dialog`: diálogo de Radix con título, descripción, cuerpo con scroll y pie; ancho `sm`, `md` o `lg`. "Cerrar" se ve arriba a la derecha pero va último en el DOM, así el foco inicial cae en el primer campo del cuerpo.
 - `ConfirmDialog`: confirmación antes de una acción irreversible; el foco arranca en "Cancelar" y `isPending` deshabilita los dos botones.
 - `ActionsMenu`: menú de acciones de Radix detrás de un botón ícono (`DotsThree`).
-- `Tabs`: pestañas controladas de Radix, con un contador opcional por pestaña.
-- `DataTable`: tabla de TanStack Table con orden manual, `caption` oculta, columnas que se esconden por ancho y estados de carga, error y vacío.
+- `Tabs`: pestañas controladas de Radix, con un contador opcional por pestaña; el panel siempre está (vacío sin `children`), porque `aria-controls` lo nombra.
+- `DataTable`: tabla de TanStack Table con orden manual, `caption` oculta, columnas que se esconden por ancho y estados de carga, error y vacío. El contenedor con scroll horizontal es una región con el nombre de `caption` que toma el foco (para desplazarla con el teclado).
 - `Pagination`: "Mostrando {desde}–{hasta} de {total}" con "Anterior" y "Siguiente"; no aparece con una sola página.
-- `Toaster` y `toast` (`toast.ts`): avisos de éxito (5 s) y de error (8 s, `role="alert"`), que se pueden lanzar fuera de React.
+- `Toaster` y `toast` (`toast.ts`): avisos de éxito (5 s) y de error (8 s, `role="alert"`), que se pueden lanzar fuera de React. El visor lleva `pointer-events-auto` para que los avisos se puedan cerrar con un `Dialog` modal abierto.
 - `UnsavedChangesGuard`: frena la navegación con cambios sin guardar y pregunta "¿Salir sin guardar?".
-- `SortableList`: lista reordenable con arrastre (`motion`) o con botones, anunciada por `aria-live`.
-- `ImageDropzone`: área para soltar o elegir fotos (JPEG, PNG o WebP).
-- `ImageTile`: miniatura 4:5 de una foto subiendo, con error o lista, con sus acciones.
-- `SingleImageField`: campo de una sola foto (`ImageTile` + "Cambiar foto", o `ImageDropzone`).
+- `SortableList`: lista reordenable con arrastre (`motion`) o con botones, anunciada por `aria-live`. El orden nuevo se sigue mostrando hasta que cambien las claves de `items`, así el padre puede actualizarlas de forma asíncrona (`onMutate` de React Query) sin que la lista vuelva un cuadro al orden viejo.
+- `ImageDropzone`: área para soltar o elegir fotos (JPEG, PNG o WebP, `IMAGE_ACCEPT` de `image-accept.ts`). El `input type="file"` queda oculto para el lector; el control con nombre es el botón "Elegir archivos".
+- `ImageTile`: miniatura 4:5 de una foto subiendo, con error o lista, con sus acciones. En una lista de varias fotos, pasá `removeLabel` para que cada botón de quitar tenga su nombre ("Quitar la foto 3"); por omisión es "Quitar foto".
+- `SingleImageField`: campo de una sola foto (`ImageTile` + "Cambiar foto", o `ImageDropzone`). `upload` es un `SingleImageUploadState` (vista previa, estado, progreso y error, sacados de `UploadItem`); no confundir con `SingleImageUpload`, lo que devuelve `useSingleImageUpload` de `components/media`.

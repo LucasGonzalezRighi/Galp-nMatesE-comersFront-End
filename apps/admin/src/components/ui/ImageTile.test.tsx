@@ -33,6 +33,41 @@ describe('ImageTile', () => {
     expect(onRemove).toHaveBeenCalledTimes(1)
   })
 
+  it('removeLabel distingue el botón de quitar de cada foto de una lista', async () => {
+    const user = userEvent.setup()
+    const onRemove = vi.fn()
+    render(
+      <>
+        <ImageTile src="data:image/webp;base64,AAAA" alt="" status="done" onRemove={vi.fn()} />
+        <ImageTile
+          src="data:image/webp;base64,BBBB"
+          alt=""
+          status="done"
+          removeLabel="Quitar la foto 2"
+          onRemove={onRemove}
+        />
+      </>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Quitar foto' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quitar la foto 2' }))
+    expect(onRemove).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechaza un removeLabel vacío', () => {
+    expect(() =>
+      render(
+        <ImageTile
+          src="data:image/webp;base64,AAAA"
+          alt=""
+          status="done"
+          removeLabel="  "
+          onRemove={vi.fn()}
+        />,
+      ),
+    ).toThrow(RangeError)
+  })
+
   it('subiendo: barra de progreso con "Subiendo… {p} %" y "Cancelar"', async () => {
     const user = userEvent.setup()
     const onCancel = vi.fn()

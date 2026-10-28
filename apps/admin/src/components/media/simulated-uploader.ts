@@ -1,4 +1,5 @@
 import type { ApiClient } from '@galpon/api-client'
+import { MAX_MOCK_MEDIA_LENGTH } from '@galpon/api-client/mock'
 import type { RegisterMockImage } from '../../lib/api'
 import type { ImageUploader } from './media.types'
 import type { ImageSize } from './validate-image-file'
@@ -6,9 +7,6 @@ import { delay, throwIfAborted } from './abort'
 import { MediaUploadError } from './media.types'
 import { requestSignature, toUploadError } from './request-signature'
 import { decodeImage } from './validate-image-file'
-
-/** Máximo de caracteres del data URL que acepta `POST /__mock/media` (`MAX_MOCK_MEDIA_LENGTH`). */
-const MAX_DATA_URL_LENGTH = 200_000
 
 /** Primera reducción: lado mayor de 640 px en calidad 0,8. */
 const FIRST_PASS = { maxSide: 640, quality: 0.8 } as const
@@ -60,7 +58,8 @@ function drawReduced(
 
 /**
  * Reduce la foto para guardarla en la base simulada: lado mayor de 640 px en calidad 0,8 y, si
- * pasa de 200 000 caracteres, 480 px en calidad 0,6 (refinamiento 2 del plan P4).
+ * pasa del máximo que acepta `POST /__mock/media` (`MAX_MOCK_MEDIA_LENGTH`, 200 000
+ * caracteres), 480 px en calidad 0,6 (refinamiento 2 del plan P4).
  *
  * @param file - La foto.
  * @returns El data URL reducido y las medidas de la foto original.
@@ -71,7 +70,7 @@ async function reduce(file: File): Promise<{ dataUrl: string; size: ImageSize }>
     const size = { width: image.width, height: image.height }
     const first = drawReduced(image.source, size, FIRST_PASS)
     const dataUrl =
-      first.length <= MAX_DATA_URL_LENGTH ? first : drawReduced(image.source, size, SECOND_PASS)
+      first.length <= MAX_MOCK_MEDIA_LENGTH ? first : drawReduced(image.source, size, SECOND_PASS)
     return { dataUrl, size }
   } finally {
     image.release()

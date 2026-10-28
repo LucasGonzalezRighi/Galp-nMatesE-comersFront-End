@@ -121,21 +121,23 @@ export function ActionsMenu({ label, items }: ActionsMenuProps): ReactNode {
           sideOffset={4}
           className="bg-surface text-foreground z-50 flex min-w-48 flex-col rounded-md p-1 shadow-md transition-opacity duration-150 ease-out motion-reduce:transition-none starting:opacity-0"
         >
-          {items.map((item) => {
+          {items.map((item, index) => {
+            // El texto se puede repetir (dos "Editar" en un mismo menú): la clave suma el lugar.
+            const key = `${String(index)}-${item.label}`
             const className = cx(
               ITEM_CLASS,
               item.tone === 'danger' ? 'text-danger' : 'text-foreground',
             )
             if (item.href === undefined) {
               return (
-                <DropdownMenu.Item key={item.label} className={className} onSelect={item.onSelect}>
+                <DropdownMenu.Item key={key} className={className} onSelect={item.onSelect}>
                   {item.label}
                 </DropdownMenu.Item>
               )
             }
             if (item.external === true) {
               return (
-                <DropdownMenu.Item key={item.label} asChild className={className}>
+                <DropdownMenu.Item key={key} asChild className={className}>
                   <a href={item.href} target="_blank" rel="noopener noreferrer">
                     {item.label}
                     <span className="sr-only"> {OVERLAY_COPY.opensInNewTab}</span>
@@ -150,7 +152,7 @@ export function ActionsMenu({ label, items }: ActionsMenuProps): ReactNode {
               )
             }
             return (
-              <InternalLinkItem key={item.label} href={item.href} className={className}>
+              <InternalLinkItem key={key} href={item.href} className={className}>
                 {item.label}
               </InternalLinkItem>
             )

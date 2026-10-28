@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -38,5 +38,26 @@ describe('Dialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Cerrar' }))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('el foco arranca en el primer campo del cuerpo y "Cerrar" va último, arriba a la derecha', async () => {
+    render(
+      <Dialog
+        open
+        onOpenChange={() => undefined}
+        title="Nueva línea"
+        footer={<button type="button">Guardar</button>}
+      >
+        <input aria-label="Nombre" />
+      </Dialog>,
+    )
+
+    const input = await screen.findByRole('textbox', { name: 'Nombre' })
+    await waitFor(() => {
+      expect(input).toHaveFocus()
+    })
+    const close = screen.getByRole('button', { name: 'Cerrar' })
+    expect(screen.getByRole('dialog').lastElementChild).toBe(close)
+    expect(close).toHaveClass('absolute', 'top-4', 'right-4', 'lg:top-6', 'lg:right-6')
   })
 })

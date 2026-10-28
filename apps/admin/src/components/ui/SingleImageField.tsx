@@ -2,12 +2,10 @@ import type { ChangeEvent, ReactNode } from 'react'
 import { useId, useRef } from 'react'
 import type { ImageTileStatus } from './ImageTile'
 import { Button } from './Button'
+import { IMAGE_ACCEPT } from './image-accept'
 import { ImageDropzone } from './ImageDropzone'
 import { ImageTile } from './ImageTile'
 import { OVERLAY_COPY } from './overlay.copy'
-
-/** Formatos que acepta el selector de archivos. */
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp'
 
 /** La foto guardada del campo. */
 export interface SingleImageValue {
@@ -17,8 +15,12 @@ export interface SingleImageValue {
   alt: string
 }
 
-/** Una subida en curso, con error o recién terminada (sale de `UploadItem` de `components/media`). */
-export interface SingleImageUpload {
+/**
+ * Estado de la subida que muestra el campo: en curso, con error o recién terminada (sale de
+ * `UploadItem` de `components/media`). No confundir con `SingleImageUpload`, lo que devuelve
+ * `useSingleImageUpload`.
+ */
+export interface SingleImageUploadState {
   /** Vista previa local (`blob:`). */
   previewUrl: string
   /** Estado de la subida. */
@@ -38,7 +40,7 @@ export interface SingleImageFieldProps {
   /** La foto guardada, o `null`. */
   image: SingleImageValue | null
   /** La subida actual, o `null`. Mientras está en curso o con error, tapa a `image`. */
-  upload: SingleImageUpload | null
+  upload: SingleImageUploadState | null
   /**
    * Por qué no se tomó el último archivo (formato, peso, medidas), por ejemplo el `error` de
    * `useSingleImageUpload`. Se muestra con `role="alert"` tanto sin foto como con foto.
@@ -59,7 +61,9 @@ export interface SingleImageFieldProps {
 /**
  * Campo de una sola foto (línea, socio): sin foto muestra `ImageDropzone`; con foto, la
  * miniatura (`ImageTile`) con su texto alternativo y "Cambiar foto", que se deshabilita mientras
- * hay una subida en curso. Solo es presentación: la subida es de `components/media`.
+ * hay una subida en curso. Como en `ImageDropzone`, el `input type="file"` queda oculto para el
+ * lector y el único control con nombre es el botón. Solo es presentación: la subida es de
+ * `components/media`.
  *
  * @param props - Ver {@link SingleImageFieldProps}.
  * @example
@@ -127,9 +131,9 @@ export function SingleImageField({
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPTED_TYPES}
+          accept={IMAGE_ACCEPT}
           disabled={isUploading}
-          aria-label={OVERLAY_COPY.changePhoto}
+          aria-hidden="true"
           tabIndex={-1}
           onChange={handleChange}
           className="sr-only"

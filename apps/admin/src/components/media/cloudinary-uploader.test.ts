@@ -119,6 +119,18 @@ describe('createCloudinaryUploader', () => {
     })
   })
 
+  it('una respuesta con estado 0 rechaza con el motivo network (no queda subiendo)', async () => {
+    const { uploader } = await setup()
+    const upload = uploader.upload(photo(), { purpose: 'product' })
+    const xhr = await nextXhr()
+    xhr.respond(0, '')
+    await expect(upload).rejects.toMatchObject({
+      reason: 'network',
+      status: null,
+      message: 'No se pudo subir la foto: revisá la conexión.',
+    })
+  })
+
   it('si pasa el tiempo máximo rechaza con el motivo timeout', async () => {
     const { uploader } = await setup()
     const upload = uploader.upload(photo(), { purpose: 'product' })

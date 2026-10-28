@@ -86,6 +86,16 @@ describe('DataTable', () => {
     expect(screen.getByRole('columnheader', { name: 'Línea' })).not.toHaveAttribute('aria-sort')
   })
 
+  it('los íconos de orden miden 18 px', () => {
+    renderTable({ sorting: { columnId: 'price', direction: 'asc', onChange: vi.fn() } })
+
+    for (const name of ['Ordenar por Producto', 'Ordenar por Precio']) {
+      const icon = screen.getByRole('button', { name }).querySelector('svg')
+      expect(icon).toHaveAttribute('width', '18')
+      expect(icon).toHaveAttribute('height', '18')
+    }
+  })
+
   it('ordenar llama a onChange: la columna activa invierte el sentido y otra arranca ascendente', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
@@ -137,9 +147,16 @@ describe('DataTable', () => {
     )
   })
 
-  it('tiene un contenedor con scroll horizontal propio', () => {
+  it('tiene un contenedor con scroll horizontal propio que se alcanza con el teclado', async () => {
+    const user = userEvent.setup()
     renderTable()
 
-    expect(screen.getByRole('table').parentElement).toHaveClass('overflow-x-auto')
+    const region = screen.getByRole('region', { name: 'Productos' })
+    expect(region).toBe(screen.getByRole('table').parentElement)
+    expect(region).toHaveClass('overflow-x-auto', 'focus-visible:outline-2')
+    expect(region).toHaveAttribute('tabindex', '0')
+
+    await user.tab()
+    expect(region).toHaveFocus()
   })
 })

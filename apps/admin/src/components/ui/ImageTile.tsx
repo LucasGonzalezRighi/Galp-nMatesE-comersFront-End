@@ -29,6 +29,11 @@ export interface ImageTileProps {
   onRetry?: () => void
   /** "Quitar foto" (lista) o "Quitar" (con error). */
   onRemove: () => void
+  /**
+   * Nombre accesible del botón que quita una foto lista; por omisión "Quitar foto". En una lista
+   * de varias fotos conviene distinguirlas, por ejemplo "Quitar la foto 3".
+   */
+  removeLabel?: string
   /** Debajo de la miniatura: el campo del texto alternativo. */
   children?: ReactNode
 }
@@ -56,7 +61,7 @@ function normalizeProgress(progress: number): number {
  * texto alternativo). Solo es presentación: la subida es de `components/media`.
  *
  * @param props - Ver {@link ImageTileProps}.
- * @throws {RangeError} Si `progress` no está entre 0 y 100.
+ * @throws {RangeError} Si `progress` no está entre 0 y 100 o `removeLabel` está vacío.
  * @example
  * <ImageTile src={item.previewUrl} alt="" status={item.status} progress={item.progress}
  *   onCancel={() => uploads.cancel(item.id)} onRemove={() => uploads.remove(item.id)} />
@@ -71,9 +76,13 @@ export function ImageTile({
   onCancel,
   onRetry,
   onRemove,
+  removeLabel = OVERLAY_COPY.removePhoto,
   children,
 }: ImageTileProps): ReactNode {
   const percent = normalizeProgress(progress)
+  if (removeLabel.trim() === '') {
+    throw new RangeError('El nombre del botón para quitar la foto no puede estar vacío.')
+  }
   const progressId = useId()
   return (
     <div className="flex flex-col gap-2">
@@ -92,7 +101,7 @@ export function ImageTile({
           <span className="bg-background/80 absolute top-1 right-1 rounded-md">
             <button
               type="button"
-              aria-label={OVERLAY_COPY.removePhoto}
+              aria-label={removeLabel}
               onClick={onRemove}
               className={buttonClass('icon', 'md')}
             >

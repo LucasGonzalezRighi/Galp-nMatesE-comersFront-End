@@ -53,6 +53,33 @@ describe('ActionsMenu', () => {
     expect(router.state.location.pathname).toBe('/productos/p1')
   })
 
+  it('acepta dos acciones con el mismo texto sin repetir la clave', async () => {
+    const user = userEvent.setup()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const first = vi.fn()
+    const second = vi.fn()
+    render(
+      <ActionsMenu
+        label="Acciones"
+        items={[
+          { label: 'Duplicar', onSelect: first },
+          { label: 'Duplicar', onSelect: second },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Acciones' }))
+    const actions = await screen.findAllByRole('menuitem', { name: 'Duplicar' })
+    expect(actions).toHaveLength(2)
+    const [, secondAction] = actions
+    if (secondAction === undefined) throw new Error('Falta la segunda acción.')
+    await user.click(secondAction)
+    expect(second).toHaveBeenCalledTimes(1)
+    expect(first).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('rechaza una acción sin onSelect ni href', () => {
     expect(() => render(<ActionsMenu label="Acciones" items={[{ label: 'Nada' }]} />)).toThrow(
       RangeError,

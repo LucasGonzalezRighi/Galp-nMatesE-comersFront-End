@@ -46,8 +46,12 @@ export interface DialogProps {
 
 /**
  * Diálogo modal sobre Radix `Dialog`: trampa de foco, Escape y tocar afuera lo cierran, y el
- * botón "Cerrar" va arriba a la derecha. Si el contenido no entra, el cuerpo hace scroll y el
+ * botón "Cerrar" se ve arriba a la derecha. Si el contenido no entra, el cuerpo hace scroll y el
  * título y el pie quedan fijos.
+ *
+ * "Cerrar" va último en el DOM (después del cuerpo y del pie, ubicado con CSS): así el foco
+ * inicial de Radix cae en el primer elemento enfocable del cuerpo (el primer campo de un
+ * formulario) o, si no hay, en el pie, y no en la X.
  *
  * @param props - Ver {@link DialogProps}.
  * @throws {RangeError} Si `size` no es `sm`, `md` ni `lg`.
@@ -76,7 +80,7 @@ export function Dialog({
           className={cx(PANEL_CLASS, SIZE_CLASSES[size])}
           {...(description === undefined ? { 'aria-describedby': undefined } : {})}
         >
-          <div className="flex items-start gap-4 p-4 pb-2 lg:px-6 lg:pt-6">
+          <div className="flex items-start gap-4 p-4 pr-17 pb-2 lg:px-6 lg:pt-6 lg:pr-19">
             <div className="flex flex-1 flex-col gap-1 pt-1.5">
               <RadixDialog.Title className="text-h4">{title}</RadixDialog.Title>
               {description !== undefined && (
@@ -85,12 +89,6 @@ export function Dialog({
                 </RadixDialog.Description>
               )}
             </div>
-            <RadixDialog.Close
-              aria-label={OVERLAY_COPY.close}
-              className={buttonClass('icon', 'md')}
-            >
-              <XIcon size={18} weight="regular" aria-hidden="true" />
-            </RadixDialog.Close>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-2 lg:px-6">
             {children}
@@ -100,6 +98,12 @@ export function Dialog({
               {footer}
             </div>
           )}
+          <RadixDialog.Close
+            aria-label={OVERLAY_COPY.close}
+            className={cx(buttonClass('icon', 'md'), 'absolute top-4 right-4 lg:top-6 lg:right-6')}
+          >
+            <XIcon size={18} weight="regular" aria-hidden="true" />
+          </RadixDialog.Close>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>
