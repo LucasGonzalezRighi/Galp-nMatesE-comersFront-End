@@ -84,7 +84,8 @@ export interface FooterViewProps {
  * (con el "Botón de arrepentimiento" destacado), Galpón y Legales; datos del vendedor y link a
  * Data Fiscal; "© año Galpón Mates", medios de pago y el logo grande con recorte, que se ilumina
  * de abajo hacia arriba y sube apenas sobre el final de las columnas ({@link FooterWordmark}).
- * En el inicio, en escritorio, el pie sube por encima de las reseñas (`footer.css`).
+ * En el inicio, en escritorio, el pie sube por encima de las reseñas (`footer.css`) y ocupa una
+ * pantalla: las columnas quedan en el medio y la palabra, abajo.
  *
  * @param props - Ver {@link FooterViewProps}.
  */
@@ -93,8 +94,9 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
     <footer className="site-footer relative overflow-hidden pt-[72px]">
-      <div className="mx-auto w-full max-w-[1280px] px-[clamp(20px,5vw,64px)]">
-        <div className="mb-14 h-px" style={DIVIDER_STYLE} />
+      <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-[clamp(20px,5vw,64px)]">
+        {/* Los márgenes `auto` solo actúan con el pie que sube: centran las columnas en la pantalla. */}
+        <div className="mt-auto mb-14 h-px" style={DIVIDER_STYLE} />
         <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
           <div className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
             <p className="text-[24px] tracking-[-0.02em]">{content.tagline}</p>
@@ -192,7 +194,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
           </div>
         )}
         {/* Por encima de la palabra: GALPÓN se superpone apenas y no tapa los medios de pago. */}
-        <div className="relative z-20 mt-14 flex flex-wrap items-center justify-between gap-[14px] text-[12px] text-neutral-500">
+        <div className="relative z-20 mt-auto flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-500">
           <span>
             © <FooterYear /> {LAYOUT_COPY.brand}
           </span>

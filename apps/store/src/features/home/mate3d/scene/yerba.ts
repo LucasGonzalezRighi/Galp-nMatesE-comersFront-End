@@ -2,7 +2,7 @@ import type * as Three from 'three'
 import type { Painter, SceneFrame, SceneShared, ThreeLib, YerbaModule } from './types'
 import type { YerbaShape } from './yerba-shape'
 import { disposeTree } from './dispose'
-import { hollowCenter as findHollow, YERBA_RADIUS, yerbaHeight } from './yerba-shape'
+import { hollowCenter as findHollow, YERBA_RADIUS, yerbaHeight, yerbaShade } from './yerba-shape'
 
 /** Anillos y radios de la malla polar de la superficie (48 × 96: 9120 triángulos). */
 const RINGS = 48
@@ -20,11 +20,21 @@ const YERBA_ROUGHNESS = 0.92
 const YERBA_BUMP_SCALE = 1.5
 
 /**
- * Tinte que multiplica la foto: la baja y la lleva al verde oliva bajo la luz del estudio. Ajuste de
- * la Task 3 (visto a 1440 × 900 con la GPU real): con `#c4caa0` se leía mostaza junto a la yerba de
- * la foto del fondo; con menos rojo queda oliva grisáceo, como `refs/yerba-crop.jpg`.
+ * Tinte que multiplica la foto: la baja y la lleva al verde oliva bajo la luz del estudio. Ajustes
+ * vistos a 1440 × 900 con la GPU real: con `#c4caa0` se leía mostaza junto a la yerba de la foto
+ * del fondo y con `#a9b28c` seguía apenas más amarilla; `#a4ab97` (menos saturado, misma luz)
+ * queda oliva grisáceo, como `refs/yerba-crop.jpg`.
  */
-const YERBA_TINT = '#a9b28c'
+const YERBA_TINT = '#a4ab97'
+
+/**
+ * La sombra pintada del hueco (`yerbaShade`), en el color lineal que multiplica la yerba: el piso
+ * del hueco (`hollow 1`) queda a algo menos de la mitad de la luz de la meseta y un poco más gris,
+ * y al pie de la pared (`occlusion 1`) baja otro 78 %: la banda oscura de
+ * `refs/yerba-vista-arriba.webp`.
+ */
+const HOLLOW_SHADE = [0.42, 0.45, 0.44] as const
+const FOOT_SHADE = 0.78
 
 /** La yerba mojada: color al que se mezcla y aspereza donde está mojada. */
 const WET_COLOR = '#2a2e14'
@@ -249,8 +259,10 @@ function paintChip(random: () => number): Painter {
  * radio `interiorRadius` con las alturas de {@link yerbaHeight} (la meseta contra la pared
  * izquierda, la pared y el hueco derecho), con la foto real `yerba-albedo.jpg` como color y relieve
  * y la humedad pintada en el shader (`onBeforeCompile`): una mancha que oscurece hacia `#2a2e14` y
- * baja la aspereza a 0,35 alrededor del hueco, con radio `0,05 + wet · 0,13`. El campo se recalcula
- * solo cuando cambian `fill`, `slope` o `wall`.
+ * baja la aspereza a 0,35 alrededor del hueco, con radio `0,05 + wet · 0,13`. También pinta la
+ * sombra del hueco (`yerbaShade`, un atributo por vértice): el piso más oscuro que la meseta y una
+ * banda oscura al pie de la pared. El campo y la sombra se recalculan solo cuando cambian `fill`,
+ * `slope` o `wall`.
  *
  * Afuera, mientras `pour > 0,02`, las hojas que caen: 420 hojitas y palitos (dos `InstancedMesh`
  * con texturas pintadas) y 160 motas de polvo (`Points`) que salen del pico del paquete
@@ -279,10 +291,14 @@ export function createYerba(
   const geometry = new T.BufferGeometry()
   const positions = new T.BufferAttribute(new Float32Array(vertexCount * 3), 3)
   const uvs = new T.BufferAttribute(new Float32Array(vertexCount * 2), 2)
+  // Cuánto se oscurece cada vértice: x el piso del hueco, y la sombra de la pared (`yerbaShade`).
+  const shades = new T.BufferAttribute(new Float32Array(vertexCount * 2), 2)
   positions.setUsage(T.DynamicDrawUsage)
   uvs.setUsage(T.DynamicDrawUsage)
+  shades.setUsage(T.DynamicDrawUsage)
   geometry.setAttribute('position', positions)
   geometry.setAttribute('uv', uvs)
+  geometry.setAttribute('yerbaShade', shades)
   const vertex = (ring: number, spoke: number): number => 1 + (ring - 1) * SPOKES + (spoke % SPOKES)
   const indices: number[] = []
   for (let spoke = 0; spoke < SPOKES; spoke++)
@@ -305,6 +321,8 @@ export function createYerba(
     uWet: { value: 0 },
     uWetColor: { value: new T.Color(WET_COLOR) },
     uWetRoughness: { value: WET_ROUGHNESS },
+    uHollowShade: { value: new T.Vector3(...HOLLOW_SHADE) },
+    uFootShade: { value: FOOT_SHADE },
   }
   const material = new T.MeshStandardMaterial({
     name: 'yerba-campo',
@@ -318,14 +336,23 @@ export function createYerba(
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, wetUniforms)
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vYerbaLocal;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvYerbaLocal = position.xz;')
+      .replace(
+        '#include <common>',
+        '#include <common>\nattribute vec2 yerbaShade;\nvarying vec2 vYerbaLocal;\nvarying vec2 vYerbaShade;',
+      )
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvYerbaLocal = position.xz;\nvYerbaShade = yerbaShade;',
+      )
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         [
           '#include <common>',
           'varying vec2 vYerbaLocal;',
+          'varying vec2 vYerbaShade;',
+          'uniform vec3 uHollowShade;',
+          'uniform float uFootShade;',
           'uniform vec2 uWetCenter;',
           'uniform float uWetRadius;',
           'uniform float uWet;',
@@ -337,6 +364,9 @@ export function createYerba(
         '#include <map_fragment>',
         [
           '#include <map_fragment>',
+          // El piso del hueco, más oscuro que la meseta, y la banda oscura al pie de la pared.
+          'diffuseColor.rgb *= mix(vec3(1.0), uHollowShade, vYerbaShade.x);',
+          'diffuseColor.rgb *= 1.0 - uFootShade * vYerbaShade.y;',
           // El borde de la mancha ondula un poco: el agua no moja en un círculo perfecto.
           'float yerbaWobble = sin(vYerbaLocal.x * 61.0 + sin(vYerbaLocal.y * 47.0) * 2.0) * sin(vYerbaLocal.y * 53.0 + 1.7);',
           'float yerbaDistance = distance(vYerbaLocal, uWetCenter) + yerbaWobble * 0.012;',
@@ -349,7 +379,7 @@ export function createYerba(
         '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, uWetRoughness, yerbaWet);',
       )
   }
-  material.customProgramCacheKey = () => 'galpon-yerba-humeda'
+  material.customProgramCacheKey = () => 'galpon-yerba-humeda-sombra'
   const surface = new T.Mesh(geometry, material)
   surface.visible = false
   shared.mate.mate.add(surface)
@@ -363,6 +393,8 @@ export function createYerba(
       positions.setXYZ(index, x, y, z)
       // Las coordenadas de textura siguen el largo de la superficie: la pared no estira la foto.
       uvs.setXY(index, (x - y) / (2 * radius), z / (2 * radius))
+      const { hollow: low, occlusion } = yerbaShade(x, z, shape)
+      shades.setXY(index, low, occlusion)
       index++
     }
     write(0, 0)
@@ -375,6 +407,7 @@ export function createYerba(
     }
     positions.needsUpdate = true
     uvs.needsUpdate = true
+    shades.needsUpdate = true
     geometry.computeVertexNormals()
     geometry.computeBoundingSphere()
     const center = findHollow(shape)

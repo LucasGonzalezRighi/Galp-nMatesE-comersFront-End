@@ -113,6 +113,43 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
         .poll(() => lit.evaluate((element) => element.style.clipPath))
         .toMatch(/^inset\(0(?:\.\d+)?(?:%|px)?[\s)]/)
     })
+
+    test('clavadas, las reseñas quedan centradas bajo el encabezado, y el pie deja las columnas en el medio', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const section = reviewsSection(page)
+      const pageFooter = footer(page)
+      const start = await documentTopOf(page, section)
+      const viewport = page.viewportSize()
+      if (viewport === null) throw new Error('La prueba necesita un tamaño de ventana.')
+      const headerBottom = await bottomOf(page.locator('header').first())
+
+      // Las reseñas clavadas: el mismo aire arriba (bajo el encabezado) que abajo.
+      await scrollPageTo(page, start + viewport.height * 0.1)
+      const block = section.locator(':scope > div')
+      const aboveReviews = (await topOf(block)) - headerBottom
+      const belowReviews = viewport.height - (await bottomOf(block))
+      expect(Math.abs(aboveReviews - belowReviews)).toBeLessThan(48)
+
+      // Al final: las columnas en el medio, entre el encabezado y la fila de "©" (no apoyadas abajo).
+      await scrollPageTo(page, await page.evaluate(() => document.documentElement.scrollHeight))
+      const navs = pageFooter.getByRole('navigation')
+      const columnsTop = Math.min(
+        ...(await navs.evaluateAll((items) =>
+          items.map((item) => item.getBoundingClientRect().top),
+        )),
+      )
+      const columnsBottom = Math.max(
+        ...(await navs.evaluateAll((items) =>
+          items.map((item) => item.getBoundingClientRect().bottom),
+        )),
+      )
+      const aboveColumns = columnsTop - headerBottom
+      const belowColumns = (await topOf(pageFooter.getByText(/^©/))) - columnsBottom
+      expect(aboveColumns).toBeGreaterThan(viewport.height * 0.12)
+      expect(Math.abs(aboveColumns - belowColumns)).toBeLessThan(120)
+    })
   })
 
   for (const { name, viewport, reducedMotion } of [

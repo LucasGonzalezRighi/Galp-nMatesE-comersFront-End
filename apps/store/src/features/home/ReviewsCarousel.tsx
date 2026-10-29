@@ -80,24 +80,44 @@ export interface ReviewsCarouselProps {
 /**
  * Carrusel de las reseñas del inicio: una pista con desplazamiento horizontal y `scroll-snap`
  * (sin JavaScript sigue siendo una lista deslizable), botones "Anterior" y "Siguiente" que se
- * deshabilitan en los extremos y un punto por reseña con `aria-current` en la actual. La tarjeta
- * actual sale de un `IntersectionObserver` sobre las tarjetas, nunca de un listener de `scroll`.
- * Avanza solo cada seis segundos y vuelve a la primera al llegar al final; se pausa con el mouse
- * encima, con el foco adentro, con la pestaña oculta y con `prefers-reduced-motion`. Al enfocar
- * una tarjeta con Tab la trae a la vista, y al usar los botones anuncia "Reseña n de m".
+ * deshabilitan en los extremos y un punto por reseña con `aria-current` en la actual (la primera
+ * que se ve; al llegar al final, la última, así con tres a la vista se marcan también los últimos
+ * puntos). La tarjeta actual sale de un `IntersectionObserver` sobre las tarjetas, nunca de un
+ * listener de `scroll`. Avanza solo cada seis segundos y vuelve a la primera al llegar al final; se
+ * pausa con el mouse encima, con el foco adentro, con la pestaña oculta, con el carrusel fuera de
+ * pantalla (otro `IntersectionObserver`, contra la ventana) y con `prefers-reduced-motion`. Al
+ * enfocar una tarjeta con Tab la trae a la vista, y al usar los botones anuncia "Reseña n de m".
  *
  * @param props - Ver {@link ReviewsCarouselProps}.
  */
 export function ReviewsCarousel({ items }: ReviewsCarouselProps): ReactNode {
   const count = items.length
+  const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLUListElement>(null)
   const reduced = usePrefersReducedMotion()
   const hidden = useSyncExternalStore(subscribeToVisibility, isPageHidden, isPageHiddenOnServer)
   const [view, setView] = useState<TrackView>({ current: 0, atStart: true, atEnd: count <= 1 })
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
+  const [onScreen, setOnScreen] = useState(true)
   const [announcement, setAnnouncement] = useState('')
-  const paused = reduced || hidden || hovered || focused || count < 2
+  const paused = reduced || hidden || hovered || focused || !onScreen || count < 2
+  // El punto marcado: al llegar al final, el último (con tres a la vista la primera sería la 3.ª).
+  const currentDot = view.atEnd ? count - 1 : view.current
+
+  // Si el carrusel está en pantalla: fuera de ella el avance automático espera.
+  useEffect(() => {
+    const root = rootRef.current
+    if (root === null) return undefined
+    const observer = new IntersectionObserver((entries) => {
+      const last = entries.at(-1)
+      if (last !== undefined) setOnScreen(last.isIntersecting)
+    })
+    observer.observe(root)
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   useEffect(() => {
     const track = trackRef.current
@@ -145,6 +165,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps): ReactNode {
 
   return (
     <div
+      ref={rootRef}
       data-carousel=""
       onMouseEnter={() => {
         setHovered(true)
@@ -179,7 +200,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps): ReactNode {
         <div className="mt-8 flex items-center justify-between gap-4">
           <div role="group" aria-label={HOME_COPY.reviewsDots} className="flex items-center">
             {items.map((item, index) => {
-              const isCurrent = index === view.current
+              const isCurrent = index === currentDot
               return (
                 <button
                   key={item.id}

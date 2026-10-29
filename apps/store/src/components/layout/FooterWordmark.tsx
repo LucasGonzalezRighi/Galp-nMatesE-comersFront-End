@@ -63,11 +63,8 @@ function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): Reac
  * La palabra GALPÓN gigante del pie, con dos capas superpuestas: la fantasma de siempre y una
  * iluminada que se enciende de abajo hacia arriba (`clip-path`) mientras la palabra entra en
  * pantalla (`useScroll` sobre la propia palabra, de `start end` a `end end`); a la vez sube del 24 %
- * de su alto a su lugar; la luz arranca en el 60 % de esa entrada (`LIT_FROM`). Es decorativa
- * (`aria-hidden`). La Task 3 del mate realista cambió el blanco del `useScroll` del `footer` a la
- * palabra: con el pie que sube en el inicio (una pantalla de alto, el contenido abajo) la palabra
- * recién entraba al 80 % del recorrido y se veía ya casi encendida; así se enciende a la vista, en
- * el inicio y en las demás páginas.
+ * de su alto a su lugar; la luz arranca en el 60 % de esa entrada (`LIT_FROM`), así se ve
+ * encenderse en cualquier página. Es decorativa (`aria-hidden`).
  *
  * Con `prefers-reduced-motion: reduce` la iluminada queda quieta y entera, sin recorte. Sin
  * JavaScript se ve la fantasma.

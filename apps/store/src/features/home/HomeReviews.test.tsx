@@ -93,6 +93,15 @@ function carouselObserver(track: HTMLElement): ManualIntersectionObserver {
   return observer
 }
 
+/** El observador que mira si el carrusel entero está en pantalla (contra la ventana). */
+function screenObserver(carousel: Element): ManualIntersectionObserver {
+  const observer = ManualIntersectionObserver.instances.find(
+    (candidate) => candidate.targets.has(carousel) && (candidate.options.root ?? null) === null,
+  )
+  if (observer === undefined) throw new Error('El carrusel no mira si está en pantalla.')
+  return observer
+}
+
 cleanUpAfterEach()
 
 let scrollTo: ReturnType<typeof vi.fn>
@@ -159,16 +168,37 @@ describe('HomeReviews: el carrusel', () => {
     const items = within(track).getAllByRole('listitem')
 
     act(() => {
-      carouselObserver(track).report(items.map((item, index) => [item, index >= 2 ? 1 : 0]))
+      carouselObserver(track).report(
+        items.map((item, index) => [item, index >= 1 && index <= 3 ? 1 : 0]),
+      )
     })
 
-    expect(screen.getByRole('button', { name: 'Reseña 3 de 5' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Reseña 2 de 5' })).toHaveAttribute(
       'aria-current',
       'true',
     )
     expect(screen.getByRole('button', { name: 'Reseña 1 de 5' })).not.toHaveAttribute(
       'aria-current',
     )
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeEnabled()
+  })
+
+  it('al llegar al final marca el último punto aunque se vean tres tarjetas', async () => {
+    render(<HomeReviews data={await homeData()} />)
+    const track = screen.getByRole('list')
+    const items = within(track).getAllByRole('listitem')
+
+    act(() => {
+      carouselObserver(track).report(items.map((item, index) => [item, index >= 2 ? 1 : 0]))
+    })
+
+    expect(screen.getByRole('button', { name: 'Reseña 5 de 5' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+    const others = screen.getAllByRole('button', { name: /^Reseña [1-4] de 5$/ })
+    expect(others.every((dot) => !dot.hasAttribute('aria-current'))).toBe(true)
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
   })
@@ -286,6 +316,30 @@ describe('HomeReviews: el avance automático con movimiento', () => {
     })
 
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('se pausa mientras el carrusel no está en pantalla y sigue al volver', async () => {
+    const data = await homeData()
+    vi.useFakeTimers()
+    render(<HomeReviews data={data} />)
+    const carousel = screen.getByRole('list').closest('[data-carousel]')
+    if (carousel === null) throw new Error('Falta el contenedor del carrusel.')
+
+    act(() => {
+      screenObserver(carousel).report([[carousel, 0]])
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTOPLAY_MS * 2)
+    })
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    act(() => {
+      screenObserver(carousel).report([[carousel, 0.4]])
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTOPLAY_MS)
+    })
+    expect(scrollTo).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -131,22 +131,100 @@ function assertShape(shape: YerbaShape): void {
  */
 export function yerbaHeight(x: number, z: number, shape: YerbaShape): number {
   assertShape(shape)
+  assertPoint(x, z)
+  const { level, depth, step } = profile(x, z, shape)
+  return level - depth * step + grain(x, z)
+}
+
+/** Lanza `RangeError` si el punto no es finito o cae fuera de la boca. */
+function assertPoint(x: number, z: number): void {
   if (!Number.isFinite(x) || !Number.isFinite(z)) {
     throw new RangeError(
       `El punto de la yerba tiene que ser finito; se recibió (${String(x)}, ${String(z)}).`,
     )
   }
-  if (x * x + z * z > YERBA_RADIUS * YERBA_RADIUS + EDGE_TOLERANCE) {
+  if (!insideMouth(x, z)) {
     throw new RangeError(
       `El punto (${String(x)}, ${String(z)}) cae fuera de la boca del mate (radio ${String(YERBA_RADIUS)}).`,
     )
   }
+}
+
+/** Si el punto cae adentro de la boca (con la tolerancia del borde). */
+function insideMouth(x: number, z: number): boolean {
+  return x * x + z * z <= YERBA_RADIUS * YERBA_RADIUS + EDGE_TOLERANCE
+}
+
+/** La forma lisa en un punto: el nivel de la meseta, la hondura del hueco y cuánto se bajó ahí (0 a 1). */
+interface Profile {
+  readonly level: number
+  readonly depth: number
+  readonly step: number
+}
+
+/** La forma lisa (sin el grano) en un punto ya validado. */
+function profile(x: number, z: number, shape: YerbaShape): Profile {
   const level = lerp(EMPTY_LEVEL, FULL_LEVEL, shape.fill)
   const depth = Math.min(HOLLOW_DEPTH * shape.slope, Math.max(0, level - FLOOR_LEVEL))
   const width = lerp(NATURAL_WIDTH, STEEP_WIDTH, shape.wall)
   const wallX = WALL_X + WALL_WOBBLE * valueNoise(z * 7 + 3.1, 0.5, OCTAVES.length)
-  const step = smoothstep(wallX - width / 2, wallX + width / 2, x)
-  return level - depth * step + grain(x, z)
+  return { level, depth, step: smoothstep(wallX - width / 2, wallX + width / 2, x) }
+}
+
+/** Distancias hacia la meseta (hacia `−x`) donde se mira cuánto tapa la pared el cielo de un punto. */
+const OCCLUSION_STEPS = [0.04, 0.09] as const
+
+/**
+ * Del ángulo del horizonte (0 plano, 1 vertical) a la sombra: nada hasta 0,3 (una pendiente suave
+ * no tapa casi nada) y entera desde 0,85 (al pie de la pared recta).
+ */
+const OCCLUSION_FROM = 0.3
+const OCCLUSION_TO = 0.85
+
+/** Cuánto se oscurece un punto de la yerba, de 0 a 1 ({@link yerbaShade}). */
+export interface YerbaShade {
+  /** Cuánto bajó respecto de la meseta: 0 en la meseta, 1 en el piso del hueco con `slope 1`. */
+  readonly hollow: number
+  /** La sombra de la pared (oclusión ambiental pintada): 1 al pie de la pared recta, 0 a cielo abierto. */
+  readonly occlusion: number
+}
+
+/**
+ * Cuánto oscurecer la yerba en un punto de la boca, para pintarlo en el material: `hollow` es la
+ * parte de la hondura del hueco que bajó ahí (el piso queda más oscuro que la meseta, como en la
+ * foto de arriba) y `occlusion` es cuánto le tapa la pared el cielo (una oclusión ambiental pintada,
+ * sin sombras de luz): se mira la forma lisa a 0,04 y a 0,09 hacia la meseta y se toma el ángulo
+ * más alto del horizonte, que pasa a sombra entre 0,3 y 0,85. Así queda una banda oscura al pie de
+ * la pared recta que se apaga hacia el centro del hueco; con la pendiente natural (`wall 0`) la
+ * sombra es suave, y sin montañita (`slope 0`) no hay nada. Es determinista y no usa el grano.
+ *
+ * @param x - Coordenada `x` del punto (negativa a la izquierda, del lado de la meseta).
+ * @param z - Coordenada `z` del punto.
+ * @param shape - `fill`, `slope` y `wall`, de 0 a 1.
+ * @returns `hollow` y `occlusion`, de 0 a 1.
+ * @throws {RangeError} Si algún campo de `shape` no es un número de 0 a 1, o si el punto no es
+ *   finito o cae fuera de la boca (más lejos que `YERBA_RADIUS` del centro).
+ * @example
+ * yerbaShade(-0.2, 0, { fill: 1, slope: 1, wall: 1 }) // { hollow: 0, occlusion: 0 }, la meseta
+ * yerbaShade(0.09, 0, { fill: 1, slope: 1, wall: 1 }).occlusion // ≈ 0,95, al pie de la pared
+ */
+export function yerbaShade(x: number, z: number, shape: YerbaShape): YerbaShade {
+  assertShape(shape)
+  assertPoint(x, z)
+  const here = profile(x, z, shape)
+  if (here.depth <= 0) return { hollow: 0, occlusion: 0 }
+  let horizon = 0
+  for (const distance of OCCLUSION_STEPS) {
+    const left = x - distance
+    if (!insideMouth(left, z)) continue
+    // El nivel es el mismo en los dos puntos: la diferencia es solo lo que bajó cada uno.
+    const rise = here.depth * (here.step - profile(left, z, shape).step)
+    if (rise > 0) horizon = Math.max(horizon, Math.atan2(rise, distance) / (Math.PI / 2))
+  }
+  return {
+    hollow: here.step * (here.depth / HOLLOW_DEPTH),
+    occlusion: smoothstep(OCCLUSION_FROM, OCCLUSION_TO, horizon),
+  }
 }
 
 /**

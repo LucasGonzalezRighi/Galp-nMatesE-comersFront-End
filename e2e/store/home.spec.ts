@@ -103,10 +103,18 @@ test.describe('tienda: el mate 3D del inicio', () => {
       page,
     }) => {
       await gotoStore(page, '/')
-      await scrollToStops(page, 1.6)
-      const photo = page.locator('[data-backdrop][data-current="true"] img')
-      await expect(photo).toHaveCSS('filter', 'brightness(0.85) saturate(0.95)')
-      await expect(photo).toHaveCSS('transform', 'none')
+      for (const [stops, key] of [
+        [0.3, 'hero'],
+        [1.6, 'bombilla'],
+        [2.3, 'ritual'],
+      ] as const) {
+        await scrollToStops(page, stops)
+        const backdrop = page.locator('[data-backdrop][data-current="true"]')
+        await expect(backdrop).toHaveAttribute('data-backdrop', key)
+        const photo = backdrop.locator('img')
+        await expect(photo).toHaveCSS('filter', 'brightness(0.85) saturate(0.95)')
+        await expect(photo).toHaveCSS('transform', 'none')
+      }
     })
 
     test('al bajar hasta el final el escenario se funde a negro y entra la colección', async ({

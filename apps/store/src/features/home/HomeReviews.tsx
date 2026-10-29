@@ -77,8 +77,9 @@ export interface HomeReviewsProps {
  *
  * Es el cierre del inicio y lleva `data-footer-curtain`: en escritorio con movimiento la sección se
  * clava arriba (`sticky`) y el pie sube por encima de ella (`footer.css`) mientras pasa el
- * espaciador oculto de una pantalla que va después. En el celular y con menos movimiento no se
- * clava ni hay espaciador.
+ * espaciador oculto de una pantalla que va después. Clavada, el título y el carrusel quedan
+ * centrados en el alto que deja el encabezado (64 px arriba y nada abajo). En el celular y con
+ * menos movimiento no se clava ni hay espaciador.
  *
  * @param props - Ver {@link HomeReviewsProps}.
  */
@@ -89,7 +90,7 @@ export function HomeReviews({ data }: HomeReviewsProps): ReactNode {
     <>
       <section
         data-footer-curtain=""
-        className="pb-[clamp(80px,10vw,140px)] lg:motion-safe:sticky lg:motion-safe:top-0 lg:motion-safe:flex lg:motion-safe:min-h-svh lg:motion-safe:flex-col lg:motion-safe:justify-center"
+        className="pb-[clamp(80px,10vw,140px)] lg:motion-safe:sticky lg:motion-safe:top-0 lg:motion-safe:flex lg:motion-safe:min-h-svh lg:motion-safe:flex-col lg:motion-safe:justify-center lg:motion-safe:pt-16 lg:motion-safe:pb-0"
       >
         <div className={HOME_CONTAINER}>
           <div className="mb-10 flex flex-col gap-[14px]">

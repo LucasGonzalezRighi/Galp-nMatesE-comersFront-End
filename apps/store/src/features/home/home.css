@@ -1,9 +1,10 @@
 /*
  * Estilos propios del inicio (los del diseño que no se arman con utilidades): alturas de las
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
- * entrada del título de la portada, encuadre de la foto del mate, fondos desenfocados del mate 3D,
- * relleno de los botones de la portada, palabra fantasma, entrada escalonada de las paradas del
- * mate 3D, la línea de su pista y la altura del Manifiesto sobre el yerbal.
+ * entrada del título de la portada, encuadre de la foto del mate, fondos del mate 3D (nítidos y
+ * apenas oscurecidos), relleno de los botones de la portada, palabra fantasma, entrada escalonada
+ * de las paradas del mate 3D, la línea de su pista, la altura del Manifiesto sobre el yerbal y el
+ * color de su link.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -286,4 +287,13 @@
 .home-manifesto {
   min-height: min(100vh, 820px);
   min-height: min(100svh, 820px);
+}
+
+/*
+ * El link del Manifiesto va sobre la foto del yerbal: en cobre claro (`accent-300`) para que se lea
+ * a 4,5:1 o más contra el píxel más claro de su zona. La regla está fuera de las capas de Tailwind,
+ * así que gana sobre el `text-accent` del botón fantasma sin `!important`.
+ */
+.home-manifesto-cta {
+  color: var(--color-accent-300);
 }

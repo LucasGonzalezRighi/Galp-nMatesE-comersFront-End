@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { YerbaShape } from './yerba-shape'
-import { GRAIN_AMPLITUDE, hollowCenter, YERBA_RADIUS, yerbaHeight } from './yerba-shape'
+import { GRAIN_AMPLITUDE, hollowCenter, YERBA_RADIUS, yerbaHeight, yerbaShade } from './yerba-shape'
 
 /** Nivel de la superficie plana para un llenado: de 0,6 (vacío) a 0,985 (lleno). */
 function level(fill: number): number {
@@ -103,5 +103,52 @@ describe('hollowCenter', () => {
 
   it('lanza RangeError con un dato fuera de 0 a 1', () => {
     expect(() => hollowCenter({ fill: 2, slope: 0, wall: 0 })).toThrow(RangeError)
+  })
+})
+
+describe('yerbaShade', () => {
+  /** La montañita armada: llena, asentada y con la pared recta. */
+  const MOUND = { fill: 1, slope: 1, wall: 1 } as const
+
+  it('sin montañita (slope 0) no oscurece nada', () => {
+    for (const [x, z] of samplePoints()) {
+      expect(yerbaShade(x, z, { fill: 1, slope: 0, wall: 0 })).toEqual({ hollow: 0, occlusion: 0 })
+    }
+  })
+
+  it('siempre da valores de 0 a 1', () => {
+    for (const shape of [MOUND, { fill: 0.4, slope: 0.6, wall: 0.3 }]) {
+      for (const [x, z] of samplePoints()) {
+        const { hollow, occlusion } = yerbaShade(x, z, shape)
+        for (const value of [hollow, occlusion]) {
+          expect(value).toBeGreaterThanOrEqual(0)
+          expect(value).toBeLessThanOrEqual(1)
+        }
+      }
+    }
+  })
+
+  it('la meseta queda sin oscurecer y el piso del hueco entero oscurecido', () => {
+    expect(yerbaShade(-0.2, 0, MOUND)).toEqual({ hollow: 0, occlusion: 0 })
+    expect(yerbaShade(0.3, 0, MOUND).hollow).toBeGreaterThan(0.99)
+  })
+
+  it('la banda oscura está al pie de la pared y se apaga lejos de ella', () => {
+    const foot = yerbaShade(0.09, 0, MOUND).occlusion
+    const far = yerbaShade(0.3, 0, MOUND).occlusion
+    expect(foot).toBeGreaterThan(0.6)
+    expect(far).toBeLessThan(0.05)
+    expect(yerbaShade(0.14, 0, MOUND).occlusion).toBeLessThan(foot)
+  })
+
+  it('con la pendiente natural (wall 0) el pie se oscurece menos que con la pared recta', () => {
+    const natural = yerbaShade(0.09, 0, { fill: 1, slope: 1, wall: 0 }).occlusion
+    expect(natural).toBeLessThan(yerbaShade(0.09, 0, MOUND).occlusion)
+  })
+
+  it('lanza RangeError con la forma fuera de 0 a 1 o el punto fuera de la boca', () => {
+    expect(() => yerbaShade(0, 0, { fill: 1, slope: -0.1, wall: 0 })).toThrow(RangeError)
+    expect(() => yerbaShade(0.5, 0, MOUND)).toThrow(RangeError)
+    expect(() => yerbaShade(Number.NaN, 0, MOUND)).toThrow(RangeError)
   })
 })

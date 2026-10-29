@@ -141,10 +141,10 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
         ) : null}
         {/*
          * El velo: por delante de las fotos y detrás del mate y del texto; también bajo el header y
-         * abajo. Con los fondos nítidos se reforzó del lado del texto (90 % → 75 % hasta el 60 % de
+         * abajo. Con los fondos nítidos se reforzó del lado del texto (90 % → 80 % hasta el 60 % de
          * su ancho): la frase y la bajada pasan sobre la bombilla y la pava de las fotos.
          */}
-        <div className="from-background/90 via-background/75 absolute inset-y-0 left-0 w-3/5 bg-linear-to-r via-60% to-transparent" />
+        <div className="from-background/90 via-background/80 absolute inset-y-0 left-0 w-3/5 bg-linear-to-r via-60% to-transparent" />
         <div className="from-background/70 absolute inset-x-0 top-0 h-40 bg-linear-to-b to-transparent" />
         <div className="from-background/70 absolute inset-x-0 bottom-0 h-40 bg-linear-to-t to-transparent" />
       </div>

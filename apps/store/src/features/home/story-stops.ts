@@ -55,7 +55,7 @@ export interface MateStop {
   key: MateStopKey
   /** Nombre de la parada, para el raíl y su encabezado. */
   name: string
-  /** Foto de fondo (`public/hero/world`), que se muestra desenfocada y oscurecida. */
+  /** Foto de fondo (`public/hero/world`), que se muestra nítida y apenas oscurecida. */
   backdrop: string
 }
 

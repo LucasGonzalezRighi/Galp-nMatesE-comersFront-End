@@ -39,8 +39,8 @@ narrow, mateRoot, mate }`: el estado ya suavizado, el reloj y el tiempo del cuad
 | `place.ts`       | `place(objeto, colocación, vista)`: la colocación en fracciones de media pantalla (más juntas y chicas en pantalla angosta).                                                                             |
 | `mate.ts`        | La calabaza, la virola, el aro, el interior, la pared, las patas y la sombra; expone `mateRoot`, `mate`, `mouthY` (1,01) e `interiorRadius` (0,4).                                                       |
 | `pack.ts`        | El paquete de Canarias con su pico (`spout`, la esquina abierta de la tapa) como ancla de la yerba que cae; la solapa se abre y el paquete se sacude con `pour`.                                         |
-| `yerba.ts`       | La yerba: un campo de alturas polar (48 × 96) con la foto real, relieve y la humedad por shader, y las hojitas y el polvo que caen del pico; expone `hollowCenter` (el hueco, en coordenadas de `mate`). |
-| `yerba-shape.ts` | Puro. `yerbaHeight(x, z, { fill, slope, wall })` (la meseta, la pared y el hueco, con grano) y `hollowCenter(forma)`.                                                                                    |
+| `yerba.ts`       | La yerba: campo de alturas polar (48 × 96) con la foto real, relieve, sombra y humedad por shader, y las hojas y el polvo que caen del pico; expone `hollowCenter` (el hueco, en coordenadas de `mate`). |
+| `yerba-shape.ts` | Puro. `yerbaHeight(x, z, forma)` (meseta, pared y hueco, con grano), `hollowCenter(forma)` y `yerbaShade(x, z, forma)` (la sombra del piso del hueco y del pie de la pared).                             |
 | `bombilla.ts`    | La bombilla y su ancla de calce: la pala hundida en el hueco y el caño apoyado en la virola; entra desde arriba a la derecha sin fundido.                                                                |
 | `water.ts`       | El termo (pico en cuadro), el chorro con transmisión e índice 1,33 sobre `streamPoints`, la salpicadura, el charco y el vapor.                                                                           |
 | `water-path.ts`  | Puro. `streamPoints(from, to, count)`: la curva del chorro, que baja siempre y cae casi vertical al final.                                                                                               |
@@ -124,8 +124,10 @@ misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entra
   tests de `yerba-shape.test.ts` fijan que la pared con `wall 1` ocupe menos de 0,05. Cuánto se ve
   la pared depende de la cámara: es el giro X del mate en `bombilla` y `agua` (`keyframes.ts`).
 - **El color y el grano de la yerba** van en `scene/yerba.ts` (`YERBA_TINT`, `YERBA_BUMP_SCALE`, la
-  humedad con `WET_*`) y `scene/materials.ts` (`YERBA_REPEAT`, `YERBA_TURN`, `YERBA_SHIFT`: el
-  tamaño de las hojas de la foto y dónde caen los ejes del espejado).
+  sombra del hueco con `HOLLOW_SHADE` y `FOOT_SHADE`, la humedad con `WET_*`),
+  `scene/yerba-shape.ts` (`OCCLUSION_*`: hasta dónde llega la banda oscura al pie de la pared) y
+  `scene/materials.ts` (`YERBA_REPEAT`, `YERBA_TURN`, `YERBA_SHIFT`: el tamaño de las hojas de la
+  foto y dónde caen los ejes del espejado).
 - **La yerba que cae**: `FLAKE_WIDTH`/`FLAKE_HEIGHT`, `STREAM_OPEN`/`STREAM_SPREAD` (el ancho del
   chorro de hojas), `LANDING_SHARE` (dónde aterriza) y el polvo (`DUST_*`) en `scene/yerba.ts`; de
   dónde sale lo decide el paquete (`pack` de `inclinado` en `keyframes.ts`).
@@ -153,6 +155,12 @@ lleva el tinte `#a9b28c` (se leía mostaza) y la foto en mosaico de 1,3, girada 
 bombilla, visto desde arriba, se leía negro); el charco es más transparente (0,72) con el borde que
 se apaga desde el 35 % del radio, y el vapor (`strength` por nube de 0,9 a 1,2, con tope 1 al pintar,
 manchas más densas y un recorrido de 1,25 veces la escala del mate; con 0,5 a 0,8 casi no se leía).
+
+En el pulido final (Task 7 del mate realista) el hueco quedaba del mismo tono que la meseta y sin
+sombra al pie de la pared: `yerbaShade` pinta un atributo por vértice (el piso del hueco multiplica
+la yerba por `HOLLOW_SHADE`, algo menos de la mitad de la luz, y la banda al pie de la pared la baja
+otro 78 %, una oclusión ambiental pintada sin sombras de luz), y el tinte pasó a `#a4ab97` (con
+`#a9b28c` seguía apenas más amarilla que la yerba de la foto del fondo).
 
 ## Rendimiento y respaldo
 
