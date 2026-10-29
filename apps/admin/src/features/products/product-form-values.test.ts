@@ -12,7 +12,7 @@ import {
   toProductFormValues,
 } from './product-form-values'
 
-/** El Mate Imperial Premium de la base simulada (el único con foto). */
+/** El Mate Imperial Premium de la base simulada, con sus dos fotos. */
 async function imperialPremium(): Promise<AdminProduct> {
   const app = await createTestApp({ demo: false })
   return getAdminProduct(app.api, 'prd-imperial-premium')
@@ -38,6 +38,13 @@ describe('toProductFormValues', () => {
           width: 960,
           height: 1280,
           alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
+        },
+        {
+          publicId: 'galpon/productos/mate-imperial-premium-2',
+          url: '/mock-images/mate-imperial-premium-2.jpg',
+          width: 352,
+          height: 462,
+          alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
         },
       ],
       tabsOverride: { materials: '', care: '' },
@@ -121,6 +128,12 @@ describe('toAdminProductInput', () => {
           height: 1280,
           alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
         },
+        {
+          publicId: 'galpon/productos/mate-imperial-premium-2',
+          width: 352,
+          height: 462,
+          alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
+        },
       ],
       tabsOverride: null,
     })
@@ -163,6 +176,12 @@ describe('republishInput', () => {
           width: 960,
           height: 1280,
           alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
+        },
+        {
+          publicId: 'galpon/productos/mate-imperial-premium-2',
+          width: 352,
+          height: 462,
+          alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
         },
       ],
       tabsOverride: { materials: 'Propio.', care: null },

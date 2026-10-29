@@ -11,8 +11,11 @@ import { validationProblem } from '../../../test/problem-response'
 import { createTestApp, renderWithApp } from '../../../test/render'
 import { ProductScreen } from './ProductScreen'
 
-/** Identificador del Mate Imperial Premium, el único producto con foto. */
+/** Identificador del Mate Imperial Premium, con dos fotos. */
 const PREMIUM_ID = 'prd-imperial-premium'
+
+/** Identificador del Mate Imperial de Calabaza, con una sola foto: de él parten las pruebas de subir y quitar. */
+const ONE_PHOTO_ID = 'prd-imperial-calabaza'
 
 /** Opciones de {@link setup}. */
 interface SetupOptions {
@@ -108,18 +111,19 @@ describe('ProductScreen', () => {
     expect(screen.getByRole('radio', { name: 'Publicado' })).toBeChecked()
     expect(altTexts()).toEqual([
       'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
+      'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
     ])
     expect(await screen.findAllByText('Ver el texto de Mates')).toHaveLength(2)
   })
 
   it('sube 2 fotos, reordena con el teclado, quita una y guarda el orden nuevo sin url', async () => {
-    const { app, user, container, patches } = await setup()
+    const { app, user, container, patches } = await setup({ id: ONE_PHOTO_ID })
 
     await user.upload(fileInput(container), [photo('a.jpg'), photo('b.jpg')])
     await waitFor(() => {
       expect(altTexts()).toHaveLength(3)
     })
-    expect(altTexts().slice(1)).toEqual(['Mate Imperial Premium', 'Mate Imperial Premium'])
+    expect(altTexts().slice(1)).toEqual(['Mate Imperial de Calabaza', 'Mate Imperial de Calabaza'])
     const [, inputA, inputB] = within(
       screen.getByRole('list', { name: 'Fotos del producto' }),
     ).getAllByLabelText('Texto alternativo')
@@ -145,11 +149,11 @@ describe('ProductScreen', () => {
     expect(body.images.map((image) => image.alt)).toEqual(['Foto B', 'Foto A'])
     for (const image of body.images) expect(image).not.toHaveProperty('url')
     expect(body.expectedUpdatedAt).toBe('2026-09-01T12:00:00Z')
-    expect(stored(app).images.map((image) => image.alt)).toEqual(['Foto B', 'Foto A'])
+    expect(stored(app, ONE_PHOTO_ID).images.map((image) => image.alt)).toEqual(['Foto B', 'Foto A'])
   })
 
   it('al quitar una foto el foco va a la vecina y, sin fotos, a "Elegir archivos"', async () => {
-    const { user, container } = await setup()
+    const { user, container } = await setup({ id: ONE_PHOTO_ID })
 
     await user.upload(fileInput(container), [photo('a.jpg')])
     await waitFor(() => {
@@ -181,7 +185,7 @@ describe('ProductScreen', () => {
   })
 
   it('una foto error- falla, no deja guardar y con "Reintentar" se sube y se guarda', async () => {
-    const { app, user, container } = await setup()
+    const { app, user, container } = await setup({ id: ONE_PHOTO_ID })
 
     await user.upload(fileInput(container), [photo('error-mate.jpg')])
     expect(
@@ -201,7 +205,7 @@ describe('ProductScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
-    expect(stored(app).images).toHaveLength(2)
+    expect(stored(app, ONE_PHOTO_ID).images).toHaveLength(2)
   })
 
   it('un slug que ya usa otro producto queda marcado en el campo', async () => {

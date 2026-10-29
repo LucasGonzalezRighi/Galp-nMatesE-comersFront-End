@@ -48,7 +48,7 @@ function goToStop(index: number): void {
   })
 }
 
-/** Los datos con foto también en el primer bombillón y la primera yerba (el catálogo de fábrica no la trae). */
+/** Los datos con una foto propia del test en el primer bombillón y la primera yerba. */
 function withPhotos(base: HomeData): HomeData {
   const image = base.story.hero?.mainImage
   if (image === null || image === undefined) throw new Error('El mate de fábrica no tiene foto.')
@@ -66,6 +66,16 @@ function withPhotos(base: HomeData): HomeData {
       bombillas: [photo(bombilla, '/test/bombilla.jpg'), ...bombillas],
       yerbas: [photo(yerba, '/test/yerba.jpg'), ...yerbas],
     },
+  }
+}
+
+/** Los datos sin foto en el primer bombillón (en el catálogo de fábrica tiene una). */
+function withoutBombillaPhoto(base: HomeData): HomeData {
+  const [bombilla, ...bombillas] = base.story.bombillas
+  if (bombilla === undefined) throw new Error('Falta el bombillón.')
+  return {
+    ...base,
+    story: { ...base.story, bombillas: [{ ...bombilla, mainImage: null }, ...bombillas] },
   }
 }
 
@@ -137,10 +147,11 @@ describe('StoryStage', () => {
   })
 
   it('si la pieza de una parada no tiene foto, el mate sigue mostrando la última que tenía', () => {
-    render(<StoryStage data={data} />)
-    expect(data.story.bombillas[0]?.mainImage).toBeNull()
+    const withoutPhoto = withoutBombillaPhoto(data)
+    render(<StoryStage data={withoutPhoto} />)
+    expect(withoutPhoto.story.bombillas[0]?.mainImage).toBeNull()
     goToStop(2)
-    expect(shownPiece()).toBe(data.story.hero?.slug)
+    expect(shownPiece()).toBe(withoutPhoto.story.hero?.slug)
   })
 
   it('en la parada del cuero el cuero destacado sigue el avance de la parada quieta', () => {

@@ -112,6 +112,8 @@ const api = createApiClient({
 
 **Latencia.** Por omisión cada respuesta tarda entre 150 y 400 ms (se sortea). `latencyMs: 0` responde sin esperar, y un número o un rango `[mín, máx]` fijan otra. Los tests usan `0`.
 
+**Catálogo de ejemplo.** La base se siembra con las 6 líneas y los 27 productos del diseño (`src/mock/fixtures/`). 16 productos tienen las fotos que mandó el cliente, 19 en total: el Mate Imperial Premium tiene dos (la del diseño y otra con bombilla) y el Mate Torpedo Virola de Alpaca Cincelada, tres; los otros 11 no tienen y la tienda muestra el marco punteado. Los archivos están en `apps/store/public/mock-images/` y, iguales, en `apps/admin/public/mock-images/` (cada app los sirve desde su propio origen), con el slug del producto como nombre (`{slug}.jpg`, `{slug}-2.jpg`…); en el fixture, `publicId` es `galpon/productos/{archivo}`, `url` es `/mock-images/{archivo}.jpg` y las medidas son las reales. `fixtures.test.ts` comprueba que las dos copias estén, sean iguales y midan lo que dice el fixture. De las líneas, solo Imperiales tiene foto (la del Mate Imperial Premium).
+
 **Rutas implementadas (P1).**
 
 | Grupo     | Rutas                                                                                                                              |

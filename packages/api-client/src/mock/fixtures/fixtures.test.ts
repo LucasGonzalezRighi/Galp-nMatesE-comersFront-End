@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { slugify } from '@galpon/domain'
-import { settingsFormSchema } from '@galpon/schemas'
+import { imageFormSchema, settingsFormSchema } from '@galpon/schemas'
 import {
   FIXTURE_CATEGORIES,
   FIXTURE_CONTENT,
@@ -10,6 +11,48 @@ import {
 } from '.'
 
 const PRODUCT_IDS = new Set(FIXTURE_PRODUCTS.map((product) => product.id))
+
+/** Cuántas fotos mandó el cliente de cada producto que tiene; los demás no tienen ninguna. */
+const PHOTO_COUNTS: Record<string, number> = {
+  'prd-imperial-premium': 2,
+  'prd-imperial-calabaza': 1,
+  'prd-imperial-criollo': 1,
+  'prd-torpedo-borravino': 3,
+  'prd-torpedo-crudo': 1,
+  'prd-torpedo-repujado': 1,
+  'prd-camionero-criollo': 1,
+  'prd-camionero-aluminio': 1,
+  'prd-ranchero-manchas': 1,
+  'prd-coquito-criollo': 1,
+  'prd-yerba-canarias': 1,
+  'prd-yerba-serena': 1,
+  'prd-yerba-jengibre': 1,
+  'prd-bombillon-100-alpaca': 1,
+  'prd-bombillon-premium-curvo': 1,
+  'prd-bombillon-loro-18': 1,
+}
+
+/**
+ * Lee el archivo de una foto de ejemplo (`url` es `/mock-images/…`) en el `public/` de una app:
+ * la tienda y el admin sirven cada uno su copia, desde su propio origen.
+ */
+function readPublicFile(app: 'store' | 'admin', url: string): Buffer {
+  return readFileSync(new URL(`../../../../../apps/${app}/public${url}`, import.meta.url))
+}
+
+/** Ancho y alto de un JPG, leídos de su marcador SOF sin decodificar la foto. */
+function jpegSize(bytes: Buffer): { width: number; height: number } {
+  let offset = 2
+  while (offset + 9 <= bytes.length && bytes.readUInt8(offset) === 0xff) {
+    const marker = bytes.readUInt8(offset + 1)
+    // SOF0 a SOF15, salvo DHT (C4), JPG (C8) y DAC (CC), que comparten el rango.
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+      return { height: bytes.readUInt16BE(offset + 5), width: bytes.readUInt16BE(offset + 7) }
+    }
+    offset += 2 + bytes.readUInt16BE(offset + 2)
+  }
+  throw new Error('No es un JPG con marcador SOF.')
+}
 
 describe('fixtures del diseño: catálogo', () => {
   it('tiene 6 líneas y 27 productos', () => {
@@ -73,23 +116,53 @@ describe('fixtures del diseño: catálogo', () => {
     expect(stockOf('prd-imperial-premium')).toBe(12)
   })
 
-  it('todos están publicados, sin slugs viejos ni ajustes de pestañas, y solo el imperial premium tiene foto', () => {
+  it('todos están publicados, sin slugs viejos ni ajustes de pestañas', () => {
     for (const product of FIXTURE_PRODUCTS) {
       expect(product.status).toBe('published')
       expect(product.previousSlugs).toEqual([])
       expect(product.tabsOverride).toBeNull()
     }
+  })
+
+  it('16 productos tienen las fotos del cliente y la principal del imperial premium es la del diseño', () => {
     const withImages = FIXTURE_PRODUCTS.filter((product) => product.images.length > 0)
-    expect(withImages.map((product) => product.id)).toEqual(['prd-imperial-premium'])
-    expect(withImages[0]?.images).toEqual([
-      {
-        publicId: 'galpon/productos/mate-imperial-premium',
-        url: '/mock-images/mate-imperial-premium.jpg',
-        width: 960,
-        height: 1280,
-        alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
-      },
-    ])
+    expect(
+      Object.fromEntries(withImages.map((product) => [product.id, product.images.length])),
+    ).toEqual(PHOTO_COUNTS)
+    expect(withImages[0]?.images[0]).toEqual({
+      publicId: 'galpon/productos/mate-imperial-premium',
+      url: '/mock-images/mate-imperial-premium.jpg',
+      width: 960,
+      height: 1280,
+      alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
+    })
+  })
+
+  it('cada foto se llama como el slug del producto (la segunda en adelante con -2, -3) y pasa el schema del admin', () => {
+    for (const product of FIXTURE_PRODUCTS) {
+      const files = product.images.map((_, index) =>
+        index === 0 ? product.slug : `${product.slug}-${String(index + 1)}`,
+      )
+      expect(product.images.map((image) => image.publicId)).toEqual(
+        files.map((file) => `galpon/productos/${file}`),
+      )
+      expect(product.images.map((image) => image.url)).toEqual(
+        files.map((file) => `/mock-images/${file}.jpg`),
+      )
+      for (const image of product.images) {
+        expect(() => imageFormSchema.parse(image)).not.toThrow()
+      }
+    }
+  })
+
+  it('cada foto está en el public/ de la tienda y del admin, igual, con las medidas que declara', () => {
+    const images = FIXTURE_PRODUCTS.flatMap((product) => product.images)
+    expect(images).toHaveLength(19)
+    for (const image of images) {
+      const store = readPublicFile('store', image.url)
+      expect(readPublicFile('admin', image.url).equals(store)).toBe(true)
+      expect(jpegSize(store)).toEqual({ width: image.width, height: image.height })
+    }
   })
 })
 

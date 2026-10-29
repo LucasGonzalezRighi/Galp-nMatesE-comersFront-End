@@ -71,7 +71,7 @@ Además: **8 mensajes** (3 sin leer; 3 son arrepentimientos con código `ARR-000
 
 ### Fotos simuladas
 
-En modo de prueba la subida no sale a la red, pero hace el mismo recorrido: valida la foto (JPG, PNG o WebP, hasta 10 MB, al menos 800 px del lado menor; 8 por producto, 1 por línea y 1 por socio), pide la firma a la API simulada, muestra el progreso con una vista previa `blob:` y guarda una versión reducida como data URL (lado mayor 640 px, WebP), registrada con `POST /__mock/media`. Así la foto sigue ahí después de recargar. Cualquier JPG, PNG o WebP sirve (hay ejemplos en `public/mock-images/`).
+En modo de prueba la subida no sale a la red, pero hace el mismo recorrido: valida la foto (JPG, PNG o WebP, hasta 10 MB, al menos 800 px del lado menor; 8 por producto, 1 por línea y 1 por socio), pide la firma a la API simulada, muestra el progreso con una vista previa `blob:` y guarda una versión reducida como data URL (lado mayor 640 px, WebP), registrada con `POST /__mock/media`. Así la foto sigue ahí después de recargar. Sirve cualquier JPG, PNG o WebP que cumpla esas reglas. En `public/mock-images/` están las fotos del catálogo de prueba (la misma copia que la tienda, porque el admin las sirve desde su propio origen), pero solo `mate-imperial-premium.jpg` llega a los 800 px: las del cliente son más chicas y se rechazan.
 
 - Un archivo cuyo nombre empieza con **`error-`** (por ejemplo `error-mate.jpg`) falla en el primer intento: "Reintentar" lo sube bien.
 - Una foto chica se rechaza antes de subir, con las medidas: "punto.png: La foto tiene que medir al menos 800 px del lado menor (esta mide 1 × 1 px)."

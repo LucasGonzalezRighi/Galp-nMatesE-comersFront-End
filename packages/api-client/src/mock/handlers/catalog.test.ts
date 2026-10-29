@@ -110,7 +110,10 @@ describe('GET /products/{slug}', () => {
     })
     expect(product.tabs.descriptionNote).not.toBeNull()
     expect(product.options?.leathers).toHaveLength(4)
-    expect(product.images).toHaveLength(1)
+    expect(product.images.map((image) => image.url)).toEqual([
+      '/mock-images/mate-imperial-premium.jpg',
+      '/mock-images/mate-imperial-premium-2.jpg',
+    ])
   })
 
   it('marca el Mate Galleta como agotado y sin compra', async () => {
