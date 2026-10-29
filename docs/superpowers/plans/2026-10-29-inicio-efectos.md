@@ -1,0 +1,58 @@
+# Efectos del resto del inicio: salida de Destacados, Manifiesto con el yerbal, cifras clavadas, carrusel de reseñas y footer que sube
+
+> Pedido de Lucas (2026-10-29, con capturas del inicio actual), con sus respuestas: para "Armá tu kit", **las cifras quedan quietas y el kit sube por encima** (como el footer sobre Contacto en su portafolio); el fondo del Manifiesto es **el yerbal** (`s1-yerbal`); el footer **sube por encima de las reseñas, que quedan quietas, y la palabra GALPÓN se ilumina con un degradado de abajo hacia arriba y queda superpuesta**; las reseñas aceptan **medias estrellas** (cambio de contrato) para la de Gianfranco con 4,5. Se hace junto con el mate 3D realista (`2026-10-29-mate-3d-realista.md`), en el mismo workspace y las mismas olas.
+
+**Goal:** que el inicio, después del mate 3D y la colección, tenga movimiento con sentido y sin perder la lectura: **Destacados** se despide al salir de pantalla; el **Manifiesto** entra con suavidad sobre la foto del yerbal con zoom lento y parallax; las **cifras** se clavan y la sección **"Armá tu kit"** sube por encima tapándolas; las **reseñas** son un carrusel con cinco (las tres de hoy más Gianfranco Galimberti con 4,5 y Lucas González Righi con 5); y el **footer** sube por encima de las reseñas mientras **GALPÓN** se ilumina con un degradado que sube. Todo solo con `transform`, `opacity` y `clip-path`, ligado al scroll con `useScroll` de `motion/react`; con `prefers-reduced-motion` nada se clava ni se mueve; en el celular las secciones quedan apiladas (sin clavar) y el carrusel se desliza con el dedo.
+
+**Architecture:**
+
+- **Salida de Destacados (`HomeFeatured.tsx`):** `useScroll({ target: sección, offset: ['end 85%', 'end 15%'] })` → la grilla de tarjetas hace `opacity 1 → 0.3`, `scale 1 → 0.96` y `y 0 → −32px` con `useTransform` (sin spring: es scrub). El título y el link no cambian. Con menos movimiento o en pantallas de menos de 1024 px, nada.
+- **Manifiesto con el yerbal (`HomeManifesto.tsx`):** la sección pasa a `relative overflow-hidden` con altura mínima `min(100svh, 820px)` y una capa de fondo `next/image` `fill` con `/hero/world/yerbal.jpg` (1920 px, ya está) `sizes="100vw"`, `object-cover`, `aria-hidden`; sobre ella un velo (`bg-background/72` más un degradé de `background/90` arriba a `background/55` abajo) para que la frase grande (`text-foreground`) se lea con contraste ≥ 4,5:1 (medir en la captura); la foto hace **zoom lento** (`scale 1.12 → 1` mientras la sección entra, `useScroll offset ['start end', 'start start']`) y **parallax** (`y −6 % → 6 %` a lo largo de la visibilidad). El bloque de texto entra con suavidad: `Reveal kind="up"` del eyebrow, `ScrubText` como hoy, y el link.
+- **Cifras clavadas y el kit que sube (`HomePage.tsx`, `HomeStats.tsx`, `HomeKit.tsx`, `home.css`):** un contenedor `relative` con `HomeStats` `sticky top-0 z-0` (la banda queda quieta al llegar arriba) y `HomeKit` `relative z-10` con fondo opaco (`bg-background`) que sube por encima; mientras la banda queda tapada, se atenúa (`opacity 1 → 0.45` ligada al avance del kit, como el `--exit` del portafolio). Como el header es fijo, la banda se clava en `top: 0` por debajo de él (está bien: el header la tapa de a poco). Sin menos movimiento y por debajo de 1024 px: sin `sticky`.
+- **Medias estrellas (contrato):** `docs/api/openapi.yaml` `Review.rating` y `ReviewInput.rating` pasan a `type: number`, `multipleOf: 0.5`, `minimum 1`, `maximum 5`; `packages/schemas` `reviewSchema.rating` acepta múltiplos de 0,5; `packages/domain` `ratings.ts` valida "múltiplo de 0,5 de 1 a 5"; tipos regenerados en la tienda (`api:*` de `apps/store/package.json`); `Stars` de la tienda dibuja media estrella (`llena` si la puntuación llega a `posición − 0,25`, `media` si llega a `posición − 0,75`, vacía si no; la media se dibuja con una segunda silueta recortada al 50 %); `ReviewStars` del admin usa `StarHalfIcon` de Phosphor para la media; el formulario de reseña de la tienda sigue pidiendo enteros (una persona no elige medias). Dos reseñas destacadas nuevas en `packages/api-client/src/mock/fixtures/reviews.ts` (y `fixtures.test.ts`): **Gianfranco Galimberti**, 4,5, "Está muy bueno: el mate llegó rápido y la terminación de la virola es impecable." sobre un mate del catálogo; **Lucas González Righi**, 5, "También lo recomiendo: el bombillón tira perfecto y la atención fue de diez." sobre un bombillón. Nota para el back en la BITACORA: `rating` en pasos de 0,5.
+- **Carrusel de reseñas (`HomeReviews.tsx` + `ReviewsCarousel.tsx`):** `home-data.ts` `REVIEWS_LIMIT` pasa de 3 a 6; la lista es una pista con `scroll-snap-type: x mandatory` y desplazamiento horizontal (barra oculta), tarjetas de `min(100%, 380px)` (tres a la vista en escritorio, una y media en el celular), botones "Anterior" y "Siguiente" (`aria-label`, deshabilitados en los extremos), puntos con `aria-current` y `aria-label "Reseña n de m"`, avance automático cada 6 s que se pausa al pasar el mouse, al enfocar, con la pestaña oculta y con menos movimiento; el índice actual sale de un `IntersectionObserver` sobre las tarjetas (nunca un `scroll` listener crudo). Sin JavaScript sigue siendo una lista deslizable. Las tarjetas conservan `Tilt`, `Stars` y el link al producto.
+- **Footer que sube y GALPÓN iluminado (`HomeReviews.tsx`, `FooterView.tsx`, `Wordmark.tsx`, `footer.css`):** la sección de reseñas del inicio lleva `data-footer-curtain` y un espaciador de `100svh` al final de `main`; el footer, solo cuando `body:has([data-footer-curtain])` y hay movimiento y ancho ≥ 1024 px, lleva `margin-top: -100svh`, `min-height: 100svh`, `position: relative`, `z-index: 20` y fondo opaco: las reseñas (clavadas con `sticky top-0`) quedan quietas y el footer sube por encima. La palabra GALPÓN gigante: dos capas superpuestas, la fantasma de hoy y una **iluminada** (degradé cobre → crema) recortada con `clip-path: inset(calc((1 − lit) × 100 %) 0 0 0)` donde `lit` va de 0 a 1 con `useScroll({ target: footer, offset: ['start end', 'end end'] })`; a la vez la palabra sube (`y 24 % → 0`) y se superpone apenas al pie de las columnas (`margin-top` negativo, `z-index` por encima, `pointer-events-none`). Con menos movimiento: la palabra iluminada quieta, sin clavar nada.
+- **Accesibilidad:** nada queda tapado para el teclado (el kit y el footer que suben son contenido normal; la banda y las reseñas clavadas siguen en el DOM y enfocables); el carrusel es navegable con teclado (botones y Tab por las tarjetas, que al enfocarse se traen a la vista con `scrollIntoView({ inline: 'nearest' })`); `aria-live="polite"` para "Reseña n de m" solo al usar los botones; contraste medido sobre el yerbal; axe sin hallazgos nuevos.
+- **Rendimiento:** solo `transform`, `opacity` y `clip-path`; `will-change: transform` en las capas que se mueven; la foto del yerbal `loading="lazy"` y `sizes="100vw"`; el autoplay del carrusel con `setInterval` que se limpia; sin `scroll` listeners crudos.
+
+**Tech Stack:** el mismo; sin dependencias nuevas.
+
+## Global Constraints
+
+- Las de `2026-10-29-mate-3d-realista.md` y su workspace (`.superpowers/sdd/2026-10-29-mate-3d-realista/global-constraints.md`), con los dueños de las Tasks 4, 5 y 6 que ahí figuran. Las tres corren en paralelo con la Task 0 del mate.
+
+## Task 4: Medias estrellas y las dos reseñas nuevas
+
+**Dueño:** `docs/api/openapi.yaml` (solo `rating` de `Review` y `ReviewInput`), `packages/schemas/src/review.ts` + test, `packages/domain/src/ratings.ts` + test, `packages/api-client/src/mock/fixtures/reviews.ts` + `fixtures.test.ts`, `apps/store/src/generated/**` (regenerado), `apps/store/src/components/ui/Stars.tsx` + test, `apps/store/src/features/reviews/reviews.copy.ts` (si un texto habla de enteros), `apps/admin/src/features/reviews/components/ReviewStars.tsx` + test y `reviews.copy.ts` del admin.
+
+- Contrato, esquema y dominio como dice Architecture; regenerar los tipos; `npm run api:check` en verde.
+- `Stars` con media estrella y sus tests (4,5 → cuatro llenas y una media; 4,7 → cuatro llenas y una media; 4,2 → cuatro llenas y una vacía; 5 → cinco llenas); `ReviewStars` del admin con `StarHalfIcon`.
+- Las dos reseñas nuevas, destacadas (`featured: true`), con `createdAt` recientes y `verifiedPurchase: true`; `fixtures.test.ts` actualizado (cantidad y orden de destacadas). La reseña de Gianfranco con `rating: 4.5`.
+- Verificación: tests de `packages/schemas`, `packages/domain`, `packages/api-client`, `apps/store/src/components/ui`, `apps/admin/src/features/reviews`; typecheck de `@galpon/store` y `@galpon/admin`; `npm run api:check`.
+
+## Task 5: Salida de Destacados, Manifiesto con el yerbal, cifras clavadas y el kit que sube
+
+**Dueño:** `HomeFeatured.tsx`, `HomeManifesto.tsx`, `HomeStats.tsx`, `HomeKit.tsx`, `HomePage.tsx`, `home.css` (reglas nuevas; `.home-backdrop` no se toca), `home-page.test.tsx`, tests nuevos de esas secciones.
+
+- Lo de Architecture para esas cuatro secciones; componentes cliente chicos para lo ligado al scroll (`FeaturedExit`, `ManifestoBackdrop`, `PinnedStats`), con `useScroll`/`useTransform` de `motion/react` y `usePrefersReducedMotion` + `useMediaQuery` de `components/motion`.
+- Tests (jsdom): la foto del yerbal con `alt=""` y `aria-hidden`; el velo; con menos movimiento no hay estilos de transformación; el contenedor de cifras + kit con las clases de clavado solo en escritorio con movimiento.
+- Verificación: vitest de `features/home`, typecheck de la tienda, eslint y prettier sobre tus rutas, `npm run build -w @galpon/store`.
+
+## Task 6: Carrusel de reseñas y footer que sube con GALPÓN iluminado
+
+**Dueño:** `HomeReviews.tsx`, `ReviewsCarousel.tsx` (nuevo) + tests, `home-data.ts` (`REVIEWS_LIMIT`), `home.copy.ts` (textos del carrusel), `apps/store/src/components/layout/FooterView.tsx`, `Footer*.tsx`, `Wordmark.tsx`, `footer.css` (nuevo, importado por `FooterView`), `e2e/store/home-reviews.spec.ts` (nuevo: carrusel con cinco, botones, puntos; el footer sube por encima de las reseñas a 1440 × 900: la sección de reseñas sigue en el mismo `top` mientras el footer avanza; GALPÓN visible al final).
+
+- Lo de Architecture para el carrusel y el footer; `ReviewsCarousel` cliente con sus textos en `home.copy.ts`.
+- Tests (jsdom): cinco tarjetas, botones con `aria-label`, puntos con `aria-current`, el autoplay se pausa con menos movimiento (simular `matchMedia`), el espaciador y `data-footer-curtain` solo en el inicio; `FooterView` con las dos capas de la palabra y sin clavar con menos movimiento.
+- Verificación: vitest de `features/home` y `components/layout`, typecheck de la tienda, eslint y prettier sobre tus rutas, `npm run build -w @galpon/store`.
+
+## Review Focus
+
+1. **Lectura primero:** el Manifiesto se lee sobre el yerbal (contraste medido), nada tapa texto para siempre, el teclado llega a todo.
+2. **Fieles al pedido:** Destacados se despide; la banda de cifras queda quieta y el kit sube encima; las reseñas quietas y el footer sube encima; GALPÓN se ilumina de abajo hacia arriba y se superpone.
+3. **Reversible y barato:** solo `transform`, `opacity`, `clip-path`; sin `scroll` listeners; sin saltos al ir y volver; con menos movimiento y en el celular, apilado y quieto.
+4. **Medias estrellas:** el contrato, el esquema, el dominio y las dos pantallas coinciden; `api:check` en verde; 4,5 se ve como cuatro y media en la tienda y en el admin.
+
+## Estado
+
+- Pendiente.
