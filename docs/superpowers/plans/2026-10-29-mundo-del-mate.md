@@ -42,6 +42,17 @@
 4. **Sin movimiento, celular, ventanas bajas:** escenas apiladas en el orden nuevo, sin posters de fondo, sin desborde horizontal.
 5. **Rendimiento:** solo la primera imagen carga con prioridad; las demás `lazy`; nada de `scroll` listeners; sin `<video>` cuando no hay clip; `npm run build -w @galpon/store` sin avisos.
 
+## Task 2: Vida sin video (después de la Task 1)
+
+Lucas no va a comprar créditos por ahora ("hacelo sin la herramienta y hasta donde tengas"): el mundo se termina con los cuadros fijos y animación propia, sin clips. Todo con `transform` y `opacity`, ligado al avance del scroll (`useTransform` sobre el avance del `ScrollStage`), y nada de esto en celular ni con menos movimiento.
+
+- **Entrar al mate (parada "El mate" → "La bombilla"):** en el deslizamiento, el poster de "El mate" (k1) escala de 1 a 2,2 con `transform-origin` en la boca del mate (≈ 52 % x, 36 % y) mientras se funde con el poster de "La bombilla" (k2), que arranca en escala 0,92 y llega a 1: la sensación de zambullirse dentro del mate. Para los demás deslizamientos, la deriva lateral y la escala leve de la Task 1.
+- **Hojas de yerba cayendo (parada "El mate" y la portada):** `YerbaLeaves`, una capa `canvas` (o 24 a 36 `span` con `transform` en `requestAnimationFrame`) de hojas pequeñas (siluetas SVG de hoja de yerba en dos tonos verde oliva, 10 a 22 px, rotación y vaivén), que caen despacio hacia la boca del mate y se desvanecen; densidad baja (elegante, no nieve), pausa cuando la pestaña no se ve (`visibilitychange`) y cuando la parada no es la actual. Con menos movimiento, no se monta.
+- **Vapor (paradas "El ritual" y "La ronda"):** dos o tres manchas difusas (`div` con `blur` y `opacity` baja, `will-change: transform`) que suben lentamente desde la boca del mate con `translateY` y `scale`, en bucle, solo en la parada actual.
+- **Portada:** el `HomeHero` toma de fondo el poster k1 a pantalla completa (velo oscuro a la izquierda como en el mundo, el título y los botones como hoy, la foto flotante del producto se quita) con las hojas cayendo y el vapor; es la "parada 0" visual, así el mundo arranca sin corte.
+- **Las tres piezas al salir de la ronda:** el deslizamiento de "La ronda" a la colección hace un fundido a negro corto (`opacity`) para separar el mundo del catálogo.
+- Tests: `YerbaLeaves` y el vapor se montan solo en la parada actual y con movimiento; el "zoom" se calcula con una función pura `diveTransform(progress)` testeada; portada con el poster y sin `StoryVisual`. E2E `home.spec.ts`: la portada tiene el poster; axe sin hallazgos; sin desborde. Capturas a 1440×900 de la portada y del deslizamiento "entrar al mate".
+
 ## Estado
 
 (Lo completa la Task 1.)
