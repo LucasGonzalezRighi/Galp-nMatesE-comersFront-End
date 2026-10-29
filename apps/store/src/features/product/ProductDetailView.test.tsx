@@ -202,13 +202,17 @@ describe('ProductGallery', () => {
 
     expect(screen.getByText('01 / 03')).toBeVisible()
     expect(screen.getByRole('img', { name: 'Foto 1 del mate' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Ver la foto 2' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Ver la foto 02' })).toBeVisible()
+    // El nombre de cada miniatura contiene el número que se ve (WCAG 2.5.3, nombre en la etiqueta).
+    for (const thumbnail of screen.getAllByRole('button', { name: /^Ver la foto/ })) {
+      expect(thumbnail.getAttribute('aria-label')).toContain(thumbnail.textContent)
+    }
 
     await user.click(screen.getByRole('button', { name: 'Foto siguiente' }))
     expect(screen.getByText('02 / 03')).toBeVisible()
     expect(screen.getByRole('img', { name: 'Foto 2 del mate' })).toBeVisible()
 
-    await user.click(screen.getByRole('button', { name: 'Ver la foto 3' }))
+    await user.click(screen.getByRole('button', { name: 'Ver la foto 03' }))
     expect(screen.getByText('03 / 03')).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Foto siguiente' }))

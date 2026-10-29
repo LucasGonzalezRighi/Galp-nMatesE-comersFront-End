@@ -45,7 +45,7 @@ export const PRODUCT_COPY = {
   previousPhoto: 'Foto anterior',
   /** Nombre accesible de la foto siguiente. */
   nextPhoto: 'Foto siguiente',
-  /** Prefijo del nombre accesible de cada miniatura; lleva el número de foto detrás. */
+  /** Prefijo del nombre accesible de cada miniatura; lleva el número de foto detrás (ver `photoButtonLabel`). */
   showPhoto: 'Ver la foto',
   /** Texto pequeño de la banda del kit. */
   kitEyebrow: 'Completá la ronda',
@@ -72,6 +72,23 @@ export function photoPlaceholder(position: number, productName: string): string 
     )
   }
   return `Foto ${String(position)} · ${productName}`
+}
+
+/**
+ * Nombre accesible de la miniatura de una foto de la galería. Lleva el número con dos cifras, el
+ * mismo que se ve en el botón, para que el nombre contenga el texto visible (WCAG 2.5.3).
+ *
+ * @param position - Número de la foto, un entero mayor o igual a 1.
+ * @returns Por ejemplo `Ver la foto 01`.
+ * @throws {RangeError} Si `position` no es un entero mayor o igual a 1.
+ */
+export function photoButtonLabel(position: number): string {
+  if (!Number.isInteger(position) || position < 1) {
+    throw new RangeError(
+      `El número de foto tiene que ser un entero mayor o igual a 1; se recibió ${String(position)}.`,
+    )
+  }
+  return `${PRODUCT_COPY.showPhoto} ${String(position).padStart(2, '0')}`
 }
 
 /** Título de la banda del kit: con descuento, lo nombra; sin descuento, solo invita a sumar las piezas. */

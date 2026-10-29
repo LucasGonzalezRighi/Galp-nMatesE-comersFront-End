@@ -8,7 +8,7 @@ import type { Image as ProductImage } from '@galpon/api-client'
 import { Tilt } from '../../components/motion'
 import { IconButton, ImageWithPlaceholder } from '../../components/ui'
 import { cx } from '../../components/ui/cx'
-import { PRODUCT_COPY, photoPlaceholder } from './product.copy'
+import { PRODUCT_COPY, photoButtonLabel, photoPlaceholder } from './product.copy'
 
 /** Props de {@link ProductGallery}. */
 export interface ProductGalleryProps {
@@ -105,7 +105,7 @@ export function ProductGallery({ productName, code, images }: ProductGalleryProp
               <button
                 key={`${image.publicId}:${String(position)}`}
                 type="button"
-                aria-label={`${PRODUCT_COPY.showPhoto} ${String(position + 1)}`}
+                aria-label={photoButtonLabel(position + 1)}
                 aria-current={active ? 'true' : undefined}
                 className={cx(
                   'focus-visible:outline-accent flex flex-1 cursor-pointer flex-col gap-2 border-0 bg-transparent py-[6px] text-left text-[11px] tabular-nums focus-visible:outline-2',
