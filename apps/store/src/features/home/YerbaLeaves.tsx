@@ -95,8 +95,8 @@ export interface YerbaLeavesProps {
  * Hojas de yerba que caen despacio hacia la boca del mate y se desvanecen al llegar: un lienzo
  * decorativo (`aria-hidden`) sobre la capa, encima de la boca, con pocas hojas de 10 a 22 px en dos
  * tonos de oliva que giran, se voltean y se mecen. Se dibuja con `requestAnimationFrame` y se pausa
- * mientras la pestaña no se ve; lo monta solo la parada actual (o la portada). Con
- * `prefers-reduced-motion` no se monta.
+ * mientras la pestaña no se ve o el lienzo queda fuera de pantalla (la portada no se desmonta al
+ * bajar); lo monta solo la parada actual (o la portada). Con `prefers-reduced-motion` no se monta.
  *
  * @param props - Ver {@link YerbaLeavesProps}.
  */
@@ -165,6 +165,8 @@ export function YerbaLeaves({ target }: YerbaLeavesProps): ReactNode {
       }
       frame = requestAnimationFrame(draw)
     }
+    // Sin `IntersectionObserver` se asume a la vista; con él, el primer aviso del navegador decide.
+    let onScreen = typeof IntersectionObserver === 'undefined'
     const start = (): void => {
       if (frame !== 0 || document.hidden) return
       last = null
@@ -176,12 +178,23 @@ export function YerbaLeaves({ target }: YerbaLeavesProps): ReactNode {
     }
     const onVisibility = (): void => {
       if (document.hidden) stop()
-      else start()
+      else if (onScreen) start()
     }
+    // La portada nunca se desmonta: fuera de pantalla el lienzo deja de pedir cuadros.
+    const intersection =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver((entries) => {
+            onScreen = entries.at(-1)?.isIntersecting ?? onScreen
+            if (onScreen) start()
+            else stop()
+          })
+    intersection?.observe(canvas)
     document.addEventListener('visibilitychange', onVisibility)
-    start()
+    if (onScreen) start()
     return () => {
       stop()
+      intersection?.disconnect()
       observer?.disconnect()
       document.removeEventListener('visibilitychange', onVisibility)
     }

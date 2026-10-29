@@ -64,6 +64,45 @@ function setHidden(hidden: boolean): void {
   document.dispatchEvent(new Event('visibilitychange'))
 }
 
+/** `IntersectionObserver` de mentira que dice a pedido si el lienzo se ve (el de la tienda solo avisa que entró). */
+class FakeVisibility {
+  /** Los observadores creados en la prueba. */
+  static instances: FakeVisibility[] = []
+  /** Los elementos que observa. */
+  readonly targets = new Set<Element>()
+  private readonly callback: IntersectionObserverCallback
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback
+    FakeVisibility.instances.push(this)
+  }
+
+  observe(target: Element): void {
+    this.targets.add(target)
+  }
+
+  disconnect(): void {
+    this.targets.clear()
+  }
+
+  /** Avisa si lo observado está a la vista o fuera de pantalla. */
+  report(isIntersecting: boolean): void {
+    const entries = [...this.targets].map((target) => ({ isIntersecting, target }))
+    this.callback(entries as IntersectionObserverEntry[], this as unknown as IntersectionObserver)
+  }
+}
+
+/** Instala el observador de mentira y devuelve el que creó el componente. */
+function installVisibility(): () => FakeVisibility {
+  FakeVisibility.instances = []
+  vi.stubGlobal('IntersectionObserver', FakeVisibility)
+  return () => {
+    const observer = FakeVisibility.instances.at(-1)
+    if (observer === undefined) throw new Error('El componente no creó un IntersectionObserver')
+    return observer
+  }
+}
+
 let frames: FrameRequestCallback[]
 let requestFrame: MockInstance<typeof window.requestAnimationFrame>
 let cancelFrame: MockInstance<typeof window.cancelAnimationFrame>
@@ -113,6 +152,31 @@ describe('YerbaLeaves', () => {
     setHidden(false)
     expect(requestFrame).toHaveBeenCalledTimes(2)
     unmount()
+    expect(cancelFrame).toHaveBeenLastCalledWith(2)
+  })
+
+  it('fuera de pantalla no pide cuadros y vuelve a dibujar al entrar', () => {
+    fakeCanvas()
+    const observer = installVisibility()
+    const { unmount } = render(<YerbaLeaves target={MOUTH} />)
+    expect(observer().targets.has(document.querySelector('canvas') as Element)).toBe(true)
+    // Antes del primer aviso (o con el lienzo fuera de pantalla) no se pide ningún cuadro.
+    expect(requestFrame).not.toHaveBeenCalled()
+    observer().report(false)
+    expect(requestFrame).not.toHaveBeenCalled()
+    // Al entrar en pantalla arranca; al salir se cancela el cuadro pendiente.
+    observer().report(true)
+    expect(requestFrame).toHaveBeenCalledTimes(1)
+    observer().report(false)
+    expect(cancelFrame).toHaveBeenLastCalledWith(1)
+    // Volver a la pestaña con el lienzo fuera de pantalla tampoco lo despierta.
+    setHidden(true)
+    setHidden(false)
+    expect(requestFrame).toHaveBeenCalledTimes(1)
+    observer().report(true)
+    expect(requestFrame).toHaveBeenCalledTimes(2)
+    unmount()
+    expect(observer().targets.size).toBe(0)
     expect(cancelFrame).toHaveBeenLastCalledWith(2)
   })
 
