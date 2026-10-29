@@ -24,4 +24,11 @@ describe('footer.css: el pie que sube por encima de las reseñas', () => {
       expect(css).toContain(declaration)
     }
   })
+
+  it('el borde de arriba se ve mientras sube: una línea fina y una sombra sobre las reseñas', () => {
+    expect(css).toContain(
+      'border-top: 1px solid color-mix(in srgb, var(--color-foreground) 12%, transparent);',
+    )
+    expect(css).toMatch(/box-shadow: 0 -\d+px \d+px -\d+px rgb\(0 0 0 \/ 0\.\d+\);/)
+  })
 })

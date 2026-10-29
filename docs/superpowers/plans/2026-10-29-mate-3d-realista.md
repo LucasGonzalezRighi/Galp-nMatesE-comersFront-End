@@ -70,4 +70,4 @@
 
 ## Estado
 
-- Pendiente.
+- **Hecho (2026-10-29).** Task 0 `904d172` (módulos y estado v2), Task 2 `bdc24a0` (termo, chorro, charco, vapor y bombilla en el hueco), Task 1 `d2a2215` (la yerba real con montañita, pared y hojas) y Task 3 (fondos nítidos con el velo reforzado del lado del texto, los valores pedidos por T1 y T2 y el afinado a la vista con la GPU real, E2E en verde en el puerto 4300 y video de 30 s en `media/mate-3d/mate-3d-realista-1440.mp4`). 60 cuadros por segundo en la Intel UHD. Detalle en `docs/BITACORA.md` ("Mate 3D realista").

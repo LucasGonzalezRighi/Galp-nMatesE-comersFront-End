@@ -4,7 +4,9 @@ El mate que se arma con el scroll en las tres paradas del inicio. Es el porte a 
 `docs/design/galpon-tienda-v3/mate3d-scene.js` con cuatro cambios: el cuero es negro fijo (sin el
 campo `color` ni la lista de cueros), el paquete lleva la foto real de Canarias al frente
 (`/hero/3d/yerba-canarias-front.jpg`), el interior curado usa `/hero/3d/mate-interior.png` y la
-yerba usa la foto real de Lucas (`/hero/3d/yerba-albedo.jpg`, en mosaico de 2,2).
+yerba es un campo de alturas con la foto real de Lucas (`/hero/3d/yerba-albedo.jpg`, en mosaico de
+1,3). Desde "el mate 3D realista" (plan `2026-10-29-mate-3d-realista.md`) el mate se inclina para
+recibir la yerba, la montañita tiene su pared y el termo sirve un chorro con refracción.
 
 | Archivo            | Qué hace                                                                                                                                                                                                                                       |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,23 +32,24 @@ narrow, mateRoot, mate }`: el estado ya suavizado, el reloj y el tiempo del cuad
 - `dispose()` libera sus geometrías, materiales e instancias (`disposeTree`, que también libera las
   `InstancedMesh`) y saca sus piezas de la escena. Las texturas las libera `materials.dispose()`.
 
-| Módulo         | Qué hace                                                                                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`     | Los tipos del contrato: `SceneFrame`, `SceneModule`, `SceneMaterials`, `SceneShared` y los módulos que exponen algo (`MateModule`, `PackModule`, `YerbaModule`).                                              |
-| `materials.ts` | `createMaterials(T)`: cuero, alpaca cincelada y lisa, bronce, la yerba con su foto real, el curado, el vapor y la sombra, y los pintores (`paint`, `load`, `radial`, `random`) con que los módulos hacen más. |
-| `place.ts`     | `place(objeto, colocación, vista)`: la colocación en fracciones de media pantalla (más juntas y chicas en pantalla angosta).                                                                                  |
-| `mate.ts`      | La calabaza, la virola, el aro, el interior, la pared, las patas y la sombra; expone `mateRoot`, `mate`, `mouthY` (1,01) e `interiorRadius` (0,4).                                                            |
-| `pack.ts`      | El paquete de Canarias con su pico (`spout`) como ancla de la yerba que cae.                                                                                                                                  |
-| `yerba.ts`     | La yerba de adentro (hoy disco, montañita y mancha húmeda) y las partículas que caen del pico; expone `hollowCenter` (el hueco, en coordenadas de `mate`).                                                    |
-| `bombilla.ts`  | La bombilla y su ancla de calce dentro del mate.                                                                                                                                                              |
-| `water.ts`     | El agua: hoy el chorro como cilindro fino y el vapor; acá van el termo, el chorro, la salpicadura y el charco.                                                                                                |
-| `smoothing.ts` | Puro. `smoothingShare(dt)`: el suavizado por tiempo, `1 − (1 − 0,055)^(dt·60)`.                                                                                                                               |
-| `dispose.ts`   | `disposeTree(raíz)`: libera geometrías, materiales e instancias de un árbol.                                                                                                                                  |
+| Módulo           | Qué hace                                                                                                                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`       | Los tipos del contrato: `SceneFrame`, `SceneModule`, `SceneMaterials`, `SceneShared` y los módulos que exponen algo (`MateModule`, `PackModule`, `YerbaModule`).                                         |
+| `materials.ts`   | `createMaterials(T)`: cuero, alpaca cincelada y lisa, bronce, la foto real de la yerba, el curado y la sombra, y los pintores (`paint`, `load`, `radial`, `random`) con que los módulos hacen más.       |
+| `place.ts`       | `place(objeto, colocación, vista)`: la colocación en fracciones de media pantalla (más juntas y chicas en pantalla angosta).                                                                             |
+| `mate.ts`        | La calabaza, la virola, el aro, el interior, la pared, las patas y la sombra; expone `mateRoot`, `mate`, `mouthY` (1,01) e `interiorRadius` (0,4).                                                       |
+| `pack.ts`        | El paquete de Canarias con su pico (`spout`, la esquina abierta de la tapa) como ancla de la yerba que cae; la solapa se abre y el paquete se sacude con `pour`.                                         |
+| `yerba.ts`       | La yerba: un campo de alturas polar (48 × 96) con la foto real, relieve y la humedad por shader, y las hojitas y el polvo que caen del pico; expone `hollowCenter` (el hueco, en coordenadas de `mate`). |
+| `yerba-shape.ts` | Puro. `yerbaHeight(x, z, { fill, slope, wall })` (la meseta, la pared y el hueco, con grano) y `hollowCenter(forma)`.                                                                                    |
+| `bombilla.ts`    | La bombilla y su ancla de calce: la pala hundida en el hueco y el caño apoyado en la virola; entra desde arriba a la derecha sin fundido.                                                                |
+| `water.ts`       | El termo (pico en cuadro), el chorro con transmisión e índice 1,33 sobre `streamPoints`, la salpicadura, el charco y el vapor.                                                                           |
+| `water-path.ts`  | Puro. `streamPoints(from, to, count)`: la curva del chorro, que baja siempre y cae casi vertical al final.                                                                                               |
+| `smoothing.ts`   | Puro. `smoothingShare(dt)`: el suavizado por tiempo, `1 − (1 − 0,055)^(dt·60)`.                                                                                                                          |
+| `dispose.ts`     | `disposeTree(raíz)`: libera geometrías, materiales e instancias de un árbol.                                                                                                                             |
 
 `scene.ts` crea los módulos en orden (materiales, mate, paquete, yerba, bombilla, agua) y los
 acomoda cada cuadro en ese orden: el paquete antes que la yerba (cae de su pico) y la yerba antes que
-la bombilla y el agua (leen su hueco). Mientras la yerba sea disco y media esfera, interpreta `slope`
-y `wall` como la montañita de antes: `slope · min(1, 0,3 + 2·wall)`.
+la bombilla y el agua (leen su hueco).
 
 ## El estado
 
@@ -56,23 +59,23 @@ y `wall` como la montañita de antes: `slope · min(1, 0,3 + 2·wall)`.
 el tamaño del diseño y los giros van en grados (orden XYZ: el giro Z inclina la pieza en su propio
 eje; positivo, hacia la izquierda de la pantalla).
 
-| Campo      | Rango      | Qué controla                                                                                                     |
-| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `mate`     | colocación | Dónde está y cómo gira el mate; el giro Z lo inclina (55 en la parada 1). Encima van el parallax y la flotación. |
-| `bombilla` | colocación | La bombilla suelta, mientras `attached` es 0: entra desde arriba a la derecha.                                   |
-| `attached` | 0 a 1      | Cuánto está calzada la bombilla en la yerba.                                                                     |
-| `pack`     | colocación | El paquete de yerba. Con el giro Z cerca de −150 queda cabeza abajo, con el pico sobre la boca inclinada.        |
-| `thermos`  | colocación | El pico del termo (la boca por donde sale el agua); el giro Z positivo lo inclina para servir.                   |
-| `fill`     | 0 a 1      | Volumen de yerba, del fondo curado (0) a la virola (1).                                                          |
-| `slope`    | 0 a 1      | Pendiente de la yerba: 1 es asentada contra la pared izquierda, como la deja el mate inclinado.                  |
-| `wall`     | 0 a 1      | Pared de la montañita: 1 es la cara derecha cayendo recta, como después de sacudir el mate tapado.               |
-| `wet`      | 0 a 1      | Yerba húmeda en el hueco junto a la bombilla.                                                                    |
-| `water`    | 0 a 1      | El chorro del termo que cae en el hueco.                                                                         |
-| `steam`    | 0 a 1      | El vapor que sube del mate.                                                                                      |
-| `puddle`   | 0 a 1      | El agua juntada en el hueco (el charco).                                                                         |
-| `splash`   | 0 a 1      | La salpicadura del chorro al caer.                                                                               |
-| `pour`     | 0 a 1      | La yerba que cae del pico del paquete a la boca del mate.                                                        |
-| `tilt`     | grados     | Inclinación extra de la bombilla calzada; 0 es la del diseño.                                                    |
+| Campo      | Rango      | Qué controla                                                                                                                         |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `mate`     | colocación | Dónde está y cómo gira el mate; el giro Z lo inclina (55 en la parada 1). Encima van el parallax y la flotación.                     |
+| `bombilla` | colocación | La bombilla suelta, mientras `attached` es 0: entra desde arriba a la derecha.                                                       |
+| `attached` | 0 a 1      | Cuánto está calzada la bombilla en la yerba.                                                                                         |
+| `pack`     | colocación | El paquete de yerba. Con el giro Z cerca de −150 queda cabeza abajo, con el pico sobre la boca inclinada.                            |
+| `thermos`  | colocación | El pico del termo (la boca por donde sale el agua); con el giro Z cerca de 145 la boca mira abajo a la izquierda.                    |
+| `fill`     | 0 a 1      | Volumen de yerba, del fondo curado (0) a la virola (1).                                                                              |
+| `slope`    | 0 a 1      | Pendiente de la yerba: 1 es asentada contra la pared izquierda, como la deja el mate inclinado.                                      |
+| `wall`     | 0 a 1      | Pared de la montañita: 1 es la cara derecha cayendo recta, como después de sacudir el mate tapado.                                   |
+| `wet`      | 0 a 1      | Yerba húmeda en el hueco junto a la bombilla.                                                                                        |
+| `water`    | 0 a 1      | El chorro del termo que cae en el hueco.                                                                                             |
+| `steam`    | 0 a 1      | El vapor que sube del mate.                                                                                                          |
+| `puddle`   | 0 a 1      | El agua juntada en el hueco (el charco).                                                                                             |
+| `splash`   | 0 a 1      | La salpicadura del chorro al caer.                                                                                                   |
+| `pour`     | 0 a 1      | La yerba que cae del pico del paquete a la boca del mate.                                                                            |
+| `tilt`     | grados     | Cuánto se corre el apoyo del caño por la virola, en grados alrededor del eje del mate desde el lado derecho (negativo: hacia atrás). |
 
 `setState` solo cambia el objetivo: la escena se acerca a él con un suavizado por tiempo (el 5,5 %
 por cuadro a 60 Hz, igual a 30 o a 144 Hz), así el scroll se ve suave aunque llegue a saltos.
@@ -88,14 +91,15 @@ interpolación usa la curva quíntica del diseño (quieta el primer y el último
 | `inicio`    | 0               | Parada 1: el mate de pie y vacío a la derecha, como la portada; paquete, bombilla y termo fuera de cuadro.                                                            |
 | `inclinado` | hold·0,35       | El mate inclinado 55° a la izquierda y el paquete cabeza abajo sobre la boca (`pour 1`, `fill 0,45`, `slope 1`, `wall 0`).                                            |
 | `lleno`     | hold·0,85       | Ya no cae yerba; el mate lleno, todavía a 40°, y el paquete saliendo por arriba a la izquierda (`fill 1`, `slope 1`, `wall 0,35`).                                    |
-| `bombilla`  | todo el hold 2  | Parada 2: el mate de pie, girado para mostrar el hueco; la pared recta (`wall 1`) y la bombilla calzada.                                                              |
+| `bombilla`  | todo el hold 2  | Parada 2: el mate de pie, visto desde arriba (giro X 45) y girado para mostrar el hueco; la pared recta (`wall 1`) y la bombilla calzada.                             |
 | `agua`      | 2/3 + hold·0,25 | El pico del termo arriba a la derecha y el chorro en el hueco (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); la parada 3 llega con el termo entrando. |
 | `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                |
 | `salida`    | 1               | El mate se aleja hacia la derecha y abajo, más chico; termo fuera y vapor a medias. Entra el catálogo.                                                                |
 
-Las colocaciones de `inclinado` se midieron con `three` a 16:9: el pico del paquete queda unos 0,66
-sobre el centro de la boca inclinada. Los demás valores son los iniciales del plan y se afinan a la
-vista en la tienda compilada.
+Las colocaciones de `inclinado` se midieron con `three` a 16:9: el pico del paquete (x 0,3) queda
+sobre la boca inclinada y la yerba cae casi vertical. Las paradas 2 y 3 miran el mate desde arriba
+(giro X 45 y 48): con menos de 45 la virola tapa el hueco (medido con raycast). El termo tiene la
+misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entrar.
 
 ## Cómo ajustar un keyframe
 
@@ -111,6 +115,25 @@ vista en la tienda compilada.
 4. Miralo en la tienda compilada (`npm run build -w @galpon/store` y `npm run start -w @galpon/store`):
    jsdom no tiene WebGL, así que la escena solo se ve en el navegador.
 
+## Cómo ajustar la pared y el chorro
+
+- **La pared de la montañita** sale de `scene/yerba-shape.ts`: `WALL_X` (dónde cae, 0,05 a la derecha
+  del centro), `STEEP_WIDTH` y `NATURAL_WIDTH` (el ancho de la caída con `wall 1` y con `wall 0`),
+  `HOLLOW_DEPTH` (cuánto más bajo queda el hueco, 0,22), `WALL_WOBBLE` (cuánto ondula, para que no
+  parezca un corte) y `HOLLOW_X`/`HOLLOW_Z` (el centro del hueco, que usan la bombilla y el agua). Los
+  tests de `yerba-shape.test.ts` fijan que la pared con `wall 1` ocupe menos de 0,05. Cuánto se ve
+  la pared depende de la cámara: es el giro X del mate en `bombilla` y `agua` (`keyframes.ts`).
+- **El color y el grano de la yerba** van en `scene/yerba.ts` (`YERBA_TINT`, `YERBA_BUMP_SCALE`, la
+  humedad con `WET_*`) y `scene/materials.ts` (`YERBA_REPEAT`, `YERBA_TURN`, `YERBA_SHIFT`: el
+  tamaño de las hojas de la foto y dónde caen los ejes del espejado).
+- **La yerba que cae**: `FLAKE_WIDTH`/`FLAKE_HEIGHT`, `STREAM_OPEN`/`STREAM_SPREAD` (el ancho del
+  chorro de hojas), `LANDING_SHARE` (dónde aterriza) y el polvo (`DUST_*`) en `scene/yerba.ts`; de
+  dónde sale lo decide el paquete (`pack` de `inclinado` en `keyframes.ts`).
+- **El chorro de agua** sale de la boca del pico (`thermos` de `agua` en `keyframes.ts`: posición y
+  giro Z) y cae en `hollowCenter` más `IMPACT_OFFSET` (`scene/water.ts`); `STREAM_RADIUS` es su
+  grosor arriba y abajo, y la curva la da `streamPoints` (`scene/water-path.ts`). El charco
+  (`PUDDLE_*` y su material) y el vapor (cantidad y opacidad por nube) también están en `water.ts`.
+
 ## Por qué sin `@react-three/fiber`
 
 La escena del diseño es three puro y `@react-three/fiber` no está entre las dependencias del
@@ -120,11 +143,15 @@ monta, pausa y libera) alcanza y evita un renderizador de React por cuadro.
 
 ## Ajustes después de verla
 
-Con la tienda compilada (Task 2 del mate 3D) se tocaron tres valores, comentados en el código: el
-cuero lleva `sheenRoughness` 0,4 (`scene/materials.ts`; con el brillo cobre repartido en toda la
-superficie se leía marrón), el chorro de agua termina en 0,3 de `mateRoot` (`scene/water.ts`;
-adentro de la yerba, que lo tapa) y el vapor llega a 0,75 de opacidad (`scene/water.ts`; con 0,5
-casi no se veía sobre los fondos oscuros).
+Con la tienda compilada (Task 2 del mate 3D) el cuero pasó a `sheenRoughness` 0,4
+(`scene/materials.ts`; con el brillo cobre repartido en toda la superficie se leía marrón).
+
+Con la GPU real a 1440 × 900 (Task 3 del mate realista), todos comentados en el código: la yerba
+lleva el tinte `#a9b28c` (se leía mostaza) y la foto en mosaico de 1,3, girada 0,5 rad y corrida
+(con 2,2 se leía como fieltro y se veían las rosetas del espejado); las hojitas que caen miden
+0,02 × 0,03 y el chorro de hojas se abre más; la alpaca lisa tiene aspereza 0,32 (el caño de la
+bombilla, visto desde arriba, se leía negro); el charco es más transparente (0,72) con el borde que
+se apaga desde el 35 % del radio, y el vapor va de 0,5 a 0,8 de opacidad por nube.
 
 ## Rendimiento y respaldo
 

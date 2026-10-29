@@ -55,4 +55,4 @@
 
 ## Estado
 
-- Pendiente.
+- **Hecho (2026-10-29).** Task 4 `3c3aed5` (medias estrellas y las dos reseñas), Task 5 `81358ef` (Destacados, Manifiesto, cifras y kit), Task 6 `45ebf72` (carrusel y pie que sube) y el arreglo de la ola `f7a79d5` (el velo único del Manifiesto, tres tarjetas exactas en escritorio y la regla de la media estrella en el contrato). En la Task 3 del mate realista se vio todo en la tienda compilada a 1440 × 900 y se ajustó el pie (borde visible al subir, GALPÓN que se enciende con la entrada de la palabra, los medios de pago por encima de la palabra); `home-reviews.spec.ts` en verde. Detalle en `docs/BITACORA.md` ("Efectos del inicio").

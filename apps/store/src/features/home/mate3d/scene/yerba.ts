@@ -19,8 +19,12 @@ const RESHAPE_EPSILON = 1e-4
 const YERBA_ROUGHNESS = 0.92
 const YERBA_BUMP_SCALE = 1.5
 
-/** Tinte que multiplica la foto: la baja y la lleva al verde oliva bajo la luz del estudio. */
-const YERBA_TINT = '#c4caa0'
+/**
+ * Tinte que multiplica la foto: la baja y la lleva al verde oliva bajo la luz del estudio. Ajuste de
+ * la Task 3 (visto a 1440 × 900 con la GPU real): con `#c4caa0` se leía mostaza junto a la yerba de
+ * la foto del fondo; con menos rojo queda oliva grisáceo, como `refs/yerba-crop.jpg`.
+ */
+const YERBA_TINT = '#a9b28c'
 
 /** La yerba mojada: color al que se mezcla y aspereza donde está mojada. */
 const WET_COLOR = '#2a2e14'
@@ -37,14 +41,21 @@ const WET_GAIN = 1.6
 const LEAF_COUNT = 300
 const CHIP_COUNT = 120
 
-/** Medidas del plano de cada hojita. */
-const FLAKE_WIDTH = 0.014
-const FLAKE_HEIGHT = 0.022
+/**
+ * Medidas del plano de cada hojita. Ajuste de la Task 3: con 0,014 × 0,022 el chorro se veía como un
+ * hilo de motas de 4 a 9 px; un 40 % más grandes se leen como hojas sueltas.
+ */
+const FLAKE_WIDTH = 0.02
+const FLAKE_HEIGHT = 0.03
+
+/** Ancho del chorro de hojas al salir del pico y cuánto se abre hasta la yerba (Task 3: 0,006 y 0,05). */
+const STREAM_OPEN = 0.012
+const STREAM_SPREAD = 0.07
 
 /** Partículas de polvo a lo largo del chorro, su tamaño y su opacidad máxima. */
 const DUST_COUNT = 160
 const DUST_SIZE = 0.03
-const DUST_OPACITY = 0.45
+const DUST_OPACITY = 0.6
 
 /** Por debajo de este `pour` no cae nada (hojas y polvo ocultos). */
 const POUR_THRESHOLD = 0.02
@@ -460,7 +471,7 @@ export function createYerba(
     point.lerpVectors(start, end, u)
     point.y = start.y + (end.y - start.y) * (0.35 * u + 0.65 * u * u)
     point.addScaledVector(exit, EXIT_PUSH * scale * 4 * u * (1 - u))
-    const open = (0.006 + spread * u) * scale
+    const open = (STREAM_OPEN + spread * u) * scale
     point.x += flake.spreadX * open
     point.z += flake.spreadZ * open
     return point
@@ -479,7 +490,7 @@ export function createYerba(
     for (const [index, flake] of flakes.entries()) {
       if (index >= count) break
       const u = fract(t * flake.rate + flake.phase)
-      dummy.position.copy(along(u, flake, 0.05, scale))
+      dummy.position.copy(along(u, flake, STREAM_SPREAD, scale))
       dummy.position.x += Math.sin(t * 7 + flake.turn) * 0.004 * u * scale
       const fade = Math.max(1e-4, smoothstep(0, 0.06, u) * (1 - smoothstep(0.86, 1, u)))
       dummy.rotation.set(flake.turn + t * flake.spinX, flake.turn * 2 + t * flake.spinY, flake.turn)

@@ -11,12 +11,19 @@ import { cx } from '../ui/cx'
 const LIT_LAYER = 'absolute inset-0 block'
 
 /**
- * Recorte de la capa iluminada según cuánto se encendió: `inset(calc((1 − lit) × 100 %) 0 0 0)`,
- * así se ve de abajo hacia arriba.
+ * Parte de la entrada de la palabra en que empieza a encenderse: la palabra entra por abajo con su
+ * parte de arriba primero, así que si se encendiera desde el principio la luz subiría fuera de
+ * pantalla. Desde el 60 % de la entrada, el borde de la luz se ve subir por la palabra.
  */
-function litClipPath(lit: number): string {
-  const clamped = Math.min(1, Math.max(0, lit))
-  return `inset(${String((1 - clamped) * 100)}% 0 0 0)`
+const LIT_FROM = 0.6
+
+/**
+ * Recorte de la capa iluminada según el avance de la entrada de la palabra (0 a 1): se enciende de
+ * {@link LIT_FROM} a 1 con `inset(calc((1 − lit) × 100 %) 0 0 0)`, así se ve de abajo hacia arriba.
+ */
+function litClipPath(progress: number): string {
+  const lit = Math.min(1, Math.max(0, (progress - LIT_FROM) / (1 - LIT_FROM)))
+  return `inset(${String((1 - lit) * 100)}% 0 0 0)`
 }
 
 /** Props de {@link FooterWordmark}. */
@@ -29,17 +36,15 @@ export interface FooterWordmarkProps {
   className?: string
 }
 
-/** La palabra que se ilumina y sube con el scroll por el pie. */
+/** La palabra que se ilumina y sube con el scroll mientras entra en pantalla. */
 function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): ReactNode {
-  const footer = useRef<HTMLElement | null>(null)
-  const { scrollYProgress } = useScroll({ target: footer, offset: ['start end', 'end end'] })
+  const frame = useRef<HTMLDivElement | null>(null)
+  const { scrollYProgress } = useScroll({ target: frame, offset: ['start end', 'end end'] })
   const y = useTransform(scrollYProgress, [0, 1], ['24%', '0%'])
   const clipPath = useTransform(scrollYProgress, litClipPath)
   return (
     <m.div
-      ref={(node: HTMLDivElement | null) => {
-        footer.current = node?.closest('footer') ?? null
-      }}
+      ref={frame}
       aria-hidden="true"
       className={cx('relative will-change-transform', className)}
       style={{ y }}
@@ -56,9 +61,13 @@ function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): Reac
 
 /**
  * La palabra GALPÓN gigante del pie, con dos capas superpuestas: la fantasma de siempre y una
- * iluminada que se enciende de abajo hacia arriba (`clip-path`) mientras el pie entra en pantalla
- * (`useScroll` sobre el `footer`, de `start end` a `end end`); a la vez la palabra sube del 24 % de
- * su alto a su lugar. Es decorativa (`aria-hidden`).
+ * iluminada que se enciende de abajo hacia arriba (`clip-path`) mientras la palabra entra en
+ * pantalla (`useScroll` sobre la propia palabra, de `start end` a `end end`); a la vez sube del 24 %
+ * de su alto a su lugar; la luz arranca en el 60 % de esa entrada (`LIT_FROM`). Es decorativa
+ * (`aria-hidden`). La Task 3 del mate realista cambió el blanco del `useScroll` del `footer` a la
+ * palabra: con el pie que sube en el inicio (una pantalla de alto, el contenido abajo) la palabra
+ * recién entraba al 80 % del recorrido y se veía ya casi encendida; así se enciende a la vista, en
+ * el inicio y en las demás páginas.
  *
  * Con `prefers-reduced-motion: reduce` la iluminada queda quieta y entera, sin recorte. Sin
  * JavaScript se ve la fantasma.

@@ -38,8 +38,8 @@ const FADE_SHARE = 0.25
 const FADE_FROM = 1 - FADE_SHARE / MATE_STOP_COUNT
 
 /**
- * El texto va siempre sobre los fondos desenfocados y oscurecidos: el contenido de cada parada usa
- * los colores de las escenas oscuras.
+ * El texto va siempre sobre los fondos oscurecidos y el velo del lado del texto: el contenido de
+ * cada parada usa los colores de las escenas oscuras.
  */
 const STAGE_TONE = 'dark'
 
@@ -56,7 +56,7 @@ interface StageBackdropProps {
 }
 
 /**
- * El fondo de una parada: su foto a pantalla completa, desenfocada y oscurecida por CSS
+ * El fondo de una parada: su foto a pantalla completa, nítida y apenas oscurecida por CSS
  * (`.home-backdrop` en `home.css`). Se ve entero durante su parada y aparece encima del anterior
  * con la curva del recorrido ({@link backdropOpacity}). Solo el primero carga con prioridad.
  */
@@ -139,8 +139,12 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
             />
           </div>
         ) : null}
-        {/* El velo: por delante de las fotos y detrás del mate y del texto; también bajo el header y abajo. */}
-        <div className="from-background/85 via-background/45 absolute inset-y-0 left-0 w-3/5 bg-linear-to-r to-transparent" />
+        {/*
+         * El velo: por delante de las fotos y detrás del mate y del texto; también bajo el header y
+         * abajo. Con los fondos nítidos se reforzó del lado del texto (90 % → 75 % hasta el 60 % de
+         * su ancho): la frase y la bajada pasan sobre la bombilla y la pava de las fotos.
+         */}
+        <div className="from-background/90 via-background/75 absolute inset-y-0 left-0 w-3/5 bg-linear-to-r via-60% to-transparent" />
         <div className="from-background/70 absolute inset-x-0 top-0 h-40 bg-linear-to-b to-transparent" />
         <div className="from-background/70 absolute inset-x-0 bottom-0 h-40 bg-linear-to-t to-transparent" />
       </div>
@@ -189,13 +193,14 @@ export interface MateStageProps {
  * El inicio en escritorio (spec 9.5): un escenario fijo a la altura de la ventana donde el scroll
  * recorre tres paradas mientras el Mate Imperial Premium en 3D (`MateCanvas`) se arma. 1 · "El
  * mate": el texto de la portada (`HeroIntro`, con el único `h1`) y el mate vacío a la derecha; en
- * su hold el paquete de yerba vuelca y se forma la montañita. 2 · "La bombilla": el mate gira y la
- * bombilla se calza (escena `bombilla` de `HomeContent.scenes`). 3 · "El agua": cae el chorro, la
- * yerba se humedece y sube el vapor (escena `ritual`). El estado del mate sale del mismo avance del
- * `ScrollStage` (`mateStateAt`, adentro de `MateCanvas`): las tres paradas y la salida están
- * repartidas en él.
+ * su hold el mate se inclina, el paquete de yerba vuelca y la yerba se junta contra la pared baja.
+ * 2 · "La bombilla": el mate de pie muestra la montañita con su pared y la bombilla se calza en el
+ * hueco (escena `bombilla` de `HomeContent.scenes`). 3 · "El agua": el termo sirve un chorro fino en
+ * el hueco, la yerba se humedece y sube el vapor (escena `ritual`). El estado del mate sale del
+ * mismo avance del `ScrollStage` (`mateStateAt`, adentro de `MateCanvas`): las tres paradas y la
+ * salida están repartidas en él.
  *
- * Detrás, la foto de cada parada desenfocada (`pieces`, `bombilla`, `ritual`) con fundido cruzado;
+ * Detrás, la foto de cada parada nítida (`pieces`, `bombilla`, `ritual`) con fundido cruzado;
  * delante, el velo del color de fondo a la izquierda y los paneles de texto apilados, donde solo se
  * ve el de la parada actual (`StoryStop`); el raíl marca la actual y lleva a cualquiera; la pista
  * se esconde al empezar. Al final de la tercera parada el mate se va y el escenario se funde a

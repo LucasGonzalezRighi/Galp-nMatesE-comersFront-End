@@ -93,7 +93,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
     <footer className="site-footer relative overflow-hidden pt-[72px]">
-      <div className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)]">
+      <div className="mx-auto w-full max-w-[1280px] px-[clamp(20px,5vw,64px)]">
         <div className="mb-14 h-px" style={DIVIDER_STYLE} />
         <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
           <div className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
@@ -191,7 +191,8 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
             )}
           </div>
         )}
-        <div className="mt-14 flex flex-wrap items-center justify-between gap-[14px] text-[12px] text-neutral-500">
+        {/* Por encima de la palabra: GALPÓN se superpone apenas y no tapa los medios de pago. */}
+        <div className="relative z-20 mt-14 flex flex-wrap items-center justify-between gap-[14px] text-[12px] text-neutral-500">
           <span>
             © <FooterYear /> {LAYOUT_COPY.brand}
           </span>

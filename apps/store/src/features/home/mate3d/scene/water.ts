@@ -136,7 +136,7 @@ const paintSteamCloud: Painter = (context, width, height) => {
  *
  * - **Termo** (`state.thermos`, colocado con `place`): el origen es la boca del pico y el eje `+y` sale
  *   por ella; el cuerpo de acero cepillado (radio 0,11, largo 0,7), la tapa negra y el pico cónico
- *   quedan detrás. Con el giro Z cerca de 110 la boca mira abajo a la izquierda y el cuerpo sigue
+ *   quedan detrás. Con el giro Z cerca de 145 la boca mira abajo a la izquierda y el cuerpo sigue
  *   arriba a la derecha, así que solo asoma la parte baja.
  * - **Chorro** (`state.water`): un tubo sobre `streamPoints` desde la boca del pico hasta el hueco
  *   (`shared.yerba.hollowCenter`, al costado de la bombilla), de radio 0,012 a 0,007, con transmisión
@@ -279,10 +279,13 @@ export function createWater(T: ThreeLib, parent: Three.Object3D, shared: SceneSh
       roughness: 0.03,
       metalness: 0,
       transparent: true,
-      opacity: 0.85,
+      // Ajuste de la Task 3: con 0,85 y el borde duro desde el 70 % del radio se leía como un disco
+      // oscuro pegado; más transparente y con el borde que se apaga desde el 35 %, se funde con la
+      // yerba mojada de alrededor.
+      opacity: 0.72,
       alphaMap: radial([
         [0, '#ffffff'],
-        [0.7, '#ffffff'],
+        [0.35, '#ffffff'],
         [1, '#000000'],
       ]),
       depthWrite: false,
@@ -308,7 +311,8 @@ export function createWater(T: ThreeLib, parent: Three.Object3D, shared: SceneSh
       speed: 0.16 + jitter(index, 31) * 0.1,
       offset: index / STEAM_COUNT + jitter(index, 32) * 0.05,
       size: 0.7 + jitter(index, 33) * 0.6,
-      strength: 0.35 + jitter(index, 34) * 0.25,
+      // Ajuste de la Task 3: de 0,35..0,6 a 0,5..0,8; sobre los fondos nítidos el vapor casi no se leía.
+      strength: 0.5 + jitter(index, 34) * 0.3,
       spin: (jitter(index, 35) - 0.5) * 1.6,
       turn: jitter(index, 36) * TAU,
     }

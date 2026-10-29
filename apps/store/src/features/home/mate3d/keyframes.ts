@@ -58,7 +58,10 @@ export interface MateState {
   readonly splash: number
   /** Yerba que cae del pico del paquete hacia el mate, de 0 a 1. */
   readonly pour: number
-  /** Inclinación de la bombilla calzada, en grados (0 es la del diseño). */
+  /**
+   * Cuánto se corre por la virola el apoyo del caño de la bombilla calzada, en grados alrededor del
+   * eje del mate desde el lado derecho (negativo hacia atrás, positivo hacia la cámara).
+   */
   readonly tilt: number
 }
 
@@ -90,11 +93,17 @@ const BOMBILLA_OUT: MatePlacement = [0.75, 1.9, 1, 0, 0, -20]
 /** El paquete fuera de cuadro, arriba a la izquierda del mate: entra y se va por ahí. */
 const PACK_OUT: MatePlacement = [0, 1.8, 0.85, 0, -20, -20]
 
-/** El pico del termo fuera de cuadro, arriba a la derecha. */
-const THERMOS_OUT: MatePlacement = [1.1, 1.7, 1, 0, 0, 60]
+/**
+ * El pico del termo fuera de cuadro, arriba a la derecha. La escala es la misma (1,2) en todos los
+ * momentos, para que el termo no cambie de tamaño al entrar.
+ */
+const THERMOS_OUT: MatePlacement = [1.1, 1.7, 1.2, 0, 0, 60]
 
-/** El mate de pie en la parada 3, quieto mientras cae el agua. */
-const MATE_WATER: MatePlacement = [0.4, -0.2, 1.1, 14, -10, 0]
+/**
+ * El mate de pie en la parada 3, quieto mientras cae el agua. Visto desde arriba (giro X 48): con
+ * menos de 45 la virola tapa el hueco y el chorro cae detrás del borde (medido con raycast a 16:9).
+ */
+const MATE_WATER: MatePlacement = [0.4, -0.2, 1.1, 48, -10, 0]
 
 /**
  * Los momentos del recorrido, en orden. En el hold de la parada 1 el mate se inclina 55° a la
@@ -136,8 +145,8 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
       mate: [0.46, -0.3, 0.94, 10, 15, 55],
       bombilla: BOMBILLA_OUT,
       attached: 0,
-      // El pico queda unos 0,66 sobre el centro de la boca inclinada (medido con three a 16:9).
-      pack: [0.24, 0.36, 0.85, 0, -20, -150],
+      // El pico queda sobre la boca inclinada y la yerba cae casi vertical (medido con three a 16:9).
+      pack: [0.3, 0.36, 0.85, 0, -20, -150],
       thermos: THERMOS_OUT,
       fill: 0.45,
       slope: 1,
@@ -178,8 +187,8 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: SPAN,
     to: SPAN + HOLD,
     state: {
-      // Girado apenas para que el hueco (a la derecha del mate) mire a la cámara.
-      mate: [0.36, -0.14, 1.2, 18, -20, 0],
+      // Visto desde arriba y girado apenas para que el hueco (a la derecha del mate) mire a la cámara.
+      mate: [0.36, -0.14, 1.2, 45, -20, 0],
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
@@ -205,7 +214,8 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
-      thermos: [0.52, 0.52, 1, 0, 0, 110],
+      // La boca del pico mira abajo a la izquierda, unos 55° bajo la horizontal; el cuerpo queda fuera.
+      thermos: [0.55, 0.62, 1.2, 0, 0, 145],
       fill: 1,
       slope: 1,
       wall: 1,
@@ -227,7 +237,7 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
-      thermos: [0.66, 1.05, 1, 0, 0, 70],
+      thermos: [0.66, 1.05, 1.2, 0, 0, 100],
       fill: 1,
       slope: 1,
       wall: 1,
@@ -264,9 +274,9 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   },
 ]
 
-/** Interpola entre dos números. */
+/** Interpola entre dos números; exacta en los extremos (0 da `from` y 1 da `to`, sin redondeo). */
 function lerp(from: number, to: number, share: number): number {
-  return from + (to - from) * share
+  return from * (1 - share) + to * share
 }
 
 /** Interpola entre dos colocaciones, campo por campo. */

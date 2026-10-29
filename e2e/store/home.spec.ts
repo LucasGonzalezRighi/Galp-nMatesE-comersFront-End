@@ -99,6 +99,16 @@ test.describe('tienda: el mate 3D del inicio', () => {
       expect(await horizontalOverflow(page)).toBe(0)
     })
 
+    test('el fondo de cada parada se ve nítido y apenas oscurecido, sin desenfoque', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      await scrollToStops(page, 1.6)
+      const photo = page.locator('[data-backdrop][data-current="true"] img')
+      await expect(photo).toHaveCSS('filter', 'brightness(0.85) saturate(0.95)')
+      await expect(photo).toHaveCSS('transform', 'none')
+    })
+
     test('al bajar hasta el final el escenario se funde a negro y entra la colección', async ({
       page,
     }) => {

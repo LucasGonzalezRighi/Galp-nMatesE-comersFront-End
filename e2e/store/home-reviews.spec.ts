@@ -104,7 +104,8 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
       await expect(pageFooter).toHaveCSS('z-index', '20')
 
       await scrollPageTo(page, await page.evaluate(() => document.documentElement.scrollHeight))
-      expect(await topOf(pageFooter)).toBeLessThanOrEqual(0)
+      // Menos de un píxel: el alto de la página puede tener decimales y el scroll llega a un entero.
+      expect(await topOf(pageFooter)).toBeLessThan(1)
       const lit = pageFooter.locator('[data-wordmark-layer="lit"]')
       await expect(lit).toBeInViewport()
       // Al final la palabra iluminada quedó entera: el recorte ya no tapa nada.

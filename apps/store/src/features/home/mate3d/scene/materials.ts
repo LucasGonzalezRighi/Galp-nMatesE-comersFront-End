@@ -4,8 +4,16 @@ import type { Painter, SceneMaterials, ThreeLib } from './types'
 /** La foto real de la yerba de Lucas, en mosaico espejado de 1024². */
 const YERBA_ALBEDO_URL = '/hero/3d/yerba-albedo.jpg'
 
-/** Cuántas veces se repite la foto de la yerba sobre la superficie. */
-const YERBA_REPEAT = 2.2
+/**
+ * Cuántas veces se repite la foto de la yerba sobre la superficie. Ajuste de la Task 3: con 2,2 las
+ * hojas quedaban de 2 o 3 px y la yerba se leía como fieltro (y el espejado dejaba rosetas); con 1,3
+ * se ven las hojas sueltas, como en la foto.
+ */
+const YERBA_REPEAT = 1.3
+
+/** Giro (radianes) y corrimiento de la foto de la yerba: sacan del medio los ejes del espejado. */
+const YERBA_TURN = 0.5
+const YERBA_SHIFT = [0.21, 0.37] as const
 
 /**
  * Cuero negro del Imperial Premium: el `Negro` de `leathers3d` (#3a2016) más oscuro y menos
@@ -18,8 +26,8 @@ const LEATHER_SHEEN = '#c08050'
 
 /**
  * Crea los materiales y las texturas que comparten los módulos de la escena (cuero, alpaca, bronce,
- * la yerba con su foto real, el curado, el vapor y la sombra) y los pintores con que los módulos
- * hacen las suyas. Todas las texturas quedan anotadas y se liberan con `dispose`.
+ * la foto real de la yerba, el curado y la sombra) y los pintores con que los módulos hacen las
+ * suyas. Todas las texturas quedan anotadas y se liberan con `dispose`.
  *
  * @param T - La biblioteca `three` que cargó `scene.ts`.
  * @returns Los materiales, las texturas y los pintores ({@link SceneMaterials}).
@@ -122,6 +130,11 @@ export function createMaterials(T: ThreeLib): SceneMaterials {
   yerbaAlbedo.wrapS = T.RepeatWrapping
   yerbaAlbedo.wrapT = T.RepeatWrapping
   yerbaAlbedo.repeat.set(YERBA_REPEAT, YERBA_REPEAT)
+  // Ajuste de la Task 3: girada y corrida, los ejes del espejado quedan oblicuos y fuera del centro
+  // de la boca, y las rosetas simétricas no se leen.
+  yerbaAlbedo.center.set(0.5, 0.5)
+  yerbaAlbedo.rotation = YERBA_TURN
+  yerbaAlbedo.offset.set(YERBA_SHIFT[0], YERBA_SHIFT[1])
   const curedMap = paint(512, 512, (g, width, height) => {
     const gradient = g.createRadialGradient(
       width / 2,
@@ -149,11 +162,6 @@ export function createMaterials(T: ThreeLib): SceneMaterials {
       g.fill()
     }
   })
-  const steamMap = radial([
-    [0, 'rgba(255,250,240,.55)'],
-    [0.5, 'rgba(255,250,240,.18)'],
-    [1, 'rgba(255,250,240,0)'],
-  ])
   const shadowMap = radial([
     [0, 'rgba(0,0,0,.65)'],
     [0.6, 'rgba(0,0,0,.2)'],
@@ -194,7 +202,9 @@ export function createMaterials(T: ThreeLib): SceneMaterials {
     name: 'alpaca-lisa',
     color: '#e2dccf',
     metalness: 1,
-    roughness: 0.2,
+    // Ajuste de la Task 3: con 0,2 el caño de la bombilla, visto desde arriba, reflejaba el techo
+    // oscuro del estudio y se leía negro; con 0,32 se lee plateado.
+    roughness: 0.32,
   })
   const bronze = new T.MeshStandardMaterial({
     name: 'bronce',
@@ -202,24 +212,21 @@ export function createMaterials(T: ThreeLib): SceneMaterials {
     metalness: 1,
     roughness: 0.28,
   })
-  const yerba = new T.MeshStandardMaterial({ name: 'yerba', map: yerbaAlbedo, roughness: 0.95 })
 
   return {
     leather,
     alpaca,
     smoothAlpaca,
     bronze,
-    yerba,
     yerbaAlbedo,
     curedMap,
-    steamMap,
     shadowMap,
     random,
     paint,
     load,
     radial,
     dispose: () => {
-      for (const material of [leather, alpaca, smoothAlpaca, bronze, yerba]) material.dispose()
+      for (const material of [leather, alpaca, smoothAlpaca, bronze]) material.dispose()
       for (const texture of textures) texture.dispose()
     },
   }

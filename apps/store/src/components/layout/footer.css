@@ -5,7 +5,9 @@
  * queda quieta debajo. Solo en escritorio (1024 px o más) y con movimiento; en el celular, con
  * `prefers-reduced-motion: reduce` y en las demás páginas el pie sigue donde estaba. El contenido
  * se apoya abajo, así la palabra GALPÓN cierra la pantalla. Se usa `svh` (con `vh` de respaldo)
- * para que nada salte al mostrarse u ocultarse la barra del navegador.
+ * para que nada salte al mostrarse u ocultarse la barra del navegador. Una línea fina y una sombra
+ * marcan su borde de arriba: con el mismo fondo que las reseñas, sin ellas el pie cortaba las
+ * tarjetas sin que se viera qué las tapaba.
  */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
   body:has([data-footer-curtain]) .site-footer {
@@ -19,5 +21,7 @@
     margin-top: -100vh;
     margin-top: -100svh;
     background: var(--color-background);
+    border-top: 1px solid color-mix(in srgb, var(--color-foreground) 12%, transparent);
+    box-shadow: 0 -24px 64px -16px rgb(0 0 0 / 0.65);
   }
 }

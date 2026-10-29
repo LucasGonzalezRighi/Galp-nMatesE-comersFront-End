@@ -49,14 +49,10 @@ export interface SceneMaterials {
   readonly smoothAlpaca: Three.MeshStandardMaterial
   /** Bronce (cordón, bolitas, anillos de la bombilla). */
   readonly bronze: Three.MeshStandardMaterial
-  /** La yerba, con la foto real `yerba-albedo.jpg` en mosaico. */
-  readonly yerba: Three.MeshStandardMaterial
-  /** La foto real de la yerba (`map` de `yerba`), en mosaico de 2,2. */
+  /** La foto real de la yerba (`yerba-albedo.jpg`), en mosaico de 1,3, girada y corrida. */
   readonly yerbaAlbedo: Three.Texture
   /** El curado de la pared interior del mate. */
   readonly curedMap: Three.Texture
-  /** Nube blanda para el vapor. */
-  readonly steamMap: Three.Texture
   /** Mancha blanda para la sombra bajo el mate. */
   readonly shadowMap: Three.Texture
   /** El azar con semilla del diseño: las texturas pintadas se ven siempre iguales. */

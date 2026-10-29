@@ -115,6 +115,8 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(state.mate[5]).toBe(0)
     expect(state).toMatchObject({ fill: 1, slope: 1, wall: 1, attached: 1, pour: 0, water: 0 })
     expect(state.tilt).not.toBe(0)
+    // Visto desde arriba: con menos de 45° la virola tapa el hueco (medido con raycast a 16:9).
+    expect(state.mate[3]).toBeGreaterThanOrEqual(45)
     expect(offscreen(state.pack)).toBe(true)
     expect(offscreen(state.thermos)).toBe(true)
     expect(mateStateAt(SPAN)).toEqual(state)
@@ -131,6 +133,14 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(offscreen(state.thermos)).toBe(false)
     expect(state.thermos[0]).toBeGreaterThan(state.mate[0])
     expect(state.thermos[1]).toBeGreaterThan(0)
+    // La boca del pico mira abajo a la izquierda, hacia el hueco, y el hueco se ve desde arriba.
+    expect(state.thermos[5]).toBeGreaterThan(120)
+    expect(state.mate[3]).toBeGreaterThanOrEqual(45)
+  })
+
+  it('el termo tiene el mismo tamaño en todos los momentos: no crece ni se achica al entrar', () => {
+    const scales = new Set(MATE_KEYFRAMES.map(({ state }) => state.thermos[2]))
+    expect(scales.size).toBe(1)
   })
 
   it('la parada 3 llega con el termo entrando y el chorro empezando', () => {

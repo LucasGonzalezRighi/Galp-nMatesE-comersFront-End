@@ -112,12 +112,11 @@
 }
 
 /*
- * Fondos del mate 3D: la foto de cada parada desenfocada y oscurecida, quieta (solo cambia la
- * opacidad de su capa). Agrandada un 8 % para que el desenfoque no deje ver un borde claro.
+ * Fondos del mate 3D: la foto de cada parada nítida y apenas oscurecida, quieta (solo cambia la
+ * opacidad de su capa). La lectura del texto la dan los velos de `MateStage`, nunca un desenfoque.
  */
 .home-backdrop {
-  filter: blur(14px) brightness(0.55);
-  transform: scale(1.08);
+  filter: brightness(0.85) saturate(0.95);
 }
 
 /* Botones de la portada: al pasar el mouse se rellenan de verde de izquierda a derecha. */
