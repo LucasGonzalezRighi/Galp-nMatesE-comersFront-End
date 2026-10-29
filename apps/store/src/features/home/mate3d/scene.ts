@@ -641,7 +641,8 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
     bombilla.position.lerpVectors(from, to, attached)
     bombilla.quaternion.slerpQuaternions(fromRotation, toRotation, attached)
     bombilla.scale.setScalar(lerp(dummy.scale.x, attachScale.x, attached))
-    if (attached < 0.99) bombilla.rotation.y += t * 0.4 * (1 - attached)
+    // Giro acotado y continuo: vale 0 en attached = 1 y nunca acumula el tiempo absoluto.
+    bombilla.rotation.y += Math.sin(t * 0.4) * 0.6 * (1 - attached) ** 2
     const bombillaOpacity = Math.pow(Math.abs(2 * attached - 1), 0.8)
     bombillaSilver.opacity = bombillaOpacity
     bombillaGold.opacity = bombillaOpacity
