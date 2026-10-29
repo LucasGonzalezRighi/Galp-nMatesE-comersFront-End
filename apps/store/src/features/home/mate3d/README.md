@@ -151,7 +151,8 @@ lleva el tinte `#a9b28c` (se leía mostaza) y la foto en mosaico de 1,3, girada 
 (con 2,2 se leía como fieltro y se veían las rosetas del espejado); las hojitas que caen miden
 0,02 × 0,03 y el chorro de hojas se abre más; la alpaca lisa tiene aspereza 0,32 (el caño de la
 bombilla, visto desde arriba, se leía negro); el charco es más transparente (0,72) con el borde que
-se apaga desde el 35 % del radio, y el vapor va de 0,5 a 0,8 de opacidad por nube.
+se apaga desde el 35 % del radio, y el vapor (`strength` por nube de 0,9 a 1,2, con tope 1 al pintar,
+manchas más densas y un recorrido de 1,25 veces la escala del mate; con 0,5 a 0,8 casi no se leía).
 
 ## Rendimiento y respaldo
 

@@ -112,7 +112,7 @@ const paintSteamCloud: Painter = (context, width, height) => {
     context.fillStyle = gradient
     context.fillRect(0, 0, width, height)
   }
-  for (let index = 0; index < 24; index++) blob(index, 11, 0.14 + jitter(index, 14) * 0.14)
+  for (let index = 0; index < 24; index++) blob(index, 11, 0.22 + jitter(index, 14) * 0.18)
   for (let index = 0; index < 900; index++) {
     context.fillStyle = `rgba(255,255,255,${String(jitter(index, 15) * 0.07)})`
     context.fillRect(jitter(index, 16) * width, jitter(index, 17) * height, 2, 2)
@@ -146,8 +146,8 @@ const paintSteamCloud: Painter = (context, width, height) => {
  *   en ciclo y 28 gotas que saltan del impacto.
  * - **Charco** (`state.puddle`): un disco de radio 0,14 en el hueco, oscuro y casi espejado; crece con
  *   `puddle`.
- * - **Vapor** (`state.steam`): 14 nubes con ruido que suben con vaivén desde el hueco, de tamaños
- *   distintos y con pulsos.
+ * - **Vapor** (`state.steam`): 14 nubes con ruido que suben con vaivén desde el hueco (hasta 1,25 veces
+ *   la escala del mate), de tamaños distintos y con pulsos; la opacidad de cada una se topa en 1.
  *
  * Todo sale del estado y de `t` (nada acumula tiempo) y escala con el mate. Las texturas se pintan con
  * `shared.materials.paint` y `radial`, así que las libera `materials.dispose()`.
@@ -311,8 +311,9 @@ export function createWater(T: ThreeLib, parent: Three.Object3D, shared: SceneSh
       speed: 0.16 + jitter(index, 31) * 0.1,
       offset: index / STEAM_COUNT + jitter(index, 32) * 0.05,
       size: 0.7 + jitter(index, 33) * 0.6,
-      // Ajuste de la Task 3: de 0,35..0,6 a 0,5..0,8; sobre los fondos nítidos el vapor casi no se leía.
-      strength: 0.5 + jitter(index, 34) * 0.3,
+      // Ajuste de la Task 3 (dos veces): de 0,35..0,6 a 0,5..0,8 y de ahí a 0,9..1,2 (se topa en 1 al pintar);
+      // sobre los fondos nítidos el vapor casi no se leía.
+      strength: 0.9 + jitter(index, 34) * 0.3,
       spin: (jitter(index, 35) - 0.5) * 1.6,
       turn: jitter(index, 36) * TAU,
     }
@@ -457,14 +458,14 @@ export function createWater(T: ThreeLib, parent: Three.Object3D, shared: SceneSh
         const sway = Math.sin(t * 0.9 + index * 1.7) * 0.05 * (0.3 + rise)
         cloud.position.set(
           hollow.x + sway * scale,
-          hollow.y + (0.04 + rise * 0.85) * scale,
+          hollow.y + (0.04 + rise * 1.25) * scale,
           hollow.z + Math.cos(t * 0.7 + index) * 0.03 * rise * scale,
         )
-        const width = (0.1 + rise * 0.42) * size * scale
+        const width = (0.14 + rise * 0.55) * size * scale
         cloud.scale.set(width, width, 1)
         cloud.material.rotation = turn + rise * spin
         const pulse = 0.8 + 0.2 * Math.sin(t * 1.7 + index * 2.3)
-        cloud.material.opacity = steam * strength * Math.sin(rise * Math.PI) * pulse
+        cloud.material.opacity = Math.min(1, steam * strength * Math.sin(rise * Math.PI) * pulse)
       })
     },
     dispose: () => {
