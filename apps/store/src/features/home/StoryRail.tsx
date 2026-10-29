@@ -21,7 +21,7 @@ export interface StoryRailProps {
 }
 
 /**
- * Raíl de paradas del paseo del mate, al borde derecho del escenario (siempre sobre el mundo, en
+ * Raíl de paradas del mate 3D, al borde derecho del escenario (siempre sobre los fondos, en
  * claro): un punto por parada y su nombre, que se ve en la actual (desde 1280 px), al pasar el
  * mouse y con el foco. La actual lleva `aria-current="true"` y un punto cobre más grande. Cada ítem es un
  * botón que lleva a su parada. Solo se animan `opacity` y `transform`.

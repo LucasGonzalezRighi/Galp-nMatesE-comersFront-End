@@ -1,9 +1,9 @@
 /*
  * Estilos propios del inicio (los del diseño que no se arman con utilidades): alturas de las
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
- * entrada del título de la portada, encuadre del poster de la portada, relleno de los botones de
- * la portada, palabra fantasma, entrada escalonada de las paradas del paseo del mate, vapor del
- * mate y la línea de la pista del paseo.
+ * entrada del título de la portada, encuadre de la foto del mate, fondos desenfocados del mate 3D,
+ * relleno de los botones de la portada, palabra fantasma, entrada escalonada de las paradas del
+ * mate 3D y la línea de su pista.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -31,14 +31,6 @@
       color-mix(in srgb, var(--color-accent-2-900) 70%, transparent),
       transparent 70%
     );
-}
-
-.home-bg-gourd {
-  background: radial-gradient(
-    800px 600px at 22% 50%,
-    color-mix(in srgb, var(--color-accent-800) 45%, transparent),
-    transparent 70%
-  );
 }
 
 .home-bg-bombilla {
@@ -103,9 +95,9 @@
 }
 
 /*
- * Poster de la portada (el cuadro del mate): en el celular, centrado; desde 1024 px, con el mismo
- * encuadre que en el mundo (`--poster-anchor` y `--poster-zoom`, de `WORLD_MEDIA`), así el mate
- * queda a la derecha del título.
+ * La foto del mate (portada y respaldo del mate 3D sin WebGL): en el celular, centrada; desde
+ * 1024 px, con el encuadre de `MATE_PHOTO_FRAMING` (`--poster-anchor` y `--poster-zoom`), así el
+ * mate queda a la derecha del título.
  */
 .home-hero-poster {
   object-position: 50% 50%;
@@ -117,6 +109,15 @@
     transform: scale(var(--poster-zoom, 1));
     transform-origin: var(--poster-anchor, 50% 50%);
   }
+}
+
+/*
+ * Fondos del mate 3D: la foto de cada parada desenfocada y oscurecida, quieta (solo cambia la
+ * opacidad de su capa). Agrandada un 8 % para que el desenfoque no deje ver un borde claro.
+ */
+.home-backdrop {
+  filter: blur(14px) brightness(0.55);
+  transform: scale(1.08);
 }
 
 /* Botones de la portada: al pasar el mouse se rellenan de verde de izquierda a derecha. */
@@ -174,7 +175,7 @@
 }
 
 /*
- * Paradas del paseo del mate: el panel mide el alto de la ventana y no tiene scroll interno, así que
+ * Paradas del mate 3D: el panel mide el alto de la ventana y no tiene scroll interno, así que
  * el título, los espacios de la columna y las filas de productos escalan también con el alto (no
  * solo con el ancho, como en las escenas apiladas). Con `svh` cuando el navegador lo entiende.
  */
@@ -190,7 +191,7 @@
 }
 
 /*
- * Entrada escalonada de las paradas del paseo: cada pieza de la columna (encabezado, rótulo,
+ * Entrada escalonada de las paradas del mate 3D: cada pieza de la columna (encabezado, rótulo,
  * título, texto, productos, botón) espera transparente y 24 px más abajo; cuando su panel se
  * vuelve el actual, sube y aparece 60 ms después de la anterior. Se anima `translate` (no
  * `transform`) para no pisar el de los botones magnéticos ni el de los `Reveal` del primer panel.
@@ -233,45 +234,7 @@
   transition-delay: 360ms;
 }
 
-/*
- * Vapor del mate: manchas difusas que suben desde la boca, crecen y se deshacen, una detrás de
- * otra (cada una con su `animation-delay` y su `--steam-sway`). Solo `transform` y `opacity`.
- */
-.home-steam {
-  position: absolute;
-  bottom: 0;
-  left: -64px;
-  width: 128px;
-  height: 176px;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--color-foreground) 40%, transparent),
-    transparent
-  );
-  filter: blur(12px);
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: home-steam 9000ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) infinite both;
-}
-
-@keyframes home-steam {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.55);
-  }
-
-  30% {
-    opacity: 0.5;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--steam-sway, 0px), -34vh, 0) scale(1.6);
-  }
-}
-
-/* Paseo del mate: línea de la pista "Deslizá para recorrer", con un brillo que baja una y otra vez. */
+/* Mate 3D: línea de la pista "Deslizá para recorrer", con un brillo que baja una y otra vez. */
 .home-hint-line {
   position: relative;
   display: block;
@@ -302,8 +265,7 @@
 @media (prefers-reduced-motion: reduce) {
   .home-rise,
   .home-ghost,
-  .home-hint-line::after,
-  .home-steam {
+  .home-hint-line::after {
     animation: none;
   }
 

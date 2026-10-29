@@ -327,6 +327,11 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
     clearcoatRoughness: 0.35,
     sheen: 0.35,
     sheenColor: new T.Color(LEATHER_SHEEN),
+    // Ajuste de la Task 2 (visto en la tienda compilada): con el reflejo entero del estudio (paredes
+    // cálidas) y el brillo cobre repartido en toda la superficie, el cuero se leía marrón. El
+    // reflejo a 0,4 y el brillo concentrado en los bordes lo dejan negro con su veta cobre.
+    envMapIntensity: 0.4,
+    sheenRoughness: 0.4,
   })
   const bump = engraving(false)
   const engravedColor = engraving(true)
@@ -676,11 +681,13 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
       particles.instanceMatrix.needsUpdate = true
     }
 
-    // El chorro de agua, desde arriba del cuadro hasta junto a la bombilla.
+    // El chorro de agua, desde arriba del cuadro hasta junto a la bombilla. Ajuste de la Task 2: con
+    // el 0,5 del diseño el chorro quedaba cortado en el aire sobre la montañita; con 0,3 termina
+    // adentro de la yerba, que lo tapa (el chorro respeta la profundidad), y se ve entrar en ella.
     const waterShare = clamp01(state.water)
     water.visible = waterShare > 0.03
     if (water.visible) {
-      mateRoot.localToWorld(to.set(-0.14, 0.5, 0.05))
+      mateRoot.localToWorld(to.set(-0.14, 0.3, 0.05))
       const top = halfHeight + 0.2
       const length = (top - to.y) * waterShare
       water.scale.set(mateRoot.scale.x, length, mateRoot.scale.x)
@@ -700,7 +707,8 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
       )
       const size = (0.25 + u * 0.7) * mateRoot.scale.x
       cloud.scale.set(size, size, 1)
-      cloud.material.opacity = steam * Math.sin(u * Math.PI) * 0.5
+      // Ajuste de la Task 2: con el 0,5 del diseño el vapor casi no se veía sobre los fondos oscuros.
+      cloud.material.opacity = steam * Math.sin(u * Math.PI) * 0.75
     })
 
     // La sombra bajo el mate.

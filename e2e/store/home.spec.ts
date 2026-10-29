@@ -1,28 +1,23 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
 
-/** Nombre accesible de la sección del paseo del mate y de su raíl. */
-const STAGE = { name: 'El paseo del mate' } as const
-const RAIL = { name: 'Paradas del paseo' } as const
+/** Nombre accesible de la sección del mate 3D y de su raíl. */
+const STAGE = { name: 'El mate', exact: true } as const
+const RAIL = { name: 'Paradas del mate' } as const
 
-/** Cuántas paradas tiene el paseo con el contenido de fábrica. */
-const STOPS = 6
+/** Cuántas paradas tiene el mate 3D. */
+const STOPS = 3
+
+/** Las escenas que quedan apiladas en el celular y con menos movimiento. */
+const STACKED_SCENES = 2
 
 /** Ancho del documento que sobra a los costados (0 si no hay scroll horizontal). */
 async function horizontalOverflow(page: Page): Promise<number> {
   return await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
-}
-
-/** La escala de un elemento según su `transform` calculado (1 si no lleva). */
-async function scaleOf(locator: Locator): Promise<number> {
-  return await locator.evaluate((element) => {
-    const { transform } = getComputedStyle(element)
-    return transform === 'none' ? 1 : new DOMMatrixReadOnly(transform).a
-  })
 }
 
 /** Lo que axe encuentra serio o crítico (WCAG 2.0 y 2.1, A y AA) dentro de `selector`. */
@@ -36,7 +31,7 @@ async function seriousViolations(page: Page, selector: string): Promise<string[]
     .map((violation) => `${violation.id}: ${violation.help}`)
 }
 
-/** Lleva la página a `stops` paradas del principio del paseo (puede tener decimales). */
+/** Lleva la página a `stops` paradas del principio del mate 3D (puede tener decimales). */
 async function scrollToStops(page: Page, stops: number): Promise<void> {
   await page.getByRole('region', STAGE).evaluate(
     (section, [value, count]) => {
@@ -49,129 +44,117 @@ async function scrollToStops(page: Page, stops: number): Promise<void> {
   )
 }
 
-test.describe('tienda: el paseo del mate', () => {
-  test.skip(({ isMobile }) => isMobile, 'El paseo es de escritorio; el celular tiene su prueba.')
+/** La parada (desde 0) del elemento que tiene el foco, o `null` si no está en una. */
+async function focusedStop(page: Page): Promise<string | null> {
+  return await page.evaluate(
+    () =>
+      document.activeElement?.closest('[data-stage-stop]')?.getAttribute('data-stage-stop') ?? null,
+  )
+}
+
+test.describe('tienda: el mate 3D del inicio', () => {
+  test.skip(({ isMobile }) => isMobile, 'El mate 3D es de escritorio; el celular tiene su prueba.')
 
   test.describe('en escritorio (1440 × 900)', () => {
     test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' })
 
-    test('la historia es el paseo, con un raíl de seis paradas', async ({ page }) => {
-      await gotoStore(page, '/')
-      await expect(page.getByRole('region', STAGE)).toBeAttached()
-      const rail = page.getByRole('navigation', RAIL)
-      await expect(rail.getByRole('button')).toHaveCount(STOPS)
-      await expect(rail.getByRole('button').first()).toHaveAttribute('aria-current', 'true')
-    })
-
-    test('al bajar 2,6 paradas la tercera (el mate) es la actual y su título está a la vista', async ({
+    test('el inicio es el mate 3D: raíl de tres paradas y el lienzo montado, sin foto de respaldo', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      await scrollToStops(page, 2.6)
+      const stage = page.getByRole('region', STAGE)
+      await expect(stage).toBeAttached()
       const rail = page.getByRole('navigation', RAIL)
-      await expect(rail.getByRole('button').nth(2)).toHaveAttribute('aria-current', 'true')
-      await expect(rail.getByRole('button').nth(2)).toHaveText('El mate')
-      const panel = page.locator('[data-stage-stop="2"]')
+      await expect(rail.getByRole('button')).toHaveText(['El mate', 'La bombilla', 'El agua'])
+      await expect(rail.getByRole('button').first()).toHaveAttribute('aria-current', 'true')
+      // Chromium sin GPU dibuja con SwiftShader: la escena se crea y el lienzo toma el tamaño de la ventana.
+      const canvas = stage.locator('canvas[aria-hidden="true"]')
+      await expect(canvas).toBeAttached()
+      await expect
+        .poll(() => canvas.evaluate((element: HTMLCanvasElement) => element.width), {
+          timeout: 30_000,
+        })
+        .toBeGreaterThan(300)
+      await expect(page.locator('[data-mate-fallback]')).toHaveCount(0)
+      // La portada vive en la primera parada: un solo título principal y sin la portada del servidor.
+      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+      await expect(page.locator('.home-hero')).toHaveCount(0)
+    })
+
+    test('al bajar 1,6 paradas la bombilla es la actual, con su título y su fondo', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      await scrollToStops(page, 1.6)
+      const rail = page.getByRole('navigation', RAIL)
+      await expect(rail.getByRole('button').nth(1)).toHaveAttribute('aria-current', 'true')
+      const panel = page.locator('[data-stage-stop="1"]')
       await expect(panel).toHaveAttribute('data-current', 'true')
       await expect(panel).toHaveCSS('opacity', '1')
       await expect(
-        page.getByRole('heading', { level: 2, name: /Tres piezas\.\s*Una ronda\./ }),
+        page.getByRole('heading', { level: 2, name: /Alpaca\s*y bronce\./ }),
       ).toBeInViewport()
+      const backdrop = page.locator('[data-backdrop][data-current="true"]')
+      await expect(backdrop).toHaveAttribute('data-backdrop', 'bombilla')
       expect(await horizontalOverflow(page)).toBe(0)
     })
 
-    test('durante una parada, la capa del mundo que se ve es la de esa parada', async ({
+    test('al bajar hasta el final el escenario se funde a negro y entra la colección', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      await expect(page.locator('[data-world-stop]')).toHaveCount(STOPS)
-      for (const [index, key] of [
-        [0, 'yerba'],
-        [2, 'pieces'],
-        [4, 'ritual'],
-      ] as const) {
-        await scrollToStops(page, index + 0.25)
-        const current = page.locator('[data-world-stop][data-current="true"]')
-        await expect(current).toHaveAttribute('data-world-stop', key)
-        await expect(current).toHaveCSS('opacity', '1')
-        const others = page.locator(`[data-world-stop]:not([data-world-stop="${key}"])`)
-        await expect(others).toHaveCount(STOPS - 1)
-        for (const other of await others.all()) await expect(other).toHaveCSS('opacity', '0')
+      const fade = page.locator('[data-stage-fade]')
+      await scrollToStops(page, 2.2)
+      await expect(fade).toHaveCSS('opacity', '0')
+      await scrollToStops(page, STOPS)
+      await expect(fade).toHaveCSS('opacity', '1')
+      await page.mouse.wheel(0, 900)
+      await expect(
+        page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' }),
+      ).toBeInViewport()
+    })
+
+    test('con Tab se recorren las tres paradas y cada una viene a la vista', async ({ page }) => {
+      await gotoStore(page, '/')
+      await page
+        .locator('[data-stage-stop="0"]')
+        .getByRole('link', { name: /Armá tu kit/ })
+        .focus()
+      for (const next of ['1', '2']) {
+        // Tab hasta el primer elemento de la parada siguiente.
+        for (let presses = 0; presses < 12; presses += 1) {
+          await page.keyboard.press('Tab')
+          if ((await focusedStop(page)) === next) break
+        }
+        expect(await focusedStop(page)).toBe(next)
+        await expect(page.locator(`[data-stage-stop="${next}"]`)).toHaveAttribute(
+          'data-current',
+          'true',
+        )
+        await expect(
+          page.getByRole('navigation', RAIL).getByRole('button').nth(Number(next)),
+        ).toHaveAttribute('aria-current', 'true')
+        await expect(page.locator(':focus')).toBeInViewport()
       }
     })
 
-    test('tocar la quinta parada del raíl la deja como actual', async ({ page }) => {
+    test('tocar la tercera parada del raíl la deja como actual', async ({ page }) => {
       await gotoStore(page, '/')
       await scrollToStops(page, 0.2)
-      const fifth = page.getByRole('navigation', RAIL).getByRole('button').nth(4)
-      await fifth.click()
-      await expect(fifth).toHaveAttribute('aria-current', 'true')
-      await expect(page.locator('[data-stage-stop="4"]')).toHaveAttribute('data-current', 'true')
+      const third = page.getByRole('navigation', RAIL).getByRole('button').nth(2)
+      await third.click()
+      await expect(third).toHaveAttribute('aria-current', 'true')
       await expect(page.getByRole('heading', { level: 2, name: /Agua a 75/ })).toBeInViewport()
     })
 
-    test('con Tab hasta un enlace de la segunda parada, la parada viene a la vista', async ({
+    test('el documento no tiene scroll horizontal y la portada se lee sobre su fondo', async ({
       page,
     }) => {
-      await gotoStore(page, '/')
-      const first = page.locator('[data-stage-stop="0"]')
-      await first
-        .getByRole('button', { name: /^Agregar .+ al carrito$/ })
-        .last()
-        .focus()
-      await page.keyboard.press('Tab')
-      const link = page.locator('[data-stage-stop="1"]').getByRole('link', { name: 'Ver mates' })
-      await expect(link).toBeFocused()
-      await expect(link).toBeInViewport()
-      await expect(page.getByRole('navigation', RAIL).getByRole('button').nth(1)).toHaveAttribute(
-        'aria-current',
-        'true',
-      )
-      await expect(page.locator('[data-stage-stop="1"]')).toHaveAttribute('data-current', 'true')
-    })
-
-    test('el documento no tiene scroll horizontal', async ({ page }) => {
       await gotoStore(page, '/')
       expect(await horizontalOverflow(page)).toBe(0)
-    })
-
-    test('la portada tiene de fondo el cuadro del mate, con hojas que caen y vapor', async ({
-      page,
-    }) => {
-      await gotoStore(page, '/')
-      const poster = page.locator('[data-hero-poster]')
-      await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
-      await expect(poster.locator('[data-world-life="leaves"]')).toBeAttached()
-      await expect(poster.locator('[data-world-life="steam"]')).toBeAttached()
       // Que terminen de aparecer la píldora, la bajada y los botones antes de medir el contraste.
       await page.waitForTimeout(1600)
-      expect(await seriousViolations(page, '.home-hero')).toEqual([])
-      expect(await horizontalOverflow(page)).toBe(0)
-    })
-
-    test('del mate a la bombilla la cámara entra por la boca del mate', async ({ page }) => {
-      await gotoStore(page, '/')
-      await expect(page.locator('[data-world-stop]')).toHaveCount(STOPS)
-      // A mitad del deslizamiento del mate (tercera parada) a la bombilla.
-      await scrollToStops(page, 2.775)
-      const pieces = page.locator('[data-world-stop="pieces"] > div')
-      await expect.poll(() => scaleOf(pieces)).toBeGreaterThan(1.3)
-      const bombilla = page.locator('[data-world-stop="bombilla"] > div')
-      await expect.poll(() => scaleOf(bombilla)).toBeLessThan(1)
-      // Ya en la bombilla, su cuadro queda en su tamaño.
-      await scrollToStops(page, 3.05)
-      await expect.poll(() => scaleOf(bombilla)).toBeCloseTo(1, 1)
-    })
-
-    test('al terminar la ronda el mundo se funde a negro antes de la colección', async ({
-      page,
-    }) => {
-      await gotoStore(page, '/')
-      const fade = page.locator('[data-world-fade]')
-      await scrollToStops(page, 5.2)
-      await expect(fade).toHaveCSS('opacity', '0')
-      await scrollToStops(page, 6)
-      await expect(fade).toHaveCSS('opacity', '1')
+      expect(await seriousViolations(page, '[data-stage-stop="0"]')).toEqual([])
     })
   })
 
@@ -187,8 +170,8 @@ test.describe('tienda: el paseo del mate', () => {
       test('las paradas más altas entran enteras entre el header y el borde', async ({ page }) => {
         await gotoStore(page, '/')
         await expect(page.getByRole('region', STAGE)).toBeAttached()
-        // La yerba (rótulo y tres productos) y el mate (tres productos) son las más altas.
-        for (const index of [0, 2]) {
+        // La portada (píldora, título, bajada y botones) y la bombilla (dos productos) son las más altas.
+        for (const index of [0, 1]) {
           await scrollToStops(page, index + 0.2)
           // Los paneles apilados entran subiendo 24 px: se mide cuando terminó de entrar.
           await expect(page.locator(`[data-stage-stop="${String(index)}"]`)).toHaveCSS(
@@ -208,18 +191,15 @@ test.describe('tienda: el paseo del mate', () => {
   test.describe('con menos movimiento (1440 × 900)', () => {
     test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
 
-    test('la portada tiene el cuadro del mate, quieto: sin hojas ni vapor', async ({ page }) => {
+    test('portada con la foto del mate y las dos escenas apiladas, sin lienzo ni raíl', async ({
+      page,
+    }) => {
       await gotoStore(page, '/')
-      const poster = page.locator('[data-hero-poster]')
-      await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
-      await expect(poster.locator('[data-world-life]')).toHaveCount(0)
-    })
-
-    test('no hay paseo ni raíl y todo el texto de las escenas está visible', async ({ page }) => {
-      await gotoStore(page, '/')
-      await expect(page.locator('.home-scene')).toHaveCount(STOPS)
+      await expect(page.locator('[data-hero-poster] img[src*="pieces.jpg"]')).toBeVisible()
+      await expect(page.locator('.home-scene')).toHaveCount(STACKED_SCENES)
       await expect(page.getByRole('region', STAGE)).toHaveCount(0)
       await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
+      await expect(page.locator('canvas')).toHaveCount(0)
       const hidden = await page
         .locator('.home-scene *')
         .evaluateAll(
@@ -231,20 +211,17 @@ test.describe('tienda: el paseo del mate', () => {
   })
 })
 
-test.describe('tienda: la historia en el celular (390 × 844)', () => {
+test.describe('tienda: el inicio en el celular (390 × 844)', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('las escenas están apiladas, sin raíl y sin scroll horizontal', async ({ page }) => {
+  test('portada y dos escenas apiladas, sin raíl, sin lienzo y sin scroll horizontal', async ({
+    page,
+  }) => {
     await gotoStore(page, '/')
-    await expect(page.locator('.home-scene')).toHaveCount(STOPS)
+    await expect(page.locator('[data-hero-poster] img[src*="pieces.jpg"]')).toBeVisible()
+    await expect(page.locator('.home-scene')).toHaveCount(STACKED_SCENES)
     await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
+    await expect(page.locator('canvas')).toHaveCount(0)
     expect(await horizontalOverflow(page)).toBe(0)
-  })
-
-  test('la portada tiene el cuadro del mate de fondo, sin hojas ni vapor', async ({ page }) => {
-    await gotoStore(page, '/')
-    const poster = page.locator('[data-hero-poster]')
-    await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
-    await expect(poster.locator('[data-world-life]')).toHaveCount(0)
   })
 })

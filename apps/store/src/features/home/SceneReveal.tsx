@@ -6,10 +6,10 @@ import type { RevealProps } from '../../components/motion'
 import { Reveal } from '../../components/motion'
 
 /**
- * `true` dentro de un panel del paseo del mate que no es el primero: los seis paneles están
+ * `true` dentro de un panel del mate 3D que no es el primero: los tres paneles están
  * apilados en la ventana, así que sus `Reveal` dispararían todos juntos al entrar el escenario,
  * transparentes. Ahí el contenido se dibuja ya en su estado final y la entrada escalonada la hace
- * el panel al volverse el actual (`StoryStop`). Fuera del paseo vale `false`.
+ * el panel al volverse el actual (`StoryStop`). Fuera del mate 3D vale `false`.
  */
 export const StaticRevealContext = createContext(false)
 
@@ -27,7 +27,7 @@ export type SceneRevealProps = Pick<
 
 /**
  * El `Reveal` de la historia del inicio: aparece al entrar en pantalla como siempre, salvo dentro
- * de un panel del paseo con {@link StaticRevealContext}, donde se dibuja con la misma estructura ya
+ * de un panel del mate 3D con {@link StaticRevealContext}, donde se dibuja con la misma estructura ya
  * en su estado final (sin estilos en línea que lo escondan).
  *
  * @param props - Ver {@link SceneRevealProps}.

@@ -201,6 +201,16 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **De paso**: `storyStops` quedó con lo que se lee (clave, escena y nombre), el clip que se aleja se suelta (`load()` sin `src`) y la miniatura de la galería de la ficha se nombra "Ver la foto 01", como se ve (axe marcaba `label-content-name-mismatch` desde que el mate imperial tiene dos fotos).
 
+## Mate 3D en el inicio (2026-10-29)
+
+**Pedido de Lucas** (plan `2026-10-29-mate-3d.md`): el mundo de posters se sentía poco épico y con demasiado scroll hasta los productos. Ahora el inicio arranca con el Mate Imperial Premium en 3D, que se arma con el scroll en tres paradas; las otras escenas se van del inicio (siguen editables en el admin).
+
+**Qué quedó**: en escritorio (desde 1024 × 700, con movimiento y con las dos escenas en el contenido) `HomeStory` monta `MateStage`: tres paradas sobre `ScrollStage` ("El mate", "La bombilla", "El agua"). La primera es la portada (`HeroIntro`: píldora, el único `h1`, bajada y los dos botones) y en su hold el paquete de Canarias vuelca y la yerba forma la montañita; en la segunda el mate gira y la bombilla se calza; en la tercera cae el chorro, la yerba se humedece y sube el vapor. El estado del mate sale del mismo avance del escenario (`mateStateAt` dentro de `MateCanvas`). Detrás, `pieces`, `bombilla` y `ritual` desenfocadas y oscurecidas por CSS (`.home-backdrop`) con fundido cruzado (`backdropOpacity`); al final, el mate se va y el escenario se funde a negro antes de la colección. Sin WebGL va la foto del mate. Cada panel es enfocable (Tab llega también a la parada del agua, que no tiene botones). El servidor, el celular, las ventanas bajas y menos movimiento dibujan `HomeHero` con la foto del mate y las dos escenas apiladas.
+
+**Se borró**: `StoryStage`, `StoryWorld`, `HeroLife`, `YerbaLeaves`, `MateSteam`, `world-media`, `LeatherPicker` y `leather-scroll` con sus tests, las escenas que ya no se muestran de `SceneBody` y los posters `yerba`, `gourd` y `leather`. `story-stops.ts` quedó con las escenas del inicio, las paradas del mate y la foto del mate.
+
+**Ajustes al verlo** (tienda compilada, Chromium con SwiftShader): el cuero se leía marrón por el reflejo del estudio cálido y el brillo cobre repartido, se bajó el reflejo a 0,4 y se concentró el brillo en los bordes; el chorro de agua quedaba cortado en el aire y ahora entra en la yerba; el vapor subió de 0,5 a 0,75 de opacidad; la segunda línea del título de la portada perdía el degradé bajo el halo de las paradas. Unos 23 cuadros por segundo con SwiftShader (por CPU); en una GPU real tiene que andar a 60. Video del recorrido en `media/mate-3d/` (fuera del repo).
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

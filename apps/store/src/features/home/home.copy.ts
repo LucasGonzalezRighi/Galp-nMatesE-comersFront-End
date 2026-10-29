@@ -1,4 +1,3 @@
-import type { HomeContent } from '@galpon/api-client'
 import { pluralize } from '@galpon/domain'
 
 /** Microtextos del inicio, tal como están en el diseño. Los títulos y párrafos salen del contenido de la API. */
@@ -7,12 +6,6 @@ export const HOME_COPY = {
   brand: 'Galpón Mates',
   /** Palabra gigante de fondo de la escena del bombillón. */
   ghostWord: 'Bombilla',
-  /** Escena de la calabaza: rótulos de las tres cifras. */
-  modelsOfMate: 'modelos de mate',
-  mateLines: 'líneas',
-  leathersToChoose: 'cueros a elección',
-  /** Escena del cuero: botón hacia todos los mates. */
-  allMates: 'Ver todos los mates',
   /** Colección: link de cada tarjeta y de la tarjeta final. */
   viewLine: 'Ver línea',
   viewCatalog: 'Ver todo el catálogo',
@@ -34,21 +27,18 @@ export const HOME_COPY = {
   cartLimit: 'Ya tenés el máximo disponible en el carrito',
   /** Nombre accesible de la lista de productos de una escena. */
   storyProducts: 'Productos de la escena',
-  /** Paseo del mate (la historia en escritorio): nombre accesible de la sección fija. */
-  stageLabel: 'El paseo del mate',
-  /** Paseo del mate: nombre accesible del raíl de paradas. */
-  railLabel: 'Paradas del paseo',
-  /** Paseo del mate: pista que invita a hacer scroll y desaparece al empezar. */
+  /** El mate 3D (el inicio en escritorio): nombre accesible de la sección fija. */
+  stageLabel: 'El mate',
+  /** El mate 3D: nombre accesible del raíl de paradas. */
+  railLabel: 'Paradas del mate',
+  /** El mate 3D: pista que invita a hacer scroll y desaparece al empezar. */
   scrollHint: 'Deslizá para recorrer',
-  /** Paseo del mate: nombre de cada parada del mundo del mate, por la clave de su escena. */
+  /** El mate 3D: nombre de cada parada (la portada, la bombilla y el agua), para el raíl y su encabezado. */
   stopNames: {
-    yerba: 'El yerbal',
-    gourd: 'El galpón',
-    pieces: 'El mate',
+    hero: 'El mate',
     bombilla: 'La bombilla',
-    ritual: 'El ritual',
-    leather: 'La ronda',
-  } satisfies Record<HomeContent['scenes'][number]['key'], string>,
+    ritual: 'El agua',
+  },
 } as const
 
 /**
@@ -130,11 +120,11 @@ export function orderLabel(position: number): string {
 }
 
 /**
- * Contador de una parada del paseo del mate, para su encabezado y la leyenda del mate.
+ * Contador de una parada del mate 3D, para su encabezado.
  *
  * @param position - Posición de la parada, un entero de 1 a `total`.
  * @param total - Cantidad de paradas, un entero mayor o igual a 1.
- * @returns Por ejemplo `03 / 06`.
+ * @returns Por ejemplo `02 / 03`.
  * @throws {RangeError} Si `position` no es un entero de 1 a `total` o `total` no es un entero mayor o igual a 1.
  */
 export function stopCounter(position: number, total: number): string {
@@ -153,12 +143,12 @@ export function stopCounter(position: number, total: number): string {
 }
 
 /**
- * Encabezado de una parada del paseo del mate: su contador y su nombre.
+ * Encabezado de una parada del mate 3D: su contador y su nombre.
  *
  * @param position - Posición de la parada, un entero de 1 a `total`.
  * @param total - Cantidad de paradas, un entero mayor o igual a 1.
  * @param name - Nombre de la parada.
- * @returns Por ejemplo `03 / 06 · El mate`.
+ * @returns Por ejemplo `02 / 03 · La bombilla`.
  * @throws {RangeError} Si `position` o `total` no son válidos (ver {@link stopCounter}).
  */
 export function stopHeading(position: number, total: number, name: string): string {

@@ -62,7 +62,7 @@ describe('HomePage', () => {
     const text = document.body.textContent
     const order = [
       'Encontrá', // portada
-      'Tres piezas.', // historia
+      'Alpaca', // historia: la bombilla y el agua
       'Seis líneas para cada ronda', // colección
       'Los más elegidos de la ronda', // destacados
       'Un mate no se compra', // manifiesto
@@ -114,7 +114,7 @@ describe('HomePage', () => {
     renderSection(await HomePage())
     expect(screen.getAllByText('Ver detalle')).toHaveLength(data.featured.length)
     const storyList = screen.getAllByRole('list', { name: 'Productos de la escena' })
-    expect(storyList.length).toBeGreaterThanOrEqual(3)
+    expect(storyList.length).toBeGreaterThanOrEqual(1)
     expect(
       screen.getAllByRole('button', { name: /^Agregar .+ al carrito$/ }).length,
     ).toBeGreaterThan(0)

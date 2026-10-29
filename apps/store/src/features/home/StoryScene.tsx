@@ -4,7 +4,7 @@ import { HOME_CONTAINER } from './home-styles'
 import { SceneReveal } from './SceneReveal'
 
 /** Fondo decorativo de una escena oscura. */
-export type SceneBackground = 'hero' | 'gourd' | 'bombilla'
+export type SceneBackground = 'hero' | 'bombilla'
 
 /** Props de {@link StoryScene}. */
 export interface StorySceneProps {
@@ -22,10 +22,9 @@ export interface StorySceneProps {
   children: ReactNode
 }
 
-/** Clase del resplandor de fondo de cada escena oscura (también la usan las paradas del paseo del mate). */
+/** Clase del resplandor de fondo de cada escena oscura. */
 export const SCENE_BACKGROUND_CLASSES: Record<SceneBackground, string> = {
   hero: 'home-bg-hero',
-  gourd: 'home-bg-gourd',
   bombilla: 'home-bg-bombilla',
 }
 
@@ -98,7 +97,7 @@ export function StoryTitle({ lines, tone, size = 'lg' }: StoryTitleProps): React
   return (
     <h2
       className={cx(
-        // Las variables las define `.home-stop` en el paseo (escalan con el alto); si no, el ancho manda.
+        // Las variables las define `.home-stop` en el mate 3D (escalan con el alto); si no, el ancho manda.
         size === 'lg'
           ? 'text-[clamp(44px,var(--story-title-lg,6.4vw),104px)] leading-[0.92] tracking-[-0.05em]'
           : 'text-[clamp(30px,var(--story-title-md,3.6vw),54px)] leading-[1.02] tracking-[-0.04em] whitespace-nowrap',

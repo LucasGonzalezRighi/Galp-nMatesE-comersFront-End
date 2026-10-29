@@ -22,7 +22,7 @@ Sin ninguna variable de entorno la tienda arranca en modo de prueba (`API_MODE=m
 - **Latencia.** La API simulada demora 150 ms por pedido (el mínimo de `MOCK_LATENCY_MS`, fija en el proceso de Next porque `Math.random()` es un valor inestable para el prerender de Cache Components; el admin sí usa el rango). `MOCK_LATENCY_MS=0` la quita.
 - **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos).
 - **Fotos.** Las del catálogo de prueba están en `public/mock-images/`, con el slug del producto como nombre: 16 productos tienen (el detalle, en el README de `@galpon/api-client`) y el resto muestra el marco punteado. El admin tiene la misma copia en su `public/`.
-- **Mundo del mate.** Los cuadros del paseo del inicio están en `public/hero/world/<clave>.jpg` (1600 × 893, una clave por escena); los clips van al lado como `<clave>.mp4` y se activan poniendo su ruta en `WORLD_MEDIA` (`src/features/home/world-media.ts`).
+- **Mate 3D del inicio.** La escena de three.js está en `src/features/home/mate3d/` (su README explica el estado, los momentos y cómo ajustar un keyframe) y la monta `MateStage`. Sus texturas están en `public/hero/3d/` (el interior curado y el frente del paquete de Canarias) y las fotos de fondo de las tres paradas, en `public/hero/world/` (`pieces.jpg`, que también es la foto de la portada y el respaldo sin WebGL, `bombilla.jpg` y `ritual.jpg`).
 
 Para probarlo:
 

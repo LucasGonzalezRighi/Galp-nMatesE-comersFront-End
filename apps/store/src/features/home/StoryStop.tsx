@@ -6,7 +6,7 @@ import { StaticRevealContext } from './SceneReveal'
 
 /** Props de {@link StoryStop}. */
 export interface StoryStopProps {
-  /** Posición de la parada en el paseo, desde 0. */
+  /** Posición de la parada en el mate 3D, desde 0. */
   index: number
   /** Cantidad de paradas. */
   total: number
@@ -19,13 +19,15 @@ export interface StoryStopProps {
 }
 
 /**
- * Un panel del paseo del mate, a pantalla completa: la columna de texto de 520 px a la izquierda,
- * con el encabezado "01 / 06 · El yerbal" arriba del contenido de la escena; la derecha deja ver
- * el mundo. Los paneles van apilados en el mismo lugar y solo se ve el actual: los demás quedan
- * transparentes y sin recibir el mouse, pero siguen en el DOM y enfocables (cambian en 500 ms con
- * `--ease-main`; con menos movimiento, sin transición). Lleva `data-stage-stop` para que
- * `ScrollStage` traiga la parada cuando el teclado enfoca algo adentro. El texto va en claro, con
- * un halo del color de fondo que lo separa de las partes claras del mundo sin oscurecer la foto.
+ * Un panel del mate 3D, a pantalla completa: la columna de texto de 520 px a la izquierda, con el
+ * encabezado "02 / 03 · La bombilla" arriba del contenido; la derecha deja ver el mate. Los paneles
+ * van apilados en el mismo lugar y solo se ve el actual: los demás quedan transparentes y sin
+ * recibir el mouse, pero siguen en el DOM y enfocables (cambian en 500 ms con `--ease-main`; con
+ * menos movimiento, sin transición). Lleva `data-stage-stop` para que `ScrollStage` traiga la
+ * parada cuando el teclado enfoca algo adentro, y el panel mismo es enfocable (con su encabezado
+ * como nombre): así Tab llega también a una parada sin botones, como la del agua; con el foco del
+ * teclado, el encabezado se subraya en cobre. El texto va en claro, con un halo del color de fondo
+ * que lo separa de los fondos.
  *
  * Entrada escalonada: al volverse el actual, cada pieza de la columna sube y aparece con un
  * retardo de 60 ms más que la anterior (`.home-stop-column` en `home.css`). Por eso, salvo en el
@@ -45,14 +47,19 @@ export function StoryStop({ index, total, name, current, children }: StoryStopPr
     <article
       data-stage-stop={index}
       data-current={current ? 'true' : undefined}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Tab tiene que llegar a cada parada aunque no tenga botones (la del agua): el foco trae la parada vía `ScrollStage`
+      tabIndex={0}
+      aria-label={heading}
       className={cx(
-        'home-stop ease-main text-foreground absolute inset-0 overflow-hidden transition-opacity duration-500 motion-reduce:transition-none',
+        'home-stop group/stop ease-main text-foreground absolute inset-0 overflow-hidden transition-opacity duration-500 outline-none motion-reduce:transition-none',
         current ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
     >
       <div className={cx(HOME_CONTAINER, 'relative flex h-full items-center pt-16 pb-6')}>
         <div className="home-stop-column flex w-[min(100%,520px)] flex-col gap-[var(--story-gap,24px)] [text-shadow:0_1px_2px_var(--color-background),0_0_24px_var(--color-background)]">
-          <p className="m-0 text-[12px] text-neutral-400 tabular-nums">{heading}</p>
+          <p className="group-focus-visible/stop:text-accent m-0 text-[12px] text-neutral-400 tabular-nums underline-offset-4 group-focus-visible/stop:underline">
+            {heading}
+          </p>
           <StaticRevealContext value={index > 0}>{children}</StaticRevealContext>
         </div>
       </div>

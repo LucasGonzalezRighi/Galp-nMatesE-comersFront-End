@@ -72,6 +72,14 @@ proyecto (no se suman dependencias nuevas). La escena no tiene estado de React: 
 con el scroll y un bucle de `requestAnimationFrame`, así que un envoltorio chico (`MateCanvas`, que
 monta, pausa y libera) alcanza y evita un renderizador de React por cuadro.
 
+## Ajustes después de verla
+
+Con la tienda compilada (Task 2) se tocaron tres valores de `scene.ts`, comentados en el código: el
+cuero lleva `envMapIntensity` 0,4 y `sheenRoughness` 0,4 (con el reflejo entero del estudio y el
+brillo cobre repartido se leía marrón), el chorro de agua termina en 0,3 de `mateRoot` (adentro de
+la yerba, que lo tapa; con el 0,5 del diseño quedaba cortado en el aire) y el vapor llega a 0,75 de
+opacidad (con 0,5 casi no se veía sobre los fondos oscuros). Los keyframes quedaron como estaban.
+
 ## Rendimiento y respaldo
 
 - `three` se descarga recién cuando el lienzo entra en pantalla (`import()` dentro de `scene.ts`) y
