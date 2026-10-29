@@ -4,6 +4,33 @@
 
 **Goal:** reemplazar la capa de foto del hero y del paseo por **un video pre-renderizado que el scroll frota** (`currentTime` según el avance), como el "scroll world" de Arko: una sola toma continua de 4 tramos de 5 s (20 s) que empieza con el mate en la mesa, entra por la boca hasta la yerba, muestra manos armando y cebando y termina con el mate pasando de mano en mano; al salir del último tramo sigue la página de siempre (colección, destacados, manifiesto, cifras, kit, reseñas). Las 6 paradas del paseo del mate se reducen a **4 paradas** con el texto de las escenas actuales encima del video.
 
+## Referencia 2: el demo de scroll-world (2026-10-29)
+
+Lucas mandó el demo de la skill `scroll-world` (Pearl & Co., Belvedere, Meridian Motors): la página queda fija y **el scroll mueve la cámara por un mundo**: en el diorama de miniatura la cámara se zambulle en cada escena y salta en vuelo a la siguiente; en los mundos realistas es una sola toma continua. Lo que señala: "el scroll va para otro lado", la cámara viaja, no baja la página. Esto confirma el enfoque de este plan y suma el recorrido como viaje por el **mundo del mate**, no solo por el ritual:
+
+| # | Parada | Qué se ve | Titular |
+|---|---|---|---|
+| 1 | El yerbal | Plantación de yerba en Misiones al amanecer, tierra colorada, un tarefero cosechando | "Empieza en el yerbal." |
+| 2 | El galpón | El taller: calabazas curándose, virolas de alpaca cincelándose, cuero cosido a mano | "Hecho en el galpón." |
+| 3 | El mate | El producto en macro: yerba que cae dentro del mate, la bombilla entra (keyframes k1 y k2) | "Encontrá tu mate." |
+| 4 | El ritual | El cebado: agua a 75 °C, vapor, espuma (k3) | "Agua a 75 °C." |
+| 5 | La ronda | El mate pasa de mano en mano; salida a la mesa con las tres piezas (k4) | "Hechos para compartir." |
+
+Dos direcciones de arte posibles, a elegir con Lucas: **fotorrealista cálida** (como los keyframes k1 a k4 y el tema oscuro de la tienda; toma continua, arquitectura A: 5 tramos ≈ 45 cr con Kling pro + 5 cuadros ≈ 10 cr) o **diorama en miniatura** (arcilla mate, isométrico, luz cálida, como Pearl & Co.; zambullidas + saltos aéreos, arquitectura B: 5 zambullidas + 4 conectores ≈ 81 cr + cuadros). Recomendación: fotorrealista, porque coincide con las fotos reales de los productos y con el tema oscuro y cobre de la tienda; el diorama queda para una campaña aparte. Versión móvil nativa 9:16: duplica el costo; por ahora solo escritorio (el celular muestra los cuadros fijos con las escenas apiladas).
+
+## Referencia de estilo (video de WhatsApp, 2026-10-29)
+
+Reels de landings de comida (EMBER "Born in fire", Wilda "Fresh has a wild side", FINO): el producto en video a pantalla completa con movimiento físico (fuego, ingredientes que caen en cámara lenta, un tomate que cae en el bowl), un titular enorme por sección, fondo oscuro y una animación distinta en cada parada. Lo que pide Lucas: "impresionante, ultra calidad, dinámico y profesional". Traducción para el mate: **cada tramo tiene un gesto físico protagonista** (yerba que cae, bombilla que entra, agua que cae con vapor y espuma, el mate que pasa de mano), cámara que se mueve pero nunca retrocede, 1080p→2K con grano fino, y titulares de dos líneas por parada (`StoryTitle` ya tiene la escala).
+
+### Prompts por tramo (Kling 3.0 Omni Frames pro, 5 s, 16:9, sin sonido)
+
+1. **Caída de yerba (k1 → k2):** "Slow-motion cascade of loose green yerba mate leaves pouring from above into the black leather gourd, leaves tumbling and catching the warm copper key light, fine dust glinting; the camera glides forward and tilts down over the rim as two hands come in to steady and tilt the gourd and place the brass-tipped bombilla; ends matching the end frame. Continuous take, no cuts, no camera reverse, shallow depth of field, cinematic food-commercial look."
+2. **Agua y vapor (k2 → k3):** "Continuous take: the hands settle the bombilla; the camera pulls back and sinks to table level while a matte black kettle enters from the right and pours a thin arc of hot water next to the bombilla; macro splash droplets and a slow bloom of steam, the yerba foams; warm copper rim light; ends matching the end frame. No cuts, no reverse."
+3. **La ronda (k3 → k4):** "Continuous take: the kettle lifts away through its own steam; a hand picks up the steaming gourd and extends it across the dark walnut table into another person's open hand, the camera easing back to a medium close-up; a bag of yerba and a second bombilla rest on the table out of focus; ends matching the end frame. No cuts, no reverse."
+4. **Salida (k4 → k5, mesa con las tres piezas):** "Continuous take: the receiving hand carries the gourd out of frame to the right while the camera drifts back and settles on a wide, calm tabletop with the mate, the bombilla and the yerba bag composed in the warm light, steam fading; ends matching the end frame (the product trio). No cuts, no reverse." (k5 se genera con Nano Banana Pro, 2 cr.)
+
+**Hero en reposo (antes de hacer scroll):** la parada 0 reproduce en bucle un clip corto (k1 con yerba cayendo, 3 a 5 s, `loop muted playsinline`) como los spots de la referencia; al empezar el scroll el bucle se detiene y el frotado toma el control desde el mismo cuadro.
+
 ## Storyboard (4 tramos, toma continua, sin cortes)
 
 | # | Parada | Cuadro inicial → final | Texto encima (escena actual) |
