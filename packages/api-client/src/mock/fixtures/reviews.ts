@@ -5,7 +5,9 @@ import type { MockReview } from '../types'
  *
  * El mes del diseño pasa a una fecha completa: "Sep 2026" es `2026-09-15T15:00:00Z`, y lo mismo
  * con Ago, Jul y Jun. Las destacadas del inicio son la primera del Mate Imperial Premium, la del
- * Bombillón Premium Curvo y la del Camionero con Pelo.
+ * Bombillón Premium Curvo y la del Camionero con Pelo, más dos de octubre que se sumaron al final:
+ * la de Gianfranco Galimberti (4,5 estrellas, la media estrella del contrato) sobre el Mate Torpedo
+ * Virola de Alpaca Cincelada y la de Lucas González Righi sobre el Bombillón 100% Alpaca.
  */
 export const FIXTURE_REVIEWS: readonly MockReview[] = [
   {
@@ -149,6 +151,28 @@ export const FIXTURE_REVIEWS: readonly MockReview[] = [
     createdAt: '2026-08-15T15:00:00Z',
     status: 'approved',
     featured: false,
+    verifiedPurchase: true,
+  },
+  {
+    id: 'rev-torpedo-borravino-1',
+    productId: 'prd-torpedo-borravino',
+    authorName: 'Gianfranco Galimberti',
+    rating: 4.5,
+    text: 'Está muy bueno: el mate llegó rápido y la terminación de la virola es impecable.',
+    createdAt: '2026-10-15T15:00:00Z',
+    status: 'approved',
+    featured: true,
+    verifiedPurchase: true,
+  },
+  {
+    id: 'rev-bombillon-100-alpaca-2',
+    productId: 'prd-bombillon-100-alpaca',
+    authorName: 'Lucas González Righi',
+    rating: 5,
+    text: 'También lo recomiendo: el bombillón tira perfecto y la atención fue de diez.',
+    createdAt: '2026-10-15T15:00:00Z',
+    status: 'approved',
+    featured: true,
     verifiedPurchase: true,
   },
 ]

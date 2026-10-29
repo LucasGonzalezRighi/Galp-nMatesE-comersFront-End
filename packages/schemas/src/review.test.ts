@@ -15,12 +15,12 @@ describe('reviewSchema', () => {
     })
   })
 
-  it.each([1, 3, 5])('acepta %j estrellas', (rating) => {
+  it.each([1, 3, 4.5, 5])('acepta %j estrellas, en pasos de media estrella', (rating) => {
     expect(reviewSchema.parse({ ...validReview, rating }).rating).toBe(rating)
   })
 
-  it.each([0, 6, -1, 3.5, '4', Number.NaN, null, undefined])(
-    'pide una puntuación de 1 a 5 si llega %j',
+  it.each([0, 0.5, 4.3, 5.5, 6, -1, 'a', '4', Number.NaN, null, undefined])(
+    'pide una puntuación de 1 a 5 en pasos de media estrella si llega %j',
     (rating) => {
       expect(issuesOf(reviewSchema, { ...validReview, rating })).toEqual([
         { path: ['rating'], message: 'Elegí una puntuación de 1 a 5 estrellas.' },

@@ -34,33 +34,44 @@ describe('Stars', () => {
     expect(screen.getByRole('img', { name: label })).toBeVisible()
   })
 
-  it('dibuja estrellas enteras: la quinta de 4,7 queda vacía, sin media estrella', () => {
-    const { container } = render(<Stars value={4.7} />)
+  it.each([
+    [4.5, ['full', 'full', 'full', 'full', 'half']],
+    [4.7, ['full', 'full', 'full', 'full', 'half']],
+    [4.2, ['full', 'full', 'full', 'full', 'empty']],
+    [5, ['full', 'full', 'full', 'full', 'full']],
+    [0, ['empty', 'empty', 'empty', 'empty', 'empty']],
+  ])('con %s dibuja %j', (value, fills) => {
+    const { container } = render(<Stars value={value} />)
 
-    expect(fillsOf(container)).toEqual(['full', 'full', 'full', 'full', 'empty'])
+    expect(fillsOf(container)).toEqual(fills)
   })
 
-  it('llena la estrella i cuando la puntuación es de i - 0,25 o más', () => {
-    const below = render(<Stars value={4.74} />)
-    expect(fillsOf(below.container)).toEqual(['full', 'full', 'full', 'full', 'empty'])
+  it('llena la estrella i desde i - 0,25 y la deja a la mitad desde i - 0,75', () => {
+    const half = render(<Stars value={4.74} />)
+    expect(fillsOf(half.container)).toEqual(['full', 'full', 'full', 'full', 'half'])
     cleanup()
 
     const edge = render(<Stars value={4.75} />)
     expect(fillsOf(edge.container)).toEqual(['full', 'full', 'full', 'full', 'full'])
     cleanup()
 
-    const middle = render(<Stars value={3.5} />)
-    expect(fillsOf(middle.container)).toEqual(['full', 'full', 'full', 'empty', 'empty'])
+    const halfEdge = render(<Stars value={3.25} />)
+    expect(fillsOf(halfEdge.container)).toEqual(['full', 'full', 'full', 'half', 'empty'])
     cleanup()
 
-    const none = render(<Stars value={0} />)
-    expect(fillsOf(none.container)).toEqual(['empty', 'empty', 'empty', 'empty', 'empty'])
+    const below = render(<Stars value={3.24} />)
+    expect(fillsOf(below.container)).toEqual(['full', 'full', 'full', 'empty', 'empty'])
   })
 
-  it('nunca dibuja una media estrella', () => {
+  it('la media estrella es la silueta vacía con una llena encima recortada a la mitad', () => {
     const { container } = render(<Stars value={4.5} />)
+    const half = container.querySelector('[data-fill="half"]')
+    const icons = half?.querySelectorAll('svg') ?? []
 
-    expect(container.querySelector('[data-fill="half"]')).toBeNull()
+    expect(icons).toHaveLength(2)
+    expect(icons[0]?.getAttribute('class')).toContain('opacity-[0.22]')
+    expect(icons[1]?.getAttribute('class')).toContain('[clip-path:inset(0_50%_0_0)]')
+    expect(screen.getByRole('img', { name: '4,5 de 5' })).toBeVisible()
   })
 
   it('rechaza valores fuera de 0 a 5', () => {

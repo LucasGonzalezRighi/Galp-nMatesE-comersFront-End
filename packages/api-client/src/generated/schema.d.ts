@@ -3545,7 +3545,7 @@ export interface components {
              */
             id: string;
             /**
-             * @description Puntuación en estrellas, de 1 a 5.
+             * @description Puntuación en estrellas, de 1 a 5, en pasos de media estrella.
              * @example 5
              */
             rating: number;
@@ -3568,7 +3568,7 @@ export interface components {
              */
             authorName: string | null;
             /**
-             * @description Puntuación en estrellas, de 1 a 5.
+             * @description Puntuación en estrellas, de 1 a 5, en pasos de media estrella.
              * @example 5
              */
             rating: number;

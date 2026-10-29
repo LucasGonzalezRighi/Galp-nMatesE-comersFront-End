@@ -8,7 +8,7 @@ const ANONYMOUS_AUTHOR = 'Anónimo'
 /**
  * Formulario de reseña de un producto: puntuación, nombre opcional y texto.
  *
- * - `rating`: entero de 1 a 5.
+ * - `rating`: de 1 a 5 estrellas, en pasos de media estrella (4,5 vale; 4,3 no).
  * - `authorName`: hasta 40 caracteres; ausente, vacío o solo espacios sale como `"Anónimo"`.
  * - `text`: de 10 a 600 caracteres.
  * - `website`: campo trampa contra bots, tiene que llegar vacío.
@@ -19,7 +19,8 @@ const ANONYMOUS_AUTHOR = 'Anónimo'
  */
 export const reviewSchema = z.object({
   rating: z
-    .int({ error: MESSAGES.reviewRating })
+    .number({ error: MESSAGES.reviewRating })
+    .multipleOf(0.5, MESSAGES.reviewRating)
     .min(1, MESSAGES.reviewRating)
     .max(5, MESSAGES.reviewRating),
   authorName: z

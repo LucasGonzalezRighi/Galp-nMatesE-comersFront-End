@@ -1703,7 +1703,23 @@
       "name": "Reseña: estrellas: media estrella",
       "schema": "reviewSchema",
       "input": {
-        "rating": 3.5,
+        "rating": 4.5,
+        "authorName": "Lucas",
+        "text": "Un mate hermoso, llegó rápido y bien embalado."
+      },
+      "valid": true,
+      "output": {
+        "rating": 4.5,
+        "authorName": "Lucas",
+        "text": "Un mate hermoso, llegó rápido y bien embalado."
+      }
+    },
+    {
+      "field": "Reseña: estrellas",
+      "name": "Reseña: estrellas: un paso que no es de media estrella",
+      "schema": "reviewSchema",
+      "input": {
+        "rating": 4.3,
         "authorName": "Lucas",
         "text": "Un mate hermoso, llegó rápido y bien embalado."
       },

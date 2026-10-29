@@ -3277,8 +3277,9 @@ components:
           description: Nombre con el que firma la reseña.
           example: Paula N.
         rating:
-          type: integer
-          description: Puntuación en estrellas, de 1 a 5.
+          type: number
+          description: Puntuación en estrellas, de 1 a 5, en pasos de media estrella.
+          multipleOf: 0.5
           minimum: 1
           maximum: 5
           example: 5
@@ -5133,10 +5134,11 @@ components:
       required: [rating, authorName, text, website]
       properties:
         rating:
-          type: integer
+          type: number
+          multipleOf: 0.5
           minimum: 1
           maximum: 5
-          description: Puntuación en estrellas, de 1 a 5.
+          description: Puntuación en estrellas, de 1 a 5, en pasos de media estrella.
           example: 5
         authorName:
           type: [string, 'null']

@@ -36,6 +36,20 @@ describe('GET /products/{slug}/reviews', () => {
     })
   })
 
+  it('una media estrella entra en el promedio y en la fila de su parte entera', async () => {
+    const page = await listProductReviews(
+      createMockApi().api,
+      'mate-torpedo-virola-de-alpaca-cincelada',
+    )
+    expect(page.items.map((item) => item.rating)).toEqual([4.5])
+    expect(page.stats).toMatchObject({ average: 4.5, count: 1 })
+    expect(page.stats.distribution.find((bucket) => bucket.stars === 4)).toEqual({
+      stars: 4,
+      count: 1,
+      percent: 100,
+    })
+  })
+
   it('cuenta solo las aprobadas y pagina de a 10, de la más nueva a la más vieja', async () => {
     const mock = createMockApi()
     const first = mock.db.reviews.find((item) => item.id === 'rev-imperial-premium-1')
@@ -63,9 +77,9 @@ describe('GET /products/{slug}/reviews', () => {
 })
 
 describe('GET /reviews/featured', () => {
-  it('devuelve las 3 destacadas, cada una con el slug de su producto', async () => {
+  it('devuelve las 5 destacadas, cada una con el slug de su producto', async () => {
     const featured = await listFeaturedReviews(createMockApi().api)
-    expect(featured).toHaveLength(3)
+    expect(featured).toHaveLength(5)
     for (const item of featured) {
       expect(item.product.slug).toEqual(expect.any(String))
       expect(item.product.name).toEqual(expect.any(String))
@@ -80,7 +94,7 @@ describe('GET /reviews/featured', () => {
     if (hidden === undefined || camionero === undefined) throw new Error('Faltan datos')
     hidden.status = 'hidden'
     camionero.status = 'draft'
-    expect(await listFeaturedReviews(mock.api)).toHaveLength(1)
+    expect(await listFeaturedReviews(mock.api)).toHaveLength(3)
   })
 })
 

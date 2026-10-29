@@ -1,4 +1,4 @@
-/** Puntuación de una reseña, en estrellas enteras. */
+/** Estrellas enteras, de 1 a 5: las filas de la distribución y las opciones del formulario. */
 export type StarValue = 1 | 2 | 3 | 4 | 5
 
 /** Fila de la distribución de reseñas: cuántas hay con cierta puntuación. */
@@ -23,12 +23,25 @@ const RATING_FORMAT = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 1,
 })
 
-/** Valida que cada puntuación sea un entero de 1 a 5. */
+/**
+ * Indica si una puntuación de reseña es válida: de 1 a 5 estrellas, en pasos de media estrella.
+ *
+ * @param rating - Puntuación a comprobar.
+ * @returns `true` si es un múltiplo de 0,5 de 1 a 5 (4,5 sí; 4,3, 0,5 y 5,5 no).
+ * @example
+ * isValidRating(4.5) // true
+ * isValidRating(4.3) // false
+ */
+export function isValidRating(rating: number): boolean {
+  return Number.isInteger(rating * 2) && rating >= 1 && rating <= 5
+}
+
+/** Valida que cada puntuación sea un múltiplo de 0,5 de 1 a 5. */
 function assertValidRatings(ratings: readonly number[]): void {
   for (const rating of ratings) {
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    if (!isValidRating(rating)) {
       throw new RangeError(
-        `La puntuación tiene que ser un entero de 1 a 5; se recibió ${String(rating)}.`,
+        `La puntuación tiene que ser un múltiplo de 0,5 de 1 a 5; se recibió ${String(rating)}.`,
       )
     }
   }
@@ -37,9 +50,9 @@ function assertValidRatings(ratings: readonly number[]): void {
 /**
  * Calcula el promedio de las puntuaciones de un producto.
  *
- * @param ratings - Puntuaciones de las reseñas aprobadas; puede estar vacía.
+ * @param ratings - Puntuaciones de las reseñas aprobadas (admiten medias estrellas); puede estar vacía.
  * @returns El promedio simple, sin redondear (0 si no hay reseñas).
- * @throws {RangeError} Si alguna puntuación no es un entero de 1 a 5.
+ * @throws {RangeError} Si alguna puntuación no es un múltiplo de 0,5 de 1 a 5.
  * @example
  * averageRating([5, 5, 4]) // 4.666…
  */
@@ -73,18 +86,19 @@ export function formatRating(average: number): string {
 /**
  * Arma la distribución de reseñas para las barras de la ficha.
  *
- * Los porcentajes se redondean de a uno, así que pueden no sumar exactamente 100.
+ * Los porcentajes se redondean de a uno, así que pueden no sumar exactamente 100. Una media
+ * estrella cuenta en la fila de su parte entera (4,5 en la de 4), así toda reseña está en una fila.
  *
  * @param ratings - Puntuaciones de las reseñas aprobadas; puede estar vacía.
  * @returns Cinco filas, de 5 a 1 estrellas, con cantidad y porcentaje.
- * @throws {RangeError} Si alguna puntuación no es un entero de 1 a 5.
+ * @throws {RangeError} Si alguna puntuación no es un múltiplo de 0,5 de 1 a 5.
  * @example
  * ratingDistribution([5, 5, 4])[0] // { stars: 5, count: 2, percent: 67 }
  */
 export function ratingDistribution(ratings: readonly number[]): readonly RatingBucket[] {
   assertValidRatings(ratings)
   return STARS_DESCENDING.map((stars) => {
-    const count = ratings.filter((rating) => rating === stars).length
+    const count = ratings.filter((rating) => Math.floor(rating) === stars).length
     return {
       stars,
       count,

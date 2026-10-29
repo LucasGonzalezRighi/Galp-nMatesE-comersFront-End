@@ -168,13 +168,13 @@ describe('fixtures del diseño: catálogo', () => {
 
 describe('fixtures del diseño: reseñas', () => {
   it('cada reseña apunta a un producto que existe y todas están aprobadas y verificadas', () => {
-    expect(FIXTURE_REVIEWS).toHaveLength(13)
-    expect(new Set(FIXTURE_REVIEWS.map((review) => review.id)).size).toBe(13)
+    expect(FIXTURE_REVIEWS).toHaveLength(15)
+    expect(new Set(FIXTURE_REVIEWS.map((review) => review.id)).size).toBe(15)
     for (const review of FIXTURE_REVIEWS) {
       expect(PRODUCT_IDS.has(review.productId)).toBe(true)
       expect(review.status).toBe('approved')
       expect(review.verifiedPurchase).toBe(true)
-      expect(review.createdAt).toMatch(/^2026-0[6-9]-15T15:00:00Z$/)
+      expect(review.createdAt).toMatch(/^2026-(0[6-9]|10)-15T15:00:00Z$/)
     }
   })
 
@@ -190,17 +190,25 @@ describe('fixtures del diseño: reseñas', () => {
     expect(monthsOf('prd-torpedo-premium')).toEqual(['2026-09', '2026-06'])
   })
 
-  it('hay 3 destacadas: la primera del imperial premium, del bombillón premium curvo y del camionero con pelo', () => {
+  it('hay 5 destacadas: las 3 del diseño y al final las de Gianfranco (4,5) y Lucas (5), de octubre', () => {
     const featured = FIXTURE_REVIEWS.filter((review) => review.featured)
     expect(featured.map((review) => review.productId)).toEqual([
       'prd-imperial-premium',
       'prd-camionero-pelo',
       'prd-bombillon-premium-curvo',
+      'prd-torpedo-borravino',
+      'prd-bombillon-100-alpaca',
     ])
     expect(featured.map((review) => review.authorName)).toEqual([
       'Martina R.',
       'Ignacio L.',
       'Federico A.',
+      'Gianfranco Galimberti',
+      'Lucas González Righi',
+    ])
+    expect(featured.slice(3).map(({ rating, createdAt }) => ({ rating, createdAt }))).toEqual([
+      { rating: 4.5, createdAt: '2026-10-15T15:00:00Z' },
+      { rating: 5, createdAt: '2026-10-15T15:00:00Z' },
     ])
   })
 })

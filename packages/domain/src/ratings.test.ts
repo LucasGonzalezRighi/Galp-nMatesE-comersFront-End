@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { averageRating, formatRating, pluralize, ratingDistribution, STAR_WORDS } from './ratings'
+import {
+  averageRating,
+  formatRating,
+  isValidRating,
+  pluralize,
+  ratingDistribution,
+  STAR_WORDS,
+} from './ratings'
+
+describe('isValidRating', () => {
+  it.each([1, 1.5, 3, 4.5, 5])('acepta %s, un múltiplo de 0,5 de 1 a 5', (rating) => {
+    expect(isValidRating(rating)).toBe(true)
+  })
+  it.each([0, 0.5, 4.3, 5.5, 6, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza %s',
+    (rating) => {
+      expect(isValidRating(rating)).toBe(false)
+    },
+  )
+})
 
 describe('averageRating', () => {
   it('sin reseñas es 0', () => {
@@ -10,15 +29,19 @@ describe('averageRating', () => {
     expect(averageRating([1, 2, 3, 4, 5])).toBe(3)
     expect(averageRating([4])).toBe(4)
   })
-  it.each([0, 6, 3.5, -1, Number.NaN])(
-    'rechaza la puntuación %s, que no es un entero de 1 a 5',
+  it('acepta medias estrellas', () => {
+    expect(averageRating([4.5, 5])).toBe(4.75)
+    expect(averageRating([4.5])).toBe(4.5)
+  })
+  it.each([0, 0.5, 4.3, 5.5, 6, -1, Number.NaN])(
+    'rechaza la puntuación %s, que no es un múltiplo de 0,5 de 1 a 5',
     (value) => {
       expect(() => averageRating([5, value])).toThrow(RangeError)
     },
   )
   it('el mensaje de error está en español', () => {
     expect(() => averageRating([6])).toThrow(
-      'La puntuación tiene que ser un entero de 1 a 5; se recibió 6.',
+      'La puntuación tiene que ser un múltiplo de 0,5 de 1 a 5; se recibió 6.',
     )
   })
 })
@@ -74,9 +97,20 @@ describe('ratingDistribution', () => {
   it('una única puntuación ocupa el 100%', () => {
     expect(ratingDistribution([3])[2]).toEqual({ stars: 3, count: 1, percent: 100 })
   })
-  it('rechaza puntuaciones que no son enteros de 1 a 5', () => {
+  it('una media estrella cuenta en la fila de su parte entera', () => {
+    expect(ratingDistribution([4.5, 5])).toEqual([
+      { stars: 5, count: 1, percent: 50 },
+      { stars: 4, count: 1, percent: 50 },
+      { stars: 3, count: 0, percent: 0 },
+      { stars: 2, count: 0, percent: 0 },
+      { stars: 1, count: 0, percent: 0 },
+    ])
+    expect(ratingDistribution([1.5])[4]).toEqual({ stars: 1, count: 1, percent: 100 })
+  })
+  it('rechaza puntuaciones que no son múltiplos de 0,5 de 1 a 5', () => {
     expect(() => ratingDistribution([5, 0])).toThrow(RangeError)
-    expect(() => ratingDistribution([2.5])).toThrow(RangeError)
+    expect(() => ratingDistribution([2.3])).toThrow(RangeError)
+    expect(() => ratingDistribution([5.5])).toThrow(RangeError)
   })
 })
 

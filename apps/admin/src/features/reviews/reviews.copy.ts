@@ -1,3 +1,4 @@
+import { isValidRating } from '@galpon/domain'
 import type { ReviewsTab } from './reviews-search'
 
 /** Textos de la pantalla de reseñas. */
@@ -50,20 +51,24 @@ export const REVIEWS_COPY = {
   saveError: 'No pudimos guardar el cambio. Probá de nuevo.',
 } as const
 
+/** Puntuación con coma decimal y sin decimales cuando es entera ("4", "4,5"). */
+const RATING_LABEL_FORMAT = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 })
+
 /**
  * Texto oculto que acompaña a las estrellas de una reseña.
  *
- * @param rating - Puntuación, un entero de 1 a 5.
- * @returns Por ejemplo "4 de 5 estrellas".
- * @throws {RangeError} Si `rating` no es un entero de 1 a 5.
+ * @param rating - Puntuación, un múltiplo de 0,5 de 1 a 5.
+ * @returns Por ejemplo "4 de 5 estrellas" o "4,5 de 5 estrellas".
+ * @throws {RangeError} Si `rating` no es un múltiplo de 0,5 de 1 a 5.
  * @example
  * ratingLabel(4) // "4 de 5 estrellas"
+ * ratingLabel(4.5) // "4,5 de 5 estrellas"
  */
 export function ratingLabel(rating: number): string {
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+  if (!isValidRating(rating)) {
     throw new RangeError(
-      `La puntuación tiene que ser un entero de 1 a 5; se recibió ${String(rating)}.`,
+      `La puntuación tiene que ser un múltiplo de 0,5 de 1 a 5; se recibió ${String(rating)}.`,
     )
   }
-  return `${String(rating)} de 5 estrellas`
+  return `${RATING_LABEL_FORMAT.format(rating)} de 5 estrellas`
 }
