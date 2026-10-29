@@ -5,9 +5,11 @@ import type { Category, FooterContent, PublicSettings } from '@galpon/api-client
 import { asRoute } from '../../lib/routes'
 import { Reveal } from '../motion'
 import { Tag } from '../ui'
+import { FooterWordmark } from './FooterWordmark'
 import { FooterYear } from './FooterYear'
 import { LAYOUT_COPY } from './layout.copy'
 import { Wordmark } from './Wordmark'
+import './footer.css'
 
 /** Línea superior con los extremos desvanecidos. */
 const DIVIDER_STYLE: CSSProperties = {
@@ -19,6 +21,11 @@ const DIVIDER_STYLE: CSSProperties = {
 const GHOST_WORDMARK_STYLE: CSSProperties = {
   background:
     'linear-gradient(180deg, color-mix(in srgb, var(--color-foreground) 16%, transparent), transparent 90%)',
+}
+
+/** Degradé de la palabra iluminada: cobre abajo y crema arriba. */
+const LIT_WORDMARK_STYLE: CSSProperties = {
+  background: 'linear-gradient(0deg, var(--color-accent-300), var(--color-cream))',
 }
 
 /** Estilo de los links de las columnas. */
@@ -75,7 +82,9 @@ export interface FooterViewProps {
 /**
  * Pie de página (spec 9.5, 9.6 y 14.6): frase, bajada y mail; columnas Tienda (las líneas), Ayuda
  * (con el "Botón de arrepentimiento" destacado), Galpón y Legales; datos del vendedor y link a
- * Data Fiscal; "© año Galpón Mates", medios de pago y el logo grande con recorte.
+ * Data Fiscal; "© año Galpón Mates", medios de pago y el logo grande con recorte, que se ilumina
+ * de abajo hacia arriba y sube apenas sobre el final de las columnas ({@link FooterWordmark}).
+ * En el inicio, en escritorio, el pie sube por encima de las reseñas (`footer.css`).
  *
  * @param props - Ver {@link FooterViewProps}.
  */
@@ -83,7 +92,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const seller = sellerLines(settings.seller)
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
-    <footer className="relative overflow-hidden pt-[72px]">
+    <footer className="site-footer relative overflow-hidden pt-[72px]">
       <div className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)]">
         <div className="mb-14 h-px" style={DIVIDER_STYLE} />
         <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
@@ -195,9 +204,15 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
             </div>
           )}
         </div>
-        <Reveal kind="clip" duration={1600} className="mt-10 w-full">
-          <Wordmark anchor="bottom" className="w-full" style={GHOST_WORDMARK_STYLE} />
-        </Reveal>
+        <FooterWordmark
+          className="pointer-events-none z-10 mt-[clamp(-48px,-3vw,-16px)] w-full"
+          ghost={
+            <Reveal kind="clip" duration={1600} className="w-full">
+              <Wordmark anchor="bottom" className="w-full" style={GHOST_WORDMARK_STYLE} />
+            </Reveal>
+          }
+          lit={<Wordmark anchor="bottom" className="w-full" style={LIT_WORDMARK_STYLE} />}
+        />
       </div>
     </footer>
   )

@@ -3,6 +3,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
+import { mockReducedMotion } from '../motion/test/support'
 import { FooterView, formatCuit, sellerLines } from './FooterView'
 
 afterEach(cleanup)
@@ -172,6 +173,44 @@ describe('FooterView', () => {
       'href',
       'https://example.com/data-fiscal',
     )
+  })
+})
+
+describe('FooterView: la palabra GALPÓN', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'matchMedia')
+  })
+
+  it('dibuja la palabra con dos capas superpuestas, la fantasma y la iluminada, decorativas', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const ghost = container.querySelector('[data-wordmark-layer="ghost"]')
+    const lit = container.querySelector('[data-wordmark-layer="lit"]')
+    expect(ghost).not.toBeNull()
+    expect(lit).not.toBeNull()
+    expect(lit?.parentElement).toBe(ghost?.parentElement)
+    expect(lit?.closest('[aria-hidden="true"]')).not.toBeNull()
+  })
+
+  it('con menos movimiento la iluminada queda quieta y entera, sin recorte', () => {
+    mockReducedMotion(true)
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const lit = container.querySelector('[data-wordmark-layer="lit"]')
+    expect(lit?.getAttribute('style') ?? '').not.toMatch(/clip-path|transform/)
+    expect(lit?.parentElement?.getAttribute('style') ?? '').not.toMatch(/transform/)
+  })
+
+  it('el pie lleva la clase con que sube por encima del inicio (ver footer.css)', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    expect(container.querySelector('footer')).toHaveClass('site-footer')
   })
 })
 

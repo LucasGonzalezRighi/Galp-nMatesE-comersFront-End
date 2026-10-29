@@ -15,8 +15,8 @@ import { resolveStoryProducts } from './story-products'
 /** Cuántos destacados se muestran: dos filas de cuatro en escritorio. */
 export const FEATURED_LIMIT = 8
 
-/** Cuántas reseñas destacadas se muestran, como en el diseño. */
-export const REVIEWS_LIMIT = 3
+/** Cuántas reseñas destacadas entran en el carrusel del cierre. */
+export const REVIEWS_LIMIT = 6
 
 /** Lo que el servidor lee de la API para armar el inicio. */
 export interface HomeInput {

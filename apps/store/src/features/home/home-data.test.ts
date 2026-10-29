@@ -25,9 +25,10 @@ describe('buildHomeData', () => {
     const data = buildHomeData({
       ...catalog,
       products: manyFeatured,
-      reviews: [review, review, review, review, review],
+      reviews: Array.from({ length: 8 }, () => review),
     })
     expect(data.featured).toHaveLength(FEATURED_LIMIT)
+    expect(REVIEWS_LIMIT).toBe(6)
     expect(data.reviews).toHaveLength(REVIEWS_LIMIT)
   })
 
