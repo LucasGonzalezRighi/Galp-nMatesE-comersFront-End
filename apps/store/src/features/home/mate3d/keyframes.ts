@@ -6,7 +6,9 @@ export const MATE_STOP_COUNT = 3
 /**
  * Dónde está y cómo gira una pieza: `[x, y, escala, giroX, giroY, giroZ]`. `x` e `y` van en
  * fracciones de media pantalla desde el centro (1 es el borde derecho o el de arriba; más allá queda
- * fuera de cuadro), la escala es 1 para el tamaño del diseño y los giros van en grados.
+ * fuera de cuadro), la escala es 1 para el tamaño del diseño y los giros van en grados. El giro Z
+ * positivo inclina la pieza hacia la izquierda de la pantalla (la boca del mate, la punta del
+ * paquete).
  */
 export type MatePlacement = readonly [
   x: number,
@@ -19,32 +21,50 @@ export type MatePlacement = readonly [
 
 /** Lo que la escena 3D muestra en un momento del recorrido; ver el README de `mate3d`. */
 export interface MateState {
-  /** El mate. */
+  /** El mate; su giro Z lo inclina (55 lo deja volcado a la izquierda para recibir la yerba). */
   readonly mate: MatePlacement
   /** La bombilla suelta (mientras `attached` es 0): de dónde entra o adónde se va. */
   readonly bombilla: MatePlacement
   /** Cuánto está calzada la bombilla en la yerba, de 0 (suelta) a 1 (calzada). */
   readonly attached: number
-  /** El paquete de yerba. */
+  /** El paquete de yerba; con el giro Z cerca de −150 queda cabeza abajo, con el pico hacia el mate. */
   readonly pack: MatePlacement
-  /** Altura de la yerba dentro del mate, de 0 (vacío) a 1 (lleno hasta la virola). */
+  /**
+   * El pico del termo (la boca por donde sale el agua); el giro Z positivo lo inclina hacia la
+   * izquierda para servir.
+   */
+  readonly thermos: MatePlacement
+  /** Volumen de yerba dentro del mate, de 0 (vacío) a 1 (lleno hasta la virola). */
   readonly fill: number
-  /** Alto de la montañita de yerba, de 0 (plana) a 1. */
-  readonly mound: number
-  /** Mancha de yerba húmeda junto a la bombilla, de 0 a 1. */
+  /**
+   * Pendiente de la superficie de la yerba, de 0 (plana) a 1 (asentada contra la pared izquierda del
+   * mate, la pendiente que deja el mate inclinado).
+   */
+  readonly slope: number
+  /**
+   * Pared de la montañita, de 0 (la pendiente natural) a 1 (la cara derecha cae recta, como después
+   * de sacudir el mate tapado).
+   */
+  readonly wall: number
+  /** Yerba húmeda en el hueco junto a la bombilla, de 0 a 1. */
   readonly wet: number
-  /** Chorro de agua que cae junto a la bombilla, de 0 a 1. */
+  /** Chorro de agua del termo que cae en el hueco, de 0 a 1. */
   readonly water: number
   /** Vapor que sube del mate, de 0 a 1. */
   readonly steam: number
+  /** Agua juntada en el hueco (el charco), de 0 a 1. */
+  readonly puddle: number
+  /** Salpicadura del chorro al caer en el hueco, de 0 a 1. */
+  readonly splash: number
   /** Yerba que cae del pico del paquete hacia el mate, de 0 a 1. */
   readonly pour: number
-  /** Inclinación de la bombilla calzada, en grados (0 es la del diseño, apoyada en la montañita). */
+  /** Inclinación de la bombilla calzada, en grados (0 es la del diseño). */
   readonly tilt: number
 }
 
 /** Nombre de cada momento del recorrido. */
-export type MateMoment = 'agua' | 'bombilla' | 'inicio' | 'lleno' | 'salida' | 'vuelco'
+export type MateMoment =
+  'agua' | 'agua-fin' | 'bombilla' | 'inclinado' | 'inicio' | 'lleno' | 'salida'
 
 /** Un momento del recorrido y el tramo del avance en que la escena se queda en él. */
 export interface MateKeyframe {
@@ -64,19 +84,26 @@ const SPAN = 1 / MATE_STOP_COUNT
 /** Largo del hold de cada parada: el 55 % del tramo, como en `stageLayout`. */
 const HOLD = SPAN * HOLD_SHARE
 
-/** La bombilla suelta, fuera de cuadro arriba del mate: entra desde ahí. */
-const BOMBILLA_ABOVE: MatePlacement = [0.4, 1.9, 1, 0, 0, -10]
+/** La bombilla suelta, fuera de cuadro arriba a la derecha del mate: entra desde ahí. */
+const BOMBILLA_OUT: MatePlacement = [0.75, 1.9, 1, 0, 0, -20]
 
-/** El paquete fuera de cuadro, arriba a la derecha. */
-const PACK_OUT: MatePlacement = [1.9, 0.9, 0.85, 0, -20, -40]
+/** El paquete fuera de cuadro, arriba a la izquierda del mate: entra y se va por ahí. */
+const PACK_OUT: MatePlacement = [0, 1.8, 0.85, 0, -20, -20]
+
+/** El pico del termo fuera de cuadro, arriba a la derecha. */
+const THERMOS_OUT: MatePlacement = [1.1, 1.7, 1, 0, 0, 60]
+
+/** El mate de pie en la parada 3, quieto mientras cae el agua. */
+const MATE_WATER: MatePlacement = [0.4, -0.2, 1.1, 14, -10, 0]
 
 /**
- * Los momentos del recorrido, en orden. La parada 1 empieza con el mate vacío de la portada y en
- * su hold el paquete entra, vuelca y la yerba cae hasta formar la montañita; entre la 1 y la 2 el
- * mate gira hacia la cámara y la bombilla entra desde arriba y se calza; entre la 2 y la 3 cae el
- * chorro de agua, la yerba se humedece y sube el vapor; en el último 45 % de la parada 3 el mate se
- * aleja. Cada parada llega completa al principio de su tramo (adonde lleva el raíl) y se queda
- * quieta durante su hold.
+ * Los momentos del recorrido, en orden. En el hold de la parada 1 el mate se inclina 55° a la
+ * izquierda, el paquete entra por arriba a la izquierda, vuelca sobre la boca y la yerba se junta
+ * contra la pared baja; el paquete se va por donde vino y, entre la 1 y la 2, el mate se endereza con
+ * la yerba contra la pared izquierda y la cara derecha cayendo recta, y la bombilla entra desde arriba
+ * a la derecha y se calza en el hueco. Entre la 2 y la 3 entra el pico del termo por arriba a la
+ * derecha; en el primer cuarto del hold 3 el chorro cae en el hueco y salpica, y al terminar el hold
+ * cortó: quedan el charco, la yerba húmeda y el vapor. Después el mate se aleja.
  */
 export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   {
@@ -85,50 +112,63 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     to: 0,
     state: {
       mate: [0.42, -0.1, 1, 10, -25, 0],
-      bombilla: BOMBILLA_ABOVE,
+      bombilla: BOMBILLA_OUT,
       attached: 0,
-      pack: [0.22, 1.6, 0.85, 0, -20, 10],
+      pack: PACK_OUT,
+      thermos: THERMOS_OUT,
       fill: 0,
-      mound: 0,
+      slope: 0,
+      wall: 0,
       wet: 0,
       water: 0,
       steam: 0,
+      puddle: 0,
+      splash: 0,
       pour: 0,
       tilt: 0,
     },
   },
   {
-    name: 'vuelco',
-    from: HOLD / 2,
-    to: HOLD / 2,
+    name: 'inclinado',
+    from: HOLD * 0.35,
+    to: HOLD * 0.35,
     state: {
-      mate: [0.44, -0.3, 0.94, 14, 15, 0],
-      bombilla: BOMBILLA_ABOVE,
+      mate: [0.46, -0.3, 0.94, 10, 15, 55],
+      bombilla: BOMBILLA_OUT,
       attached: 0,
-      pack: [0.25, 0.38, 0.85, 0, -20, -118],
-      fill: 0.5,
-      mound: 0.3,
+      // El pico queda unos 0,66 sobre el centro de la boca inclinada (medido con three a 16:9).
+      pack: [0.24, 0.36, 0.85, 0, -20, -150],
+      thermos: THERMOS_OUT,
+      fill: 0.45,
+      slope: 1,
+      wall: 0,
       wet: 0,
       water: 0,
       steam: 0,
+      puddle: 0,
+      splash: 0,
       pour: 1,
       tilt: 0,
     },
   },
   {
     name: 'lleno',
-    from: HOLD,
-    to: HOLD,
+    from: HOLD * 0.85,
+    to: HOLD * 0.85,
     state: {
-      mate: [0.44, -0.24, 0.98, 12, 40, 0],
-      bombilla: BOMBILLA_ABOVE,
+      mate: [0.45, -0.26, 0.98, 12, 25, 40],
+      bombilla: BOMBILLA_OUT,
       attached: 0,
-      pack: [0.24, 0.52, 0.85, 0, -20, -80],
+      pack: [0.06, 0.9, 0.85, 0, -20, -80],
+      thermos: THERMOS_OUT,
       fill: 1,
-      mound: 1,
+      slope: 1,
+      wall: 0.35,
       wet: 0,
       water: 0,
       steam: 0,
+      puddle: 0,
+      splash: 0,
       pour: 0,
       tilt: 0,
     },
@@ -138,33 +178,64 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: SPAN,
     to: SPAN + HOLD,
     state: {
-      mate: [0.36, -0.14, 1.2, 18, 200, 0],
-      bombilla: BOMBILLA_ABOVE,
+      // Girado apenas para que el hueco (a la derecha del mate) mire a la cámara.
+      mate: [0.36, -0.14, 1.2, 18, -20, 0],
+      bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
+      thermos: THERMOS_OUT,
       fill: 1,
-      mound: 1,
+      slope: 1,
+      wall: 1,
       wet: 0,
       water: 0,
       steam: 0,
+      puddle: 0,
+      splash: 0,
       pour: 0,
       tilt: -16,
     },
   },
   {
     name: 'agua',
-    from: 2 * SPAN,
-    to: 2 * SPAN + HOLD,
+    from: 2 * SPAN + HOLD * 0.25,
+    to: 2 * SPAN + HOLD * 0.25,
     state: {
-      mate: [0.4, -0.2, 1.1, 12, 300, 0],
-      bombilla: BOMBILLA_ABOVE,
+      mate: MATE_WATER,
+      bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
+      thermos: [0.52, 0.52, 1, 0, 0, 110],
       fill: 1,
-      mound: 1,
-      wet: 1,
+      slope: 1,
+      wall: 1,
+      wet: 0.7,
       water: 1,
+      steam: 0.6,
+      puddle: 0.5,
+      splash: 1,
+      pour: 0,
+      tilt: -10,
+    },
+  },
+  {
+    name: 'agua-fin',
+    from: 2 * SPAN + HOLD,
+    to: 2 * SPAN + HOLD,
+    state: {
+      mate: MATE_WATER,
+      bombilla: BOMBILLA_OUT,
+      attached: 1,
+      pack: PACK_OUT,
+      thermos: [0.66, 1.05, 1, 0, 0, 70],
+      fill: 1,
+      slope: 1,
+      wall: 1,
+      wet: 1,
+      water: 0,
       steam: 1,
+      puddle: 1,
+      splash: 0,
       pour: 0,
       tilt: -10,
     },
@@ -174,15 +245,19 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 1,
     to: 1,
     state: {
-      mate: [0.9, -0.9, 0.6, 8, 380, 0],
-      bombilla: BOMBILLA_ABOVE,
+      mate: [0.9, -0.9, 0.6, 8, 60, 0],
+      bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
+      thermos: THERMOS_OUT,
       fill: 1,
-      mound: 1,
+      slope: 1,
+      wall: 1,
       wet: 1,
       water: 0,
       steam: 0.5,
+      puddle: 1,
+      splash: 0,
       pour: 0,
       tilt: -10,
     },
@@ -229,11 +304,15 @@ export function lerpMateState(from: MateState, to: MateState, share: number): Ma
     bombilla: lerpPlacement(from.bombilla, to.bombilla, share),
     attached: lerp(from.attached, to.attached, share),
     pack: lerpPlacement(from.pack, to.pack, share),
+    thermos: lerpPlacement(from.thermos, to.thermos, share),
     fill: lerp(from.fill, to.fill, share),
-    mound: lerp(from.mound, to.mound, share),
+    slope: lerp(from.slope, to.slope, share),
+    wall: lerp(from.wall, to.wall, share),
     wet: lerp(from.wet, to.wet, share),
     water: lerp(from.water, to.water, share),
     steam: lerp(from.steam, to.steam, share),
+    puddle: lerp(from.puddle, to.puddle, share),
+    splash: lerp(from.splash, to.splash, share),
     pour: lerp(from.pour, to.pour, share),
     tilt: lerp(from.tilt, to.tilt, share),
   }
