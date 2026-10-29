@@ -1,7 +1,7 @@
 /** Parte del tramo de cada parada en que el recorrido se queda quieto para leer (el resto desliza). */
 export const HOLD_SHARE = 0.55
 
-/** Dónde está el paseo del mate para un avance del scroll. */
+/** Dónde está el escenario de paradas (el mate 3D) para un avance del scroll. */
 export interface StageLayout {
   /** La parada actual: la que ocupa la mayor parte de la ventana (cambia a mitad del deslizamiento). */
   index: number

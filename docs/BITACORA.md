@@ -215,10 +215,10 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
 
-| Plan                      | Qué incluye                                                                                   | Estimación     | Listo cuando                                       |
-| ------------------------- | --------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
-| **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
-| **P5 · Etapa 2 y cierre** | Escena 3D, cursor y brillo, Lighthouse, accesibilidad, revisión visual final y README finales | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
+| Plan                      | Qué incluye                                                                                               | Estimación     | Listo cuando                                       |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
+| **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes             | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
+| **P5 · Etapa 2 y cierre** | Cursor y brillo, Lighthouse, accesibilidad, revisión visual final y README finales (la escena 3D ya está) | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
 
 P2, P3 y P4 ya están hechas y cerradas con su revisión final (arriba): para el front queda P5, **3 a 4 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
 

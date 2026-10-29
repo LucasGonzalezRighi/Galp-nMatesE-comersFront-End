@@ -3,14 +3,11 @@ import { computeHomeStats } from './home-stats'
 import { loadFixtureCatalog, withProduct } from './test/fixture-catalog'
 
 describe('computeHomeStats', () => {
-  it('calcula las cifras del catálogo de fábrica: 27 piezas, 6 líneas, 16 modelos de mate, 4 líneas de mate y 4 cueros', async () => {
+  it('calcula las cifras del catálogo de fábrica: 27 piezas y 6 líneas', async () => {
     const { products, categories } = await loadFixtureCatalog()
     const stats = computeHomeStats(products, categories)
     expect(stats.pieces).toBe(27)
     expect(stats.lines).toBe(6)
-    expect(stats.mateModels).toBe(16)
-    expect(stats.mateLines).toBe(4)
-    expect(stats.leathers).toBe(4)
   })
 
   it('cuenta en el kit solo las opciones comprables de cada grupo', async () => {
@@ -24,13 +21,12 @@ describe('computeHomeStats', () => {
       yerba: purchasable('yerba'),
     })
 
-    // Un mate sin stock sigue siendo un modelo del catálogo, pero ya no es una opción del kit.
+    // Un mate sin stock sigue siendo una pieza del catálogo, pero ya no es una opción del kit.
     const soldOut = withProduct(products, 'mate-imperial-premium', {
       isPurchasable: false,
       isSoldOut: true,
     })
     const after = computeHomeStats(soldOut, categories)
-    expect(after.mateModels).toBe(before.mateModels)
     expect(after.pieces).toBe(before.pieces)
     expect(after.kitOptions.mate).toBe(before.kitOptions.mate - 1)
   })
@@ -43,13 +39,10 @@ describe('computeHomeStats', () => {
     expect(stats.lines).toBe(5)
   })
 
-  it('con el catálogo vacío devuelve todo en cero (menos los cueros, que son del dominio)', () => {
+  it('con el catálogo vacío devuelve todo en cero', () => {
     expect(computeHomeStats([], [])).toEqual({
       pieces: 0,
       lines: 0,
-      mateModels: 0,
-      mateLines: 0,
-      leathers: 4,
       kitOptions: { mate: 0, bombilla: 0, yerba: 0 },
     })
   })

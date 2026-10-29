@@ -186,7 +186,7 @@ features/cart/
 | Tipografía | Inter. Cuerpo 15px / 1.55. Títulos peso 500, interlineado 1.12, `letter-spacing -0.015em`: h1 42 · h2 32 · h3 25 · h4 20 · h5 16 px. Botones e inputs 14px; labels 12px; segmentados 13px; tags 11px |
 | Foco y selección | `:focus-visible` contorno 2px `accent`, separación 2px · selección `accent` al 30% |
 | Cueros (interfaz) | Negro `#221f22` · Marrón `#6b4532` · Crudo `#d7c29e` · Borravino `#5d1f2d` |
-| Cueros (escena 6 y 3D) | `#3a2016 #6b3c22 #b88d5c #5a1c26` (más saturados para la iluminación; se mantienen las dos paletas) |
+| Cueros (ficha del producto; el mate 3D del inicio es negro fijo) | `#3a2016 #6b3c22 #b88d5c #5a1c26` (más saturados para la iluminación; se mantienen las dos paletas) |
 | Curvas | principal `cubic-bezier(.16,1,.3,1)` (1000 ms por defecto) · elástica `cubic-bezier(.34,1.56,.64,1)` |
 
 Componentes base con las medidas del diseño: `.btn` (primary/secondary/ghost/icon 36×36, deshabilitado al 45%), `.input` (alto mínimo 36, fondo `surface`, borde divisor, foco borde `accent`), `.field` (label 12px al 70%), `.seg/.seg-opt`, `.tag` (accent/accent-2/neutral/outline). En `components/ui` se implementan como componentes con estas medidas, no como clases sueltas.
@@ -322,10 +322,10 @@ apps/store/src/
 
 - Hero "Encontrá tu mate." con "Ver la tienda" y "Armá tu kit" (tag con el descuento "−10%").
 - Historia (2026-10-29, "el mate 3D"): **después de la portada, el inicio muestra solo dos escenas: "Alpaca y bronce." (2 bombillones) y "Agua a 75 °C." (4 pasos del ritual)**; las otras cuatro ("Tres piezas. Una ronda.", "Calabaza curada. Virola de alpaca.", "Para cada cebada." y "Elegí el cuero.") siguen editables en el admin, pero no se muestran. **Desde 1024 px de ancho y 700 px de alto, sin `prefers-reduced-motion` y con WebGL, la portada y esas dos escenas son tres paradas de una sección fija** (`MateStage` sobre `ScrollStage`, `(3 + 1) × 100svh`; cada parada se queda quieta el 55 % de su tramo): 1 · "El mate" (el texto de la portada, con el único `h1`; el paquete de Canarias vuelca y la yerba forma la montañita), 2 · "La bombilla" (el mate gira y la bombilla se calza) y 3 · "El agua" (cae el chorro, la yerba se humedece y sube el vapor). Detrás, la foto de cada parada desenfocada y oscurecida con fundido cruzado; delante, el Mate Imperial Premium en 3D (cuero negro, virola de alpaca cincelada, pies de bronce), el raíl con "El mate", "La bombilla" y "El agua" (`aria-current`) y la pista "Deslizá para recorrer". Al final de la tercera parada el mate se va, el escenario se funde a negro y entra la colección. Sin WebGL, en lugar del mate 3D va la foto del mate. **El servidor, el celular, las ventanas bajas y menos movimiento dibujan la portada con la foto del mate y las dos escenas apiladas.**
-- Los productos de las escenas 1, 3 y 4 se eligen en `HomeContent.storyProducts`; si uno no es comprable se usa el siguiente comprable de su grupo.
+- Los productos de las escenas se eligen en `HomeContent.storyProducts` (de las que se muestran, solo "Alpaca y bronce." lista productos); si uno no es comprable se usa el siguiente comprable de su grupo.
 - Colección en scroll horizontal fijo con las líneas y tarjeta final "Ver todo el catálogo · N piezas".
 - Destacados (productos `featured`), manifiesto que se ilumina por palabra, 4 cifras animadas, bloque "Armá tu kit" con la cantidad de opciones por grupo, 3 reseñas destacadas (con producto y link).
-- **Cifras**: se calculan del catálogo publicado — piezas (27), líneas (6), modelos de mate (16), líneas de mate (4), cueros (4), opciones por grupo en el kit (solo comprables). Son texto editable: provincias con envío (24) y socios (2). El texto del paso 1 del kit ("N mates entre…") usa la cantidad de mates comprables.
+- **Cifras**: se calculan del catálogo publicado — piezas (27), líneas (6), opciones por grupo en el kit (solo comprables). Son texto editable: provincias con envío (24) y socios (2). El texto del paso 1 del kit ("N mates entre…") usa la cantidad de mates comprables.
 
 **Tienda**: título y bajada de la línea ("Todo el catálogo" / "Mates, bombillones y yerba. Elegí, sumá al carrito y pagá online."); contador "N piezas"; botones de línea con cantidad; búsqueda; orden Destacados / Menor precio / Mayor precio / A–Z (sin precio al final en "Menor precio"); al cambiar línea u orden la grilla reaparece escalonada; vacío "No encontramos resultados para '…'." con "Limpiar búsqueda"; banda final hacia el kit. Línea sin productos: "Todavía no hay piezas en esta línea" + link a la tienda.
 
@@ -773,7 +773,7 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 
 - Escena 3D del Mate Imperial Premium con three.js (2026-10-29, `features/home/mate3d`): porta `docs/design/galpon-tienda-v3/mate3d-scene.js` con cuero negro fijo y el paquete real de Canarias, y se arma con el scroll en las tres paradas del inicio (`mateStateAt` sobre el avance del `ScrollStage`; keyframes tipados como tuplas). three se descarga al entrar en pantalla en un chunk aparte y se pausa fuera de ella; foto del mate si no hay WebGL; no se monta con menos movimiento, en el celular ni en el servidor.
 - Cursor propio (`cursor-default.png`, `cursor-pointer.png`) y brillo que sigue al mouse.
-- Muestras de cuero que cambian de nombre con el scroll en la escena 6.
+- Muestras de cuero que cambian de nombre con el scroll (la escena "Elegí el cuero." hoy no se muestra en el inicio).
 
 ## 18. Accesibilidad y rendimiento
 
@@ -815,7 +815,7 @@ Cada plan tiene su propio documento, sus tareas y su criterio de "listo"; termin
 | **P2 · Tienda pública** | Layout (barra superior, header, menú, pie, toast), `components/ui`, Inicio (sin 3D), Tienda, Producto, Reseñas, Búsqueda, Carrito, Kit, Nosotros, Preguntas, Contacto, Arrepentimiento, Legales, SEO, animaciones de la etapa 1 | Lista de control visual de esas pantallas aprobada; E2E de navegación, carrito, kit, búsqueda, contacto y arrepentimiento |
 | **P3 · Checkout y cuenta** | Checkout de 3 pasos, cotización, pedidos, simulador de MP, tarjeta con Secure Fields y campos simulados, 3-D Secure, resultado, pedido de invitado, cuenta de cliente | E2E de todos los caminos de compra en verde |
 | **P4 · Dashboard** | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas, mensajes | E2E del admin en verde; lista de control del admin |
-| **P5 · Etapa 2 y cierre** | Escena 3D, cursor y brillo, Lighthouse, accesibilidad, revisión visual final, README finales | Objetivos de la sección 18 cumplidos |
+| **P5 · Etapa 2 y cierre** | Cursor y brillo, Lighthouse, accesibilidad, revisión visual final, README finales (la escena 3D ya está) | Objetivos de la sección 18 cumplidos |
 
 ### 21.2 Lista de control visual
 

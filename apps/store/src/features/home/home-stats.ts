@@ -1,6 +1,6 @@
 import type { Category, ProductSummary } from '@galpon/api-client'
 import type { ProductGroup } from '@galpon/domain'
-import { LEATHERS, PRODUCT_GROUPS } from '@galpon/domain'
+import { PRODUCT_GROUPS } from '@galpon/domain'
 
 /** Cifras del inicio que salen del catálogo publicado (spec 9.5, "Cifras"). */
 export interface HomeStats {
@@ -8,20 +8,14 @@ export interface HomeStats {
   pieces: number
   /** Líneas de producto con al menos una pieza publicada. */
   lines: number
-  /** Modelos de mate publicados (se cuentan aunque no tengan stock). */
-  mateModels: number
-  /** Líneas de mates con al menos una pieza publicada. */
-  mateLines: number
-  /** Cueros a elección en los mates. */
-  leathers: number
   /** Opciones de cada paso del kit: solo las piezas que se pueden comprar. */
   kitOptions: Record<ProductGroup, number>
 }
 
 /**
- * Calcula las cifras del inicio a partir del catálogo publicado: piezas, líneas, modelos de mate,
- * líneas de mate, cueros y cantidad de opciones comprables por grupo del kit. Las provincias con
- * envío y los socios no salen de acá: son texto editable (`HomeContent.stats`).
+ * Calcula las cifras del inicio a partir del catálogo publicado: piezas, líneas y cantidad de
+ * opciones comprables por grupo del kit. Las provincias con envío y los socios no salen de acá: son
+ * texto editable (`HomeContent.stats`).
  *
  * @param products - Productos publicados, tal como los devuelve el listado de la API.
  * @param categories - Líneas de producto; las que no tienen piezas publicadas no se cuentan.
@@ -51,9 +45,6 @@ export function computeHomeStats(
   return {
     pieces: products.length,
     lines: withProducts.length,
-    mateModels: products.filter((product) => product.group === 'mate').length,
-    mateLines: withProducts.filter((category) => category.group === 'mate').length,
-    leathers: LEATHERS.length,
     kitOptions,
   }
 }
