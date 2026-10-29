@@ -209,7 +209,7 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **Se borró**: `StoryStage`, `StoryWorld`, `HeroLife`, `YerbaLeaves`, `MateSteam`, `world-media`, `LeatherPicker` y `leather-scroll` con sus tests, las escenas que ya no se muestran de `SceneBody` y los posters `yerba`, `gourd` y `leather`. `story-stops.ts` quedó con las escenas del inicio, las paradas del mate y la foto del mate.
 
-**Ajustes al verlo** (tienda compilada, Chromium con SwiftShader): el cuero se leía marrón por el reflejo del estudio cálido y el brillo cobre repartido, se bajó el reflejo a 0,4 y se concentró el brillo en los bordes; el chorro de agua quedaba cortado en el aire y ahora entra en la yerba; el vapor subió de 0,5 a 0,75 de opacidad; la segunda línea del título de la portada perdía el degradé bajo el halo de las paradas. Unos 23 cuadros por segundo con SwiftShader (por CPU); en una GPU real tiene que andar a 60. Video del recorrido en `media/mate-3d/` (fuera del repo).
+**Ajustes al verlo** (tienda compilada, Chromium con SwiftShader): el cuero se leía marrón por el brillo cobre repartido en toda la superficie, y se concentró en los bordes (`sheenRoughness` 0,4; el reflejo del estudio no se tocó); el chorro de agua quedaba cortado en el aire y ahora entra en la yerba; el vapor subió de 0,5 a 0,75 de opacidad; la segunda línea del título de la portada perdía el degradé bajo el halo de las paradas. Unos 23 cuadros por segundo con SwiftShader (por CPU); en una GPU real tiene que andar a 60. Video del recorrido en `media/mate-3d/` (fuera del repo).
 
 ## Próximos pasos: P5
 

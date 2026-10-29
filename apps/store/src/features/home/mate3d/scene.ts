@@ -327,10 +327,10 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
     clearcoatRoughness: 0.35,
     sheen: 0.35,
     sheenColor: new T.Color(LEATHER_SHEEN),
-    // Ajuste de la Task 2 (visto en la tienda compilada): con el reflejo entero del estudio (paredes
-    // cálidas) y el brillo cobre repartido en toda la superficie, el cuero se leía marrón. El
-    // reflejo a 0,4 y el brillo concentrado en los bordes lo dejan negro con su veta cobre.
-    envMapIntensity: 0.4,
+    // Ajuste de la Task 2 (visto en la tienda compilada): con el brillo cobre repartido en toda la
+    // superficie, el cuero se leía marrón. Con `sheenRoughness` en 0,4 el brillo queda concentrado
+    // en los bordes y el cuero se lee negro con su veta cobre. El reflejo del estudio no se toca: es
+    // `scene.environment` (el material no lleva `envMap`, así que `envMapIntensity` no haría nada).
     sheenRoughness: 0.4,
   })
   const bump = engraving(false)

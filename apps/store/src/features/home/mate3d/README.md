@@ -75,10 +75,11 @@ monta, pausa y libera) alcanza y evita un renderizador de React por cuadro.
 ## Ajustes después de verla
 
 Con la tienda compilada (Task 2) se tocaron tres valores de `scene.ts`, comentados en el código: el
-cuero lleva `envMapIntensity` 0,4 y `sheenRoughness` 0,4 (con el reflejo entero del estudio y el
-brillo cobre repartido se leía marrón), el chorro de agua termina en 0,3 de `mateRoot` (adentro de
-la yerba, que lo tapa; con el 0,5 del diseño quedaba cortado en el aire) y el vapor llega a 0,75 de
-opacidad (con 0,5 casi no se veía sobre los fondos oscuros). Los keyframes quedaron como estaban.
+cuero lleva `sheenRoughness` 0,4 (con el brillo cobre repartido en toda la superficie se leía
+marrón; así queda concentrado en los bordes y el reflejo del estudio no cambia), el chorro de agua
+termina en 0,3 de `mateRoot` (adentro de la yerba, que lo tapa; con el 0,5 del diseño quedaba cortado
+en el aire) y el vapor llega a 0,75 de opacidad (con 0,5 casi no se veía sobre los fondos oscuros).
+Los keyframes quedaron como estaban.
 
 ## Rendimiento y respaldo
 
