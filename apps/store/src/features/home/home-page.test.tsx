@@ -81,6 +81,21 @@ describe('HomePage', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 
+  it('la portada tiene de fondo el cuadro del mate, sin la foto flotante del producto', async () => {
+    const data = await homeData()
+    renderSection(await HomePage())
+    const hero = document.querySelector<HTMLElement>('.home-hero')
+    const images = Array.from(hero?.querySelectorAll('img') ?? [])
+    const sources = images.map((image) => decodeURIComponent(image.getAttribute('src') ?? ''))
+    expect(sources.some((source) => source.includes('/hero/world/pieces.jpg'))).toBe(true)
+    // El cuadro es decorativo y la foto del mate de la portada (`StoryVisual`) ya no está.
+    expect(images.every((image) => image.getAttribute('alt') === '')).toBe(true)
+    const productPhoto = data.story.hero?.mainImage?.url ?? '(sin foto)'
+    expect(sources.some((source) => source.includes(productPhoto))).toBe(false)
+    // Con menos movimiento no caen hojas ni sube vapor.
+    expect(hero?.querySelector('[data-world-life]')).toBeNull()
+  })
+
   it('la portada lleva a la tienda y al kit, con el descuento del kit', async () => {
     renderSection(await HomePage())
     expect(screen.getByRole('link', { name: 'Ver la tienda' })).toHaveAttribute('href', '/tienda')

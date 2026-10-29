@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -6,12 +6,22 @@ import type { HomeData } from './home-data'
 import { Magnetic, Reveal } from '../../components/motion'
 import { Button, Tag } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
+import { HeroLife } from './HeroLife'
 import { HOME_ARROW_SIZE, HOME_CONTAINER, HOME_PILL_BUTTON } from './home-styles'
 import { HOME_COPY } from './home.copy'
-import { StoryVisual } from './StoryVisual'
+import { cssPoint, WORLD_DIVE, WORLD_MEDIA } from './world-media'
 
 /** Retardo de entrada de cada línea del título, en milisegundos (los 60 y 180 del diseño). */
 const TITLE_LINE_DELAYS_MS = [60, 180] as const
+
+/** El cuadro de la portada: el del mate (k1), donde empieza el mundo y de donde sale la zambullida. */
+const HERO_MEDIA = WORLD_MEDIA[WORLD_DIVE.from]
+
+/** El encuadre del cuadro desde 1024 px, el mismo que en el mundo (`.home-hero-poster` en `home.css`). */
+const POSTER_STYLE = {
+  '--poster-anchor': cssPoint(HERO_MEDIA.framing.anchor),
+  '--poster-zoom': String(HERO_MEDIA.framing.zoom),
+} as CSSProperties
 
 /** Props de {@link HomeHero}. */
 export interface HomeHeroProps {
@@ -21,11 +31,14 @@ export interface HomeHeroProps {
 
 /**
  * Portada del inicio (escena 0, spec 9.5): píldora con la marca, título "Encontrá tu mate.",
- * bajada y los botones "Ver la tienda" y "Armá tu kit" (con el descuento del kit). A un costado,
- * la foto del mate de `HomeContent.storyProducts.hero` flotando: el mate 3D del diseño llega en P5.
+ * bajada y los botones "Ver la tienda" y "Armá tu kit" (con el descuento del kit). De fondo, a
+ * pantalla completa, el cuadro del mate del mundo del mate (la "parada 0": el mundo arranca sin
+ * corte), con el mismo encuadre y el mismo velo del color de fondo a la izquierda que en el paseo;
+ * desde 1024 px y con movimiento, las hojas de yerba caen hacia la boca del mate y sube el vapor
+ * (`HeroLife`).
  *
- * El título y la foto, que es lo primero que se ve, no esperan a JavaScript: el título entra con
- * CSS y la foto se dibuja en el HTML y carga con prioridad. El resto aparece con `Reveal`.
+ * El título y el cuadro, que es lo primero que se ve, no esperan a JavaScript: el título entra con
+ * CSS y el cuadro se dibuja en el HTML y carga con prioridad. El resto aparece con `Reveal`.
  *
  * @param props - Ver {@link HomeHeroProps}.
  */
@@ -33,8 +46,23 @@ export function HomeHero({ data }: HomeHeroProps): ReactNode {
   const { hero } = data.content
   return (
     <section className="home-hero relative flex items-center overflow-hidden">
-      <div aria-hidden="true" className="home-bg-hero pointer-events-none absolute inset-0" />
-      <StoryVisual product={data.story.hero} side="right" hero onMobile />
+      <div aria-hidden="true" data-hero-poster="" className="pointer-events-none absolute inset-0">
+        <Image
+          src={HERO_MEDIA.poster}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="home-hero-poster object-cover"
+          style={POSTER_STYLE}
+        />
+        {HERO_MEDIA.mouth === null ? null : <HeroLife mouth={HERO_MEDIA.mouth} />}
+        {/* El velo: en el celular, parejo; desde 1024 px, a la izquierda como en el mundo. */}
+        <div className="bg-background/55 absolute inset-0 lg:hidden" />
+        <div className="from-background/85 via-background/45 absolute inset-y-0 left-0 hidden w-3/5 bg-linear-to-r to-transparent lg:block" />
+        <div className="from-background/70 absolute inset-x-0 top-0 h-40 bg-linear-to-b to-transparent" />
+        <div className="from-background/80 absolute inset-x-0 bottom-0 h-48 bg-linear-to-t to-transparent" />
+      </div>
       <div
         className={`${HOME_CONTAINER} relative flex justify-start pt-[72px] pb-[calc(clamp(24px,6vh,64px)+120px)]`}
       >

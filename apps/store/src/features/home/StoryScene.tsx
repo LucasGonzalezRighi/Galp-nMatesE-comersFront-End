@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Reveal } from '../../components/motion'
 import { cx } from '../../components/ui/cx'
 import { HOME_CONTAINER } from './home-styles'
+import { SceneReveal } from './SceneReveal'
 
 /** Fondo decorativo de una escena oscura. */
 export type SceneBackground = 'hero' | 'gourd' | 'bombilla'
@@ -106,7 +106,7 @@ export function StoryTitle({ lines, tone, size = 'lg' }: StoryTitleProps): React
       )}
     >
       {lines.map((line, position) => (
-        <Reveal
+        <SceneReveal
           key={`${String(position)}-${line}`}
           kind="rise"
           as="span"
@@ -114,7 +114,7 @@ export function StoryTitle({ lines, tone, size = 'lg' }: StoryTitleProps): React
           contentClassName={position === 0 ? undefined : accent}
         >
           {line}
-        </Reveal>
+        </SceneReveal>
       ))}
     </h2>
   )

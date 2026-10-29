@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
 
@@ -14,6 +15,25 @@ async function horizontalOverflow(page: Page): Promise<number> {
   return await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
+}
+
+/** La escala de un elemento según su `transform` calculado (1 si no lleva). */
+async function scaleOf(locator: Locator): Promise<number> {
+  return await locator.evaluate((element) => {
+    const { transform } = getComputedStyle(element)
+    return transform === 'none' ? 1 : new DOMMatrixReadOnly(transform).a
+  })
+}
+
+/** Lo que axe encuentra serio o crítico (WCAG 2.0 y 2.1, A y AA) dentro de `selector`. */
+async function seriousViolations(page: Page, selector: string): Promise<string[]> {
+  const results = await new AxeBuilder({ page })
+    .include(selector)
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  return results.violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map((violation) => `${violation.id}: ${violation.help}`)
 }
 
 /** Lleva la página a `stops` paradas del principio del paseo (puede tener decimales). */
@@ -114,6 +134,45 @@ test.describe('tienda: el paseo del mate', () => {
       await gotoStore(page, '/')
       expect(await horizontalOverflow(page)).toBe(0)
     })
+
+    test('la portada tiene de fondo el cuadro del mate, con hojas que caen y vapor', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const poster = page.locator('[data-hero-poster]')
+      await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
+      await expect(poster.locator('[data-world-life="leaves"]')).toBeAttached()
+      await expect(poster.locator('[data-world-life="steam"]')).toBeAttached()
+      // Que terminen de aparecer la píldora, la bajada y los botones antes de medir el contraste.
+      await page.waitForTimeout(1600)
+      expect(await seriousViolations(page, '.home-hero')).toEqual([])
+      expect(await horizontalOverflow(page)).toBe(0)
+    })
+
+    test('del mate a la bombilla la cámara entra por la boca del mate', async ({ page }) => {
+      await gotoStore(page, '/')
+      await expect(page.locator('[data-world-stop]')).toHaveCount(STOPS)
+      // A mitad del deslizamiento del mate (tercera parada) a la bombilla.
+      await scrollToStops(page, 2.775)
+      const pieces = page.locator('[data-world-stop="pieces"] > div')
+      await expect.poll(() => scaleOf(pieces)).toBeGreaterThan(1.3)
+      const bombilla = page.locator('[data-world-stop="bombilla"] > div')
+      await expect.poll(() => scaleOf(bombilla)).toBeLessThan(1)
+      // Ya en la bombilla, su cuadro queda en su tamaño.
+      await scrollToStops(page, 3.05)
+      await expect.poll(() => scaleOf(bombilla)).toBeCloseTo(1, 1)
+    })
+
+    test('al terminar la ronda el mundo se funde a negro antes de la colección', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const fade = page.locator('[data-world-fade]')
+      await scrollToStops(page, 5.2)
+      await expect(fade).toHaveCSS('opacity', '0')
+      await scrollToStops(page, 6)
+      await expect(fade).toHaveCSS('opacity', '1')
+    })
   })
 
   // El contenido de una parada crece con el ancho (el título escala con `vw`) y el panel no tiene
@@ -149,6 +208,13 @@ test.describe('tienda: el paseo del mate', () => {
   test.describe('con menos movimiento (1440 × 900)', () => {
     test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
 
+    test('la portada tiene el cuadro del mate, quieto: sin hojas ni vapor', async ({ page }) => {
+      await gotoStore(page, '/')
+      const poster = page.locator('[data-hero-poster]')
+      await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
+      await expect(poster.locator('[data-world-life]')).toHaveCount(0)
+    })
+
     test('no hay paseo ni raíl y todo el texto de las escenas está visible', async ({ page }) => {
       await gotoStore(page, '/')
       await expect(page.locator('.home-scene')).toHaveCount(STOPS)
@@ -173,5 +239,12 @@ test.describe('tienda: la historia en el celular (390 × 844)', () => {
     await expect(page.locator('.home-scene')).toHaveCount(STOPS)
     await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
     expect(await horizontalOverflow(page)).toBe(0)
+  })
+
+  test('la portada tiene el cuadro del mate de fondo, sin hojas ni vapor', async ({ page }) => {
+    await gotoStore(page, '/')
+    const poster = page.locator('[data-hero-poster]')
+    await expect(poster.locator('img[src*="pieces.jpg"]')).toBeVisible()
+    await expect(poster.locator('[data-world-life]')).toHaveCount(0)
   })
 })

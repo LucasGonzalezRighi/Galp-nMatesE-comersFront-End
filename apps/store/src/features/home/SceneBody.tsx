@@ -5,7 +5,7 @@ import Link from 'next/link'
 import type { ProductSummary } from '@galpon/api-client'
 import type { HomeData } from './home-data'
 import type { StoryScene } from './story-stops'
-import { CountUp, Magnetic, Reveal } from '../../components/motion'
+import { CountUp, Magnetic } from '../../components/motion'
 import { Button } from '../../components/ui'
 import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
@@ -14,6 +14,7 @@ import { lineHref } from './home-data'
 import { HOME_ARROW_SIZE, HOME_PILL_BUTTON, HOME_SCENE_TEXT } from './home-styles'
 import { HOME_COPY, orderLabel } from './home.copy'
 import { LeatherPicker } from './LeatherPicker'
+import { SceneReveal } from './SceneReveal'
 import { StoryProductRow } from './StoryProductRow'
 import { StoryTitle } from './StoryScene'
 
@@ -34,7 +35,7 @@ interface SceneTextProps {
 /** Párrafo de una escena: aparece subiendo con un retardo de 200 ms. */
 function SceneText({ children, tone }: SceneTextProps): ReactNode {
   return (
-    <Reveal
+    <SceneReveal
       kind="up"
       as="p"
       delay={200}
@@ -45,7 +46,7 @@ function SceneText({ children, tone }: SceneTextProps): ReactNode {
       )}
     >
       {children}
-    </Reveal>
+    </SceneReveal>
   )
 }
 
@@ -61,13 +62,13 @@ interface SceneProductsProps {
 function SceneProducts({ products, tone }: SceneProductsProps): ReactNode {
   if (products.length === 0) return null
   return (
-    <Reveal kind="up" delay={280}>
+    <SceneReveal kind="up" delay={280}>
       <ul aria-label={HOME_COPY.storyProducts} className="m-0 flex list-none flex-col p-0">
         {products.map((product) => (
           <StoryProductRow key={product.id} product={product} tone={tone} />
         ))}
       </ul>
-    </Reveal>
+    </SceneReveal>
   )
 }
 
@@ -174,11 +175,11 @@ export function SceneBody({ scene, tone, data, leatherProgress }: SceneBodyProps
         <>
           <StoryTitle lines={scene.titleLines} tone={tone} size="md" />
           {text}
-          <Reveal kind="up" delay={280} className="grid grid-cols-3 gap-4">
+          <SceneReveal kind="up" delay={280} className="grid grid-cols-3 gap-4">
             <StatFigure value={stats.mateModels} label={HOME_COPY.modelsOfMate} />
             <StatFigure value={stats.mateLines} label={HOME_COPY.mateLines} />
             <StatFigure value={stats.leathers} label={HOME_COPY.leathersToChoose} />
-          </Reveal>
+          </SceneReveal>
           {cta('/tienda')}
         </>
       )
@@ -202,7 +203,7 @@ export function SceneBody({ scene, tone, data, leatherProgress }: SceneBodyProps
           {eyebrow}
           {title}
           {text}
-          <Reveal kind="up" delay={280}>
+          <SceneReveal kind="up" delay={280}>
             <ol className="m-0 grid list-none grid-cols-4 gap-[10px] p-0 text-[12px] text-neutral-400">
               {content.ritualSteps.map((step, position) => (
                 <li key={`${String(position)}-${step}`} className="flex flex-col gap-[6px]">
@@ -211,7 +212,7 @@ export function SceneBody({ scene, tone, data, leatherProgress }: SceneBodyProps
                 </li>
               ))}
             </ol>
-          </Reveal>
+          </SceneReveal>
           {cta('/tienda')}
         </>
       )
@@ -221,15 +222,15 @@ export function SceneBody({ scene, tone, data, leatherProgress }: SceneBodyProps
           {eyebrow}
           {title}
           {text}
-          <Reveal kind="up" delay={260}>
+          <SceneReveal kind="up" delay={260}>
             <LeatherPicker progress={leatherProgress} />
-          </Reveal>
-          <Reveal kind="up" delay={340} className="flex flex-wrap gap-[14px]">
+          </SceneReveal>
+          <SceneReveal kind="up" delay={340} className="flex flex-wrap gap-[14px]">
             {cta('/kit')}
             <SceneLink href="/tienda" tone={tone}>
               {HOME_COPY.allMates}
             </SceneLink>
-          </Reveal>
+          </SceneReveal>
         </>
       )
   }

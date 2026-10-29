@@ -1,8 +1,9 @@
 /*
  * Estilos propios del inicio (los del diseño que no se arman con utilidades): alturas de las
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
- * entrada del título de la portada, relleno de los botones de la portada, palabra fantasma y la
- * línea de la pista del paseo del mate.
+ * entrada del título de la portada, encuadre del poster de la portada, relleno de los botones de
+ * la portada, palabra fantasma, entrada escalonada de las paradas del paseo del mate, vapor del
+ * mate y la línea de la pista del paseo.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -101,6 +102,23 @@
   animation: home-rise 1000ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) both;
 }
 
+/*
+ * Poster de la portada (el cuadro del mate): en el celular, centrado; desde 1024 px, con el mismo
+ * encuadre que en el mundo (`--poster-anchor` y `--poster-zoom`, de `WORLD_MEDIA`), así el mate
+ * queda a la derecha del título.
+ */
+.home-hero-poster {
+  object-position: 50% 50%;
+}
+
+@media (min-width: 1024px) {
+  .home-hero-poster {
+    object-position: var(--poster-anchor, 50% 50%);
+    transform: scale(var(--poster-zoom, 1));
+    transform-origin: var(--poster-anchor, 50% 50%);
+  }
+}
+
 /* Botones de la portada: al pasar el mouse se rellenan de verde de izquierda a derecha. */
 .home-cta-fill {
   background: linear-gradient(var(--color-accent-2-500), var(--color-accent-2-500)) no-repeat left
@@ -171,6 +189,88 @@
   --story-row-pad: clamp(8px, 1.6svh, 14px);
 }
 
+/*
+ * Entrada escalonada de las paradas del paseo: cada pieza de la columna (encabezado, rótulo,
+ * título, texto, productos, botón) espera transparente y 24 px más abajo; cuando su panel se
+ * vuelve el actual, sube y aparece 60 ms después de la anterior. Se anima `translate` (no
+ * `transform`) para no pisar el de los botones magnéticos ni el de los `Reveal` del primer panel.
+ */
+.home-stop-column > * {
+  opacity: 0;
+  translate: 0 24px;
+  transition:
+    opacity 700ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)),
+    translate 700ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.home-stop[data-current] .home-stop-column > * {
+  opacity: 1;
+  translate: none;
+  transition-duration: 1000ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(2) {
+  transition-delay: 60ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(3) {
+  transition-delay: 120ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(4) {
+  transition-delay: 180ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(5) {
+  transition-delay: 240ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(6) {
+  transition-delay: 300ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(n + 7) {
+  transition-delay: 360ms;
+}
+
+/*
+ * Vapor del mate: manchas difusas que suben desde la boca, crecen y se deshacen, una detrás de
+ * otra (cada una con su `animation-delay` y su `--steam-sway`). Solo `transform` y `opacity`.
+ */
+.home-steam {
+  position: absolute;
+  bottom: 0;
+  left: -64px;
+  width: 128px;
+  height: 176px;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-foreground) 40%, transparent),
+    transparent
+  );
+  filter: blur(12px);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: home-steam 9000ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) infinite both;
+}
+
+@keyframes home-steam {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.55);
+  }
+
+  30% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--steam-sway, 0px), -34vh, 0) scale(1.6);
+  }
+}
+
 /* Paseo del mate: línea de la pista "Deslizá para recorrer", con un brillo que baja una y otra vez. */
 .home-hint-line {
   position: relative;
@@ -202,8 +302,15 @@
 @media (prefers-reduced-motion: reduce) {
   .home-rise,
   .home-ghost,
-  .home-hint-line::after {
+  .home-hint-line::after,
+  .home-steam {
     animation: none;
+  }
+
+  .home-stop-column > * {
+    opacity: 1;
+    translate: none;
+    transition: none;
   }
 
   .home-cta-fill {

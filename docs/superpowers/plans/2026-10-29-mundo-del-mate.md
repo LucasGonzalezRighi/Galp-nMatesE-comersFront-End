@@ -65,3 +65,14 @@ Lucas no va a comprar créditos por ahora ("hacelo sin la herramienta y hasta do
 **Desvíos**: en el escenario todas las paradas usan el tono oscuro (el texto va sobre fotos oscuras y un velo del color de fondo), y el texto lleva un halo del color de fondo para separarlo de las partes claras de los cuadros (el galpón y la bombilla); el fondo propio de cada parada y la palabra "Bombilla" de fondo quedan solo en las escenas apiladas. `media-src` no se agregó: la CSP no lo declara y cae en `default-src 'self'`, que ya permite los clips propios.
 
 **Falta**: los clips `.mp4` (con la misma convención de rutas) y el cuadro del taller para `gourd` (hoy, el armado con la foto real del mate de calabaza de `f62bbfc`, documentado como provisorio en `WORLD_MEDIA`).
+
+**Task 2 (2026-10-29): hecha.** Vida sin video, con los mismos seis posters:
+
+- `world-media.ts`: cada `WorldMedia` suma su encuadre (`framing`: ancla y acercamiento), la boca del mate (`mouth`) y lo que se mueve (`life`); `WORLD_DIVE` (del mate a la bombilla), `diveTransform` (escalas 1 a 2,2 y 0,92 a 1 y el paneo de boca a boca) y `worldFade` (el negro en el 35 % final de la ronda).
+- `StoryWorld.tsx`: la zambullida, `YerbaLeaves` en el mate y `MateSteam` en el ritual y la ronda (solo en la parada actual), el fundido a negro y el clip que se aleja se suelta. Sin `LazyMotion` propio.
+- Portada: el cuadro del mate de fondo con el encuadre y el velo del mundo, y `HeroLife` (hojas y vapor desde 1024 px). Sin `StoryVisual`.
+- Paneles: entrada escalonada propia al volverse el actual; sus `Reveal` (salvo el primer panel) se dibujan ya en su estado final (`SceneReveal`).
+
+**Desvíos**: el mate de la tercera parada se corre con ancla a la izquierda y acercamiento de 1,15 (no con `object-position` solo: a 1440 × 900 el cuadro sobra 65 px por lado); la bombilla se acerca 1,12 para que la zambullida no deje ver su borde; la boca del mate del cuadro que se deja viaja hasta la de la bombilla en la primera mitad de la zambullida, para que las dos coincidan durante el fundido.
+
+**Falta**: los clips y el cuadro del taller, como antes; con los clips, `life` y `mouth` de cada parada se revisan.

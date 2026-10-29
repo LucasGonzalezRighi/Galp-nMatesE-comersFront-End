@@ -19,8 +19,9 @@ import { worldStops } from './world-media'
 const HINT_LIMIT = 0.01
 
 /**
- * El texto va siempre sobre el mundo (fotos cálidas y oscuras) y el velo del color de fondo: claro,
- * como en las paradas oscuras, sin importar el tono de la escena en las apiladas.
+ * El texto va siempre sobre el mundo (fotos cálidas y oscuras) y el velo del color de fondo: el
+ * contenido de cada parada usa los colores de las escenas oscuras, sin importar el tono de la
+ * escena en las apiladas.
  */
 const STAGE_TONE = 'dark'
 
@@ -66,7 +67,6 @@ function StageLayers({ stops, data }: StageLayersProps): ReactNode {
             index={index}
             total={count}
             name={stop.name}
-            tone={STAGE_TONE}
             current={index === current}
           >
             <SceneBody
@@ -78,7 +78,7 @@ function StageLayers({ stops, data }: StageLayersProps): ReactNode {
           </StoryStop>
         ))}
       </div>
-      <StoryRail stops={stops} current={current} tone={STAGE_TONE} onSelect={scrollToStop} />
+      <StoryRail stops={stops} current={current} onSelect={scrollToStop} />
       <p
         aria-hidden="true"
         className={cx(
@@ -116,7 +116,7 @@ export interface StoryStageProps {
  * @param props - Ver {@link StoryStageProps}.
  */
 export function StoryStage({ data }: StoryStageProps): ReactNode {
-  const stops = useMemo(() => worldStops(data.content.scenes, data.story), [data])
+  const stops = useMemo(() => worldStops(data.content.scenes), [data])
   if (stops.length === 0) return null
   return (
     <ScrollStage stops={stops.length} label={HOME_COPY.stageLabel} className="bg-background">

@@ -16,21 +16,19 @@ export interface StoryRailProps {
   stops: readonly StoryRailStop[]
   /** Posición de la parada actual, desde 0. */
   current: number
-  /** Fondo de la parada actual: define el color de los puntos y los nombres. */
-  tone: 'dark' | 'light'
   /** Lleva a la parada elegida (ver `scrollToStop` de `ScrollStage`). */
   onSelect: (index: number) => void
 }
 
 /**
- * Raíl de paradas del paseo del mate, al borde derecho del escenario: un punto por parada y su
- * nombre, que se ve en la actual (desde 1280 px), al pasar el mouse y
- * con el foco. La actual lleva `aria-current="true"` y un punto cobre más grande. Cada ítem es un
+ * Raíl de paradas del paseo del mate, al borde derecho del escenario (siempre sobre el mundo, en
+ * claro): un punto por parada y su nombre, que se ve en la actual (desde 1280 px), al pasar el
+ * mouse y con el foco. La actual lleva `aria-current="true"` y un punto cobre más grande. Cada ítem es un
  * botón que lleva a su parada. Solo se animan `opacity` y `transform`.
  *
  * @param props - Ver {@link StoryRailProps}.
  */
-export function StoryRail({ stops, current, tone, onSelect }: StoryRailProps): ReactNode {
+export function StoryRail({ stops, current, onSelect }: StoryRailProps): ReactNode {
   return (
     <nav
       aria-label={HOME_COPY.railLabel}
@@ -49,14 +47,12 @@ export function StoryRail({ stops, current, tone, onSelect }: StoryRailProps): R
                 }}
                 className={cx(
                   'group focus-visible:ring-accent flex h-7 cursor-pointer items-center gap-3 rounded-full pr-[10px] pl-3 outline-none focus-visible:ring-2',
-                  'ease-main transition-transform duration-300 active:scale-[0.98] motion-reduce:transition-none',
-                  tone === 'light' ? 'text-background' : 'text-foreground',
+                  'ease-main text-foreground transition-transform duration-300 active:scale-[0.98] motion-reduce:transition-none',
                 )}
               >
                 <span
                   className={cx(
-                    'ease-main rounded-full px-2 py-[2px] text-[12px] whitespace-nowrap transition-[opacity,transform] duration-500 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none',
-                    tone === 'light' ? 'bg-neutral-100/80' : 'bg-background/70',
+                    'ease-main bg-background/70 rounded-full px-2 py-[2px] text-[12px] whitespace-nowrap transition-[opacity,transform] duration-500 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none',
                     isCurrent
                       ? 'translate-x-2 opacity-0 xl:translate-x-0 xl:opacity-100'
                       : 'translate-x-2 opacity-0',

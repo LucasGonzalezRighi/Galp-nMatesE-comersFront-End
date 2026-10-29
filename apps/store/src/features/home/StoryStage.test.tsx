@@ -104,6 +104,22 @@ describe('StoryStage', () => {
     expect(screen.getByRole('button', { name: 'El mate' })).toHaveAttribute('aria-current', 'true')
   })
 
+  it('solo el primer panel espera a verse; los demás entran escalonados al volverse el actual', () => {
+    render(<StoryStage data={data} />)
+    const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-stage-stop]'))
+    // El estado oculto de `Reveal` (transparente o bajo su máscara) en línea, esperando a verse.
+    const waiting = (panel: HTMLElement): number =>
+      panel.querySelectorAll('[style*="opacity: 0"], [style*="translateY(108%)"]').length
+    expect(waiting(panels[0] ?? document.body)).toBeGreaterThan(0)
+    // Apilados en la ventana, sus `Reveal` dispararían todos juntos y sin verse: no los usan.
+    expect(panels.slice(1).map(waiting)).toEqual([0, 0, 0, 0, 0])
+    // La entrada la hace la columna del panel (`.home-stop-column` en `home.css`) con `data-current`.
+    expect(panels.every((panel) => panel.querySelector('.home-stop-column') !== null)).toBe(true)
+    goToStop(3)
+    expect(panels[3]).toHaveAttribute('data-current', 'true')
+    expect(panels.filter((panel) => panel.hasAttribute('data-current'))).toHaveLength(1)
+  })
+
   it('detrás del texto, la capa del mundo actual es la de la parada actual', () => {
     render(<StoryStage data={data} />)
     const currentWorld = (): string | null =>

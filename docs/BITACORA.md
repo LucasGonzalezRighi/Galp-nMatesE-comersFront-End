@@ -193,6 +193,14 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **Falta**: los clips (`public/hero/world/<clave>.mp4`, sin credenciales en esta fase) y el cuadro del taller para el galpón (`gourd.jpg` está armado con la foto real del mate de calabaza, provisorio hasta que haya créditos). El mate 3D de P5 ya no tiene la capa `StoryMate`: entraría como una capa más del mundo.
 
+## Mundo del mate: vida sin video (2026-10-29)
+
+**Pedido de Lucas**: sin créditos por ahora ("hacelo sin la herramienta y hasta donde tengas"): el mundo se termina con los cuadros fijos y animación propia, ligada al scroll, solo con `transform` y `opacity`.
+
+**Qué quedó**: del mate a la bombilla, la cámara entra en el mate (`diveTransform`): el cuadro del mate se acerca de 1 a 2,2 alrededor de su boca y la lleva adonde está la boca de la bombilla, que llega encima de 0,92 a 1. En la parada del mate caen hojas de yerba hacia la boca (`YerbaLeaves`, un lienzo con 16 hojas en dos tonos de oliva que se pausa con la pestaña oculta) y en el ritual y la ronda sube vapor (`MateSteam`, tres manchas difusas en bucle); las dos cosas solo en la parada actual. Al final del tramo de la ronda el mundo se funde a negro (`worldFade`) antes de la colección. La portada toma de fondo el cuadro del mate con el mismo encuadre y velo que el mundo, con las hojas y el vapor desde 1024 px; la foto flotante del producto se quitó. Cada poster tiene su encuadre en `WORLD_MEDIA` (el del mate va a la derecha, fuera de la columna de texto) y la boca del mate (`mouth`). Las paradas que no son la primera entran escalonadas al volverse la actual (`.home-stop-column`), sin los `Reveal` que antes disparaban todos juntos al entrar el escenario. Nada de esto en el celular ni con menos movimiento.
+
+**De paso**: `storyStops` quedó con lo que se lee (clave, escena y nombre), el clip que se aleja se suelta (`load()` sin `src`) y la miniatura de la galería de la ficha se nombra "Ver la foto 01", como se ve (axe marcaba `label-content-name-mismatch` desde que el mate imperial tiene dos fotos).
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
