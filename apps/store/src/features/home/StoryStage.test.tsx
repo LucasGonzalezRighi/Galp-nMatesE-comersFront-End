@@ -4,7 +4,6 @@ import type { MotionValue } from 'motion/react'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { motionValue } from 'motion/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ProductSummary } from '@galpon/api-client'
 import type { HomeData } from './home-data'
 import {
   cleanUpAfterEach,
@@ -48,60 +47,22 @@ function goToStop(index: number): void {
   })
 }
 
-/** Los datos con una foto propia del test en el primer bombillón y la primera yerba. */
-function withPhotos(base: HomeData): HomeData {
-  const image = base.story.hero?.mainImage
-  if (image === null || image === undefined) throw new Error('El mate de fábrica no tiene foto.')
-  const photo = (product: ProductSummary, url: string): ProductSummary => ({
-    ...product,
-    mainImage: { ...image, url },
-  })
-  const [bombilla, ...bombillas] = base.story.bombillas
-  const [yerba, ...yerbas] = base.story.yerbas
-  if (bombilla === undefined || yerba === undefined) throw new Error('Faltan productos.')
-  return {
-    ...base,
-    story: {
-      ...base.story,
-      bombillas: [photo(bombilla, '/test/bombilla.jpg'), ...bombillas],
-      yerbas: [photo(yerba, '/test/yerba.jpg'), ...yerbas],
-    },
-  }
-}
-
-/** Los datos sin foto en el primer bombillón (en el catálogo de fábrica tiene una). */
-function withoutBombillaPhoto(base: HomeData): HomeData {
-  const [bombilla, ...bombillas] = base.story.bombillas
-  if (bombilla === undefined) throw new Error('Falta el bombillón.')
-  return {
-    ...base,
-    story: { ...base.story, bombillas: [{ ...bombilla, mainImage: null }, ...bombillas] },
-  }
-}
-
-/** El slug de la pieza que muestra el mate. */
-function shownPiece(): string | null {
-  return (
-    document.querySelector('[data-current="true"][data-piece]')?.getAttribute('data-piece') ?? null
-  )
-}
-
 describe('StoryStage', () => {
-  it('dibuja las seis paradas en el orden de la historia, con su encabezado', () => {
+  it('dibuja las seis paradas en el orden del relato, con su encabezado', () => {
     render(<StoryStage data={data} />)
     const stage = screen.getByRole('region', { name: 'El paseo del mate' })
     const headings = within(stage)
       .getAllByText(/^\d{2} \/ 06 · /)
       .map((element) => element.textContent)
     expect(headings).toEqual([
-      '01 / 06 · Las tres piezas',
-      '02 / 06 · La calabaza',
-      '03 / 06 · El bombillón',
-      '04 / 06 · La yerba',
+      '01 / 06 · El yerbal',
+      '02 / 06 · El galpón',
+      '03 / 06 · El mate',
+      '04 / 06 · La bombilla',
       '05 / 06 · El ritual',
-      '06 / 06 · El cuero',
+      '06 / 06 · La ronda',
     ])
-    expect(within(stage).getAllByRole('heading', { level: 2 })[0]).toHaveTextContent(
+    expect(within(stage).getAllByRole('heading', { level: 2 })[2]).toHaveTextContent(
       'Tres piezas.Una ronda.',
     )
   })
@@ -111,12 +72,12 @@ describe('StoryStage', () => {
     const rail = screen.getByRole('navigation', { name: 'Paradas del paseo' })
     const buttons = within(rail).getAllByRole('button')
     expect(buttons.map((button) => button.textContent)).toEqual([
-      'Las tres piezas',
-      'La calabaza',
-      'El bombillón',
-      'La yerba',
+      'El yerbal',
+      'El galpón',
+      'El mate',
+      'La bombilla',
       'El ritual',
-      'El cuero',
+      'La ronda',
     ])
     expect(buttons[0]).toHaveAttribute('aria-current', 'true')
     expect(buttons.slice(1).every((button) => !button.hasAttribute('aria-current'))).toBe(true)
@@ -129,29 +90,32 @@ describe('StoryStage', () => {
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
   })
 
-  it('el mate muestra la pieza de la parada actual y la leyenda la nombra', () => {
-    const { hero, bombillas, yerbas } = withPhotos(data).story
-    render(<StoryStage data={withPhotos(data)} />)
-    expect(shownPiece()).toBe(hero?.slug)
+  it('los paneles están apilados: se ve el actual y los demás quedan ocultos pero en el DOM', () => {
+    render(<StoryStage data={data} />)
+    const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-stage-stop]'))
+    expect(panels).toHaveLength(6)
+    const visible = (): boolean[] => panels.map((panel) => panel.classList.contains('opacity-100'))
+    expect(visible()).toEqual([true, false, false, false, false, false])
+    expect(panels.slice(1).every((panel) => panel.classList.contains('opacity-0'))).toBe(true)
+    // Ocultos solo con opacidad: los lectores de pantalla y el teclado los siguen encontrando.
+    expect(panels.some((panel) => panel.closest('[aria-hidden="true"]') !== null)).toBe(false)
     goToStop(2)
-    expect(shownPiece()).toBe(bombillas[0]?.slug)
-    expect(screen.getByRole('button', { name: 'El bombillón' })).toHaveAttribute(
-      'aria-current',
-      'true',
-    )
-    expect(screen.getByRole('figure')).toHaveTextContent(bombillas[0]?.name ?? '')
-    goToStop(3)
-    expect(shownPiece()).toBe(yerbas[0]?.slug)
-    goToStop(4)
-    expect(shownPiece()).toBe(hero?.slug)
+    expect(visible()).toEqual([false, false, true, false, false, false])
+    expect(screen.getByRole('button', { name: 'El mate' })).toHaveAttribute('aria-current', 'true')
   })
 
-  it('si la pieza de una parada no tiene foto, el mate sigue mostrando la última que tenía', () => {
-    const withoutPhoto = withoutBombillaPhoto(data)
-    render(<StoryStage data={withoutPhoto} />)
-    expect(withoutPhoto.story.bombillas[0]?.mainImage).toBeNull()
+  it('detrás del texto, la capa del mundo actual es la de la parada actual', () => {
+    render(<StoryStage data={data} />)
+    const currentWorld = (): string | null =>
+      document
+        .querySelector('[data-world-stop][data-current="true"]')
+        ?.getAttribute('data-world-stop') ?? null
+    expect(document.querySelectorAll('[data-world-stop]')).toHaveLength(6)
+    expect(currentWorld()).toBe('yerba')
     goToStop(2)
-    expect(shownPiece()).toBe(withoutPhoto.story.hero?.slug)
+    expect(currentWorld()).toBe('pieces')
+    goToStop(4)
+    expect(currentWorld()).toBe('ritual')
   })
 
   it('en la parada del cuero el cuero destacado sigue el avance de la parada quieta', () => {

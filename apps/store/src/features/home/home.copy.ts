@@ -40,14 +40,14 @@ export const HOME_COPY = {
   railLabel: 'Paradas del paseo',
   /** Paseo del mate: pista que invita a hacer scroll y desaparece al empezar. */
   scrollHint: 'Deslizá para recorrer',
-  /** Paseo del mate: nombre de cada parada, por la clave de su escena. */
+  /** Paseo del mate: nombre de cada parada del mundo del mate, por la clave de su escena. */
   stopNames: {
-    pieces: 'Las tres piezas',
-    gourd: 'La calabaza',
-    bombilla: 'El bombillón',
-    yerba: 'La yerba',
+    yerba: 'El yerbal',
+    gourd: 'El galpón',
+    pieces: 'El mate',
+    bombilla: 'La bombilla',
     ritual: 'El ritual',
-    leather: 'El cuero',
+    leather: 'La ronda',
   } satisfies Record<HomeContent['scenes'][number]['key'], string>,
 } as const
 
@@ -158,7 +158,7 @@ export function stopCounter(position: number, total: number): string {
  * @param position - Posición de la parada, un entero de 1 a `total`.
  * @param total - Cantidad de paradas, un entero mayor o igual a 1.
  * @param name - Nombre de la parada.
- * @returns Por ejemplo `03 / 06 · El bombillón`.
+ * @returns Por ejemplo `03 / 06 · El mate`.
  * @throws {RangeError} Si `position` o `total` no son válidos (ver {@link stopCounter}).
  */
 export function stopHeading(position: number, total: number, name: string): string {

@@ -55,4 +55,13 @@ Lucas no va a comprar créditos por ahora ("hacelo sin la herramienta y hasta do
 
 ## Estado
 
-(Lo completa la Task 1.)
+**Task 1 (2026-10-29): hecha.** El motor funciona completo con los seis posters:
+
+- `world-media.ts`: `WORLD_ORDER`, `WORLD_MEDIA` (todos los `clip` en `null`), `worldStops` y `worldLayer` (opacidad y avance local de cada capa con la curva de `stageLayout`).
+- `StoryWorld.tsx`: una capa por parada con su poster (`next/image`, solo el primero con prioridad), cámara de 1 a 1,06 y de −1,5vw a 1,5vw, fundido cruzado en el deslizamiento; con clip, video frotado, carga por cercanía y `play()`/`pause()` al cargar, sin video con menos movimiento o ahorro de datos.
+- `StoryStage.tsx` sin pista: paneles apilados (`StoryStop` con `current`), velo, raíl con los nombres nuevos; `StoryMate` borrado. Las escenas apiladas siguen `WORLD_ORDER`.
+- E2E del paseo actualizado (el mate en la tercera parada, la capa del mundo actual, los paneles altos a 1600×750 y 1920×700); capturas a 1440×900 en el workspace del SDD.
+
+**Desvíos**: en el escenario todas las paradas usan el tono oscuro (el texto va sobre fotos oscuras y un velo del color de fondo), y el texto lleva un halo del color de fondo para separarlo de las partes claras de los cuadros (el galpón y la bombilla); el fondo propio de cada parada y la palabra "Bombilla" de fondo quedan solo en las escenas apiladas. `media-src` no se agregó: la CSP no lo declara y cae en `default-src 'self'`, que ya permite los clips propios.
+
+**Falta**: los clips `.mp4` (con la misma convención de rutas) y el cuadro del taller para `gourd` (hoy, el armado con la foto real del mate de calabaza de `f62bbfc`, documentado como provisorio en `WORLD_MEDIA`).

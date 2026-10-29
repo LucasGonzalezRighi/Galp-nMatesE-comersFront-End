@@ -16,12 +16,12 @@ describe('storyStops', () => {
       'leather',
     ])
     expect(stops.map((stop) => stop.name)).toEqual([
-      'Las tres piezas',
-      'La calabaza',
-      'El bombillón',
-      'La yerba',
+      'El mate',
+      'El galpón',
+      'La bombilla',
+      'El yerbal',
       'El ritual',
-      'El cuero',
+      'La ronda',
     ])
     expect(stops.map((stop) => stop.tone)).toEqual([
       'light',

@@ -43,17 +43,41 @@ test.describe('tienda: el paseo del mate', () => {
       await expect(rail.getByRole('button').first()).toHaveAttribute('aria-current', 'true')
     })
 
-    test('al bajar 2,6 paradas la tercera es la actual y su título está a la vista', async ({
+    test('al bajar 2,6 paradas la tercera (el mate) es la actual y su título está a la vista', async ({
       page,
     }) => {
       await gotoStore(page, '/')
       await scrollToStops(page, 2.6)
       const rail = page.getByRole('navigation', RAIL)
       await expect(rail.getByRole('button').nth(2)).toHaveAttribute('aria-current', 'true')
+      await expect(rail.getByRole('button').nth(2)).toHaveText('El mate')
+      const panel = page.locator('[data-stage-stop="2"]')
+      await expect(panel).toHaveAttribute('data-current', 'true')
+      await expect(panel).toHaveCSS('opacity', '1')
       await expect(
-        page.getByRole('heading', { level: 2, name: /Alpaca\s*y bronce/ }),
+        page.getByRole('heading', { level: 2, name: /Tres piezas\.\s*Una ronda\./ }),
       ).toBeInViewport()
       expect(await horizontalOverflow(page)).toBe(0)
+    })
+
+    test('durante una parada, la capa del mundo que se ve es la de esa parada', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      await expect(page.locator('[data-world-stop]')).toHaveCount(STOPS)
+      for (const [index, key] of [
+        [0, 'yerba'],
+        [2, 'pieces'],
+        [4, 'ritual'],
+      ] as const) {
+        await scrollToStops(page, index + 0.25)
+        const current = page.locator('[data-world-stop][data-current="true"]')
+        await expect(current).toHaveAttribute('data-world-stop', key)
+        await expect(current).toHaveCSS('opacity', '1')
+        const others = page.locator(`[data-world-stop]:not([data-world-stop="${key}"])`)
+        await expect(others).toHaveCount(STOPS - 1)
+        for (const other of await others.all()) await expect(other).toHaveCSS('opacity', '0')
+      }
     })
 
     test('tocar la quinta parada del raíl la deja como actual', async ({ page }) => {
@@ -62,6 +86,7 @@ test.describe('tienda: el paseo del mate', () => {
       const fifth = page.getByRole('navigation', RAIL).getByRole('button').nth(4)
       await fifth.click()
       await expect(fifth).toHaveAttribute('aria-current', 'true')
+      await expect(page.locator('[data-stage-stop="4"]')).toHaveAttribute('data-current', 'true')
       await expect(page.getByRole('heading', { level: 2, name: /Agua a 75/ })).toBeInViewport()
     })
 
@@ -82,6 +107,7 @@ test.describe('tienda: el paseo del mate', () => {
         'aria-current',
         'true',
       )
+      await expect(page.locator('[data-stage-stop="1"]')).toHaveAttribute('data-current', 'true')
     })
 
     test('el documento no tiene scroll horizontal', async ({ page }) => {
@@ -102,9 +128,14 @@ test.describe('tienda: el paseo del mate', () => {
       test('las paradas más altas entran enteras entre el header y el borde', async ({ page }) => {
         await gotoStore(page, '/')
         await expect(page.getByRole('region', STAGE)).toBeAttached()
-        // Las tres piezas (tres productos) y la yerba (rótulo y tres productos) son las más altas.
-        for (const index of [0, 3]) {
+        // La yerba (rótulo y tres productos) y el mate (tres productos) son las más altas.
+        for (const index of [0, 2]) {
           await scrollToStops(page, index + 0.2)
+          // Los paneles apilados entran subiendo 24 px: se mide cuando terminó de entrar.
+          await expect(page.locator(`[data-stage-stop="${String(index)}"]`)).toHaveCSS(
+            'opacity',
+            '1',
+          )
           const column = page.locator(`[data-stage-stop="${String(index)}"] > div > div`)
           const box = await column.boundingBox()
           if (box === null) throw new Error(`La parada ${String(index)} no tiene columna.`)

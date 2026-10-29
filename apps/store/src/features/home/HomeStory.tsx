@@ -1,14 +1,17 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import type { ProductSummary } from '@galpon/api-client'
 import type { StoryData } from './SceneBody'
-import type { StoryScene as Scene } from './story-stops'
+import type { StoryStopKey } from './story-stops'
+import type { SceneBackground } from './StoryScene'
 import { useMediaQuery, usePrefersReducedMotion } from '../../components/motion'
 import { HOME_COPY } from './home.copy'
 import { SceneBody } from './SceneBody'
 import { StoryScene } from './StoryScene'
 import { StoryStage } from './StoryStage'
 import { StoryVisual } from './StoryVisual'
+import { WORLD_ORDER } from './world-media'
 
 /**
  * Desde qué ventana la historia es el paseo del mate: 1024 px de ancho y 700 px de alto (en
@@ -19,9 +22,72 @@ import { StoryVisual } from './StoryVisual'
  */
 const STAGE_QUERY = '(min-width: 1024px) and (min-height: 700px)'
 
-/** Busca la escena por su clave; si el contenido no la trae, esa escena no se dibuja. */
-function sceneOf(scenes: readonly Scene[], key: Scene['key']): Scene | undefined {
-  return scenes.find((scene) => scene.key === key)
+/** Cómo se ve una escena apilada, igual que en el diseño. */
+interface StackedLook {
+  /** Fondo de la escena. */
+  tone: 'dark' | 'light'
+  /** De qué lado va el texto. */
+  side: 'start' | 'end'
+  /** Resplandor de fondo, si lleva. */
+  background?: SceneBackground
+  /** Palabra gigante de fondo, si lleva. */
+  ghostWord?: string
+  /** La pieza de la foto flotante (la del producto, no el poster del mundo). */
+  visual: (story: StoryData['story']) => ProductSummary | null
+  /** De qué lado va la foto. */
+  visualSide: 'left' | 'right'
+  /** Retardo del vaivén de la foto, en milisegundos, para que no floten al unísono. */
+  floatDelay: number
+}
+
+/** Cómo se ve cada escena apilada, por su clave. */
+const STACKED_LOOK: Record<StoryStopKey, StackedLook> = {
+  yerba: {
+    tone: 'light',
+    side: 'start',
+    visual: (story) => story.yerbas[0] ?? null,
+    visualSide: 'right',
+    floatDelay: 300,
+  },
+  gourd: {
+    tone: 'dark',
+    side: 'end',
+    background: 'gourd',
+    visual: (story) => story.hero,
+    visualSide: 'left',
+    floatDelay: 600,
+  },
+  pieces: {
+    tone: 'light',
+    side: 'start',
+    visual: (story) => story.hero,
+    visualSide: 'right',
+    floatDelay: 0,
+  },
+  bombilla: {
+    tone: 'dark',
+    side: 'end',
+    background: 'bombilla',
+    ghostWord: HOME_COPY.ghostWord,
+    visual: (story) => story.bombillas[0] ?? null,
+    visualSide: 'left',
+    floatDelay: 1200,
+  },
+  ritual: {
+    tone: 'dark',
+    side: 'start',
+    background: 'hero',
+    visual: (story) => story.hero,
+    visualSide: 'right',
+    floatDelay: 900,
+  },
+  leather: {
+    tone: 'light',
+    side: 'start',
+    visual: (story) => story.hero,
+    visualSide: 'right',
+    floatDelay: 1500,
+  },
 }
 
 /** Props de {@link StackedStory}. */
@@ -30,79 +96,35 @@ interface StackedStoryProps {
   data: StoryData
 }
 
-/** Las seis escenas apiladas, una debajo de la otra (celular, menos movimiento y HTML del servidor). */
+/**
+ * Las seis escenas apiladas, una debajo de la otra (celular, menos movimiento y HTML del servidor),
+ * en el mismo orden que el paseo ({@link WORLD_ORDER}). Una escena que el contenido no trae no se
+ * dibuja.
+ */
 function StackedStory({ data }: StackedStoryProps): ReactNode {
-  const { content, story } = data
-  const pieces = sceneOf(content.scenes, 'pieces')
-  const gourd = sceneOf(content.scenes, 'gourd')
-  const bombilla = sceneOf(content.scenes, 'bombilla')
-  const yerba = sceneOf(content.scenes, 'yerba')
-  const ritual = sceneOf(content.scenes, 'ritual')
-  const leather = sceneOf(content.scenes, 'leather')
-  return (
-    <>
-      {pieces === undefined ? null : (
-        <StoryScene
-          tone="light"
-          side="start"
-          visual={<StoryVisual product={story.hero} side="right" />}
-        >
-          <SceneBody scene={pieces} tone="light" data={data} />
-        </StoryScene>
-      )}
-      {gourd === undefined ? null : (
-        <StoryScene
-          tone="dark"
-          side="end"
-          background="gourd"
-          visual={<StoryVisual product={story.hero} side="left" floatDelay={600} />}
-        >
-          <SceneBody scene={gourd} tone="dark" data={data} />
-        </StoryScene>
-      )}
-      {bombilla === undefined ? null : (
-        <StoryScene
-          tone="dark"
-          side="end"
-          background="bombilla"
-          ghostWord={HOME_COPY.ghostWord}
-          visual={
-            <StoryVisual product={story.bombillas[0] ?? null} side="left" floatDelay={1200} />
-          }
-        >
-          <SceneBody scene={bombilla} tone="dark" data={data} />
-        </StoryScene>
-      )}
-      {yerba === undefined ? null : (
-        <StoryScene
-          tone="light"
-          side="start"
-          visual={<StoryVisual product={story.yerbas[0] ?? null} side="right" floatDelay={300} />}
-        >
-          <SceneBody scene={yerba} tone="light" data={data} />
-        </StoryScene>
-      )}
-      {ritual === undefined ? null : (
-        <StoryScene
-          tone="dark"
-          side="start"
-          background="hero"
-          visual={<StoryVisual product={story.hero} side="right" floatDelay={900} />}
-        >
-          <SceneBody scene={ritual} tone="dark" data={data} />
-        </StoryScene>
-      )}
-      {leather === undefined ? null : (
-        <StoryScene
-          tone="light"
-          side="start"
-          visual={<StoryVisual product={story.hero} side="right" floatDelay={1500} />}
-        >
-          <SceneBody scene={leather} tone="light" data={data} />
-        </StoryScene>
-      )}
-    </>
-  )
+  return WORLD_ORDER.map((key) => {
+    const scene = data.content.scenes.find((candidate) => candidate.key === key)
+    if (scene === undefined) return null
+    const look = STACKED_LOOK[key]
+    return (
+      <StoryScene
+        key={key}
+        tone={look.tone}
+        side={look.side}
+        background={look.background}
+        ghostWord={look.ghostWord}
+        visual={
+          <StoryVisual
+            product={look.visual(data.story)}
+            side={look.visualSide}
+            floatDelay={look.floatDelay}
+          />
+        }
+      >
+        <SceneBody scene={scene} tone={look.tone} data={data} />
+      </StoryScene>
+    )
+  })
 }
 
 /** Props de {@link HomeStory}. */
@@ -112,8 +134,9 @@ export interface HomeStoryProps {
 }
 
 /**
- * Historia de seis escenas que sigue a la portada (spec 9.5): "Tres piezas. Una ronda.",
- * calabaza y virola con tres cifras, el bombillón, la yerba, el ritual del agua y el cuero.
+ * Historia de seis escenas que sigue a la portada (spec 9.5), en el orden del relato del mundo del
+ * mate: la yerba, calabaza y virola con tres cifras, "Tres piezas. Una ronda.", el bombillón, el
+ * ritual del agua y el cuero.
  * Los textos salen de `HomeContent.scenes`; los productos de las escenas del bombillón y la
  * yerba, y de la primera, de `HomeContent.storyProducts` (con respaldo si alguno no se puede
  * comprar). Una escena que el contenido no trae no se dibuja.

@@ -183,6 +183,16 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 - **Base simulada guardada de antes**: `MOCK_DB_VERSION` no cambió, así que una base del admin guardada en la pestaña antes de P4 recibe los datos de demostración recién al reiniciarla.
 - **Con el back**: implementar los cambios de contrato de P4 (§12 del spec), confirmar que el `detail` de las líneas de un pedido no repite las opciones, la cuenta de Cloudinary y la firma, verificar con la cuenta real el enlace "Ver en Mercado Pago" del pedido (decisión Q4, fila pendiente de la lista de control) y no dejar en los logs el email o el nombre de `GET /admin/orders?q=`.
 
+## Mundo del mate: el motor (2026-10-29)
+
+**Pedido de Lucas**: dirección fotorrealista cálida, toma continua (plan `2026-10-29-mundo-del-mate.md`, que sigue a `2026-10-28-hero-scroll-world.md`). El paseo deja de ser una pista de paneles que se desplaza de costado y pasa a ser un mundo a pantalla completa que el scroll recorre.
+
+**Qué quedó**: seis paradas en el orden del relato (`WORLD_ORDER` en `world-media.ts`: el yerbal, el galpón, el mate, la bombilla, el ritual y la ronda), con esos nombres en el raíl. Detrás del texto, `StoryWorld` dibuja una capa por parada con su poster de `public/hero/world` (solo el primero con prioridad): durante la parada se ve entera, con la cámara que se acerca de 1 a 1,06 y deriva de −1,5vw a 1,5vw a lo largo del tramo, y en el deslizamiento la siguiente aparece encima con la curva de `stageLayout` (`worldLayer`). Los paneles de texto quedan apilados en la columna de la izquierda y solo se ve el actual (fundido y 24 px de subida en 500 ms); los demás siguen en el DOM y con Tab la página los trae. Un velo del color de fondo (a la izquierda, arriba y abajo) y un halo en el texto lo separan de las fotos. Las escenas apiladas (celular, menos movimiento, servidor) siguen el mismo orden. Se borró `StoryMate`.
+
+**Clips**: el motor ya los soporta. Cuando una parada tenga `clip` en `WORLD_MEDIA`, encima del poster va un `<video>` frotado por el scroll (`currentTime` según el avance del tramo), que solo cargan la parada actual y sus vecinas y que hace un `play()` y `pause()` silencioso al cargar (iOS). Sin clip, con `prefers-reduced-motion` o con ahorro de datos, solo posters. La CSP no cambia: `default-src 'self'` ya cubre los videos propios.
+
+**Falta**: los clips (`public/hero/world/<clave>.mp4`, sin credenciales en esta fase) y el cuadro del taller para el galpón (`gourd.jpg` está armado con la foto real del mate de calabaza, provisorio hasta que haya créditos). El mate 3D de P5 ya no tiene la capa `StoryMate`: entraría como una capa más del mundo.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

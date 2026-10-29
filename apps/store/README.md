@@ -22,6 +22,7 @@ Sin ninguna variable de entorno la tienda arranca en modo de prueba (`API_MODE=m
 - **Latencia.** La API simulada demora 150 ms por pedido (el mínimo de `MOCK_LATENCY_MS`, fija en el proceso de Next porque `Math.random()` es un valor inestable para el prerender de Cache Components; el admin sí usa el rango). `MOCK_LATENCY_MS=0` la quita.
 - **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos).
 - **Fotos.** Las del catálogo de prueba están en `public/mock-images/`, con el slug del producto como nombre: 16 productos tienen (el detalle, en el README de `@galpon/api-client`) y el resto muestra el marco punteado. El admin tiene la misma copia en su `public/`.
+- **Mundo del mate.** Los cuadros del paseo del inicio están en `public/hero/world/<clave>.jpg` (1600 × 893, una clave por escena); los clips van al lado como `<clave>.mp4` y se activan poniendo su ruta en `WORLD_MEDIA` (`src/features/home/world-media.ts`).
 
 Para probarlo:
 

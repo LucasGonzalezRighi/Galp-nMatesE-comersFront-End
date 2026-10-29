@@ -92,6 +92,22 @@ describe('HomeStory', () => {
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6)
   })
 
+  it('las escenas apiladas siguen el orden del relato del mundo del mate', () => {
+    mockWindow({ wide: false, reduced: false })
+    render(<HomeStory data={data} />)
+    const titles = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent)
+    expect(titles).toEqual([
+      'Para cadacebada.',
+      'Calabaza curada.Virola de alpaca.',
+      'Tres piezas.Una ronda.',
+      'Alpacay bronce.',
+      'Agua a 75 °C.Nunca hervida.',
+      'Elegíel cuero.',
+    ])
+  })
+
   it('con ancho de escritorio pero menos de 700 px de alto quedan las escenas apiladas', () => {
     mockWindow({ wide: true, reduced: false, tall: false })
     render(<HomeStory data={data} />)
