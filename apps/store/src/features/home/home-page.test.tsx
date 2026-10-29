@@ -79,6 +79,8 @@ describe('HomePage', () => {
     const heading = screen.getByRole('heading', { level: 1 })
     expect(heading).toHaveTextContent(/Encontrá.*tu mate\./)
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    // En la portada del servidor cada línea del título entra con CSS.
+    expect(heading.querySelectorAll('.home-rise')).toHaveLength(2)
   })
 
   it('la portada tiene de fondo el cuadro del mate, sin la foto flotante del producto', async () => {

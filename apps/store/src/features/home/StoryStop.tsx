@@ -30,9 +30,10 @@ export interface StoryStopProps {
  * que lo separa de los fondos.
  *
  * Entrada escalonada: al volverse el actual, cada pieza de la columna sube y aparece con un
- * retardo de 60 ms más que la anterior (`.home-stop-column` en `home.css`). Por eso, salvo en el
- * primer panel (que entra con la página y usa sus `Reveal`), el contenido se dibuja con
- * `StaticRevealContext`: sus `Reveal` dispararían todos juntos al entrar el escenario.
+ * retardo de 60 ms más que la anterior (`.home-stop-column` en `home.css`). Por eso el contenido
+ * se dibuja con `StaticRevealContext`: sus `Reveal` dispararían todos juntos al entrar el
+ * escenario, y el primer panel ya entró con la portada del servidor antes de que el escenario se
+ * monte (el panel actual desde el principio no transiciona).
  *
  * La clase `home-stop` (en `home.css`) hace que el título, los espacios y las filas de productos
  * escalen también con el alto de la ventana: el panel no tiene scroll interno, así que todo tiene
@@ -60,7 +61,7 @@ export function StoryStop({ index, total, name, current, children }: StoryStopPr
           <p className="group-focus-visible/stop:text-accent m-0 text-[12px] text-neutral-400 tabular-nums underline-offset-4 group-focus-visible/stop:underline">
             {heading}
           </p>
-          <StaticRevealContext value={index > 0}>{children}</StaticRevealContext>
+          <StaticRevealContext value>{children}</StaticRevealContext>
         </div>
       </div>
     </article>

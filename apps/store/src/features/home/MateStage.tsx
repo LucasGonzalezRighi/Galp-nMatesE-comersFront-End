@@ -109,7 +109,7 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
 
   const content = (stop: MateStop): ReactNode => {
     if (stop.key === 'hero') {
-      return <HeroIntro hero={data.content.hero} kitDiscountLabel={data.kitDiscountLabel} />
+      return <HeroIntro hero={data.content.hero} kitDiscountLabel={data.kitDiscountLabel} entered />
     }
     const scene = scenes.find((candidate) => candidate.key === stop.key)
     return scene === undefined ? null : <SceneBody scene={scene} tone={STAGE_TONE} data={data} />

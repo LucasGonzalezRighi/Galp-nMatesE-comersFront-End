@@ -92,6 +92,8 @@ describe('MateStage', () => {
     expect(within(first).getByRole('heading', { level: 1 })).toHaveTextContent(
       /Encontrá.*tu mate\./,
     )
+    // La portada ya entró con el servidor: en el escenario el título va quieto, sin su animación.
+    expect(first.querySelector('.home-rise')).toBeNull()
     expect(within(first).getByRole('link', { name: 'Ver la tienda' })).toHaveAttribute(
       'href',
       '/tienda',
