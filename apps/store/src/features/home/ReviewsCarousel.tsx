@@ -166,7 +166,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps): ReactNode {
         {items.map((item) => (
           <li
             key={item.id}
-            className="w-[min(100%,380px)] shrink-0 snap-start"
+            className="w-[min(66%,380px)] shrink-0 snap-start lg:w-[calc((100%-2.5rem)/3)]"
             onFocus={(event) => {
               event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })
             }}

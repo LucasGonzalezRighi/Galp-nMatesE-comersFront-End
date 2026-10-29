@@ -89,7 +89,8 @@ describe('ManifestoBackdrop', () => {
     expect(image).toHaveAttribute('aria-hidden', 'true')
     expect(image).toHaveAttribute('loading', 'lazy')
     expect(image).toHaveAttribute('sizes', '100vw')
-    expect(container.querySelectorAll('[data-manifesto-veil]').length).toBeGreaterThan(0)
+    // Un solo velo (el degradé): con otra capa encima la foto casi no se ve.
+    expect(container.querySelectorAll('[data-manifesto-veil]')).toHaveLength(1)
   })
 
   it('con menos movimiento la foto queda quieta, sin transformación en línea', () => {

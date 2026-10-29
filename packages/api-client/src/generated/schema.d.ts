@@ -3621,7 +3621,7 @@ export interface components {
              * @example 3
              */
             count: number;
-            /** @description Una fila por puntuación, de 5 a 1 estrellas. */
+            /** @description Una fila por puntuación entera, de 5 a 1 estrellas. Las puntuaciones con media estrella (4,5) cuentan en la fila de su parte entera (4), así que toda reseña está en una fila y la suma de las cantidades es `count`. */
             distribution: {
                 /**
                  * @description Cantidad de reseñas con esa puntuación.
@@ -3634,7 +3634,7 @@ export interface components {
                  */
                 percent: number;
                 /**
-                 * @description Puntuación de esta fila, de 1 a 5.
+                 * @description Puntuación entera de esta fila, de 1 a 5. Las reseñas con media estrella (4,5) cuentan en la fila de su parte entera (4); un back no debe comparar `rating === stars`, sino `floor(rating) === stars`.
                  * @example 5
                  */
                 stars: number;

@@ -51,8 +51,10 @@ function MovingPhoto({ target }: MovingPhotoProps): ReactNode {
 
 /**
  * Fondo del Manifiesto: la foto del yerbal a sangre y el velo que la oscurece para que la frase
- * se lea (`background` al 72 % más un degradé del 90 % arriba al 55 % abajo). Va adentro de una
- * sección `relative overflow-hidden`, debajo del contenido (que lleva `relative z-10`).
+ * se lea (un solo degradé de `background` del 90 % arriba al 55 % abajo: deja ver entre el 10 y el
+ * 45 % de la foto). Medido a 1440 y a 390 px, el texto queda a 4,8:1 o más del pixel más claro de
+ * su zona. Va adentro de una sección `relative overflow-hidden`, debajo del contenido (que lleva
+ * `relative z-10`).
  *
  * Con movimiento la foto entra con un zoom lento (escala 1,12 → 1 mientras la sección sube hasta
  * el borde de arriba de la ventana) y hace parallax (`y` −6 % → 6 % mientras se ve); los dos
@@ -73,7 +75,6 @@ export function ManifestoBackdrop(): ReactNode {
           <MovingPhoto target={ref} />
         </LazyMotion>
       )}
-      <div data-manifesto-veil="" className="bg-background/72 absolute inset-0" />
       <div
         data-manifesto-veil=""
         className="from-background/90 to-background/55 absolute inset-0 bg-linear-to-b"
