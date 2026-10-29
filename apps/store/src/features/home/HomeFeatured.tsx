@@ -7,6 +7,7 @@ import { Button } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
 import { ProductCard } from '../product-card'
 import { Eyebrow } from './Eyebrow'
+import { FeaturedExit } from './FeaturedExit'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY } from './home.copy'
 
@@ -18,7 +19,9 @@ export interface HomeFeaturedProps {
 
 /**
  * Destacados (spec 9.5): los productos `featured` en la tarjeta Vitrina, en una grilla de hasta
- * cuatro columnas, con el link "Ver toda la tienda". No se dibuja si no hay destacados.
+ * cuatro columnas, con el link "Ver toda la tienda". No se dibuja si no hay destacados. En
+ * escritorio y con movimiento la grilla se despide al salir de pantalla ({@link FeaturedExit}); el
+ * título y el link no cambian.
  *
  * @param props - Ver {@link HomeFeaturedProps}.
  */
@@ -43,7 +46,7 @@ export function HomeFeatured({ data }: HomeFeaturedProps): ReactNode {
             </Link>
           </Button>
         </div>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5">
+        <FeaturedExit className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5">
           {data.featured.map((product, index) => (
             <ProductCard
               key={product.id}
@@ -53,7 +56,7 @@ export function HomeFeatured({ data }: HomeFeaturedProps): ReactNode {
               index={index}
             />
           ))}
-        </div>
+        </FeaturedExit>
       </div>
     </section>
   )

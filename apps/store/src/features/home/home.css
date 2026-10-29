@@ -3,7 +3,7 @@
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
  * entrada del título de la portada, encuadre de la foto del mate, fondos desenfocados del mate 3D,
  * relleno de los botones de la portada, palabra fantasma, entrada escalonada de las paradas del
- * mate 3D y la línea de su pista.
+ * mate 3D, la línea de su pista y la altura del Manifiesto sobre el yerbal.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -278,4 +278,13 @@
   .home-cta-fill {
     transition: none;
   }
+}
+
+/*
+ * Manifiesto sobre el yerbal: la sección ocupa casi una pantalla (hasta 820 px) para que la foto
+ * entre con su zoom y su parallax; con respaldo para navegadores sin `svh`.
+ */
+.home-manifesto {
+  min-height: min(100vh, 820px);
+  min-height: min(100svh, 820px);
 }

@@ -8,14 +8,15 @@ import { HomeManifesto } from './HomeManifesto'
 import { HomeReviews } from './HomeReviews'
 import { HomeStats } from './HomeStats'
 import { HomeStory } from './HomeStory'
+import { PinnedStats } from './PinnedStats'
 import './home.css'
 
 /**
  * Inicio de la tienda (Server Component, spec 9.5): lee todo en el servidor con lecturas
  * cacheadas (`getHomeData`) y arma las secciones en orden: portada y escenas de la bombilla y del
  * agua (en escritorio, el mate 3D de tres paradas), colección horizontal, destacados, manifiesto,
- * cifras, bloque del kit y reseñas. Así la página
- * es estática y se regenera cuando el backend invalida las etiquetas de caché.
+ * cifras, bloque del kit (que en escritorio sube por encima de las cifras clavadas) y reseñas. Así
+ * la página es estática y se regenera cuando el backend invalida las etiquetas de caché.
  *
  * @throws {ApiError} Si la API falla.
  */
@@ -36,8 +37,7 @@ export async function HomePage(): Promise<ReactNode> {
       <HomeCollection data={data} />
       <HomeFeatured data={data} />
       <HomeManifesto data={data} />
-      <HomeStats data={data} />
-      <HomeKit data={data} />
+      <PinnedStats stats={<HomeStats data={data} />} kit={<HomeKit data={data} />} />
       <HomeReviews data={data} />
     </main>
   )

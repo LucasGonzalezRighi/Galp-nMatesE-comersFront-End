@@ -11,6 +11,7 @@ import {
 } from '../../components/motion/test/support'
 import { buildHomeData } from './home-data'
 import { HomeKit } from './HomeKit'
+import { HomeManifesto } from './HomeManifesto'
 import { HomePage } from './HomePage'
 import { HomeReviews } from './HomeReviews'
 import { HomeStats } from './HomeStats'
@@ -120,6 +121,24 @@ describe('HomePage', () => {
     expect(
       screen.getAllByRole('button', { name: /^Agregar .+ al carrito$/ }).length,
     ).toBeGreaterThan(0)
+  })
+})
+
+describe('HomeManifesto', () => {
+  it('la frase y el link van por encima de la foto del yerbal, que es decorativa', async () => {
+    const data = await homeData()
+    const { container } = renderSection(<HomeManifesto data={data} />)
+    const section = container.querySelector('section')
+    expect(section).toHaveClass('relative', 'overflow-hidden')
+    const photo = section?.querySelector('img')
+    expect(decodeURIComponent(photo?.getAttribute('src') ?? '')).toContain('/hero/world/yerbal.jpg')
+    expect(photo).toHaveAttribute('alt', '')
+    expect(photo?.closest('[aria-hidden="true"]')).not.toBeNull()
+    expect(section?.querySelector('[data-manifesto-veil]')).not.toBeNull()
+    expect(section).toHaveTextContent(data.content.manifesto.text)
+    const link = screen.getByRole('link', { name: data.content.manifesto.ctaLabel })
+    expect(link).toHaveAttribute('href', '/nosotros')
+    expect(link.closest('.z-10')).not.toBeNull()
   })
 })
 
