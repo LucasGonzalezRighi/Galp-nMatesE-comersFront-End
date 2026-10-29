@@ -203,4 +203,16 @@ describe('MateCanvas', () => {
     movePointer('mouse', 0, 0)
     expect(scene.setPointer).toHaveBeenLastCalledWith(-1, -1)
   })
+
+  it('está transparente hasta que la escena existe y entonces aparece con un fundido', async () => {
+    mockWebGL(true)
+    vi.mocked(createMateScene).mockResolvedValue(fakeScene())
+    render(<MateCanvas progress={motionValue(0)} onUnavailable={vi.fn()} />)
+    const canvas = document.querySelector('canvas')
+    expect(canvas).toHaveClass('opacity-0', 'transition-opacity')
+    expect(canvas?.style.opacity).toBe('')
+    observer().report(true)
+    await settle()
+    expect(canvas?.style.opacity).toBe('1')
+  })
 })

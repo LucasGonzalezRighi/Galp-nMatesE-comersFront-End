@@ -5,12 +5,12 @@ El mate que se arma con el scroll en las tres paradas del inicio. Es el porte a 
 campo `color` ni la lista de cueros), el paquete lleva la foto real de Canarias al frente
 (`/hero/3d/yerba-canarias-front.jpg`) y el interior curado usa `/hero/3d/mate-interior.png`.
 
-| Archivo            | Qué hace                                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `keyframes.ts`     | Puro. El tipo `MateState`, los momentos del recorrido (`MATE_KEYFRAMES`) y `mateStateAt(progress)`, que los interpola.                                       |
-| `scene.ts`         | Cliente, sin React. `createMateScene(canvas)` carga `three` con `import()` y devuelve `setState`, `setPointer`, `setVisible`, `resize` y `dispose`.          |
-| `webgl-support.ts` | Puro. `supportsWebGL(probe)` pide un contexto `webgl2` o `webgl` a un lienzo de prueba.                                                                      |
-| `MateCanvas.tsx`   | El lienzo `aria-hidden` que crea la escena al entrar en pantalla, le pasa el avance, el mouse y la visibilidad, y avisa con `onUnavailable` si no hay WebGL. |
+| Archivo            | Qué hace                                                                                                                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keyframes.ts`     | Puro. El tipo `MateState`, los momentos del recorrido (`MATE_KEYFRAMES`) y `mateStateAt(progress)`, que los interpola.                                                                                                                         |
+| `scene.ts`         | Cliente, sin React. `createMateScene(canvas)` carga `three` con `import()` y devuelve `setState`, `setPointer`, `setVisible`, `resize` y `dispose`.                                                                                            |
+| `webgl-support.ts` | Puro. `supportsWebGL(probe)` pide un contexto `webgl2` o `webgl` a un lienzo de prueba.                                                                                                                                                        |
+| `MateCanvas.tsx`   | El lienzo `aria-hidden` que crea la escena al entrar en pantalla, le pasa el avance, el mouse y la visibilidad, y avisa con `onUnavailable` si no hay WebGL; transparente hasta que la escena existe y entonces aparece con un fundido de 1 s. |
 
 ## El estado
 

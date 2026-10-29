@@ -37,8 +37,9 @@ function stateFor(progress: number): ReturnType<typeof mateStateAt> {
  * ({@link createMateScene}) recién cuando entra en pantalla, así three no se descarga antes. Le pasa
  * el estado del avance ({@link mateStateAt}) en cada cambio, el puntero (solo el del mouse, de −1 a 1
  * sobre la ventana) y la visibilidad: fuera de pantalla o con la pestaña oculta la escena no dibuja.
- * Si no hay WebGL o la escena no se puede crear llama a `onUnavailable`. No mira
- * `prefers-reduced-motion`: con menos movimiento no se monta.
+ * Está transparente hasta que la escena existe (mientras three se descarga se ven los fondos) y
+ * entonces aparece con un fundido de 1 s. Si no hay WebGL o la escena no se puede crear llama a
+ * `onUnavailable`. No mira `prefers-reduced-motion`: con menos movimiento no se monta.
  *
  * @param props - Ver {@link MateCanvasProps}.
  */
@@ -84,6 +85,7 @@ export function MateCanvas({ progress, onUnavailable, className }: MateCanvasPro
           sceneRef.current = created
           created.setState(stateFor(progress.get()))
           syncVisibility()
+          canvas.style.opacity = '1'
         },
         () => {
           if (!disposed) unavailableRef.current()
@@ -131,7 +133,8 @@ export function MateCanvas({ progress, onUnavailable, className }: MateCanvasPro
     }
   }, [progress])
 
-  const base = 'pointer-events-none absolute inset-0 size-full'
+  const base =
+    'ease-main pointer-events-none absolute inset-0 size-full opacity-0 transition-opacity duration-1000'
   return (
     <canvas
       ref={canvasRef}
