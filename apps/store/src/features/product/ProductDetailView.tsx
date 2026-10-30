@@ -57,10 +57,10 @@ export function ProductDetailView({
         productName={product.name}
       />
       <section className="site-container flex flex-wrap items-start gap-x-14 gap-y-10 pt-6">
-        <div className="min-w-0 flex-[1.1_1_440px] lg:sticky lg:top-[88px]">
+        <div className="max-w-[clamp(560px,calc((100svh_-_220px)_*_0.8),640px)] min-w-0 flex-[1.1_1_440px] lg:sticky lg:top-[88px]">
           <ProductGallery productName={product.name} code={product.code} images={product.images} />
         </div>
-        <div className="flex max-w-[560px] min-w-0 flex-[1_1_380px] flex-col gap-[22px]">
+        <div className="flex max-w-[860px] min-w-0 flex-[1_1_380px] flex-col gap-[22px]">
           <div className="flex flex-col gap-3">
             <Link
               href={categoryHref}
@@ -102,7 +102,9 @@ export function ProductDetailView({
             )}
             {product.isSoldOut ? PRODUCT_COPY.outOfStock : PRODUCT_COPY.inStock}
           </div>
-          <p className="m-0 text-[15.5px] leading-[1.7] text-neutral-300">{product.description}</p>
+          <p className="m-0 max-w-[68ch] text-[15.5px] leading-[1.7] text-neutral-300">
+            {product.description}
+          </p>
           <div aria-hidden="true" className="h-px" style={DIVIDER_STYLE} />
           <ProductPurchase product={product} contactEmail={settings.contactEmail} />
           <ProductGuarantees />

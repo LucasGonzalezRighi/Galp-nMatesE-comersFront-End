@@ -3,16 +3,19 @@
 @import '@galpon/design-tokens/base.css';
 
 /*
- * Contenedor único de la tienda (Ruling MR-11): 1600 px de ancho como máximo, centrado, con un
- * margen lateral de 4vw entre 20 px (celular) y 64 px. A 1440 px de pantalla quedan 58 px de margen
- * y 1325 px de contenido; desde 1600 px, 64 px y 1472 px. Header, barra superior, footer y todas
- * las páginas lo usan.
+ * Contenedor único de la tienda (Ruling MR-11): 1600 px de ancho como máximo (contando el margen
+ * lateral), centrado, con un margen lateral que crece de forma lineal con la pantalla: 20 px en
+ * celular, 41 px a 1024 px y 64 px desde 1440 px. A 1440 px quedan 1312 px de contenido; desde
+ * 1600 px el contenedor deja de crecer y el contenido mide 1472 px. El resto se reparte a los
+ * costados: a 1905 px son 152 px de cada lado más los 64 px de margen interior, así que el
+ * contenido arranca en x = 216 px. Para acercarlo al borde hay que subir `--site-max`.
+ * Header, barra superior, footer y todas las páginas lo usan.
  * `--site-inset` es el mismo margen para una pista que ocupa todo el ancho (la colección del
  * inicio): su primera tarjeta arranca donde arranca el contenido del contenedor.
  */
 :root {
   --site-max: 1600px;
-  --site-gutter: clamp(20px, 4vw, 64px);
+  --site-gutter: clamp(20px, 5.53vw - 15.6px, 64px);
   --site-inset: max(var(--site-gutter), calc((100% - var(--site-max)) / 2 + var(--site-gutter)));
 }
 

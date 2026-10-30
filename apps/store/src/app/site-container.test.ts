@@ -27,7 +27,7 @@ function sourceFiles(): string[] {
 describe('site-container: el contenedor único de la tienda', () => {
   it('mide 1600 px como máximo, va centrado y tiene 20 a 64 px de margen lateral', () => {
     expect(globals).toContain('--site-max: 1600px;')
-    expect(globals).toContain('--site-gutter: clamp(20px, 4vw, 64px);')
+    expect(globals).toContain('--site-gutter: clamp(20px, 5.53vw - 15.6px, 64px);')
     const rule = utility('site-container')
     expect(rule).toContain('margin-inline: auto;')
     expect(rule).toContain('width: 100%;')

@@ -110,7 +110,7 @@ export function ProductTabs({ tabs }: ProductTabsProps): ReactNode {
           id={panelId}
           role="tabpanel"
           aria-labelledby={active === undefined ? undefined : tabId(active.id)}
-          className="m-0 text-[14.5px] leading-[1.75] text-neutral-300"
+          className="m-0 max-w-[68ch] text-[14.5px] leading-[1.75] text-neutral-300"
         >
           {active?.text}
         </p>
