@@ -40,7 +40,7 @@ narrow, mateRoot, mate }`: el estado ya suavizado, el reloj y el tiempo del cuad
 | `mate.ts`        | La calabaza, la virola, el aro, el interior, la pared, las patas y la sombra; expone `mateRoot`, `mate`, `mouthY` (1,01) e `interiorRadius` (0,4).                                                       |
 | `pack.ts`        | El paquete de Canarias con su pico (`spout`, la esquina abierta de la tapa) como ancla de la yerba que cae; la solapa se abre y el paquete se sacude con `pour`.                                         |
 | `yerba.ts`       | La yerba: campo de alturas polar (48 × 96) con la foto real, relieve, sombra y humedad por shader, y las hojas y el polvo que caen del pico; expone `hollowCenter` (el hueco, en coordenadas de `mate`). |
-| `yerba-shape.ts` | Puro. `yerbaHeight(x, z, forma)` (meseta, pared y hueco, con grano), `hollowCenter(forma)` y `yerbaShade(x, z, forma)` (la sombra del piso del hueco y del pie de la pared).                             |
+| `yerba-shape.ts` | Puro. `yerbaHeight(x, z, forma)` (meseta con su cresta, pared y hueco, con grano), `hollowCenter(forma)` y `yerbaShade(x, z, forma)` (la sombra del piso del hueco y del pie de la pared).               |
 | `bombilla.ts`    | La bombilla y su ancla de calce: la pala hundida en el hueco y el caño apoyado en la virola; entra desde arriba a la derecha sin fundido.                                                                |
 | `water.ts`       | El termo (pico en cuadro), el chorro con transmisión e índice 1,33 sobre `streamPoints`, la salpicadura, el charco y el vapor.                                                                           |
 | `water-path.ts`  | Puro. `streamPoints(from, to, count)`: la curva del chorro, que baja siempre y cae casi vertical al final.                                                                                               |
@@ -86,20 +86,22 @@ por cuadro a 60 Hz, igual a 30 o a 144 Hz), así el scroll se ve suave aunque ll
 el 55 % inicial de su tercio (`HOLD_SHARE` de `stage-layout.ts`). Entre dos momentos la
 interpolación usa la curva quíntica del diseño (quieta el primer y el último 8 % del tramo).
 
-| Momento     | Avance          | Qué se ve                                                                                                                                                             |
-| ----------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `inicio`    | 0               | Parada 1: el mate de pie y vacío a la derecha, como la portada; paquete, bombilla y termo fuera de cuadro.                                                            |
-| `inclinado` | hold·0,35       | El mate inclinado 55° a la izquierda y el paquete cabeza abajo sobre la boca (`pour 1`, `fill 0,45`, `slope 1`, `wall 0`).                                            |
-| `lleno`     | hold·0,85       | Ya no cae yerba; el mate lleno, todavía a 40°, y el paquete saliendo por arriba a la izquierda (`fill 1`, `slope 1`, `wall 0,35`).                                    |
-| `bombilla`  | todo el hold 2  | Parada 2: el mate de pie, visto desde arriba (giro X 45) y girado para mostrar el hueco; la pared recta (`wall 1`) y la bombilla calzada.                             |
-| `agua`      | 2/3 + hold·0,25 | El pico del termo arriba a la derecha y el chorro en el hueco (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); la parada 3 llega con el termo entrando. |
-| `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                |
-| `salida`    | 1               | El mate se aleja hacia la derecha y abajo, más chico; termo fuera y vapor a medias. Entra el catálogo.                                                                |
+| Momento     | Avance          | Qué se ve                                                                                                                                                                                                                                                      |
+| ----------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inicio`    | 0               | Parada 1: el mate de pie y vacío a la derecha, como la portada; paquete, bombilla y termo fuera de cuadro.                                                                                                                                                     |
+| `inclinado` | hold·0,35       | El mate inclinado 55° a la izquierda y el paquete cabeza abajo sobre la boca (`pour 1`, `fill 0,45`, `slope 1`, `wall 0`).                                                                                                                                     |
+| `lleno`     | hold·0,85       | Ya no cae yerba; el mate lleno, todavía a 40°, y el paquete saliendo por arriba a la izquierda (`fill 1`, `slope 1`, `wall 0,35`).                                                                                                                             |
+| `bombilla`  | todo el hold 2  | Parada 2: el mate de frente, en el lugar de la portada (giro X 16, escala 1,05); la montañita asoma sobre la virola con su pared recta (`wall 1`) y la bombilla calzada se apoya en la virola derecha.                                                         |
+| `agua`      | 2/3 + hold·0,25 | El mate quieto, igual que en la 2; el pico del termo arriba a la derecha y el chorro entra justo adentro del borde derecho, al lado de la bombilla (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); las gotas y el vapor asoman sobre la virola. |
+| `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                                                                                                         |
+| `salida`    | 1               | El mate va al centro, sube y crece hacia la cámara (escala 1,45), con la boca apenas hacia quien mira y volcado 12° hacia la bombilla, como cuando te lo pasan; termo fuera y vapor a medias. El fundido del escenario tapa el final y entra el catálogo.      |
 
 Las colocaciones de `inclinado` se midieron con `three` a 16:9: el pico del paquete (x 0,3) queda
-sobre la boca inclinada y la yerba cae casi vertical. Las paradas 2 y 3 miran el mate desde arriba
-(giro X 45 y 48): con menos de 45 la virola tapa el hueco (medido con raycast). El termo tiene la
-misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entrar.
+sobre la boca inclinada y la yerba cae casi vertical. Las paradas 2 y 3 ponen el mate de frente, en
+el lugar y con el giro de la portada (`MATE_FRONT`: giro X 16 en lugar de 10 y escala 1,05; Lucas,
+2026-10-29): el hueco queda bajo el borde derecho y lo que se lee es la montañita que asoma sobre la
+virola, la bombilla apoyada y el chorro que entra. Antes se miraban desde arriba (giro X 45 y 48). El
+termo tiene la misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entrar.
 
 ## Cómo ajustar un keyframe
 
@@ -120,9 +122,12 @@ misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entra
 - **La pared de la montañita** sale de `scene/yerba-shape.ts`: `WALL_X` (dónde cae, 0,05 a la derecha
   del centro), `STEEP_WIDTH` y `NATURAL_WIDTH` (el ancho de la caída con `wall 1` y con `wall 0`),
   `HOLLOW_DEPTH` (cuánto más bajo queda el hueco, 0,22), `WALL_WOBBLE` (cuánto ondula, para que no
-  parezca un corte) y `HOLLOW_X`/`HOLLOW_Z` (el centro del hueco, que usan la bombilla y el agua). Los
-  tests de `yerba-shape.test.ts` fijan que la pared con `wall 1` ocupe menos de 0,05. Cuánto se ve
-  la pared depende de la cámara: es el giro X del mate en `bombilla` y `agua` (`keyframes.ts`).
+  parezca un corte) y `HOLLOW_X`/`HOLLOW_Z` (el centro del hueco, que usan la bombilla y el agua). La
+  cresta: con `wall 1` la meseta sube en loma `CREST_HEIGHT` (0,08) sobre el nivel lleno, entera
+  hasta el radio `CREST_INNER` (0,16) y de vuelta al nivel en el borde de la boca, así asoma sobre la
+  virola sin atravesarla. Los tests de `yerba-shape.test.ts` fijan la cresta (0,06 a 0,09 sobre el
+  nivel lleno) y que el borde quede bajo el aro. Cuánto se ve la montañita depende de la cámara: es
+  el giro X del mate en `bombilla` y `agua` (`keyframes.ts`).
 - **El color y el grano de la yerba** van en `scene/yerba.ts` (`YERBA_TINT`, `YERBA_BUMP_SCALE`, la
   sombra del hueco con `HOLLOW_SHADE` y `FOOT_SHADE`, la humedad con `WET_*`),
   `scene/yerba-shape.ts` (`OCCLUSION_*`: hasta dónde llega la banda oscura al pie de la pared) y
@@ -132,7 +137,8 @@ misma escala (1,2) en todos los momentos, para que no cambie de tamaño al entra
   chorro de hojas), `LANDING_SHARE` (dónde aterriza) y el polvo (`DUST_*`) en `scene/yerba.ts`; de
   dónde sale lo decide el paquete (`pack` de `inclinado` en `keyframes.ts`).
 - **El chorro de agua** sale de la boca del pico (`thermos` de `agua` en `keyframes.ts`: posición y
-  giro Z) y cae en `hollowCenter` más `IMPACT_OFFSET` (`scene/water.ts`); `STREAM_RADIUS` es su
+  giro Z) y cae en `hollowCenter` más `IMPACT_OFFSET` (`scene/water.ts`; con el mate de frente,
+  `{ x: 0,12, y: −0,02, z: 0,06 }`: justo adentro del borde derecho, al lado de la bombilla); `STREAM_RADIUS` es su
   grosor arriba y abajo, y la curva la da `streamPoints` (`scene/water-path.ts`). El charco
   (`PUDDLE_*` y su material) y el vapor (cantidad y opacidad por nube) también están en `water.ts`.
 
@@ -161,6 +167,14 @@ sombra al pie de la pared: `yerbaShade` pinta un atributo por vértice (el piso 
 la yerba por `HOLLOW_SHADE`, algo menos de la mitad de la luz, y la banda al pie de la pared la baja
 otro 78 %, una oclusión ambiental pintada sin sombras de luz), y el tinte pasó a `#a4ab97` (con
 `#a9b28c` seguía apenas más amarilla que la yerba de la foto del fondo).
+
+Con los ajustes de Lucas (Task 8 del mate realista, 2026-10-29) las paradas 2 y 3 volvieron al lugar
+de la portada, de frente (`MATE_FRONT` en `keyframes.ts`); la yerba suma la cresta (`CREST_HEIGHT`
+0,08 y `CREST_INNER` 0,16 en `yerba-shape.ts`) para que la montañita asome sobre la virola; el chorro
+cae al lado de la bombilla (`IMPACT_OFFSET` `{ 0,12; −0,02; 0,06 }`) y las gotas de la salpicadura
+saltan de 0,26 a 0,39 (antes 0,02 a 0,05), más juntas (0,05 a 0,15) y apenas más grandes (0,01 a
+0,019) para asomar sobre el borde, porque el hueco quedó bajo la virola. La salida pasó de "se aleja
+abajo a la derecha" a "te lo pasan": al centro, más grande y volcado hacia la bombilla.
 
 ## Rendimiento y respaldo
 

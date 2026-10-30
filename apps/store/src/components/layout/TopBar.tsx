@@ -5,9 +5,10 @@ import { asRoute } from '../../lib/routes'
 import { LAYOUT_COPY } from './layout.copy'
 
 /**
- * Barra superior fina de todas las páginas (spec 9.5 y 9.6, decisión D9): el link "Botón de
- * arrepentimiento" a simple vista, sin hacer scroll, en escritorio y en celular (Disposición
- * 954/2025). Lleva a `/arrepentimiento`. No es fija: al bajar se va y queda el encabezado.
+ * Barra fina de todas las páginas, justo debajo del encabezado (spec 9.5 y 9.6, decisión D9; Lucas
+ * la pidió abajo del navbar el 2026-10-29): el link "Botón de arrepentimiento" a simple vista, sin
+ * hacer scroll, en escritorio y en celular (Disposición 954/2025). Lleva a `/arrepentimiento`. No
+ * es fija: va en el flujo, debajo del encabezado pegajoso, y al bajar se va con el scroll.
  */
 export function TopBar(): ReactNode {
   return (

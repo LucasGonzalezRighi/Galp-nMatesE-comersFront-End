@@ -31,6 +31,22 @@ function offscreen(placement: MatePlacement): boolean {
   return Math.abs(placement[0]) > 1 || Math.abs(placement[1]) > 1
 }
 
+/**
+ * Espera que el mate esté de frente, como en la portada (`inicio`): mismo lugar y mismo giro Y,
+ * apenas mirado desde arriba (giro X de 10 a 18, no los 45 de antes) y casi del mismo tamaño.
+ */
+function expectFront(placement: MatePlacement): void {
+  const cover = moment('inicio').mate
+  expect(placement[0]).toBeCloseTo(cover[0], 6)
+  expect(placement[1]).toBeCloseTo(cover[1], 6)
+  expect(placement[2]).toBeGreaterThanOrEqual(cover[2])
+  expect(placement[2]).toBeLessThanOrEqual(1.05)
+  expect(placement[3]).toBeGreaterThanOrEqual(cover[3])
+  expect(placement[3]).toBeLessThanOrEqual(18)
+  expect(placement[4]).toBe(cover[4])
+  expect(placement[5]).toBe(0)
+}
+
 /** Los valores del estado que van de 0 a 1. */
 function unitValues(state: MateState): number[] {
   return [
@@ -108,15 +124,15 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(state.pack[0]).toBeLessThan(tilted.pack[0])
   })
 
-  it('bombilla (todo el hold 2): el mate de pie, la pared recta y la bombilla calzada, quieto', () => {
+  it('bombilla (todo el hold 2): el mate de frente como en la portada, la pared recta y la bombilla calzada', () => {
     const { from, to, state } = keyframe('bombilla')
     expect(from).toBeCloseTo(SPAN, 9)
     expect(to).toBeCloseTo(holdEnd(1), 9)
     expect(state.mate[5]).toBe(0)
     expect(state).toMatchObject({ fill: 1, slope: 1, wall: 1, attached: 1, pour: 0, water: 0 })
     expect(state.tilt).not.toBe(0)
-    // Visto desde arriba: con menos de 45° la virola tapa el hueco (medido con raycast a 16:9).
-    expect(state.mate[3]).toBeGreaterThanOrEqual(45)
+    // De frente, como la portada: la montañita asoma sobre la virola y el hueco queda bajo el borde.
+    expectFront(state.mate)
     expect(offscreen(state.pack)).toBe(true)
     expect(offscreen(state.thermos)).toBe(true)
     expect(mateStateAt(SPAN)).toEqual(state)
@@ -133,9 +149,10 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(offscreen(state.thermos)).toBe(false)
     expect(state.thermos[0]).toBeGreaterThan(state.mate[0])
     expect(state.thermos[1]).toBeGreaterThan(0)
-    // La boca del pico mira abajo a la izquierda, hacia el hueco, y el hueco se ve desde arriba.
+    // La boca del pico mira abajo a la izquierda, hacia el hueco; el mate sigue de frente, quieto.
     expect(state.thermos[5]).toBeGreaterThan(120)
-    expect(state.mate[3]).toBeGreaterThanOrEqual(45)
+    expectFront(state.mate)
+    expect(state.mate).toEqual(moment('bombilla').mate)
   })
 
   it('el termo tiene el mismo tamaño en todos los momentos: no crece ni se achica al entrar', () => {
@@ -157,17 +174,25 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(from).toBeCloseTo(holdEnd(2), 9)
     expect(to).toBe(from)
     expect(state).toMatchObject({ water: 0, splash: 0, wet: 1, puddle: 1, steam: 1, attached: 1 })
-    // El termo sube para irse.
+    // El termo sube para irse; el mate no se movió desde la parada 2.
     expect(state.thermos[1]).toBeGreaterThan(moment('agua').thermos[1])
+    expect(state.mate).toEqual(moment('bombilla').mate)
   })
 
-  it('salida (1): el mate se aleja abajo a la derecha, el termo fuera y el vapor a medias', () => {
+  it('salida (1): el mate sube al centro y crece hacia la cámara, como si te lo dieran', () => {
     const exit = mateStateAt(1)
     const end = moment('agua-fin')
     expect(exit).toEqual(moment('salida'))
-    expect(exit.mate[0]).toBeGreaterThan(end.mate[0])
-    expect(exit.mate[1]).toBeLessThan(end.mate[1])
-    expect(exit.mate[2]).toBeLessThan(end.mate[2])
+    expect(Math.abs(exit.mate[0])).toBeLessThanOrEqual(0.05)
+    expect(exit.mate[1]).toBeGreaterThan(end.mate[1])
+    // Sube y crece, pero sin que el encabezado le corte la bombilla: el centro no pasa de la mitad.
+    expect(exit.mate[1]).toBeLessThanOrEqual(0)
+    expect(exit.mate[2]).toBeGreaterThanOrEqual(1.4)
+    // La boca apenas inclinada hacia quien mira (giro X positivo, como la portada), sin volcarlo.
+    expect(exit.mate[3]).toBeGreaterThan(0)
+    expect(exit.mate[3]).toBeLessThanOrEqual(18)
+    // Apenas volcado hacia la bombilla, como cuando te lo pasan.
+    expect(Math.abs(exit.mate[5])).toBeLessThanOrEqual(15)
     expect(offscreen(exit.thermos)).toBe(true)
     expect(exit).toMatchObject({ steam: 0.5, water: 0, splash: 0, attached: 1 })
   })

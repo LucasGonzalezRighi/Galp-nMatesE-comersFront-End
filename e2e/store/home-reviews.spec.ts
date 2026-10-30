@@ -150,6 +150,37 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
       expect(aboveColumns).toBeGreaterThan(viewport.height * 0.12)
       expect(Math.abs(aboveColumns - belowColumns)).toBeLessThan(120)
     })
+
+    test('Destacados se despide y el Manifiesto se enciende al entrar, a simple vista', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const grid = page.locator('main [class*="auto-fill"]').first()
+      const manifesto = page.locator('section.home-manifesto')
+      const shade = manifesto.locator('[data-manifesto-shade]')
+      const text = manifesto.locator('.z-10').first()
+      const opacityOf = (locator: Locator) => async (): Promise<number> =>
+        await locator.evaluate((element) => Number(getComputedStyle(element).opacity))
+
+      // Con el pie de la grilla a media ventana, Destacados va por la mitad de su salida.
+      const gridBottom = await grid.evaluate(
+        (element) => element.getBoundingClientRect().bottom + window.scrollY,
+      )
+      await scrollPageTo(page, gridBottom - 450)
+      await expect.poll(opacityOf(grid)).toBeLessThan(0.7)
+      expect(await opacityOf(grid)()).toBeGreaterThan(0.3)
+
+      // El Manifiesto asomando (su borde de arriba a 600 px): la capa oscura todavía lo tapa en parte
+      // y el texto apenas empieza a aparecer; ya arriba, la foto encendida y el texto entero.
+      const manifestoTop = await documentTopOf(page, manifesto)
+      await scrollPageTo(page, manifestoTop - 600)
+      await expect.poll(opacityOf(shade)).toBeLessThan(0.75)
+      expect(await opacityOf(shade)()).toBeGreaterThan(0.4)
+      expect(await opacityOf(text)()).toBeLessThan(0.3)
+      await scrollPageTo(page, manifestoTop - 100)
+      await expect.poll(opacityOf(shade)).toBe(0)
+      await expect.poll(opacityOf(text)).toBe(1)
+    })
   })
 
   for (const { name, viewport, reducedMotion } of [

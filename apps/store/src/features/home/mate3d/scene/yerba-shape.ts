@@ -33,6 +33,19 @@ const FLOOR_LEVEL = 0.57
 /** Cuánto más abajo que la meseta queda el hueco derecho con `slope 1`. */
 const HOLLOW_DEPTH = 0.22
 
+/**
+ * Cuánto sube la meseta con `wall 1` (la montañita armada): la cresta queda 0,08 sobre el nivel
+ * lleno, por encima de la virola (1,01 y el aro hasta 1,026), como la yerba que asoma sobre el borde
+ * en `refs/mate-blanco-montanita-termo.png`; así se lee con el mate de frente.
+ */
+const CREST_HEIGHT = 0.08
+
+/**
+ * La cresta es una loma: entera hasta este radio y bajando (`smoothstep`) hasta el borde de la boca,
+ * donde no sube nada: la yerba nunca pasa por encima del aro ni lo atraviesa.
+ */
+const CREST_INNER = 0.16
+
 /** Dónde cae la pared (el centro de la transición), sobre el eje `x`. */
 const WALL_X = 0.05
 
@@ -117,8 +130,10 @@ function assertShape(shape: YerbaShape): void {
  * 0,985 lleno); con `slope` la yerba queda asentada contra la pared izquierda (`x < 0`): la meseta
  * izquierda al nivel de `fill` y el hueco derecho hasta 0,22 más abajo (nunca bajo el fondo
  * curado), con la transición (`smoothstep`) centrada en `x = 0,05`, de 0,3 de ancho con `wall 0`
- * (pendiente natural) a 0,04 con `wall 1` (la pared recta). Encima, un grano fino de dos octavas
- * de ruido (±0,006) para que no se vea lisa. Es determinista: los mismos datos dan la misma altura.
+ * (pendiente natural) a 0,04 con `wall 1` (la pared recta). Con la pared la meseta sube en loma
+ * hasta 0,08 sobre el nivel (asoma por encima de la virola) y vuelve al nivel en el borde de la
+ * boca. Encima, un grano fino de dos octavas de ruido (±0,006) para que no se vea lisa. Es
+ * determinista: los mismos datos dan la misma altura.
  *
  * @param x - Coordenada `x` del punto (negativa a la izquierda, del lado de la meseta).
  * @param z - Coordenada `z` del punto.
@@ -132,8 +147,7 @@ function assertShape(shape: YerbaShape): void {
 export function yerbaHeight(x: number, z: number, shape: YerbaShape): number {
   assertShape(shape)
   assertPoint(x, z)
-  const { level, depth, step } = profile(x, z, shape)
-  return level - depth * step + grain(x, z)
+  return smoothHeight(profile(x, z, shape)) + grain(x, z)
 }
 
 /** Lanza `RangeError` si el punto no es finito o cae fuera de la boca. */
@@ -155,11 +169,20 @@ function insideMouth(x: number, z: number): boolean {
   return x * x + z * z <= YERBA_RADIUS * YERBA_RADIUS + EDGE_TOLERANCE
 }
 
-/** La forma lisa en un punto: el nivel de la meseta, la hondura del hueco y cuánto se bajó ahí (0 a 1). */
+/**
+ * La forma lisa en un punto: el nivel de la meseta, la cresta que suma la pared en ese punto, la
+ * hondura del hueco y cuánto se bajó ahí (0 a 1).
+ */
 interface Profile {
   readonly level: number
+  readonly crest: number
   readonly depth: number
   readonly step: number
+}
+
+/** La altura lisa (sin el grano) de un perfil: la meseta con su cresta, menos lo que bajó el hueco. */
+function smoothHeight({ level, crest, depth, step }: Profile): number {
+  return level + crest * (1 - step) - depth * step
 }
 
 /** La forma lisa (sin el grano) en un punto ya validado. */
@@ -168,7 +191,9 @@ function profile(x: number, z: number, shape: YerbaShape): Profile {
   const depth = Math.min(HOLLOW_DEPTH * shape.slope, Math.max(0, level - FLOOR_LEVEL))
   const width = lerp(NATURAL_WIDTH, STEEP_WIDTH, shape.wall)
   const wallX = WALL_X + WALL_WOBBLE * valueNoise(z * 7 + 3.1, 0.5, OCTAVES.length)
-  return { level, depth, step: smoothstep(wallX - width / 2, wallX + width / 2, x) }
+  const crest =
+    CREST_HEIGHT * shape.wall * (1 - smoothstep(CREST_INNER, YERBA_RADIUS, Math.hypot(x, z)))
+  return { level, crest, depth, step: smoothstep(wallX - width / 2, wallX + width / 2, x) }
 }
 
 /** Distancias hacia la meseta (hacia `−x`) donde se mira cuánto tapa la pared el cielo de un punto. */
@@ -217,8 +242,7 @@ export function yerbaShade(x: number, z: number, shape: YerbaShape): YerbaShade 
   for (const distance of OCCLUSION_STEPS) {
     const left = x - distance
     if (!insideMouth(left, z)) continue
-    // El nivel es el mismo en los dos puntos: la diferencia es solo lo que bajó cada uno.
-    const rise = here.depth * (here.step - profile(left, z, shape).step)
+    const rise = smoothHeight(profile(left, z, shape)) - smoothHeight(here)
     if (rise > 0) horizon = Math.max(horizon, Math.atan2(rise, distance) / (Math.PI / 2))
   }
   return {

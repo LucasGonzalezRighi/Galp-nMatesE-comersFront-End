@@ -58,7 +58,7 @@ export function Header(): ReactNode {
 
   const toggleMenu = (): void => {
     if (!menuOpen) {
-      // El menú empieza donde termina el encabezado: con la barra superior a la vista, más abajo.
+      // El menú empieza donde termina el encabezado (tapa la barra de arrepentimiento, que va debajo).
       setMenuTop(headerRef.current?.getBoundingClientRect().bottom ?? HEADER_HEIGHT_PX)
     }
     setMenuOpen(!menuOpen)

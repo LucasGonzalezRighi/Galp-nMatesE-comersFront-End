@@ -99,11 +99,16 @@ const PACK_OUT: MatePlacement = [0, 1.8, 0.85, 0, -20, -20]
  */
 const THERMOS_OUT: MatePlacement = [1.1, 1.7, 1.2, 0, 0, 60]
 
+/** El mate de la portada (parada 1): de pie a la derecha, de frente y apenas mirado desde arriba. */
+const MATE_COVER: MatePlacement = [0.42, -0.1, 1, 10, -25, 0]
+
 /**
- * El mate de pie en la parada 3, quieto mientras cae el agua. Visto desde arriba (giro X 48): con
- * menos de 45 la virola tapa el hueco y el chorro cae detrás del borde (medido con raycast a 16:9).
+ * El mate en las paradas 2 y 3, quieto: en el mismo lugar y con el mismo giro que la portada (Lucas,
+ * 2026-10-29: "que vuelva a la posición inicial del mate"), apenas más arriba la mirada (giro X 16)
+ * y un 5 % más grande, para que la montañita se lea asomando sobre la virola. El hueco queda bajo el
+ * borde derecho: se ven la bombilla apoyada en la virola, el chorro que entra y el vapor que sale.
  */
-const MATE_WATER: MatePlacement = [0.4, -0.2, 1.1, 48, -10, 0]
+const MATE_FRONT: MatePlacement = [0.42, -0.1, 1.05, 16, -25, 0]
 
 /**
  * Los momentos del recorrido, en orden. En el hold de la parada 1 el mate se inclina 55° a la
@@ -112,7 +117,10 @@ const MATE_WATER: MatePlacement = [0.4, -0.2, 1.1, 48, -10, 0]
  * la yerba contra la pared izquierda y la cara derecha cayendo recta, y la bombilla entra desde arriba
  * a la derecha y se calza en el hueco. Entre la 2 y la 3 entra el pico del termo por arriba a la
  * derecha; en el primer cuarto del hold 3 el chorro cae en el hueco y salpica, y al terminar el hold
- * cortó: quedan el charco, la yerba húmeda y el vapor. Después el mate se aleja.
+ * cortó: quedan el charco, la yerba húmeda y el vapor. En las paradas 2 y 3 el mate está de
+ * frente, como en la portada (la montañita asoma sobre la virola y el hueco queda bajo el borde
+ * derecho). Al final va al centro, sube y crece hacia la cámara, apenas volcado hacia la bombilla,
+ * como si te lo estuvieran dando.
  */
 export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   {
@@ -120,7 +128,7 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 0,
     to: 0,
     state: {
-      mate: [0.42, -0.1, 1, 10, -25, 0],
+      mate: MATE_COVER,
       bombilla: BOMBILLA_OUT,
       attached: 0,
       pack: PACK_OUT,
@@ -187,8 +195,7 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: SPAN,
     to: SPAN + HOLD,
     state: {
-      // Visto desde arriba y girado apenas para que el hueco (a la derecha del mate) mire a la cámara.
-      mate: [0.36, -0.14, 1.2, 45, -20, 0],
+      mate: MATE_FRONT,
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
@@ -210,7 +217,7 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 2 * SPAN + HOLD * 0.25,
     to: 2 * SPAN + HOLD * 0.25,
     state: {
-      mate: MATE_WATER,
+      mate: MATE_FRONT,
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
@@ -233,7 +240,7 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 2 * SPAN + HOLD,
     to: 2 * SPAN + HOLD,
     state: {
-      mate: MATE_WATER,
+      mate: MATE_FRONT,
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
@@ -255,7 +262,13 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 1,
     to: 1,
     state: {
-      mate: [0.9, -0.9, 0.6, 8, 60, 0],
+      // Va al centro, sube y crece hacia la cámara, como si te lo dieran: la boca apenas inclinada
+      // hacia quien mira (el giro X positivo la acerca a la cámara: se ven la montañita y la bombilla)
+      // y el mate apenas volcado a la derecha, hacia la bombilla, como cuando te lo pasan. Sube porque
+      // crece (el borde de la virola sube de unos 350 a unos 280 px a 1440 × 900); con el centro más
+      // arriba (y 0,18 o 0) o derecho, el encabezado le cortaba la punta de la bombilla. El fundido
+      // del escenario tapa el final.
+      mate: [0, -0.06, 1.45, 14, -10, -12],
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,

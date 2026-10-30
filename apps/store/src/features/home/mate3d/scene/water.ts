@@ -23,10 +23,12 @@ const PATH_POINTS = 25
 const STREAM_RADIUS = { top: 0.012, bottom: 0.007 } as const
 
 /**
- * Dónde cae el chorro respecto del centro del hueco, en coordenadas de `mate`: apenas hacia el centro
- * del mate y hacia la cámara (al costado de la bombilla) y un poco adentro de la yerba, que lo tapa.
+ * Dónde cae el chorro respecto del centro del hueco, en coordenadas de `mate`: con el mate de frente
+ * (Task 8) cae justo adentro del borde derecho, al lado de donde la bombilla se apoya en la virola,
+ * y un poco adentro de la yerba, que lo tapa. Antes (con el mate visto desde arriba) caía en el medio
+ * del hueco: `{ x: −0,02, y: −0,02, z: 0,09 }`.
  */
-const IMPACT_OFFSET = { x: -0.02, y: -0.02, z: 0.09 } as const
+const IMPACT_OFFSET = { x: 0.12, y: -0.02, z: 0.06 } as const
 
 /** Gotas de la salpicadura. */
 const DROP_COUNT = 28
@@ -143,7 +145,7 @@ const paintSteamCloud: Painter = (context, width, height) => {
  *   e índice 1,33 y ondas que bajan con `t`. Crece desde el pico con `water` y solo se dibuja con
  *   `water > 0,02` (así el pase de transmisión no corre en las otras paradas).
  * - **Salpicadura** (`state.splash`, solo cuando el chorro llega): dos anillos que se abren y se apagan
- *   en ciclo y 28 gotas que saltan del impacto.
+ *   en ciclo y 28 gotas que saltan del impacto (hasta asomar sobre la virola).
  * - **Charco** (`state.puddle`): un disco de radio 0,14 en el hueco, oscuro y casi espejado; crece con
  *   `puddle`.
  * - **Vapor** (`state.steam`): 14 nubes con ruido que suben con vaivén desde el hueco (hasta 1,25 veces
@@ -256,17 +258,21 @@ export function createWater(T: ThreeLib, parent: Three.Object3D, shared: SceneSh
     )
     drop.visible = false
     parent.add(drop)
-    const rise = 0.45 + jitter(index, 2) * 0.35
+    // Con el mate de frente (Task 8) el hueco queda bajo la virola: las gotas salen a 1,75..2,17 y
+    // suben de 0,26 a 0,39 (por la escala del mate) para asomar sobre el borde junto al chorro, más
+    // juntas y apenas más grandes. Antes, con el hueco a la vista, salían a 0,45..0,8 (subían de 0,02
+    // a 0,05), abiertas 0,18..0,42 y de 0,007..0,014.
+    const rise = 1.75 + jitter(index, 2) * 0.42
     const life = (2 * rise) / DROP_GRAVITY
     return {
       drop,
       angle: jitter(index, 1) * TAU,
-      spread: 0.18 + jitter(index, 3) * 0.24,
+      spread: 0.05 + jitter(index, 3) * 0.1,
       rise,
       life,
       period: life * (1.3 + jitter(index, 4) * 0.7),
       phase: jitter(index, 5),
-      size: 0.007 + jitter(index, 6) * 0.007,
+      size: 0.01 + jitter(index, 6) * 0.009,
     }
   })
 

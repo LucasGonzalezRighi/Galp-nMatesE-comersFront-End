@@ -8,6 +8,7 @@ import { asRoute } from '../../lib/routes'
 import { Eyebrow } from './Eyebrow'
 import { HOME_CONTAINER } from './home-styles'
 import { ManifestoBackdrop } from './ManifestoBackdrop'
+import { ManifestoEnter } from './ManifestoEnter'
 
 /** Props de {@link HomeManifesto}. */
 export interface HomeManifestoProps {
@@ -19,8 +20,9 @@ export interface HomeManifestoProps {
  * Manifiesto (spec 9.5): una frase grande que se ilumina palabra por palabra con el scroll
  * (`ScrubText`) y el link "Conocé la historia del galpón" a Nosotros. El texto es editable, así
  * que las palabras resaltadas en cobre del diseño no se replican (no se sabe cuáles serían).
- * De fondo, la foto del yerbal con su velo ({@link ManifestoBackdrop}), que entra con un zoom lento
- * y hace parallax; el texto va por encima, con un halo del color de fondo (`text-shadow`, como en
+ * De fondo, la foto del yerbal con su velo ({@link ManifestoBackdrop}), que entra con zoom, se
+ * enciende y hace parallax; el texto va por encima y en escritorio sube y aparece con el scroll
+ * ({@link ManifestoEnter}), con un halo del color de fondo (`text-shadow`, como en
  * las paradas del mate) y el rótulo y el link en cobre claro (`accent-300`), para que los tres se
  * lean a 4,5:1 o más sobre los brillos de la foto.
  *
@@ -31,7 +33,7 @@ export function HomeManifesto({ data }: HomeManifestoProps): ReactNode {
   return (
     <section className="home-manifesto relative flex items-center overflow-hidden py-[clamp(80px,12vw,180px)]">
       <ManifestoBackdrop />
-      <div
+      <ManifestoEnter
         className={`${HOME_CONTAINER} relative z-10 flex flex-col gap-9 [text-shadow:0_1px_2px_var(--color-background),0_0_24px_var(--color-background)]`}
       >
         <Reveal kind="up">
@@ -47,7 +49,7 @@ export function HomeManifesto({ data }: HomeManifestoProps): ReactNode {
             <ArrowRightIcon size={14} aria-hidden="true" />
           </Link>
         </Button>
-      </div>
+      </ManifestoEnter>
     </section>
   )
 }

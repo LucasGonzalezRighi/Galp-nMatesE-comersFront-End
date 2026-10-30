@@ -20,6 +20,14 @@ function samplePoints(): readonly (readonly [number, number])[] {
   return points
 }
 
+/** Altura de la virola (el borde del aro) en coordenadas del mate. */
+const MOUTH_Y = 1.01
+
+/** La altura más alta de la superficie entre los puntos de muestra. */
+function crest(shape: YerbaShape): number {
+  return Math.max(...samplePoints().map(([x, z]) => yerbaHeight(x, z, shape)))
+}
+
 /** La caída de la superficie entre `x = 0` y `x = 0,1` sobre el eje (`z = 0`). */
 function drop(shape: YerbaShape): number {
   return yerbaHeight(0, 0, shape) - yerbaHeight(0.1, 0, shape)
@@ -42,12 +50,32 @@ describe('yerbaHeight', () => {
     }
   })
 
-  it('la meseta izquierda queda al nivel de fill y el hueco derecho 0,22 más abajo', () => {
-    const shape = { fill: 1, slope: 1, wall: 1 }
-    expect(Math.abs(yerbaHeight(-0.25, 0, shape) - level(1))).toBeLessThanOrEqual(GRAIN_AMPLITUDE)
-    expect(Math.abs(yerbaHeight(0.25, 0, shape) - (level(1) - 0.22))).toBeLessThanOrEqual(
-      GRAIN_AMPLITUDE,
-    )
+  it('con la pendiente natural la meseta queda al nivel de fill; el hueco, 0,22 más abajo', () => {
+    const natural = { fill: 1, slope: 1, wall: 0 }
+    expect(Math.abs(yerbaHeight(-0.25, 0, natural) - level(1))).toBeLessThanOrEqual(GRAIN_AMPLITUDE)
+    for (const wall of [0, 1]) {
+      const height = yerbaHeight(0.25, 0, { fill: 1, slope: 1, wall })
+      expect(Math.abs(height - (level(1) - 0.22))).toBeLessThanOrEqual(GRAIN_AMPLITUDE)
+    }
+  })
+
+  it('con wall 1 la cresta de la montañita asoma de 0,06 a 0,09 sobre el nivel lleno', () => {
+    const top = crest({ fill: 1, slope: 1, wall: 1 })
+    expect(top).toBeGreaterThanOrEqual(level(1) + 0.06)
+    expect(top).toBeLessThanOrEqual(level(1) + 0.09 + GRAIN_AMPLITUDE)
+    // Asoma por encima de la virola, del lado de la meseta (a la izquierda).
+    expect(yerbaHeight(-0.1, 0, { fill: 1, slope: 1, wall: 1 })).toBeGreaterThan(MOUTH_Y)
+    // Sin pared todavía no hay cresta.
+    expect(crest({ fill: 1, slope: 1, wall: 0 })).toBeLessThanOrEqual(level(1) + GRAIN_AMPLITUDE)
+  })
+
+  it('la cresta no atraviesa la virola: en el borde de la boca la yerba queda bajo el aro', () => {
+    for (let spoke = 0; spoke < 48; spoke++) {
+      const angle = (spoke / 48) * Math.PI * 2
+      const x = YERBA_RADIUS * Math.cos(angle)
+      const z = YERBA_RADIUS * Math.sin(angle)
+      expect(yerbaHeight(x, z, { fill: 1, slope: 1, wall: 1 })).toBeLessThan(MOUTH_Y - 0.015)
+    }
   })
 
   it('con wall 1 la caída entre x = 0 y x = 0,1 es más brusca que con wall 0 (la pared)', () => {

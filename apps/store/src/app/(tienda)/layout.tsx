@@ -27,8 +27,9 @@ interface RootLayoutProps {
 
 /**
  * Root layout de la tienda, el grupo `(tienda)` (spec 9.5): idioma, tipografía, proveedores
- * del cliente, barra superior de arrepentimiento, encabezado, la página (que entra con
- * `PageEnter`), pie, cortina entre secciones, panel del carrito, avisos e hidratación del carrito.
+ * del cliente, encabezado, la barra de arrepentimiento debajo (Lucas, 2026-10-29), la página (que
+ * entra con `PageEnter`), pie, cortina entre secciones, panel del carrito, avisos e hidratación
+ * del carrito.
  * El simulador de Mercado Pago tiene su propio root layout, sin nada de esto (`(simulador)`).
  *
  * @param props - Ver {@link RootLayoutProps}.
@@ -39,8 +40,8 @@ export default function RootLayout({ children }: RootLayoutProps): ReactNode {
       <body>
         <Providers>
           <div className={cx('relative min-h-screen overflow-x-clip text-pretty', PAGE_BACKGROUND)}>
-            <TopBar />
             <Header />
+            <TopBar />
             <PageEnter>{children}</PageEnter>
             <Footer />
           </div>

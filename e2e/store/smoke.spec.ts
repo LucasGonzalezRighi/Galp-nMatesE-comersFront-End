@@ -23,6 +23,21 @@ test.describe('tienda: humo', () => {
     }
   })
 
+  test('la barra de arrepentimiento va justo debajo del encabezado, a la vista', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const link = page.getByRole('link', { name: 'Botón de arrepentimiento' }).first()
+    await expect(link).toBeInViewport()
+    const header = await page.getByRole('banner').boundingBox()
+    const bar = await link.boundingBox()
+    expect(header?.y).toBe(0)
+    // El link va centrado en la barra de 32 px, que empieza donde termina el encabezado.
+    const headerBottom = (header?.y ?? 0) + (header?.height ?? 0)
+    expect(bar?.y ?? 0).toBeGreaterThanOrEqual(headerBottom)
+    expect(bar?.y ?? 0).toBeLessThan(headerBottom + 32)
+  })
+
   test('el navegador lee el catálogo por /api/v1 al abrir el buscador', async ({ page }) => {
     await gotoStore(page, '/')
     const catalog = page.waitForResponse(
