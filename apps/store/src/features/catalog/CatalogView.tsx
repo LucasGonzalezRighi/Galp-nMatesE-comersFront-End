@@ -70,7 +70,7 @@ export function CatalogView({
         onQueryChange={onQueryChange}
         onOrderChange={onOrderChange}
       />
-      <div className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)] pt-7">
+      <div className="site-container pt-7">
         <CatalogResults
           products={visible}
           hasProducts={scope.products.length > 0}

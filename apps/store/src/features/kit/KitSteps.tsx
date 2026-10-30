@@ -33,10 +33,7 @@ const MARK_CLASSES: Record<KitStepStatus, string> = {
  */
 export function KitSteps({ steps, progress, onSelect }: KitStepsProps): ReactNode {
   return (
-    <nav
-      aria-label={KIT_COPY.stepsLabel}
-      className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)]"
-    >
+    <nav aria-label={KIT_COPY.stepsLabel} className="site-container">
       <div className="relative grid grid-cols-4 gap-2">
         <div aria-hidden="true" className="absolute inset-x-0 top-[15px] h-px bg-neutral-800" />
         <div

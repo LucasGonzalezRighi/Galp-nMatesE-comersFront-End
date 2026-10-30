@@ -17,7 +17,7 @@ export interface KitHeroProps {
  */
 export function KitHero({ discountPercent }: KitHeroProps): ReactNode {
   return (
-    <section className="mx-auto flex max-w-[1280px] flex-col gap-[18px] px-[clamp(20px,5vw,64px)] pt-[clamp(48px,7vw,96px)] pb-8">
+    <section className="site-container flex flex-col gap-[18px] pt-[clamp(48px,7vw,96px)] pb-8">
       <span className="text-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase">
         <span aria-hidden="true" className="bg-accent h-px w-7" />
         {KIT_COPY.eyebrow}

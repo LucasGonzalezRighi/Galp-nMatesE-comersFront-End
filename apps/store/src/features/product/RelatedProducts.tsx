@@ -24,7 +24,7 @@ const CARD_SIZES = '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw'
 export function RelatedProducts({ products, settings }: RelatedProductsProps): ReactNode {
   if (products.length === 0) return null
   return (
-    <section className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)] pt-[clamp(72px,9vw,120px)]">
+    <section className="site-container pt-[clamp(72px,9vw,120px)]">
       <div className="mb-8 flex flex-col gap-[14px]">
         <span className="text-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase">
           <span aria-hidden="true" className="bg-accent h-px w-7" />

@@ -1,3 +1,24 @@
 @import 'tailwindcss';
 @import '@galpon/design-tokens/tokens.css';
 @import '@galpon/design-tokens/base.css';
+
+/*
+ * Contenedor único de la tienda (Ruling MR-11): 1600 px de ancho como máximo, centrado, con un
+ * margen lateral de 4vw entre 20 px (celular) y 64 px. A 1440 px de pantalla quedan 58 px de margen
+ * y 1325 px de contenido; desde 1600 px, 64 px y 1472 px. Header, barra superior, footer y todas
+ * las páginas lo usan.
+ * `--site-inset` es el mismo margen para una pista que ocupa todo el ancho (la colección del
+ * inicio): su primera tarjeta arranca donde arranca el contenido del contenedor.
+ */
+:root {
+  --site-max: 1600px;
+  --site-gutter: clamp(20px, 4vw, 64px);
+  --site-inset: max(var(--site-gutter), calc((100% - var(--site-max)) / 2 + var(--site-gutter)));
+}
+
+@utility site-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--site-max);
+  padding-inline: var(--site-gutter);
+}

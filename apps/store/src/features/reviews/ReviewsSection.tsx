@@ -23,10 +23,7 @@ export interface ReviewsSectionProps {
  */
 export function ReviewsSection({ slug, productName, page }: ReviewsSectionProps): ReactNode {
   return (
-    <section
-      id="resenas"
-      className="mx-auto max-w-[1280px] scroll-mt-[90px] px-[clamp(20px,5vw,64px)] pt-[clamp(72px,9vw,120px)]"
-    >
+    <section id="resenas" className="site-container scroll-mt-[90px] pt-[clamp(72px,9vw,120px)]">
       <ReviewsLayout
         slug={slug}
         productName={productName}

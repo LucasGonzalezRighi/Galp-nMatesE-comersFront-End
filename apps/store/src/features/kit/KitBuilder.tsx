@@ -24,7 +24,7 @@ export interface KitBuilderProps {
 }
 
 /** Ancho y márgenes laterales de la página (los del diseño). */
-const CONTAINER = 'mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)]'
+const CONTAINER = 'site-container'
 
 /**
  * Asistente "Armá tu kit" (spec 9.4 y 9.5): barra de pasos, opciones comprables del paso o

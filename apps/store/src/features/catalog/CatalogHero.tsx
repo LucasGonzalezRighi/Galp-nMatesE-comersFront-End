@@ -36,7 +36,7 @@ export function CatalogHero({ title, blurb, countLabel }: CatalogHeroProps): Rea
         className="pointer-events-none absolute inset-0"
         style={HERO_GRID_STYLE}
       />
-      <div className="relative mx-auto flex max-w-[1280px] flex-wrap items-end justify-between gap-6 px-[clamp(20px,5vw,64px)]">
+      <div className="site-container relative flex flex-wrap items-end justify-between gap-6">
         <div className="flex max-w-[720px] flex-col gap-4">
           <span className="text-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase">
             <span aria-hidden="true" className="bg-accent h-px w-7" />

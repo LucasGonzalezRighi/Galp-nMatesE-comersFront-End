@@ -15,7 +15,7 @@ const NOT_FOUND_COPY = {
 /** Página que se muestra cuando la dirección no existe ("No encontramos esa página"). */
 export default function NotFound(): ReactNode {
   return (
-    <main className="mx-auto flex max-w-[1280px] flex-col items-start gap-[22px] px-[clamp(20px,5vw,64px)] pt-[clamp(72px,10vw,140px)] pb-[clamp(96px,12vw,180px)]">
+    <main className="site-container flex flex-col items-start gap-[22px] pt-[clamp(72px,10vw,140px)] pb-[clamp(96px,12vw,180px)]">
       <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
         {NOT_FOUND_COPY.eyebrow}
       </span>

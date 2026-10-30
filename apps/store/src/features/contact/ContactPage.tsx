@@ -44,7 +44,7 @@ function supportLines(seller: PublicSettings['seller']): SupportLine[] {
 export function ContactPage({ settings }: ContactPageProps): ReactNode {
   const support = supportLines(settings.seller)
   return (
-    <main className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-x-[72px] gap-y-12 px-[clamp(20px,5vw,64px)] pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]">
+    <main className="site-container flex flex-wrap items-start gap-x-[72px] gap-y-12 pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]">
       <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-[22px]">
         <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
           {CONTACT_COPY.eyebrow}

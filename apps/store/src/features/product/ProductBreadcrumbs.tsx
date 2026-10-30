@@ -28,10 +28,7 @@ export function ProductBreadcrumbs({
   productName,
 }: ProductBreadcrumbsProps): ReactNode {
   return (
-    <nav
-      aria-label={PRODUCT_COPY.breadcrumbLabel}
-      className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)] pt-6"
-    >
+    <nav aria-label={PRODUCT_COPY.breadcrumbLabel} className="site-container pt-6">
       <ol className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[13px] text-neutral-500">
         <li>
           <Link href={asRoute('/tienda')} className={LINK_CLASS}>

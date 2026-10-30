@@ -81,7 +81,7 @@ export function Header(): ReactNode {
         {/* Por debajo de 1040 px la navegación está oculta: sin los huecos de su columna, con
             menos aire entre los íconos y con el carrito solo con ícono bajo 410 px (CartButton),
             la fila entra en 320 px junto con el acceso a la cuenta. */}
-        <div className="relative mx-auto grid h-16 max-w-[1280px] grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center px-[clamp(20px,5vw,64px)] min-[1040px]:gap-5">
+        <div className="site-container relative grid h-16 grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center min-[1040px]:gap-5">
           <Link
             href={asRoute('/')}
             aria-label={LAYOUT_COPY.homeLink}

@@ -31,7 +31,7 @@ const BAND_STYLE: CSSProperties = {
 export function KitBand({ mateSlug, discountPercent }: KitBandProps): ReactNode {
   const discount = discountPercent > 0 ? formatDiscountPercent(discountPercent) : null
   return (
-    <section className="mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)] pt-[clamp(64px,8vw,104px)]">
+    <section className="site-container pt-[clamp(64px,8vw,104px)]">
       <Reveal
         kind="up"
         className="flex flex-wrap items-center justify-between gap-6 rounded-[14px] p-[clamp(24px,4vw,44px)] shadow-sm"

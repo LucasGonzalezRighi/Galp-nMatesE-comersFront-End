@@ -19,7 +19,7 @@ export interface FaqPageProps {
 export function FaqPage({ content }: FaqPageProps): ReactNode {
   return (
     <main>
-      <section className="mx-auto flex max-w-[1280px] flex-col gap-[18px] px-[clamp(20px,5vw,64px)] pt-[clamp(48px,7vw,96px)] pb-8">
+      <section className="site-container flex flex-col gap-[18px] pt-[clamp(48px,7vw,96px)] pb-8">
         <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
           {FAQ_COPY.eyebrow}
         </span>

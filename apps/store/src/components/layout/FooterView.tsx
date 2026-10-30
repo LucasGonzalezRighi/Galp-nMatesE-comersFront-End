@@ -94,7 +94,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
     <footer className="site-footer relative overflow-hidden pt-[72px]">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-[clamp(20px,5vw,64px)]">
+      <div className="site-container flex flex-1 flex-col">
         {/* Los márgenes `auto` solo actúan con el pie que sube: centran las columnas en la pantalla. */}
         <div className="mt-auto mb-14 h-px" style={DIVIDER_STYLE} />
         <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">

@@ -17,6 +17,12 @@ import { Eyebrow } from './Eyebrow'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY, linePhotoPlaceholder, orderLabel, piecesLabel } from './home.copy'
 
+/**
+ * Margen de la pista: el de `--site-inset` (`globals.css`), así la primera tarjeta arranca donde
+ * arrancan el título y el contenido del contenedor, a cualquier ancho de pantalla.
+ */
+const TRACK_STYLE: CSSProperties = { padding: '0 var(--site-inset)' }
+
 /** Medidas de las tarjetas de la pista, como el diseño: no más de 440 px de ancho ni 500 de alto. */
 const CARD_SIZE = 'h-[min(56vh,500px)] flex-none'
 
@@ -116,6 +122,7 @@ export function HomeCollection({ data }: HomeCollectionProps): ReactNode {
   const { collection } = data.content
   return (
     <HorizontalScroll
+      trackStyle={TRACK_STYLE}
       header={
         <div className={`${HOME_CONTAINER} flex flex-wrap items-end justify-between gap-6`}>
           <div className="flex flex-col gap-[14px]">

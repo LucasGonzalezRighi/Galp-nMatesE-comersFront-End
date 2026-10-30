@@ -56,7 +56,7 @@ export function ProductDetailView({
         categorySlug={product.categorySlug}
         productName={product.name}
       />
-      <section className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-x-14 gap-y-10 px-[clamp(20px,5vw,64px)] pt-6">
+      <section className="site-container flex flex-wrap items-start gap-x-14 gap-y-10 pt-6">
         <div className="min-w-0 flex-[1.1_1_440px] lg:sticky lg:top-[88px]">
           <ProductGallery productName={product.name} code={product.code} images={product.images} />
         </div>

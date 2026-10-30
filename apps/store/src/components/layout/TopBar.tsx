@@ -13,7 +13,7 @@ import { LAYOUT_COPY } from './layout.copy'
 export function TopBar(): ReactNode {
   return (
     <div className="bg-accent-900 border-accent-800 relative z-10 border-b">
-      <div className="mx-auto flex h-8 max-w-[1280px] items-center justify-center px-[clamp(20px,5vw,64px)]">
+      <div className="site-container flex h-8 items-center justify-center">
         <Link
           href={asRoute('/arrepentimiento')}
           className="text-accent-200 hover:text-accent-100 inline-flex items-center gap-[6px] text-[12px] tracking-[0.01em] no-underline underline-offset-4 hover:underline"

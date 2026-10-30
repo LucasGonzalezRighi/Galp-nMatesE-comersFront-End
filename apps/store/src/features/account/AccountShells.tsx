@@ -9,8 +9,7 @@ import { RegisterForm } from './RegisterForm'
 import { ResetPasswordForm } from './ResetPasswordForm'
 
 /** Márgenes de las páginas de la cuenta, los mismos de Contacto y Arrepentimiento. */
-const PAGE =
-  'mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)] pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]'
+const PAGE = 'site-container pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]'
 
 /** Rótulo en cobre con la línea, sobre los títulos. */
 const EYEBROW =

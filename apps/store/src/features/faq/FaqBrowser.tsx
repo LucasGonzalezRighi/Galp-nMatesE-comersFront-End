@@ -75,7 +75,7 @@ export function FaqBrowser({ categories }: FaqBrowserProps): ReactNode {
   const category = categories.find((candidate) => candidate.id === categoryId) ?? categories[0]
 
   return (
-    <section className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-x-16 gap-y-8 px-[clamp(20px,5vw,64px)] pb-[clamp(72px,9vw,120px)]">
+    <section className="site-container flex flex-wrap items-start gap-x-16 gap-y-8 pb-[clamp(72px,9vw,120px)]">
       {category === undefined ? null : (
         <div
           role="group"
@@ -159,7 +159,7 @@ export function FaqBrowser({ categories }: FaqBrowserProps): ReactNode {
                       <div className="overflow-hidden">
                         <p
                           className={cx(
-                            'm-0 pr-[50px] pb-6 pl-[34px] text-[15.5px] leading-[1.7] text-neutral-300 transition-opacity duration-500 motion-reduce:transition-none',
+                            'm-0 max-w-[75ch] pr-[50px] pb-6 pl-[34px] text-[15.5px] leading-[1.7] text-neutral-300 transition-opacity duration-500 motion-reduce:transition-none',
                             open ? 'opacity-100' : 'opacity-0',
                           )}
                         >

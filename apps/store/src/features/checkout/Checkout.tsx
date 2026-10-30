@@ -70,7 +70,7 @@ export function CheckoutSkeleton(): ReactNode {
   return (
     <div
       aria-busy="true"
-      className="mx-auto flex max-w-[1280px] flex-wrap gap-x-14 gap-y-10 px-[clamp(20px,5vw,64px)] pt-[clamp(40px,6vw,72px)]"
+      className="site-container flex flex-wrap gap-x-14 gap-y-10 pt-[clamp(40px,6vw,72px)]"
     >
       <div className="flex min-w-0 flex-[1.5_1_480px] flex-col gap-7">
         <Bone className="h-3 w-24" />
@@ -86,7 +86,7 @@ export function CheckoutSkeleton(): ReactNode {
 /** Carrito vacío: "Tu carrito está vacío." y "Ir a la tienda". */
 function EmptyCheckout(): ReactNode {
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col items-start gap-[18px] px-[clamp(20px,5vw,64px)] py-[120px]">
+    <div className="site-container flex flex-col items-start gap-[18px] py-[120px]">
       <Float>
         <Image
           src="/brand/galpon-mark.png"
@@ -190,7 +190,7 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
   }
 
   return (
-    <section className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-x-14 gap-y-10 px-[clamp(20px,5vw,64px)] pt-[clamp(40px,6vw,72px)]">
+    <section className="site-container flex flex-wrap items-start gap-x-14 gap-y-10 pt-[clamp(40px,6vw,72px)]">
       <div className="flex min-w-0 flex-[1.5_1_480px] flex-col gap-7">
         <div className="flex flex-col gap-[14px]">
           <span className="text-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase">

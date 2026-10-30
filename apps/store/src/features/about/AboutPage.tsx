@@ -17,8 +17,8 @@ export interface AboutPageProps {
 const EYEBROW =
   'text-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:bg-accent before:content-[""]'
 
-/** Contenedor de cada sección: 1280 px de ancho máximo y el margen lateral del diseño. */
-const CONTAINER = 'mx-auto max-w-[1280px] px-[clamp(20px,5vw,64px)]'
+/** Contenedor de cada sección: el `site-container` de toda la tienda (1600 px como máximo). */
+const CONTAINER = 'site-container'
 
 /** Línea fina que se desvanece en los extremos, arriba de cada paso. */
 const STEP_DIVIDER =
@@ -131,7 +131,7 @@ export function AboutPage({ content }: AboutPageProps): ReactNode {
             >
               <span className="text-accent tabular-nums">{stepNumber(index)}</span>
               <h2 className="text-[24px] tracking-[-0.01em]">{step.title}</h2>
-              <p className="col-span-2 text-[15.5px] leading-[1.7] text-neutral-300 sm:col-span-1">
+              <p className="col-span-2 max-w-[68ch] text-[15.5px] leading-[1.7] text-neutral-300 sm:col-span-1">
                 {step.text}
               </p>
             </Reveal>

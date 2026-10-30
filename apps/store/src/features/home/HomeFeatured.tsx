@@ -46,7 +46,7 @@ export function HomeFeatured({ data }: HomeFeaturedProps): ReactNode {
             </Link>
           </Button>
         </div>
-        <FeaturedExit className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5">
+        <FeaturedExit className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5 min-[1440px]:grid-cols-4">
           {data.featured.map((product, index) => (
             <ProductCard
               key={product.id}

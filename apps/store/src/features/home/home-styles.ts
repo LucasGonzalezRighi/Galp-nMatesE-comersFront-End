@@ -1,5 +1,8 @@
-/** Contenedor centrado de 1280 px con el margen lateral del diseño (20 px en celular, hasta 64 px). */
-export const HOME_CONTAINER = 'mx-auto w-full max-w-[1280px] px-[clamp(20px,5vw,64px)]'
+/**
+ * Contenedor del inicio: la utilidad `site-container` de `globals.css`, la misma de toda la tienda
+ * (1600 px como máximo, centrado, con 20 a 64 px de margen lateral).
+ */
+export const HOME_CONTAINER = 'site-container'
 
 /** Título de sección del inicio (colección, destacados, kit, reseñas). */
 export const HOME_SECTION_TITLE = 'text-[clamp(32px,4.4vw,58px)] leading-[1.04] tracking-[-0.03em]'

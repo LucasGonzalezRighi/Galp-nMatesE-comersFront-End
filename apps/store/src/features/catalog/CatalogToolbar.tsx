@@ -65,7 +65,7 @@ export function CatalogToolbar({
   ]
   return (
     <div className="bg-background/82 sticky top-16 z-20 py-3 backdrop-blur-[14px]">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-[clamp(20px,5vw,64px)]">
+      <div className="site-container flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label={CATALOG_COPY.linesNav}
           className="flex max-w-full [scrollbar-width:none] gap-2 overflow-x-auto p-[2px]"
