@@ -285,14 +285,37 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **Visto**: tienda compilada en el puerto 4300 con la GPU real (Intel UHD, ANGLE D3D11). Cuadros por segundo con una rueda pareja: 58,2 en la zambullida y 58 a 59,3 en la entrada de la colección con el desenfoque en las tarjetas (p95 16,8 ms), así que el desenfoque quedó. Capturas a 1905 × 950 en `.superpowers/sdd/2026-10-29-mate-3d-realista/captures/zambullida-{1..6}.png` y video de 15 s en `media/mate-3d/zambullida-1905.mp4` (fuera del repo).
 
+## Intro, transiciones y cursor (2026-10-30)
+
+**Pedido de Lucas** (Ruling MR-29, con un video de referencia de 5 s): una intro en cada carga del inicio (también al volver a Inicio) en la que el matecito y GALPÓN se dibujan a mano, se rellenan y la pantalla se abre del medio hacia los costados como un libro; un telón con el logo entre las páginas del menú; y el cursor de matecito del diseño.
+
+**Qué quedó** (Task 15 `82a7264`, integración en la Task 16):
+
+- **Intro** (`features/intro`): una sola capa (`IntroLayer`) con un reductor puro (`idle → covering → loading → drawing → filling → opening → idle`). El matecito se traza de 0 a 1,4 s (la bombilla al final), GALPÓN letra por letra hasta 3,4 s, el relleno con el degradé del pie y una subida de 12 px hasta 4 s, y las dos mitades se abren con `translate3d(∓100%) rotateY(±18°)` y desenfoque hasta 5 s. Un clic, una tecla o la rueda la saltan; mientras dura, los `main` quedan `inert`. Con menos movimiento no hay intro.
+- **Telón**: los links del menú lo bajan con el logo hecho (450 ms), navegan tapados y lo abren igual (650 ms); hacia Inicio baja vacío y la intro lo dibuja entero. Las imágenes del logo del telón se precargan cuando la página queda libre. Mientras hay capa, `<html>` lleva `data-page-covered` y la entrada de página (`PageEnter`) no se suma: antes el libro se abría sobre una página todavía transparente y desenfocada. Un clic en el menú mientras el telón se abre ya no se pierde: el link navega como siempre.
+- **Cursor**: con puntero fino, el matecito para la página y el que señala para links, botones y `cursor-pointer` (también `enabled:cursor-pointer`, la de los pasos del checkout, que antes mostraba la mano común). Medido compilado con `getComputedStyle`: `body` `url(/cursors/mate.png) 6 4, auto`; botón y link de tarjeta `url(/cursors/mate-pointer.png) 6 4, pointer`.
+- **Tienda, "Más productos"** (Task 14): mirado compilado a 1905 y 390. Las tarjetas nuevas bajan visibles desde el primer cuadro, sin huecos; el lugar del botón ya no desaparece de golpe: se achica a 0 y se funde en lo mismo que crece la grilla (`AnimatePresence`), así la banda del kit no salta.
+- **Pendientes de la segunda tanda**: el pie mete los cuatro grupos de links en una fila desde 1024 px (de 1024 a 1280 la columna de los links mide lo que piden y la frase se angosta; el aire entre grupos va de 24 a 48 px con `clamp`); `MobileMenu`, `LegalPage` y `OrderResult` usan `px-(--site-gutter)`; la spec §9.5 dice cinco reseñas en una cinta continua.
+- **E2E**: `gotoStore` salta la intro al abrir el inicio (un evento `wheel` en `window`, que solo escucha el proveedor) y espera a que la capa se vaya; las pruebas de la intro piden `{ intro: 'keep' }` y las que navegan por el menú esperan el telón (`settleIntro`). `catalog-more` mide el aire contra el final del contenedor de la tienda y corre solo en escritorio; se estabilizaron el hover del Manifiesto a 1366 × 657, la frase del Manifiesto a 1440 (espera a que termine su entrada) y los bordes de la zambullida.
+
+**Para el back** (Ruling MR-30): el backend (NestJS) escucha en el puerto 3001 y acepta CORS con credenciales desde `http://localhost:5173`, porque el dashboard le habla desde el navegador. La tienda le habla desde su servidor y por el rewrite `/api/v1` (mismo origen para el navegador), así que no necesita CORS. Los dos `.env.example` ya traen el bloque comentado "Backend local" (`API_MODE`/`VITE_API_MODE=live`, `API_BASE_URL`/`VITE_API_BASE_URL=http://localhost:3001`, commit `b5cefff`).
+
+**Lecciones**:
+
+- Dos transiciones de página a la vez se pisan: el telón tapaba el cambio de ruta y `PageEnter` hacía su propia entrada debajo, así que el libro se abría sobre una página a medio aparecer. La capa que tapa avisa con un atributo en `<html>` y la entrada se saltea.
+- Para capturar una animación en un instante exacto no alcanza con esperar: la primera captura llegaba 350 ms tarde por la carga de la página. Se congelan las animaciones (`getAnimations()`, `pause()` y `currentTime` corregido) y los temporizadores de la página mientras se saca la captura.
+- Los E2E que miden algo justo en el borde de un tramo pegado al scroll fallan por el redondeo del scroll (0,9995 en vez de 1): medir un poco antes o un poco después del borde.
+
+**Visto**: tienda compilada en el puerto 4300 con la GPU real. E2E de toda la tienda en escritorio y celular (`intro`, `catalog-more`, `home`, `home-reviews`, `home-fixes`, `footer`, `smoke`, `a11y`, `reduced-motion`, `visual`, `csp`, `navigation`, `cart`, `checkout`, `checkout-a11y`, `reviews`, `search`, `contact`, `withdrawal`, `account`) en verde. Capturas a 1905 × 950 en `.superpowers/sdd/2026-10-29-mate-3d-realista/captures/t16-*` y video de 45 s en `media/mate-3d/inicio-final-1905.mp4` (fuera del repo): la intro, el inicio entero con la zambullida, el telón hacia la tienda, "Más productos" y el telón con la intro al volver a Inicio.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
 
-| Plan                      | Qué incluye                                                                                               | Estimación     | Listo cuando                                       |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
-| **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes             | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
-| **P5 · Etapa 2 y cierre** | Cursor y brillo, Lighthouse, accesibilidad, revisión visual final y README finales (la escena 3D ya está) | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
+| Plan                      | Qué incluye                                                                                                             | Estimación     | Listo cuando                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
+| **P4 · Dashboard**        | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas y mensajes                           | 5 a 6 sesiones | E2E del admin en verde y su lista de control       |
+| **P5 · Etapa 2 y cierre** | Brillo, Lighthouse, accesibilidad, revisión visual final y README finales (la escena 3D, la intro y el cursor ya están) | 3 a 4 sesiones | Objetivos de rendimiento y accesibilidad cumplidos |
 
 P2, P3 y P4 ya están hechas y cerradas con su revisión final (arriba): para el front queda P5, **3 a 4 sesiones**. Lo que más puede estirar las estimaciones: ajustes de diseño al ver las pantallas reales, el 3D en celulares viejos y los hallazgos de la prueba real con Mercado Pago.
 

@@ -116,6 +116,12 @@ curl -X POST localhost:3000/api/revalidate \
 - `content:*` se regenera con el perfil `'max'` (se sirve lo anterior mientras tanto); el resto vence al instante.
 - En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché (ignora las etiquetas que no cumplen el formato de arriba). Hoy ningún handler del mock invalida etiquetas: llega con las escrituras de P2–P4.
 
+## Intro, telón y cursor
+
+`features/intro` (Ruling MR-29): cada vez que se muestra el inicio se dibujan a mano el matecito y GALPÓN, se rellenan con el degradé del pie y la pantalla se abre como un libro (5 s; un clic, una tecla o la rueda la saltan). Los links del menú bajan un telón con el logo, navegan tapados y lo abren igual; hacia el inicio, el telón trae la intro entera. Con `prefers-reduced-motion: reduce` no hay intro ni telón. Con puntero fino, el cursor es el matecito del diseño (`public/cursors/`, al final de `app/globals.css`).
+
+En los E2E, `gotoStore` (de `e2e/support/store.ts`) salta la intro al abrir el inicio: despacha un evento `wheel` en `window` (lo único que lo escucha es el proveedor de la transición) y espera a que la capa `[data-intro]` se vaya. Las pruebas de la intro piden `{ intro: 'keep' }`, y las que navegan por el menú esperan el telón con `settleIntro`.
+
 ## Seguridad
 
 `next.config.ts` agrega a todas las respuestas la política de seguridad de contenido (CSP, sección 16 del spec; en desarrollo suma `'unsafe-eval'`), `X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security` y `Permissions-Policy`. Con `API_MODE=live`, el origen del backend se agrega a `connect-src`.
@@ -128,7 +134,7 @@ src/
 │  └─ (tienda)/    Las rutas públicas: inicio, tienda, tienda/[linea], producto/[slug], kit, nosotros,
 │                  preguntas-frecuentes, contacto, arrepentimiento, terminos y privacidad
 ├─ features/       Una carpeta por pantalla o función (home, catalog, product, kit, cart, search, about,
-│                  faq, contact, withdrawal, legal, reviews, toast, product-card), con sus textos
+│                  faq, contact, withdrawal, legal, reviews, toast, product-card, intro), con sus textos
 │                  (*.copy.ts), sus lecturas cacheadas (*.data.ts) y sus tests. Una feature importa a
 │                  otra solo por su index.ts (lo exige el lint)
 ├─ components/     Piezas compartidas: layout (cabecera, pie, menú), motion (animaciones) y ui (botones,
