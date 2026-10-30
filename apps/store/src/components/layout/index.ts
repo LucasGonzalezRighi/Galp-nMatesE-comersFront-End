@@ -1,6 +1,6 @@
 /**
- * Estructura común de las páginas de la tienda (spec 9.2 y 9.5): barra superior de
- * arrepentimiento, encabezado con navegación y carrito, menú del celular y pie de página.
+ * Estructura común de las páginas de la tienda (spec 9.2 y 9.5): encabezado con navegación y
+ * carrito, la barra de arrepentimiento debajo (Lucas, 2026-10-29), menú del celular y pie de página.
  *
  * El buscador se abre con `openSearch` (ver `search-trigger.ts`): la feature de búsqueda lo
  * escucha con `useSearchOpen`, y así el layout no depende de ella.
