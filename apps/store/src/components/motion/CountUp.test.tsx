@@ -93,6 +93,29 @@ describe('CountUp', () => {
     expect(visible).toHaveTextContent(/^27$/)
   })
 
+  it('al dispararse sigue en 0 hasta el primer cuadro: no se ve el número final antes de contar', () => {
+    mockReducedMotion(false)
+    installIntersectionObserver()
+    const { container, rerender } = render(<CountUp value={27} start={false} duration={400} />)
+    const visible = container.querySelector('[aria-hidden="true"]')
+    // Sin `act`, el cuadro de animación todavía no corrió: solo el render del disparo.
+    rerender(<CountUp value={27} start duration={400} />)
+    expect(visible).toHaveTextContent(/^0$/)
+  })
+
+  it('sin `start`, al entrar en pantalla arranca en 0 en el mismo render', () => {
+    mockReducedMotion(false)
+    installIntersectionObserver()
+    const { container } = render(<CountUp value={27} duration={400} />)
+    const visible = container.querySelector('[aria-hidden="true"]')
+    // Antes de entrar se ve el valor final (también en el HTML del servidor).
+    expect(visible).toHaveTextContent(/^27$/)
+    act(() => {
+      intersectAll()
+    })
+    expect(visible).not.toHaveTextContent(/^27$/)
+  })
+
   it('con prefers-reduced-motion y `start` en false muestra igual el valor final', () => {
     mockReducedMotion(true)
     installIntersectionObserver()

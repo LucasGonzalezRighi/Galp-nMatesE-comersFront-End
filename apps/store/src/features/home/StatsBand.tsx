@@ -25,6 +25,14 @@ export interface StatsBandProps {
   className?: string
 }
 
+/**
+ * Qué parte de la banda tiene que estar a la vista para que cuente: "entera", con un margen de un
+ * subpíxel. Clavada (sticky) el navegador la mide al 0,99999, así que con `amount: 'all'` (1) no
+ * contaba si se llegaba de un salto (una rueda de 100 px saltea el tramo en que la banda se ve
+ * entera antes de clavarse) y se quedaba en 0.
+ */
+const STATS_IN_VIEW = 0.98
+
 /** Clase del número: grande, con cifras de ancho fijo. */
 const NUMBER_CLASS =
   'm-0 grid justify-items-center text-[clamp(52px,6vw,84px)] leading-none font-medium tracking-[-0.03em] tabular-nums'
@@ -33,7 +41,7 @@ const NUMBER_CLASS =
  * La banda de cifras del inicio (Rulings MR-25 y MR-26): cada cifra es una columna centrada, con el
  * número centrado sobre su rótulo, y las cuatro repartidas parejo en el ancho. Las cuatro cuentan a
  * la vez de 0 a su número (`CountUp` con `start`, 1,6 s, frenando al llegar) recién cuando la banda
- * está entera a la vista (`useInView` con `amount: 'all'`; en escritorio, cuando el bloque del
+ * está entera a la vista (`useInView` con `amount` 0,98, ver {@link STATS_IN_VIEW}; en escritorio, cuando el bloque del
  * Manifiesto quedó clavado), una sola vez por carga. El número final ocupa su lugar desde el
  * principio (una copia invisible en la misma celda), así contar no mueve el centro ni el resto. Con
  * menos movimiento se ve el número final directo; el HTML del servidor también lo trae.
@@ -42,7 +50,7 @@ const NUMBER_CLASS =
  */
 export function StatsBand({ figures, className }: StatsBandProps): ReactNode {
   const ref = useRef<HTMLDivElement>(null)
-  const started = useInView(ref, { once: true, amount: 'all' })
+  const started = useInView(ref, { once: true, amount: STATS_IN_VIEW })
   return (
     <div ref={ref} data-stats-band="" className={cx('grid', className)}>
       {figures.map((figure, position) => (

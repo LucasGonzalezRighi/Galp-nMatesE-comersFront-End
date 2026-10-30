@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { act, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   cleanUpAfterEach,
+  FakeIntersectionObserver,
   installIntersectionObserver,
   intersectAll,
   mockReducedMotion,
@@ -54,5 +55,21 @@ describe('StatsBand', () => {
       },
       { timeout: 4000 },
     )
+  })
+
+  it('"entera a la vista" tolera un subpíxel: clavada, la banda queda al 0,99999 y con 1 no contaba', () => {
+    mockReducedMotion(false)
+    const thresholds: unknown[] = []
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class extends FakeIntersectionObserver {
+        constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+          super(callback)
+          thresholds.push(options?.threshold)
+        }
+      },
+    )
+    render(<StatsBand figures={FIGURES} />)
+    expect(thresholds).toContain(0.98)
   })
 })

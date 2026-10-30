@@ -121,9 +121,13 @@ function Counting({
   const hydrated = useHydrated()
   // Una vez disparado, sigue hasta el final aunque el disparo vuelva a `false`.
   const [fired, setFired] = useState(false)
-  if ((start ?? inView) && !fired) setFired(true)
   // `null` significa "mostrar el valor final": antes de entrar en pantalla y al terminar.
   const [counting, setCounting] = useState<string | null>(null)
+  if ((start ?? inView) && !fired) {
+    setFired(true)
+    // En 0 desde el mismo render del disparo: sin un cuadro con el valor final antes de contar.
+    setCounting(formatCount(0, decimals, prefix, suffix))
+  }
 
   useEffect(() => {
     if (!fired) return undefined
