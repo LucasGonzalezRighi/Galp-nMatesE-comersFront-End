@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject, ReactNode } from 'react'
-import { domAnimation, LazyMotion, m, MotionConfig } from 'motion/react'
+import { domAnimation, LazyMotion, m } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { ProductSummary } from '@galpon/api-client'
@@ -33,6 +33,14 @@ const CARD_HIDDEN = { opacity: 0, y: -16 } as const
 
 /** Cómo termina cada tarjeta nueva. */
 const CARD_SHOWN = { opacity: 1, y: 0 } as const
+
+/**
+ * Anula la entrada propia de la tarjeta (el `Reveal up` de `ProductCard`: 28 px más abajo,
+ * transparente y con desenfoque, que arranca recién cuando el observador la ve) en su hijo directo.
+ * Los estilos en línea de Motion pierden contra `!important`, así que la tarjeta queda quieta y
+ * visible desde el primer cuadro y la única entrada es la de esta grilla.
+ */
+const NO_OWN_REVEAL_CLASS = '*:transform-none! *:opacity-100! *:filter-none!'
 
 /** Si la grilla está desplegada y para qué filtro, orden y búsqueda (`collapseKey`) lo está. */
 interface MoreState {
@@ -100,9 +108,10 @@ interface UnfoldedCardsProps {
  * tarjeta (sin desplazar: la grilla todavía mide 0 y recorta) y, al terminar de crecer, la acerca
  * a la pantalla si quedó afuera. Con menos movimiento aparecen de una.
  *
- * La entrada `up` propia de la tarjeta (sube 28 px) iría en contra de esta bajada: dentro de cada
- * tarjeta nueva `MotionConfig reducedMotion="always"` deja ese desplazamiento quieto y conserva
- * solo su fundido con desenfoque.
+ * La entrada `up` propia de la tarjeta (sube 28 px y se funde recién cuando el observador la ve,
+ * o sea durante el crecimiento) iría en contra de esta bajada y la retrasaría 1 s o más: la clase
+ * {@link NO_OWN_REVEAL_CLASS} del contenedor de cada tarjeta nueva la deja quieta y visible, de modo
+ * que solo cuenta la entrada de acá (0,6 s, escalonada 0,05 s).
  *
  * @param props - Ver {@link UnfoldedCardsProps}.
  */
@@ -140,6 +149,7 @@ function UnfoldedCards({ products, installments, showNetPrice }: UnfoldedCardsPr
     ) : (
       <m.div
         key={product.id}
+        className={NO_OWN_REVEAL_CLASS}
         initial={settled ? false : CARD_HIDDEN}
         animate={CARD_SHOWN}
         transition={{
@@ -148,7 +158,7 @@ function UnfoldedCards({ products, installments, showNetPrice }: UnfoldedCardsPr
           ease: EASE_MAIN,
         }}
       >
-        <MotionConfig reducedMotion="always">{card}</MotionConfig>
+        {card}
       </m.div>
     )
   })

@@ -480,6 +480,18 @@ describe('CatalogBrowser: más productos', () => {
     })
   })
 
+  it('la tarjeta nueva no suma su entrada propia: su Reveal queda quieto y visible', async () => {
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    const wrapper = cardLink(25).closest('[class*="opacity-100!"]')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper?.className).toContain('*:transform-none!')
+    expect(wrapper?.className).toContain('*:filter-none!')
+    // Las tarjetas de las 4 hileras de arriba conservan su aparición al entrar en pantalla.
+    expect(cardLink(1).closest('[class*="opacity-100!"]')).toBeNull()
+  })
+
   it('las 4 hileras siguen al ancho: con 4 columnas se ven 16', () => {
     renderCatalog(null, { products: manyProducts })
     layout.columns = 4
