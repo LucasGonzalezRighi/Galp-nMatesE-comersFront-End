@@ -74,6 +74,32 @@ describe('CountUp', () => {
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull()
   })
 
+  it('con `start` espera en 0 (una vez hidratado) y cuenta recién cuando `start` pasa a true', async () => {
+    mockReducedMotion(false)
+    installIntersectionObserver()
+    const { container, rerender } = render(<CountUp value={27} start={false} duration={40} />)
+    const visible = container.querySelector('[aria-hidden="true"]')
+    // Aunque entre en pantalla, no cuenta solo: espera el aviso de quien lo usa.
+    act(() => {
+      intersectAll()
+    })
+    expect(visible).toHaveTextContent(/^0$/)
+    rerender(<CountUp value={27} start duration={40} />)
+    await waitFor(() => {
+      expect(visible).toHaveTextContent(/^27$/)
+    })
+    // Una vez terminado, no vuelve a 0 aunque `start` cambie.
+    rerender(<CountUp value={27} start={false} duration={40} />)
+    expect(visible).toHaveTextContent(/^27$/)
+  })
+
+  it('con prefers-reduced-motion y `start` en false muestra igual el valor final', () => {
+    mockReducedMotion(true)
+    installIntersectionObserver()
+    render(<CountUp value={24} start={false} />)
+    expect(screen.getByText('24')).toBeVisible()
+  })
+
   it('rechaza una duración negativa o decimales inválidos', () => {
     expect(() => CountUp({ value: 1, duration: -1 })).toThrow(RangeError)
     expect(() => CountUp({ value: 1, decimals: 9 })).toThrow(RangeError)

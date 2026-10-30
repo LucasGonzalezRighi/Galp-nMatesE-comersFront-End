@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import { useInView } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRevealDisabled } from './use-reveal-disabled'
 import { assertFinite, assertIntegerInRange, assertNonNegative } from './validate'
 
@@ -70,40 +70,68 @@ export interface CountUpProps {
   suffix?: string
   /** Duración del conteo, en milisegundos. Por omisión 1800. */
   duration?: number
+  /**
+   * Quién dispara el conteo. Sin esta prop, la cifra cuenta sola al entrar en pantalla. Con ella,
+   * espera en 0 (una vez hidratada; el HTML del servidor trae el valor final) y cuenta recién
+   * cuando pasa a `true`, por ejemplo cuando una banda de cifras está entera a la vista. Cuenta una
+   * sola vez.
+   */
+  start?: boolean
   /** Clase del contenedor. */
   className?: string
 }
 
 /** Props de la parte que cuenta. */
-interface CountingProps extends Required<Omit<CountUpProps, 'className'>> {
+interface CountingProps extends Required<Omit<CountUpProps, 'className' | 'start'>> {
+  /** El disparo de quien lo usa; `undefined` si la cifra cuenta sola al entrar en pantalla. */
+  start: boolean | undefined
   /** El texto final, ya formateado. */
   finalText: string
   /** Clase del contenedor. */
   className: string | undefined
 }
 
-/** La cifra que cuenta desde 0 cuando entra en pantalla. */
+/** Nada que escuchar: solo distingue el servidor y la hidratación del resto. */
+function subscribeNothing(): () => void {
+  return () => undefined
+}
+
+/** Si ya pasó la hidratación (en el servidor y al hidratar, `false`). */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  )
+}
+
+/** La cifra que cuenta desde 0 cuando entra en pantalla (o cuando `start` pasa a `true`). */
 function Counting({
   value,
   decimals,
   prefix,
   suffix,
   duration,
+  start,
   finalText,
   className,
 }: CountingProps): ReactNode {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true, amount: 0.08, margin: '0px 0px -6% 0px' })
+  const hydrated = useHydrated()
+  // Una vez disparado, sigue hasta el final aunque el disparo vuelva a `false`.
+  const [fired, setFired] = useState(false)
+  if ((start ?? inView) && !fired) setFired(true)
   // `null` significa "mostrar el valor final": antes de entrar en pantalla y al terminar.
   const [counting, setCounting] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!inView) return
+    if (!fired) return undefined
     let frame = 0
-    let start: number | undefined
+    let begin: number | undefined
     const step = (now: number): void => {
-      start ??= now
-      const progress = duration === 0 ? 1 : Math.min(1, (now - start) / duration)
+      begin ??= now
+      const progress = duration === 0 ? 1 : Math.min(1, (now - begin) / duration)
       setCounting(
         progress >= 1 ? null : formatCount(countUpValue(progress, value), decimals, prefix, suffix),
       )
@@ -113,19 +141,25 @@ function Counting({
     return () => {
       cancelAnimationFrame(frame)
     }
-  }, [inView, value, decimals, prefix, suffix, duration])
+  }, [fired, value, decimals, prefix, suffix, duration])
+
+  // Con disparo externo, una vez hidratada espera en 0 (el servidor trae el valor final).
+  const waiting = start !== undefined && hydrated && !fired
+  const shown = waiting ? formatCount(0, decimals, prefix, suffix) : (counting ?? finalText)
 
   return (
     <span ref={ref} className={className}>
-      <span aria-hidden="true">{counting ?? finalText}</span>
+      <span aria-hidden="true">{shown}</span>
       <span style={VISUALLY_HIDDEN}>{finalText}</span>
     </span>
   )
 }
 
 /**
- * Cifra que cuenta desde 0 hasta `value` (1800 ms, arrancando rápido y frenando) cuando entra en
- * pantalla, y termina en el valor exacto con el formato argentino (coma decimal).
+ * Cifra que cuenta desde 0 hasta `value` (1800 ms, arrancando rápido y frenando: la curva
+ * exponencial casi calca a `--ease-main`) cuando entra en pantalla, o cuando `start` pasa a `true`
+ * si quien la usa decide el momento, y termina en el valor exacto con el formato argentino (coma
+ * decimal). Cuenta una sola vez.
  *
  * El HTML trae siempre el valor final, así que se ve completo sin JavaScript y con
  * `prefers-reduced-motion: reduce` (ahí no se anima). Los lectores de pantalla leen solo el valor
@@ -143,6 +177,7 @@ export function CountUp({
   prefix = '',
   suffix = '',
   duration = COUNT_UP_DURATION_MS,
+  start,
   className,
 }: CountUpProps): ReactNode {
   const finalText = formatCount(value, decimals, prefix, suffix)
@@ -156,6 +191,7 @@ export function CountUp({
       prefix={prefix}
       suffix={suffix}
       duration={duration}
+      start={start}
       finalText={finalText}
       className={className}
     />
