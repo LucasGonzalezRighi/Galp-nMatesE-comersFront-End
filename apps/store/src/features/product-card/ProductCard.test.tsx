@@ -297,16 +297,32 @@ describe('ProductCard: hover y foco', () => {
     expect(cardGroup().querySelector('[data-fade-image] img')).not.toBeNull()
   })
 
-  it('el "+" se llena de gris con el ícono que gira 90° y la píldora "Ver detalle" también', () => {
+  it('el "+" y la píldora "Ver detalle" se llenan de gris solo con su propio hover, no con el de la tarjeta (Ruling MR-24)', () => {
     renderCard(mate)
 
     const add = screen.getByRole('button', { name: 'Agregar al carrito' })
-    expect(add).toHaveClass('[--btn-fill:var(--color-neutral-600)]')
-    expect(add.querySelector('[data-button-sweep]')).toHaveClass(
-      'group-hover/card:[clip-path:inset(0)]',
+    expect(add).toHaveClass('[--btn-fill:var(--color-neutral-600)]', 'group/btn')
+    expect(add.className).not.toMatch(/group-(hover|has-focus-visible)\/card:/)
+    const addSweep = add.querySelector('[data-button-sweep]')
+    expect(addSweep).toHaveClass('group-hover/btn:[clip-path:inset(0)]')
+    expect(addSweep?.className).not.toMatch(/\/card:/)
+    expect(add.querySelector('svg')).toHaveClass(
+      'motion-safe:group-hover/btn:rotate-90',
+      'motion-safe:group-focus-visible/btn:rotate-90',
     )
-    expect(add.querySelector('svg')).toHaveClass('motion-safe:group-hover/card:rotate-90')
+    expect(add.querySelector('svg')?.getAttribute('class')).not.toMatch(/\/card:/)
+
     const pill = screen.getByText('Ver detalle')
-    expect(pill.querySelector('[data-button-sweep]')).toHaveClass('bg-neutral-600')
+    // La píldora sube con la tarjeta, pero el relleno y el blanco son de ella sola.
+    expect(pill).toHaveClass(
+      'group/pill',
+      'pointer-events-auto',
+      'group-hover/card:translate-y-0',
+      'hover:text-[#fff]',
+    )
+    expect(pill).not.toHaveClass('group-hover/card:text-[#fff]')
+    const pillSweep = pill.querySelector('[data-button-sweep]')
+    expect(pillSweep).toHaveClass('bg-neutral-600', 'group-hover/pill:[clip-path:inset(0)]')
+    expect(pillSweep?.className).not.toMatch(/\/card:/)
   })
 })

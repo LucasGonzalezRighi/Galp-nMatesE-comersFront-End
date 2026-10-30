@@ -71,30 +71,26 @@ const IMAGE_ZOOM_CLASS =
   'ease-main absolute inset-0 transition-[scale] duration-600 motion-safe:group-hover/card:scale-[1.04] motion-safe:group-has-focus-visible/card:scale-[1.04]'
 
 /**
- * La píldora "Ver detalle" sube desde abajo de la foto (550 ms) y se llena de gris de izquierda a
- * derecha con el texto en blanco (Ruling MR-16). Con menos movimiento aparece sin subir.
+ * La píldora "Ver detalle" sube desde abajo de la foto (550 ms) con el hover de la tarjeta o el foco
+ * adentro, pero se llena de gris de izquierda a derecha con el texto en blanco (Ruling MR-16) solo
+ * con el mouse encima de ella misma (`group/pill`, Ruling MR-24). Con menos movimiento aparece sin
+ * subir. Recibe el mouse (su contenedor no), y un clic en ella abre la ficha como el resto de la
+ * tarjeta.
  */
 const PILL_CLASS =
-  'bg-background/70 relative isolate inline-flex translate-y-[150%] items-center gap-[6px] overflow-hidden rounded-full px-[13px] py-[7px] text-[12px] shadow-[0_0_0_1px_var(--color-neutral-700)] backdrop-blur-[10px] transition-[translate,color] duration-550 ease-[cubic-bezier(.2,.8,.2,1)] group-hover/card:translate-y-0 group-hover/card:text-[#fff] group-has-focus-visible/card:translate-y-0 group-has-focus-visible/card:text-[#fff] motion-reduce:transition-none'
+  'group/pill pointer-events-auto bg-background/70 relative isolate inline-flex translate-y-[150%] items-center gap-[6px] overflow-hidden rounded-full px-[13px] py-[7px] text-[12px] shadow-[0_0_0_1px_var(--color-neutral-700)] backdrop-blur-[10px] transition-[translate,color] duration-550 ease-[cubic-bezier(.2,.8,.2,1)] group-hover/card:translate-y-0 group-has-focus-visible/card:translate-y-0 hover:text-[#fff] motion-reduce:transition-none'
 
-/** Banda gris de la píldora: entra en 1,5 s al pasar el mouse y se recoge en 0,5 s. */
+/** Banda gris de la píldora: entra en 1,5 s con el mouse encima de la píldora y se recoge en 0,5 s. */
 const PILL_SWEEP_CLASS =
-  'absolute inset-0 -z-10 bg-neutral-600 [clip-path:inset(0_100%_0_0)] transition-[clip-path] duration-500 ease-[ease-out] group-hover/card:[clip-path:inset(0)] group-hover/card:duration-1500 group-hover/card:ease-[cubic-bezier(.4,.05,.25,1)] group-has-focus-visible/card:[clip-path:inset(0)] group-has-focus-visible/card:duration-1500 group-has-focus-visible/card:ease-[cubic-bezier(.4,.05,.25,1)] motion-reduce:transition-none'
+  'absolute inset-0 -z-10 bg-neutral-600 [clip-path:inset(0_100%_0_0)] transition-[clip-path] duration-500 ease-[ease-out] group-hover/pill:[clip-path:inset(0)] group-hover/pill:duration-1500 group-hover/pill:ease-[cubic-bezier(.4,.05,.25,1)] motion-reduce:transition-none'
 
 /**
- * El "+" se llena de gris también con el hover de la tarjeta o el foco en el nombre (la banda de
- * `ButtonFx` ya responde al hover y al foco del propio botón).
+ * El ícono "+" gira 90° solo con el hover o el foco del propio botón (`group/btn` de
+ * `buttonFxClassName`, Ruling MR-24): el relleno gris, el borde y el texto blanco ya los pone
+ * `ButtonFx` con esos mismos estados, no con el hover de la tarjeta.
  */
-const ADD_SWEEP_CLASS =
-  'group-hover/card:[clip-path:inset(0)] group-hover/card:duration-1500 group-hover/card:ease-[cubic-bezier(.4,.05,.25,1)] group-has-focus-visible/card:[clip-path:inset(0)] group-has-focus-visible/card:duration-1500 group-has-focus-visible/card:ease-[cubic-bezier(.4,.05,.25,1)]'
-
-/** El "+" se pone blanco y su ícono gira 90° con el hover de la tarjeta o el foco adentro. */
-const ADD_BUTTON_CLASS =
-  'group-hover/card:border-(--btn-fill) group-hover/card:text-[#fff] group-has-focus-visible/card:border-(--btn-fill) group-has-focus-visible/card:text-[#fff]'
-
-/** Giro del ícono "+". */
 const ADD_ICON_CLASS =
-  'ease-main transition-[rotate] duration-300 motion-safe:group-hover/card:rotate-90 motion-safe:group-has-focus-visible/card:rotate-90'
+  'ease-main transition-[rotate] duration-300 motion-safe:group-hover/btn:rotate-90 motion-safe:group-focus-visible/btn:rotate-90'
 
 /**
  * El nombre subraya con un trazo de 1 px que crece desde la izquierda (300 ms) con el hover de la
@@ -133,8 +129,9 @@ export interface ProductCardProps {
  * tope de compra (`remainingQuantityFor` de `@galpon/domain`, contando todas las líneas del
  * carrito: se deshabilita cuando ya está todo lo disponible), muestra el aviso y lanza el vuelo al
  * carrito. Con el mouse se inclina en 3D; con el mouse encima o el foco adentro sube 4 px, la foto
- * se acerca a 1,04, el nombre subraya desde la izquierda, la píldora se llena de gris y el "+" se
- * llena de gris con el ícono que gira 90°. La foto entra con un fundido al cargar (`FadeImage`).
+ * se acerca a 1,04, el nombre subraya desde la izquierda y la píldora "Ver detalle" sube; la píldora
+ * y el "+" se llenan de gris (el "+" con el ícono que gira 90°) solo con el mouse o el foco encima
+ * de cada uno (Ruling MR-24). La foto entra con un fundido al cargar (`FadeImage`).
  *
  * @param props - Ver {@link ProductCardProps}.
  * @example
@@ -275,16 +272,10 @@ export function ProductCard({
                   aria-label={PRODUCT_CARD_COPY.addToCart}
                   title={atCartLimit ? PRODUCT_CARD_COPY.cartLimit : undefined}
                   disabled={cannotBuy}
-                  className={cx(
-                    'flex-none rounded-full!',
-                    !cannotBuy && buttonFxClassName('gray'),
-                    !cannotBuy && ADD_BUTTON_CLASS,
-                  )}
+                  className={cx('flex-none rounded-full!', !cannotBuy && buttonFxClassName('gray'))}
                   onClick={add}
                 >
-                  {cannotBuy ? null : (
-                    <ButtonFx interactive={false} sweepClassName={ADD_SWEEP_CLASS} />
-                  )}
+                  {cannotBuy ? null : <ButtonFx interactive={false} />}
                   <PlusIcon size={16} aria-hidden="true" className={ADD_ICON_CLASS} />
                 </IconButton>
               </div>
