@@ -8,10 +8,9 @@ import { Magnetic } from '../../components/motion'
 import { Button } from '../../components/ui'
 import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
-import { Eyebrow } from './Eyebrow'
 import { lineHref } from './home-data'
 import { HOME_ARROW_SIZE, HOME_PILL_BUTTON, HOME_SCENE_TEXT } from './home-styles'
-import { HOME_COPY, orderLabel } from './home.copy'
+import { HOME_COPY } from './home.copy'
 import { SceneReveal } from './SceneReveal'
 import { StoryProductRow } from './StoryProductRow'
 import { StoryTitle } from './StoryScene'
@@ -112,16 +111,14 @@ export interface SceneBodyProps {
 }
 
 /**
- * El contenido de una escena de la historia (rótulo, título, texto, productos o pasos del ritual, y
- * botón), igual en las escenas apiladas y en las paradas del mate 3D.
+ * El contenido de una escena de la historia (título, texto, productos o pasos del ritual sin número,
+ * y botón; sin rótulo chico: Ruling MR-23), igual en las escenas apiladas y en las paradas del mate
+ * 3D.
  *
  * @param props - Ver {@link SceneBodyProps}.
  */
 export function SceneBody({ scene, tone, data }: SceneBodyProps): ReactNode {
   const { content, story, lines } = data
-  const eyebrow = (
-    <Eyebrow tone={tone === 'dark' ? 'sceneDark' : 'sceneLight'}>{scene.eyebrow}</Eyebrow>
-  )
   const title = <StoryTitle lines={scene.titleLines} tone={tone} />
   const text = <SceneText tone={tone}>{scene.text}</SceneText>
   const cta = (href: string): ReactNode =>
@@ -134,7 +131,6 @@ export function SceneBody({ scene, tone, data }: SceneBodyProps): ReactNode {
     case 'bombilla':
       return (
         <>
-          {eyebrow}
           {title}
           {text}
           <SceneProducts products={story.bombillas} tone={tone} />
@@ -144,16 +140,12 @@ export function SceneBody({ scene, tone, data }: SceneBodyProps): ReactNode {
     case 'ritual':
       return (
         <>
-          {eyebrow}
           {title}
           {text}
           <SceneReveal kind="up" delay={280}>
             <ol className="m-0 grid list-none grid-cols-4 gap-[10px] p-0 text-[12px] text-neutral-400">
               {content.ritualSteps.map((step, position) => (
-                <li key={`${String(position)}-${step}`} className="flex flex-col gap-[6px]">
-                  <span className="text-accent-2-300">{orderLabel(position + 1)}</span>
-                  {step}
-                </li>
+                <li key={`${String(position)}-${step}`}>{step}</li>
               ))}
             </ol>
           </SceneReveal>

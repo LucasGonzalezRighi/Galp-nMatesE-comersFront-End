@@ -4,18 +4,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Category } from '@galpon/api-client'
 import type { HomeData } from './home-data'
-import {
-  Float,
-  HorizontalScroll,
-  HorizontalScrollProgress,
-  Reveal,
-  Tilt,
-} from '../../components/motion'
+import { Float, HorizontalScroll, Reveal, Tilt } from '../../components/motion'
 import { ImageWithPlaceholder } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
-import { Eyebrow } from './Eyebrow'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
-import { HOME_COPY, linePhotoPlaceholder, orderLabel, piecesLabel } from './home.copy'
+import { HOME_COPY, linePhotoPlaceholder, piecesLabel } from './home.copy'
 
 /**
  * Margen de la pista: el de `--site-inset` (`globals.css`), así la primera tarjeta arranca donde
@@ -62,12 +55,10 @@ const ARROW_HOVER_CLASS =
 interface LineCardProps {
   /** La línea de producto. */
   line: Category
-  /** Su lugar en la colección, desde 1. */
-  position: number
 }
 
-/** Tarjeta de una línea: foto, número, cantidad de piezas, nombre, descripción y "Ver línea". */
-function LineCard({ line, position }: LineCardProps): ReactNode {
+/** Tarjeta de una línea: foto, cantidad de piezas, nombre, descripción y "Ver línea" (sin número). */
+function LineCard({ line }: LineCardProps): ReactNode {
   return (
     <Tilt
       className={`${CARD_SIZE} ${CARD_HOVER_CLASS} bg-surface has-focus-visible:outline-accent relative w-[min(78vw,440px)] cursor-pointer overflow-hidden rounded-[14px] shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2`}
@@ -87,8 +78,7 @@ function LineCard({ line, position }: LineCardProps): ReactNode {
         style={SHADE_STYLE}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={GLOW_STYLE} />
-      <div className="pointer-events-none absolute top-[18px] right-5 left-5 flex justify-between tabular-nums">
-        <span className="text-accent-300 text-[13px]">{orderLabel(position)}</span>
+      <div className="pointer-events-none absolute top-[18px] right-5 left-5 flex justify-end tabular-nums">
         <span className="text-[12px] text-neutral-300">{piecesLabel(line.productCount)}</span>
       </div>
       <div className="absolute right-5 bottom-5 left-5 flex flex-col gap-[10px]">
@@ -121,7 +111,7 @@ export interface HomeCollectionProps {
 
 /**
  * Colección en scroll horizontal (spec 9.5): la sección queda fija y las líneas de producto
- * pasan de lado a lado con el scroll, con una barra de avance "01 — 06" y, al final, la tarjeta
+ * pasan de lado a lado con el scroll (sin rótulo ni números: Ruling MR-23) y, al final, la tarjeta
  * "Ver todo el catálogo · N piezas". Con `prefers-reduced-motion: reduce` es una fila con scroll
  * propio. No se dibuja si no hay líneas con piezas.
  *
@@ -135,26 +125,15 @@ export function HomeCollection({ data }: HomeCollectionProps): ReactNode {
     <HorizontalScroll
       trackStyle={TRACK_STYLE}
       header={
-        <div className={`${HOME_CONTAINER} flex flex-wrap items-end justify-between gap-6`}>
-          <div className="flex flex-col gap-[14px]">
-            <Eyebrow>{collection.eyebrow}</Eyebrow>
-            <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
-              {collection.title}
-            </Reveal>
-          </div>
-          <div
-            aria-hidden="true"
-            className="flex w-[240px] items-center gap-[14px] text-[12px] text-neutral-400 tabular-nums"
-          >
-            <span>01</span>
-            <HorizontalScrollProgress />
-            <span>{orderLabel(lines.length)}</span>
-          </div>
+        <div className={HOME_CONTAINER}>
+          <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
+            {collection.title}
+          </Reveal>
         </div>
       }
     >
-      {lines.map((line, index) => (
-        <LineCard key={line.id} line={line} position={index + 1} />
+      {lines.map((line) => (
+        <LineCard key={line.id} line={line} />
       ))}
       <div className="relative h-[min(56vh,500px)] w-[min(60vw,300px)] flex-none">
         <Link

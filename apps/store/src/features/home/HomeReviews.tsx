@@ -5,7 +5,6 @@ import type { HomeData } from './home-data'
 import { Reveal, Tilt } from '../../components/motion'
 import { Stars } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
-import { Eyebrow } from './Eyebrow'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { quoteLabel } from './home.copy'
 import { ReviewsMarquee } from './ReviewsMarquee'
@@ -78,12 +77,9 @@ export function HomeReviews({ data }: HomeReviewsProps): ReactNode {
   return (
     <section className="pb-[clamp(80px,10vw,140px)]">
       <div className={HOME_CONTAINER}>
-        <div className="mb-10 flex flex-col gap-[14px]">
-          <Eyebrow>{reviews.eyebrow}</Eyebrow>
-          <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
-            {reviews.title}
-          </Reveal>
-        </div>
+        <Reveal kind="up" as="h2" className={`${HOME_SECTION_TITLE} mb-10`}>
+          {reviews.title}
+        </Reveal>
       </div>
       <Reveal kind="up">
         <ReviewsMarquee

@@ -86,10 +86,12 @@ function stage(): HTMLElement {
 describe('MateStage', () => {
   it('dibuja las tres paradas en orden: la portada, la bombilla y el agua', () => {
     render(<MateStage data={data} />)
-    const headings = within(stage())
-      .getAllByText(/^\d{2} \/ 03 · /)
-      .map((element) => element.textContent)
+    // El encabezado de cada parada no se ve (Ruling MR-23): queda como nombre del panel.
+    const headings = [...stage().querySelectorAll('[data-stage-stop]')].map((panel) =>
+      panel.getAttribute('aria-label'),
+    )
     expect(headings).toEqual(['01 / 03 · El mate', '02 / 03 · La bombilla', '03 / 03 · El agua'])
+    expect(within(stage()).queryByText(/^\d{2} \/ 03 · /)).toBeNull()
     const first = document.querySelector<HTMLElement>('[data-stage-stop="0"]')
     if (first === null) throw new Error('Falta la primera parada.')
     expect(within(first).getByRole('heading', { level: 1 })).toHaveTextContent(

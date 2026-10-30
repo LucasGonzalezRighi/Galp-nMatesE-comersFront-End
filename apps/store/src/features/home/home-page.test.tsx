@@ -84,6 +84,31 @@ describe('HomePage', () => {
     expect(heading.querySelectorAll('.home-rise')).toHaveLength(2)
   })
 
+  it('no tiene rótulos chicos ni números de orden visibles (Ruling MR-23)', async () => {
+    const data = await homeData()
+    renderSection(await HomePage())
+    const { collection, featured, reviews, manifesto, kitBlock, scenes } = data.content
+    const eyebrows = [
+      collection.eyebrow,
+      featured.eyebrow,
+      reviews.eyebrow,
+      manifesto.eyebrow,
+      kitBlock.eyebrow,
+      // Las escenas que el inicio dibuja con su cuerpo: el bombillón y el ritual.
+      ...scenes
+        .filter((scene) => scene.key === 'bombilla' || scene.key === 'ritual')
+        .map((scene) => scene.eyebrow),
+    ]
+    // Los links y botones con el mismo texto ("Armá tu kit") no son rótulos.
+    for (const eyebrow of eyebrows) {
+      expect(screen.queryByText(eyebrow, { ignore: 'script, style, a, button' })).toBeNull()
+    }
+    // Ni el 01, 02… de las tarjetas, el kit y los pasos del agua, ni el "01 — 06" de la colección.
+    expect(screen.queryAllByText(/^0\d$/)).toHaveLength(0)
+    // Los títulos grandes quedan.
+    expect(screen.getByRole('heading', { level: 2, name: collection.title })).toBeInTheDocument()
+  })
+
   it('la portada tiene de fondo el cuadro del mate, sin la foto flotante del producto', async () => {
     const data = await homeData()
     renderSection(await HomePage())
@@ -125,16 +150,20 @@ describe('HomePage', () => {
 })
 
 describe('HomeManifesto', () => {
-  it('muestra el rótulo, la frase y el link a Nosotros, por encima del fondo', async () => {
+  it('muestra la frase y el link a Nosotros (sin rótulo), por encima del fondo', async () => {
     const data = await homeData()
     const { container } = renderSection(<HomeManifesto data={data} />)
     const section = container.querySelector('section')
     expect(section).toHaveClass('home-manifesto', 'relative')
-    expect(section).toHaveTextContent(data.content.manifesto.eyebrow)
+    expect(section).not.toHaveTextContent(data.content.manifesto.eyebrow)
     expect(section).toHaveTextContent(data.content.manifesto.text)
     const link = screen.getByRole('link', { name: data.content.manifesto.ctaLabel })
     expect(link).toHaveAttribute('href', '/nosotros')
     expect(link.closest('.z-10')).not.toBeNull()
+    // La frase a la izquierda y el link a la derecha, alineados abajo (al último renglón).
+    const row = link.parentElement
+    expect(row).toHaveClass('flex', 'items-end', 'justify-between')
+    expect(row?.firstElementChild).toHaveTextContent(data.content.manifesto.text)
   })
 
   it('en el inicio, la foto del yerbal (decorativa) cubre el Manifiesto y la banda de cifras', async () => {

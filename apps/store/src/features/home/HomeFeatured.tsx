@@ -6,7 +6,6 @@ import { Reveal } from '../../components/motion'
 import { Button } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
 import { ProductCard } from '../product-card'
-import { Eyebrow } from './Eyebrow'
 import { FeaturedExit } from './FeaturedExit'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY } from './home.copy'
@@ -33,12 +32,9 @@ export function HomeFeatured({ data }: HomeFeaturedProps): ReactNode {
     <section className="pt-[clamp(80px,10vw,140px)] pb-[clamp(40px,6vw,80px)]">
       <div className={HOME_CONTAINER}>
         <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
-          <div className="flex flex-col gap-[14px]">
-            <Eyebrow>{featured.eyebrow}</Eyebrow>
-            <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
-              {featured.title}
-            </Reveal>
-          </div>
+          <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
+            {featured.title}
+          </Reveal>
           <Button asChild variant="ghost">
             <Link href={asRoute('/tienda')}>
               {HOME_COPY.viewShop}

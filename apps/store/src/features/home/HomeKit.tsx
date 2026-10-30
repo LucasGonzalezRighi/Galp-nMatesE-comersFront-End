@@ -6,9 +6,8 @@ import type { HomeData } from './home-data'
 import { Float, Magnetic, Reveal, Tilt } from '../../components/motion'
 import { Button, ImageWithPlaceholder, Tag } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
-import { Eyebrow } from './Eyebrow'
 import { HOME_ARROW_SIZE, HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
-import { HOME_COPY, kitDiscountTitle, optionsLabel, orderLabel } from './home.copy'
+import { HOME_COPY, kitDiscountTitle, optionsLabel } from './home.copy'
 
 /** Oscurece la parte de abajo de la foto para que se lea el texto. */
 const SHADE_STYLE: CSSProperties = {
@@ -25,8 +24,6 @@ const PIECE_HOVER_CLASS =
 
 /** Props de {@link KitPiece}. */
 interface KitPieceProps {
-  /** Lugar de la pieza en el kit, desde 1. */
-  position: number
   /** Nombre del paso: "Mate", "Bombilla" o "Yerba". */
   label: string
   /** Cuántas opciones comprables tiene el paso. */
@@ -39,15 +36,8 @@ interface KitPieceProps {
   floatDelay: number
 }
 
-/** Una de las tres piezas del kit: foto, número, nombre y cantidad de opciones. */
-function KitPiece({
-  position,
-  label,
-  options,
-  product,
-  delay,
-  floatDelay,
-}: KitPieceProps): ReactNode {
+/** Una de las tres piezas del kit: foto, nombre y cantidad de opciones (sin número). */
+function KitPiece({ label, options, product, delay, floatDelay }: KitPieceProps): ReactNode {
   return (
     <Reveal kind="up" delay={delay}>
       <Float delay={floatDelay}>
@@ -69,7 +59,6 @@ function KitPiece({
             style={SHADE_STYLE}
           />
           <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-[2px]">
-            <span className="text-accent-300 text-[11px]">{orderLabel(position)}</span>
             <span className="text-[17px]">{label}</span>
             <span className="text-[11.5px] text-neutral-400">{optionsLabel(options)}</span>
           </div>
@@ -109,7 +98,6 @@ export function HomeKit({ data }: HomeKitProps): ReactNode {
     <section className="py-[clamp(80px,10vw,150px)]">
       <div className={`${HOME_CONTAINER} flex flex-wrap items-center gap-14`}>
         <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-[22px]">
-          <Eyebrow>{kitBlock.eyebrow}</Eyebrow>
           <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
             {kitBlock.title}
             {kitDiscountLabel === null ? null : (
@@ -141,7 +129,6 @@ export function HomeKit({ data }: HomeKitProps): ReactNode {
         <div className="flex min-w-0 flex-[1.3_1_460px] flex-col gap-[18px]">
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-[10px]">
             <KitPiece
-              position={1}
               label={HOME_COPY.kitMate}
               options={stats.kitOptions.mate}
               product={story.hero}
@@ -150,7 +137,6 @@ export function HomeKit({ data }: HomeKitProps): ReactNode {
             />
             <Plus />
             <KitPiece
-              position={2}
               label={HOME_COPY.kitBombilla}
               options={stats.kitOptions.bombilla}
               product={story.bombillas[0] ?? null}
@@ -159,7 +145,6 @@ export function HomeKit({ data }: HomeKitProps): ReactNode {
             />
             <Plus />
             <KitPiece
-              position={3}
               label={HOME_COPY.kitYerba}
               options={stats.kitOptions.yerba}
               product={story.yerbas[0] ?? null}
