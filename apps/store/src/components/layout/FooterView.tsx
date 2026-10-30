@@ -105,7 +105,11 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
       <div aria-hidden="true" className="site-footer-line" />
       <div className="site-container flex flex-col">
         <div className="site-footer-divider mb-14 h-px" style={DIVIDER_STYLE} />
-        <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
+        {/*
+         * Desde 1024 px los links arrancan al 40 % del contenedor (Ruling MR-23, Lucas: "más al
+         * centro, hacia la izquierda"), o a 360 + 96 px si el 40 % queda más cerca de la frase.
+         */}
+        <div className="flex flex-wrap justify-between gap-x-16 gap-y-10 lg:grid lg:grid-cols-[max(40%,456px)_minmax(0,1fr)] lg:gap-x-0">
           <FooterRow index={0} className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
             <p className="text-[24px] tracking-[-0.02em]">{content.tagline}</p>
             <p className="text-[14px] text-neutral-400">{content.text}</p>

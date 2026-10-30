@@ -110,6 +110,20 @@ describe('FooterView', () => {
     )
   })
 
+  it('desde 1024 px las columnas arrancan al 40 % del ancho, a 96 px o más de la frase (Ruling MR-23)', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const tagline = container.querySelector('[data-footer-row="0"]')
+    const row = tagline?.parentElement
+    // La frase (360 px como mucho) en la primera columna; los links en la segunda, que empieza en
+    // el 40 % del contenedor o en 360 + 96 px si el 40 % queda más cerca.
+    expect(row).toHaveClass('lg:grid', 'lg:grid-cols-[max(40%,456px)_minmax(0,1fr)]', 'lg:gap-x-0')
+    expect(tagline).toHaveClass('max-w-[360px]')
+    expect(row?.children).toHaveLength(2)
+  })
+
   it('el link de Defensa del Consumidor aparece solo si hay dirección y abre afuera', () => {
     const { rerender } = render(
       <FooterView content={content} settings={settings} categories={categories} />,
