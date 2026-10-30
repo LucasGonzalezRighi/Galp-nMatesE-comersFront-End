@@ -230,6 +230,26 @@ describe('FooterView: la palabra GALPÓN', () => {
     expect(frame).toHaveClass('mt-16')
     expect(frame?.className).not.toMatch(/mt-\[clamp\(-/)
   })
+
+  it.each([false, true])(
+    'la página termina en la mitad de las letras: el marco recorta la palabra (Ruling MR-21; menos movimiento: %s)',
+    (reduced) => {
+      mockReducedMotion(reduced)
+      const { container } = render(
+        <FooterView content={content} settings={settings} categories={categories} />,
+      )
+
+      // El logo mide 1447 × 279 y sus letras van de 72 a 266: el marco mide hasta la mitad (169).
+      const frame = container.querySelector('[data-wordmark]')
+      expect(frame).toHaveClass('aspect-[1447/169]', 'overflow-hidden')
+      const word = frame?.querySelector('[data-wordmark-word]')
+      expect(word?.parentElement).toBe(frame)
+      expect(word?.querySelector('[data-wordmark-layer="lit"]')).not.toBeNull()
+      // Nada debajo de la palabra: el pie (y la página) terminan en el borde del marco.
+      expect(frame?.nextElementSibling).toBeNull()
+      expect(container.querySelector('footer')?.className).not.toMatch(/\bpb-/)
+    },
+  )
 })
 
 /** Lo que el navegador simulado responde a las consultas de medios. */

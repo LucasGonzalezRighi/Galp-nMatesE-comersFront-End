@@ -90,7 +90,9 @@ export interface FooterViewProps {
  * el del portafolio de Lucas ({@link FooterRise} y `footer.css`): borde de arriba en diagonal con
  * una línea fina, vidrio esmerilado, las filas ({@link FooterRow}) que entran en cascada pegadas
  * al scroll y GALPÓN al final, que sube en ola (20 franjas verticales, 12 en el celular). En las
- * demás páginas queda en su lugar y solo la palabra sube en ola al entrar en pantalla.
+ * demás páginas es sutil y va al final, en el flujo (Ruling MR-28): sus filas entran con un fundido
+ * al llegar a la pantalla, GALPÓN va apagada y sube en ola al entrar. En todas, la palabra queda
+ * cortada a la mitad de sus letras por el final de la página (Ruling MR-21).
  *
  * @param props - Ver {@link FooterViewProps}.
  */
@@ -98,7 +100,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const seller = sellerLines(settings.seller)
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
-    <FooterRise className="site-footer relative overflow-hidden pt-[72px]">
+    <FooterRise className="site-footer relative overflow-clip pt-[72px]">
       {/* La línea fina que sigue el borde en diagonal: solo con el pie que sube (`footer.css`). */}
       <div aria-hidden="true" className="site-footer-line" />
       <div className="site-container flex flex-col">

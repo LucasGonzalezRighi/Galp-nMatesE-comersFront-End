@@ -1,7 +1,7 @@
 'use client'
 
 import type { MotionValue } from 'motion/react'
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { m, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { cx } from '../ui/cx'
@@ -16,6 +16,36 @@ import { useFooterMotion } from './FooterRise'
 
 /** Clase de la capa iluminada: encima de la fantasma, con su mismo tamaño. */
 const LIT_LAYER = 'absolute inset-0 block'
+
+/**
+ * El marco de la palabra la corta a la mitad de sus letras (Ruling MR-21, Lucas: "hasta la mitad
+ * de la palabra", con `refs/fin-de-pagina-lucas.png`): el logo mide 1447 × 279 y las letras van
+ * de 72 (arriba de las mayúsculas) a 266 (su base), así que el marco mide 169 de esos 279 de alto,
+ * con la bombilla y la mitad de arriba de las letras a la vista. Como es lo último del pie, el borde
+ * de abajo de la página corta la palabra ahí.
+ */
+const CUT_FRAME = 'relative aspect-[1447/169] overflow-hidden'
+
+/** Props de {@link CutFrame}. */
+interface CutFrameProps {
+  /** El marco, para medir su avance en el scroll. */
+  ref?: Ref<HTMLDivElement>
+  /** Clases del marco (el margen y el apilado respecto de las columnas). */
+  className?: string
+  /** La palabra entera (las franjas o la quieta). */
+  children: ReactNode
+}
+
+/** El marco que corta la palabra a la mitad de sus letras, con la palabra entera adentro. */
+function CutFrame({ ref, className, children }: CutFrameProps): ReactNode {
+  return (
+    <div ref={ref} aria-hidden="true" data-wordmark="" className={cx(CUT_FRAME, className)}>
+      <div data-wordmark-word="" className="relative">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 /** Props de {@link FooterWordmark}. */
 export interface FooterWordmarkProps {
@@ -107,9 +137,9 @@ function ScrollWordmark({ ghost, lit, className, count }: WaveWordmarkProps): Re
   const { scrollYProgress } = useScroll({ target: frame, offset: ['start end', 'end end'] })
   const progress = useTransform(scrollYProgress, clampCover)
   return (
-    <div ref={frame} aria-hidden="true" data-wordmark="" className={cx('relative', className)}>
+    <CutFrame ref={frame} className={className}>
       <WaveStrips count={count} progress={progress} ghost={ghost} lit={lit} />
-    </div>
+    </CutFrame>
   )
 }
 
@@ -123,9 +153,9 @@ interface RisingWordmarkProps extends WaveWordmarkProps {
 function RisingWordmark({ ghost, lit, className, count, cover }: RisingWordmarkProps): ReactNode {
   const progress = useTransform(cover, (value) => footerWordProgress(clampCover(value)))
   return (
-    <div aria-hidden="true" data-wordmark="" className={cx('relative', className)}>
+    <CutFrame className={className}>
       <WaveStrips count={count} progress={progress} ghost={ghost} lit={lit} />
-    </div>
+    </CutFrame>
   )
 }
 
@@ -135,14 +165,15 @@ function RisingWordmark({ ghost, lit, className, count, cover }: RisingWordmarkP
  * franjas verticales (12 en el celular, por debajo de 1024 px) que repiten la misma palabra, cada
  * una recortada a su tajada; cada franja sube desde abajo, aparece y se ilumina con su propio tramo
  * del avance, desfasado según su lugar y con la curva senoidal, así el borde de arriba de la palabra
- * es una ola que la recorre de izquierda a derecha y al final queda entera y quieta. De dónde sale
+ * es una ola que la recorre de izquierda a derecha y al final queda quieta en su lugar, cortada a la
+ * mitad de sus letras por el marco (y por el final de la página, Ruling MR-21). De dónde sale
  * el avance depende del modo del pie (`FooterRise`):
  *
  * - `rise` (el pie sube por encima de las reseñas quietas del inicio): llega última, de la mitad
  *   de la subida al final (`footerWordProgress`).
  * - `scroll` (las demás páginas y el celular): mientras el marco de la palabra entra en pantalla
  *   (`useScroll` sobre él mismo, de `start end` a `end end`).
- * - `still` (menos movimiento): la palabra entera, iluminada y quieta, sin franjas.
+ * - `still` (menos movimiento): la palabra iluminada y quieta, sin franjas (también cortada).
  *
  * Es decorativa (`aria-hidden`) y no tiene nombre accesible. Sin JavaScript las franjas esperan
  * abajo y transparentes.
@@ -158,13 +189,13 @@ export function FooterWordmark(props: FooterWordmarkProps): ReactNode {
     return <ScrollWordmark {...props} count={strips} />
   }
   return (
-    <div aria-hidden="true" data-wordmark="" className={cx('relative', props.className)}>
+    <CutFrame className={props.className}>
       <span data-wordmark-layer="ghost" className="block">
         {props.ghost}
       </span>
       <span data-wordmark-layer="lit" className={LIT_LAYER}>
         {props.lit}
       </span>
-    </div>
+    </CutFrame>
   )
 }

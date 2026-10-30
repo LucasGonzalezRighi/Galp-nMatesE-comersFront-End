@@ -104,4 +104,35 @@ describe('FooterStage', () => {
     render(<StageProbe />)
     expect(screen.getByText('sin escenario')).toBeInTheDocument()
   })
+
+  it('marca <html> mientras está montado y lo limpia al irse (Ruling MR-27: el inicio queda oculto, no desmontado)', () => {
+    mockMedia({ reduced: false, wide: true })
+    const root = document.documentElement
+    const { unmount } = render(
+      <FooterStage>
+        <p>Reseñas</p>
+      </FooterStage>,
+    )
+    // El pie sube solo con esta marca (footer.css), no con el `data-footer-stage` del DOM: con
+    // Cache Components el inicio sigue en el documento, oculto, después de navegar a otra página.
+    expect(root).toHaveAttribute('data-footer-rise')
+    expect(root).toHaveAttribute('data-footer-home')
+    unmount()
+    expect(root).not.toHaveAttribute('data-footer-rise')
+    expect(root).not.toHaveAttribute('data-footer-home')
+  })
+
+  it('en el celular el inicio marca <html> como inicio, pero el pie no sube', () => {
+    mockMedia({ reduced: false, wide: false })
+    const root = document.documentElement
+    const { unmount } = render(
+      <FooterStage>
+        <p>Reseñas</p>
+      </FooterStage>,
+    )
+    expect(root).toHaveAttribute('data-footer-home')
+    expect(root).not.toHaveAttribute('data-footer-rise')
+    unmount()
+    expect(root).not.toHaveAttribute('data-footer-home')
+  })
 })

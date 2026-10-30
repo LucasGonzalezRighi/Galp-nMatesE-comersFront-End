@@ -175,16 +175,29 @@ let stages = 0
 /** Quienes esperan saber si hay reseñas quietas. */
 const listeners = new Set<() => void>()
 
-/** Avisa el cambio a quienes esperan. */
+/** Cuántos inicios hay montados (con o sin reseñas quietas: también en el celular). */
+let homes = 0
+
+/** Pone o saca una marca en `<html>`; en el servidor no hace nada. */
+function markRoot(name: string, on: boolean): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.toggleAttribute(name, on)
+}
+
+/** Avisa el cambio a quienes esperan y marca `<html>` con `data-footer-rise` si hay reseñas quietas. */
 function notify(): void {
+  markRoot('data-footer-rise', stages > 0)
   for (const listener of listeners) listener()
 }
 
 /**
  * Avisa que hay reseñas quietas debajo del pie (`FooterStage` del inicio): mientras dure, el pie
- * entra con sus filas en cascada y GALPÓN al final.
+ * entra con sus filas en cascada y GALPÓN al final, y `<html>` lleva `data-footer-rise`, la marca
+ * con que `footer.css` lo hace subir. Es la marca de un efecto y no un selector sobre el DOM del
+ * inicio (`:has(...)`) porque con Cache Components, al navegar a otra página, el inicio queda en
+ * el documento, oculto y sin sus efectos: el pie subía igual y tapaba la tienda (Ruling MR-27).
  *
- * @returns La función que retira el aviso (al desmontarse las reseñas).
+ * @returns La función que retira el aviso (al desmontarse u ocultarse las reseñas).
  */
 export function registerFooterStage(): () => void {
   stages += 1
@@ -195,6 +208,25 @@ export function registerFooterStage(): () => void {
     active = false
     stages -= 1
     notify()
+  }
+}
+
+/**
+ * Avisa que el inicio está en pantalla (`FooterStage`, en cualquier ancho): mientras dure, `<html>`
+ * lleva `data-footer-home`. Sin esa marca (las demás páginas) el pie es sutil: sus filas entran con
+ * un fundido y GALPÓN va apagada (`footer.css`, Ruling MR-28).
+ *
+ * @returns La función que retira el aviso.
+ */
+export function registerFooterHome(): () => void {
+  homes += 1
+  markRoot('data-footer-home', true)
+  let active = true
+  return () => {
+    if (!active) return
+    active = false
+    homes -= 1
+    markRoot('data-footer-home', homes > 0)
   }
 }
 

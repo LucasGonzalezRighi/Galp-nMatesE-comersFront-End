@@ -3,7 +3,12 @@
 import type { ReactNode } from 'react'
 import { domAnimation, LazyMotion, m, useScroll, useTransform } from 'motion/react'
 import { useEffect, useRef } from 'react'
-import { clampCover, easeInOutSine, registerFooterStage } from '../../components/layout/footer-rise'
+import {
+  clampCover,
+  easeInOutSine,
+  registerFooterHome,
+  registerFooterStage,
+} from '../../components/layout/footer-rise'
 import { useMediaQuery, usePrefersReducedMotion } from '../../components/motion'
 
 /** Desde este ancho las reseñas quedan quietas y el pie sube por encima (como `footer.css`). */
@@ -52,8 +57,10 @@ function PinnedReviews({ children }: FooterStageProps): ReactNode {
  * alto del pie (`--footer-h`, que publica `FooterRise`); el pie, con margen negativo, las tapa en
  * ese tramo (`footer.css`). Mientras las tapa, las reseñas se desenfocan y oscurecen (`blur` de 0 a
  * 4 px, `brightness` de 1 a 0,5 y escala de 1 a 0,97, con la curva senoidal), pegado al scroll.
- * Avisa al pie que tiene que subir (`registerFooterStage`) y lleva `data-footer-stage`, que es lo
- * que activa el margen negativo del pie.
+ * Avisa al pie que tiene que subir (`registerFooterStage`, que marca `<html>` con
+ * `data-footer-rise`: eso activa el margen negativo del pie) y lleva `data-footer-stage`. En
+ * cualquier ancho avisa además que es el inicio (`registerFooterHome`): el pie no es el sutil de las
+ * demás páginas. Las dos marcas se van con los efectos, también cuando el inicio queda oculto.
  *
  * Con `prefers-reduced-motion: reduce` o por debajo de 1024 px las reseñas quedan en su lugar, sin
  * clavar ni estilos en línea, y el pie va debajo (también en el servidor y en la hidratación).
@@ -63,6 +70,8 @@ function PinnedReviews({ children }: FooterStageProps): ReactNode {
 export function FooterStage({ children }: FooterStageProps): ReactNode {
   const reduced = usePrefersReducedMotion()
   const wide = useMediaQuery(DESKTOP_QUERY)
+  // El pie del inicio, en cualquier ancho, no es el sutil de las demás páginas.
+  useEffect(() => registerFooterHome(), [])
   if (reduced || !wide) return <div>{children}</div>
   return (
     <LazyMotion features={domAnimation}>
