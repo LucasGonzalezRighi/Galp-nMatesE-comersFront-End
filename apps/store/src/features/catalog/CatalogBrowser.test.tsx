@@ -364,3 +364,172 @@ describe('CatalogBrowser: la dirección', () => {
     expect(shownNames()).toEqual(['Yerba Canarias Serena 1 kg'])
   })
 })
+
+/** Columnas que "mide" la grilla en las pruebas: lo que devuelve su `grid-template-columns`. */
+const layout = { columns: 6 }
+
+/** Avisos de cambio de tamaño de las grillas observadas, para simular un cambio de ancho. */
+const resizeNotices: (() => void)[] = []
+
+/** `ResizeObserver` de mentira: avisa al observar (como el real) y cuando la prueba lo pide. */
+class FakeResizeObserver implements ResizeObserver {
+  readonly #callback: ResizeObserverCallback
+
+  constructor(callback: ResizeObserverCallback) {
+    this.#callback = callback
+  }
+
+  observe(): void {
+    const notice = (): void => {
+      this.#callback([], this)
+    }
+    resizeNotices.push(notice)
+    notice()
+  }
+
+  unobserve(): void {
+    return undefined
+  }
+
+  disconnect(): void {
+    return undefined
+  }
+}
+
+/** 27 productos: 19 mates imperiales y 8 bombillones (una línea de 8 no llega a 4 hileras). */
+const manyProducts = [
+  ...Array.from({ length: 19 }, (_, index) => {
+    const number = String(index + 1).padStart(2, '0')
+    return product(`mate-${number}`, `Mate ${number}`, 'imperiales', 30000 + index)
+  }),
+  ...Array.from({ length: 8 }, (_, index) => {
+    const number = String(index + 1).padStart(2, '0')
+    return product(`bombillon-${number}`, `Bombillón ${number}`, 'bombillones', 20000 + index)
+  }),
+]
+
+/** El botón "Más productos", si está. */
+function moreButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Más productos' })
+}
+
+/** El link del nombre de la tarjeta en la posición `position` (desde 1) de lo que se ve. */
+function cardLink(position: number): HTMLElement {
+  const heading = screen.queryAllByRole('heading', { level: 3 }).at(position - 1)
+  if (heading === undefined) throw new Error(`No hay tarjeta en la posición ${String(position)}`)
+  return within(heading).getByRole('link')
+}
+
+/** jsdom no tiene `scrollIntoView`: se usa al terminar de desplegar para acercar la tarjeta enfocada. */
+const scrollIntoView = vi.fn()
+
+/** Lo que había en `Element.prototype.scrollIntoView` antes de las pruebas (en jsdom, nada). */
+const nativeScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
+
+describe('CatalogBrowser: más productos', () => {
+  beforeEach(() => {
+    layout.columns = 6
+    scrollIntoView.mockClear()
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: scrollIntoView,
+    })
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const computed = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      const style = computed(element, pseudo)
+      if (element instanceof HTMLElement && element.className.includes('grid-cols-')) {
+        Object.defineProperty(style, 'gridTemplateColumns', {
+          value: Array.from({ length: layout.columns }, () => '250px').join(' '),
+        })
+      }
+      return style
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    resizeNotices.length = 0
+    if (nativeScrollIntoView === undefined) {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+    } else {
+      Object.defineProperty(Element.prototype, 'scrollIntoView', nativeScrollIntoView)
+    }
+  })
+
+  it('con 6 columnas muestra 4 hileras (24 piezas) y el botón "Más productos"', () => {
+    renderCatalog(null, { products: manyProducts })
+    expect(screen.getByRole('status')).toHaveTextContent('27 piezas')
+    expect(shownNames()).toHaveLength(24)
+    expect(moreButton()).toBeInTheDocument()
+  })
+
+  it('el botón despliega el resto, desaparece y deja el foco en la primera tarjeta nueva', async () => {
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    const button = screen.getByRole('button', { name: 'Más productos' })
+    await user.click(button)
+    expect(shownNames()).toHaveLength(27)
+    expect(moreButton()).not.toBeInTheDocument()
+    expect(cardLink(25)).toHaveFocus()
+    // Al terminar de crecer, la tarjeta enfocada se acerca a la pantalla para el teclado.
+    await vi.waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' })
+    })
+  })
+
+  it('las 4 hileras siguen al ancho: con 4 columnas se ven 16', () => {
+    renderCatalog(null, { products: manyProducts })
+    layout.columns = 4
+    act(() => {
+      for (const notice of resizeNotices) notice()
+    })
+    expect(shownNames()).toHaveLength(16)
+    expect(moreButton()).toBeInTheDocument()
+  })
+
+  it('una línea de 8 piezas (menos de 4 hileras) no muestra el botón', () => {
+    renderCatalog('bombillones', { products: manyProducts })
+    expect(shownNames()).toHaveLength(8)
+    expect(moreButton()).not.toBeInTheDocument()
+  })
+
+  it('al cambiar el orden vuelve a 4 hileras con el botón', async () => {
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    expect(shownNames()).toHaveLength(27)
+    await user.selectOptions(sortSelect(), 'az')
+    expect(shownNames()).toHaveLength(24)
+    expect(moreButton()).toBeInTheDocument()
+  })
+
+  it('al buscar vuelve a 4 hileras: con 8 resultados no hay botón y al borrar vuelve a estar', async () => {
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    await user.type(searchBox(), 'bombi')
+    expect(shownNames()).toHaveLength(8)
+    expect(moreButton()).not.toBeInTheDocument()
+    await user.clear(searchBox())
+    expect(shownNames()).toHaveLength(24)
+    expect(moreButton()).toBeInTheDocument()
+  })
+
+  it('con menos movimiento las tarjetas nuevas aparecen de una, sin fundido', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    expect(shownNames()).toHaveLength(27)
+    expect(cardLink(25).closest('[style*="opacity"]')).toBeNull()
+    expect(cardLink(25)).toHaveFocus()
+  })
+})

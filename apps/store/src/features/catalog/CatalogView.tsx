@@ -56,7 +56,8 @@ export function CatalogView({
   onClear,
 }: CatalogViewProps): ReactNode {
   return (
-    <div className="pb-10">
+    // Aire hasta el pie después de la grilla, el botón y la banda del kit (Ruling MR-27).
+    <div className="pb-[clamp(96px,10vw,160px)]">
       <CatalogHero
         title={scope.line?.name ?? CATALOG_COPY.allTitle}
         blurb={scope.line?.blurb ?? CATALOG_COPY.allBlurb}

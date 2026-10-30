@@ -3,17 +3,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ProductSummary } from '@galpon/api-client'
 import type { InstallmentsSetting } from '../../components/ui'
-import { Float, GridReplay } from '../../components/motion'
+import { Float } from '../../components/motion'
 import { Button } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
-import { ProductCard } from '../product-card'
 import { CATALOG_COPY } from './catalog.copy'
-
-/** Cuántas tarjetas se cargan con prioridad: la primera fila de la grilla de cuatro columnas. */
-const PRIORITY_CARDS = 4
-
-/** Grilla del diseño: tantas columnas de al menos 250 px como entren, con 20 px de separación. */
-const GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5'
+import { CatalogGrid } from './CatalogGrid'
 
 /** Props de {@link CatalogResults}. */
 export interface CatalogResultsProps {
@@ -23,7 +17,7 @@ export interface CatalogResultsProps {
   hasProducts: boolean
   /** Si se está viendo una línea: cambia el texto cuando no tiene productos. */
   inLine: boolean
-  /** Texto buscado, recortado, para el mensaje de "sin resultados". */
+  /** Texto buscado, recortado: para el mensaje de "sin resultados" y para volver a 4 hileras. */
   query: string
   /** Identifica el filtro y el orden: al cambiar, las tarjetas reaparecen escalonadas. */
   replayKey: string
@@ -45,9 +39,10 @@ function FloatingMark(): ReactNode {
 }
 
 /**
- * Lo que va debajo de la barra: la grilla de tarjetas, el mensaje de "No encontramos resultados"
- * con su botón "Limpiar búsqueda", o el de la línea sin productos con el link a toda la tienda.
- * La búsqueda se muestra como texto (React la escapa), nunca como HTML.
+ * Lo que va debajo de la barra: la grilla de tarjetas (4 hileras y "Más productos", ver
+ * {@link CatalogGrid}), el mensaje de "No encontramos resultados" con su botón "Limpiar
+ * búsqueda", o el de la línea sin productos con el link a toda la tienda. La búsqueda se muestra
+ * como texto (React la escapa), nunca como HTML.
  *
  * @param props - Ver {@link CatalogResultsProps}.
  */
@@ -88,17 +83,12 @@ export function CatalogResults({
     )
   }
   return (
-    <GridReplay replayKey={replayKey} className={GRID_CLASS}>
-      {products.map((product, index) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          installments={installments}
-          showNetPrice={showNetPrice}
-          index={index}
-          priority={index < PRIORITY_CARDS}
-        />
-      ))}
-    </GridReplay>
+    <CatalogGrid
+      products={products}
+      replayKey={replayKey}
+      collapseKey={`${replayKey}:${query}`}
+      installments={installments}
+      showNetPrice={showNetPrice}
+    />
   )
 }

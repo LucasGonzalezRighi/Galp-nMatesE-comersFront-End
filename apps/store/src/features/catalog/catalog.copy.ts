@@ -33,6 +33,8 @@ export const CATALOG_COPY = {
   emptyLine: 'Todavía no hay piezas en esta línea.',
   /** Enlace de la línea vacía hacia todo el catálogo. */
   emptyLineLink: 'Ver toda la tienda',
+  /** Botón centrado debajo de las primeras 4 hileras que despliega el resto de la grilla. */
+  moreProducts: 'Más productos',
   /** Catálogo sin productos publicados. */
   emptyShop: 'Todavía no hay piezas en la tienda.',
   /** Título de la banda final hacia el kit. */
