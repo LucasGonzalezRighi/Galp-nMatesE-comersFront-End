@@ -121,8 +121,12 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
               {settings.contactEmail}
             </a>
           </FooterRow>
-          {/* Los cuatro grupos de links son una fila: entran de izquierda a derecha, un cuarto de fila entre cada uno. */}
-          <div className="flex flex-wrap gap-x-16 gap-y-10 text-[14px]">
+          {/*
+           * Los cuatro grupos de links son una fila: entran de izquierda a derecha, un cuarto de fila
+           * entre cada uno. Con `gap-x-12` entran en la segunda columna a 1440 px (con `gap-x-16`
+           * faltaban ~3 px y LEGALES caía a una segunda fila).
+           */}
+          <div className="flex flex-wrap gap-x-12 gap-y-10 text-[14px]">
             <FooterRow index={1}>
               <nav aria-label={LAYOUT_COPY.footerShop} className="flex flex-col gap-[10px]">
                 <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerShop}</span>

@@ -122,6 +122,9 @@ describe('FooterView', () => {
     expect(row).toHaveClass('lg:grid', 'lg:grid-cols-[max(40%,456px)_minmax(0,1fr)]', 'lg:gap-x-0')
     expect(tagline).toHaveClass('max-w-[360px]')
     expect(row?.children).toHaveLength(2)
+    // Los cuatro grupos de links, una sola fila a 1440 px: 48 px entre cada uno (con 64 px no entran).
+    expect(row?.children[1]).toHaveClass('gap-x-12')
+    expect(row?.children[1]?.children).toHaveLength(4)
   })
 
   it('el link de Defensa del Consumidor aparece solo si hay dirección y abre afuera', () => {

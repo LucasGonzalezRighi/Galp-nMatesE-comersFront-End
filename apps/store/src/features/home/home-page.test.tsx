@@ -160,10 +160,18 @@ describe('HomeManifesto', () => {
     const link = screen.getByRole('link', { name: data.content.manifesto.ctaLabel })
     expect(link).toHaveAttribute('href', '/nosotros')
     expect(link.closest('.z-10')).not.toBeNull()
-    // La frase a la izquierda y el link a la derecha, alineados abajo (al último renglón).
+    // La frase a la izquierda y el link a la derecha, alineados abajo (al último renglón): desde
+    // 1280 px los dos en la misma celda de una grilla; más angosto, envuelve.
     const row = link.parentElement
-    expect(row).toHaveClass('flex', 'items-end', 'justify-between')
+    expect(row).toHaveClass('flex', 'items-end', 'justify-between', 'xl:grid', 'xl:grid-cols-1')
     expect(row?.firstElementChild).toHaveTextContent(data.content.manifesto.text)
+    expect(row?.firstElementChild).toHaveClass('xl:col-start-1', 'xl:row-start-1')
+    expect(link).toHaveClass(
+      'xl:col-start-1',
+      'xl:row-start-1',
+      'xl:self-end',
+      'xl:justify-self-end',
+    )
   })
 
   it('en el inicio, la foto del yerbal (decorativa) cubre el Manifiesto y la banda de cifras', async () => {

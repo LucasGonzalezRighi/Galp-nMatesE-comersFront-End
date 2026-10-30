@@ -81,33 +81,49 @@ test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', ()
     )
   })
 
-  test('la frase del Manifiesto va en cuatro renglones, con el link a la derecha del último (Ruling MR-23)', async ({
-    page,
-  }) => {
-    await gotoStore(page, '/')
-    const manifesto = page.locator('section.home-manifesto')
-    await manifesto.scrollIntoViewIfNeeded()
-    const phrase = manifesto.locator('.home-manifesto-phrase')
-    const lines = await phrase.evaluate((element) => {
-      const range = document.createRange()
-      range.selectNodeContents(element)
-      const tops = [...range.getClientRects()].map((rect) => Math.round(rect.top))
-      return new Set(tops).size
-    })
-    expect(lines).toBe(4)
+  // A 1440 el link tenía que ir a la derecha igual que a 1905 (con `flex-wrap` caía abajo a la izquierda).
+  for (const viewport of [
+    { width: 1905, height: 950 },
+    { width: 1440, height: 900 },
+  ]) {
+    test(`la frase del Manifiesto va en cuatro renglones, con el link a la derecha del último, a ${String(viewport.width)} (Ruling MR-23)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport)
+      await gotoStore(page, '/')
+      const manifesto = page.locator('section.home-manifesto')
+      await manifesto.scrollIntoViewIfNeeded()
+      const phrase = manifesto.locator('.home-manifesto-phrase')
+      const lines = await phrase.evaluate((element) => {
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        const rects = [...range.getClientRects()]
+        const tops = rects.map((rect) => Math.round(rect.top))
+        const lastTop = Math.max(...tops)
+        const lastRight = Math.max(
+          ...rects.filter((rect) => Math.round(rect.top) === lastTop).map((rect) => rect.right),
+        )
+        return { count: new Set(tops).size, lastRight }
+      })
+      expect(lines.count).toBe(4)
 
-    const link = manifesto.getByRole('link', { name: /Conocé la historia del galpón/ })
-    const container = await phrase.evaluate((element) => {
-      const box = element.parentElement?.getBoundingClientRect()
-      return { right: box?.right ?? 0 }
+      const link = manifesto.getByRole('link', { name: /Conocé la historia del galpón/ })
+      const container = await phrase.evaluate((element) => {
+        const box = element.parentElement?.getBoundingClientRect()
+        return { right: box?.right ?? 0 }
+      })
+      const linkBox = await link.boundingBox()
+      const phraseBox = await phrase.boundingBox()
+      if (linkBox === null || phraseBox === null) throw new Error('Falta la frase o el link.')
+      expect(Math.abs(linkBox.x + linkBox.width - container.right)).toBeLessThan(2)
+      // A la altura del último renglón: el borde de abajo del link cerca del de la frase...
+      expect(Math.abs(linkBox.y + linkBox.height - (phraseBox.y + phraseBox.height))).toBeLessThan(
+        40,
+      )
+      // ...y a su derecha, sin pisarlo.
+      expect(linkBox.x).toBeGreaterThan(lines.lastRight)
     })
-    const linkBox = await link.boundingBox()
-    const phraseBox = await phrase.boundingBox()
-    if (linkBox === null || phraseBox === null) throw new Error('Falta la frase o el link.')
-    expect(Math.abs(linkBox.x + linkBox.width - container.right)).toBeLessThan(2)
-    // A la altura del último renglón: el borde de abajo del link cerca del de la frase.
-    expect(Math.abs(linkBox.y + linkBox.height - (phraseBox.y + phraseBox.height))).toBeLessThan(40)
-  })
+  }
 
   test('las cifras cuentan de 0 juntas cuando la banda se ve entera, centradas sobre su rótulo (Rulings MR-25 y MR-26)', async ({
     page,
@@ -212,6 +228,27 @@ test.describe('tienda: las columnas del pie, más al centro (Ruling MR-23)', () 
         expect(share).toBeGreaterThanOrEqual(0.38)
         expect(share).toBeLessThanOrEqual(0.42)
         expect(shop - tagline).toBeGreaterThanOrEqual(96)
+      })
+
+      test('los cuatro grupos de links (Tienda, Ayuda, Galpón y Legales) son una sola fila', async ({
+        page,
+      }) => {
+        await gotoStore(page, '/tienda')
+        const footer = page.locator('footer.site-footer')
+        await footer.scrollIntoViewIfNeeded()
+        const groups = ['Tienda', 'Ayuda', 'Galpón', 'Legales']
+        const boxes = await Promise.all(
+          groups.map(async (name) => {
+            const box = await footer.getByRole('navigation', { name, exact: true }).boundingBox()
+            if (box === null) throw new Error(`Falta el grupo ${name} del pie.`)
+            return box
+          }),
+        )
+        // Mismo borde de arriba (ninguno cae a una segunda fila) y de izquierda a derecha.
+        const tops = boxes.map((box) => box.y)
+        expect(Math.max(...tops) - Math.min(...tops)).toBeLessThan(1)
+        const lefts = boxes.map((box) => box.x)
+        expect(lefts).toEqual([...lefts].sort((a, b) => a - b))
       })
     })
   }
