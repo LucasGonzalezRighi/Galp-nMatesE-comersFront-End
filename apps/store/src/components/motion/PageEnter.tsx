@@ -19,6 +19,13 @@ const ENTER_TO = {
   transition: { duration: 0.8, delay: 0.18, ease: EASE_MAIN },
 } as const
 
+/**
+ * Atributo de `<html>` con que otra transición avisa que tapa la pantalla al cambiar de página (el
+ * telón de la intro, Ruling MR-29): mientras está, {@link PageEnter} no hace su entrada, así el
+ * telón se abre sobre la página nueva ya nítida y no sobre una transparente.
+ */
+export const PAGE_COVERED_ATTRIBUTE = 'data-page-covered'
+
 /** Props de {@link PageEnter}. */
 export interface PageEnterProps {
   /** El contenido de la página. */
@@ -33,7 +40,8 @@ export interface PageEnterProps {
  * un parámetro. El contenido no se vuelve a montar: conserva su estado.
  *
  * No anima la primera carga (el HTML del servidor se ve de inmediato, sin esperar a la
- * hidratación) ni con `prefers-reduced-motion: reduce`.
+ * hidratación), con `prefers-reduced-motion: reduce` ni cuando el telón tapa la pantalla
+ * ({@link PAGE_COVERED_ATTRIBUTE}).
  *
  * @param props - Ver {@link PageEnterProps}.
  */
@@ -42,7 +50,7 @@ export function PageEnter({ children, className }: PageEnterProps): ReactNode {
   const controls = useAnimationControls()
   const ref = useRef<HTMLDivElement>(null)
   const play = useCallback(() => {
-    if (reduced) return
+    if (reduced || document.documentElement.hasAttribute(PAGE_COVERED_ATTRIBUTE)) return
     controls.set(ENTER_FROM)
     void controls.start(ENTER_TO)
   }, [controls, reduced])

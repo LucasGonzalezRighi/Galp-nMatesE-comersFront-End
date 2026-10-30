@@ -8,6 +8,7 @@ import type { StrokeStep } from './stroke-plan'
 import { EASE_DRAW } from '../../components/motion/easing'
 import { INTRO_TIMING } from './intro-state'
 import {
+  CURTAIN_LOGO_IMAGES,
   CUT_SHIFT_PERCENT,
   LOGO_VIEWBOX,
   MARK_BOX,
@@ -193,9 +194,9 @@ function ImageMask(): ReactNode {
       height={LOGO_VIEWBOX.height}
       style={{ maskType: 'alpha' }}
     >
-      <image href="/brand/galpon-mark.svg" x={MARK_X} y="0" width={MARK_W} height={MARK_H} />
+      <image href={CURTAIN_LOGO_IMAGES.mark} x={MARK_X} y="0" width={MARK_W} height={MARK_H} />
       <image
-        href="/brand/galpon-wordmark.svg"
+        href={CURTAIN_LOGO_IMAGES.word}
         x="0"
         y={WORD_Y}
         width={WORD_BOX.width}

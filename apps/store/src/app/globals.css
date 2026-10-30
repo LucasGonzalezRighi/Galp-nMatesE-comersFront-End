@@ -31,7 +31,8 @@
  * Cursor de matecito (Ruling MR-29, el del diseño original: `docs/design/galpon-tienda-v3/
  * page-styles.css`), solo con puntero fino. Las reglas de cada elemento van en la capa `base`, así
  * un cursor puesto a propósito (`cursor-zoom-in`, `cursor-not-allowed`) sigue mandando; la clase
- * `cursor-pointer` sí pasa a ser el matecito que señala. El admin es otra app y no lo toma.
+ * `cursor-pointer` (también con `enabled:`, la de los pasos del checkout) sí pasa a ser el
+ * matecito que señala. El admin es otra app y no lo toma.
  */
 @media (pointer: fine) {
   @layer base {
@@ -59,7 +60,8 @@
     }
   }
 
-  .cursor-pointer {
+  .cursor-pointer,
+  .enabled\:cursor-pointer:enabled {
     cursor:
       url('/cursors/mate-pointer.png') 6 4,
       pointer;

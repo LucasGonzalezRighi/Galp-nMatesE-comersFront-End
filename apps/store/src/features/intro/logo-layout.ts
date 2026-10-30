@@ -19,6 +19,17 @@ export const WORD_BOX: LogoBox = { width: 4341, height: 837 }
 /** El matecito (`public/brand/galpon-mark.svg`). */
 export const MARK_BOX: LogoBox = { width: 844, height: 1116 }
 
+/**
+ * Las imágenes del logo que usa el telón como máscara (el logo ya hecho, sin los trazos). El
+ * proveedor las precarga cuando la página queda libre, así el primer telón no baja sin logo.
+ */
+export const CURTAIN_LOGO_IMAGES = {
+  /** El matecito. */
+  mark: '/brand/galpon-mark.svg',
+  /** La palabra GALPÓN. */
+  word: '/brand/galpon-wordmark.svg',
+} as const
+
 /** Escala del matecito respecto de la palabra: su alto es 1,47 veces el de las letras. */
 export const MARK_SCALE = 1.1
 

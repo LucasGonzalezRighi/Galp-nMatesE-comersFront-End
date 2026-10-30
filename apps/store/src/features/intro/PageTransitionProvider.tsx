@@ -12,6 +12,7 @@ import {
   useRef,
 } from 'react'
 import type { PageTransitionApi } from './intro-context'
+import { PAGE_COVERED_ATTRIBUTE } from '../../components/motion/PageEnter'
 import { PathnameWatcher } from '../../components/motion/route-watchers'
 import { asRoute } from '../../lib/routes'
 import { PageTransitionContext } from './intro-context'
@@ -19,6 +20,7 @@ import { canSkip, IDLE, INTRO_TIMING, introReducer } from './intro-state'
 import { INTRO_COPY } from './intro.copy'
 import { IntroLayer } from './IntroLayer'
 import { cachedLogoPaths, loadLogoPaths } from './load-logo-paths'
+import { CURTAIN_LOGO_IMAGES } from './logo-layout'
 import { prefersReducedMotion } from './reduced-motion'
 
 /** Si el clic es uno común (izquierdo, sin teclas), el único que la transición intercepta. */
@@ -31,6 +33,14 @@ function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {
     !event.shiftKey &&
     !event.altKey
   )
+}
+
+/** Espera antes de precargar el logo del telón si el navegador no avisa cuándo queda libre. */
+const WARM_FALLBACK_MS = 2000
+
+/** Precarga las imágenes del logo del telón (quedan en la caché del navegador). */
+function warmCurtainLogo(): void {
+  for (const src of Object.values(CURTAIN_LOGO_IMAGES)) new Image().src = src
 }
 
 /** Props de {@link PageTransitionProvider}. */
@@ -47,7 +57,9 @@ export interface PageTransitionProviderProps {
  *   celular) baja el telón con el logo (450 ms), navega con la pantalla tapada (`router.push`) y,
  *   cuando cambia el `pathname`, se abre como un libro (650 ms). Hacia el inicio baja sin logo:
  *   la intro del inicio lo dibuja entero antes de abrirse. Un clic en la página actual, un clic
- *   modificado o con menos movimiento navegan como siempre; el botón Atrás no anima.
+ *   modificado, con menos movimiento o mientras otra capa se abre navegan como siempre; el botón
+ *   Atrás no anima. Mientras hay capa, `<html>` lleva `data-page-covered` y la entrada de página
+ *   (`PageEnter`) no se suma: el telón se abre sobre la página nueva ya nítida.
  * - **Intro:** la arranca el inicio al montarse (`startIntro`): espera los trazos, traza el
  *   matecito y GALPÓN (3,4 s), rellena (0,6 s) y se abre (1 s). Un clic, una tecla o la rueda
  *   saltan a la apertura. Mientras dura, los `main` quedan `inert`, un texto para lectores dice
@@ -71,8 +83,9 @@ export function PageTransitionProvider({ children }: PageTransitionProviderProps
       onNavClick: (event, href) => {
         if (!isPlainClick(event) || prefersReducedMotion()) return
         if (window.location.pathname === href) return
-        event.preventDefault()
+        // Con otra capa en curso (el telón o la intro abriéndose) el link navega como siempre.
         if (phaseRef.current !== 'idle') return
+        event.preventDefault()
         // Valida la ruta antes de bajar el telón (lanza `RangeError` si no es interna).
         asRoute(href)
         phaseRef.current = 'covering'
@@ -87,6 +100,20 @@ export function PageTransitionProvider({ children }: PageTransitionProviderProps
     }),
     [],
   )
+
+  // El logo del telón, en la caché antes del primer clic en el menú (sin competir con la carga).
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === 'function') {
+      const idle = window.requestIdleCallback(warmCurtainLogo, { timeout: WARM_FALLBACK_MS })
+      return () => {
+        window.cancelIdleCallback(idle)
+      }
+    }
+    const timer = window.setTimeout(warmCurtainLogo, WARM_FALLBACK_MS)
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [])
 
   // Cada paso dura lo suyo; el telón navega cuando terminó de bajar y, si la página nueva no
   // llega, se abre igual al rato.
@@ -149,6 +176,18 @@ export function PageTransitionProvider({ children }: PageTransitionProviderProps
       window.removeEventListener('wheel', skip)
     }
   }, [skippable])
+
+  // Con la capa a la vista, la entrada de página (`PageEnter`) no se suma: el telón se abre sobre
+  // la página nueva ya nítida.
+  const covered = state.phase !== 'idle'
+  useLayoutEffect(() => {
+    if (!covered) return
+    const html = document.documentElement
+    html.setAttribute(PAGE_COVERED_ATTRIBUTE, '')
+    return () => {
+      html.removeAttribute(PAGE_COVERED_ATTRIBUTE)
+    }
+  }, [covered])
 
   // Mientras la intro tapa el inicio, el contenido es inerte; al terminar el foco vuelve.
   const blocking = state.mode === 'intro' && state.phase !== 'idle'

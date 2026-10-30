@@ -69,6 +69,20 @@ describe('PageEnter', () => {
     })
   })
 
+  it('si el telón entre páginas tapa la pantalla (`data-page-covered` en `<html>`), no vuelve a entrar', async () => {
+    mockReducedMotion(false)
+    document.documentElement.setAttribute('data-page-covered', '')
+    try {
+      const { rerender } = render(<PageEnter>Tienda</PageEnter>)
+      route.pathname = '/kit'
+      rerender(<PageEnter>Tienda</PageEnter>)
+      await new Promise((resolve) => setTimeout(resolve, 60))
+      expect(screen.getByText('Tienda').style.opacity).toBe('')
+    } finally {
+      document.documentElement.removeAttribute('data-page-covered')
+    }
+  })
+
   it('con prefers-reduced-motion el contenido nunca se oculta', async () => {
     mockReducedMotion(true)
     const { rerender } = render(<PageEnter>Tienda</PageEnter>)

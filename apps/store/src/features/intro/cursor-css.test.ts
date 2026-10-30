@@ -26,6 +26,13 @@ describe('cursor de matecito (globals.css)', () => {
     expect(store.slice(0, store.length - fine.length)).not.toContain('/cursors/')
   })
 
+  it('las clases `cursor-pointer` (también `enabled:`) dan el matecito que señala', () => {
+    // Las utilidades van en una capa y le ganan a `@layer base`; esta regla va sin capa.
+    expect(fine).toMatch(
+      /\.cursor-pointer,\s*\.enabled\\:cursor-pointer:enabled \{\s*cursor:\s*url\('\/cursors\/mate-pointer\.png'\) 6 4,\s*pointer;/,
+    )
+  })
+
   it('el admin es otra app y no toma el cursor de la tienda', () => {
     expect(read('../../../../admin/src/styles.css')).not.toContain('/cursors/')
   })

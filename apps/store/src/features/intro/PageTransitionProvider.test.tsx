@@ -190,6 +190,21 @@ describe('telón entre páginas', () => {
     expect(layer()).toBeNull()
   })
 
+  it('mientras el telón tapa y se abre, `<html>` avisa que la página está tapada (sin PageEnter)', () => {
+    const html = document.documentElement
+    goTo('/')
+    const { rerender } = render(<Site page={<main>Inicio</main>} />)
+    expect(html).not.toHaveAttribute('data-page-covered')
+    fireEvent.click(screen.getByRole('link', { name: 'Tienda' }))
+    expect(html).toHaveAttribute('data-page-covered')
+    advance(INTRO_TIMING.coverMs)
+    goTo('/tienda')
+    rerender(<Site page={<main>Tienda</main>} />)
+    expect(html).toHaveAttribute('data-page-covered')
+    advance(INTRO_TIMING.pageOpenMs)
+    expect(html).not.toHaveAttribute('data-page-covered')
+  })
+
   it('hacia el inicio baja sin logo y la intro lo dibuja antes de abrirse', async () => {
     goTo('/tienda')
     const { rerender } = render(<Site page={<main>Tienda</main>} />)
@@ -205,6 +220,47 @@ describe('telón entre páginas', () => {
     await settleImports()
     expect(layer()).toHaveAttribute('data-mode', 'intro')
     expect(layer()).toHaveAttribute('data-phase', 'drawing')
+  })
+
+  it('mientras el telón se abre, un clic en el menú no se pierde: el link navega solo', () => {
+    goTo('/')
+    const { rerender } = render(<Site page={<main>Inicio</main>} />)
+    fireEvent.click(screen.getByRole('link', { name: 'Tienda' }))
+    advance(INTRO_TIMING.coverMs)
+    goTo('/tienda')
+    rerender(<Site page={<main>Tienda</main>} />)
+    expect(layer()).toHaveAttribute('data-phase', 'opening')
+
+    // El `body` escucha después que React y antes que la prueba frene la navegación real.
+    const prevented: boolean[] = []
+    const record = (event: Event): void => {
+      prevented.push(event.defaultPrevented)
+    }
+    document.body.addEventListener('click', record)
+    fireEvent.click(screen.getByRole('link', { name: 'Nosotros' }))
+    document.body.removeEventListener('click', record)
+    expect(prevented).toEqual([false])
+    expect(layer()).toHaveAttribute('data-phase', 'opening')
+    expect(nav.push).toHaveBeenCalledTimes(1)
+  })
+
+  it('precarga las imágenes del logo del telón cuando la página queda libre', () => {
+    const requested: string[] = []
+    class FakeImage {
+      set src(value: string) {
+        requested.push(value)
+      }
+    }
+    vi.stubGlobal('Image', FakeImage)
+    try {
+      goTo('/tienda')
+      render(<Site page={<main>Tienda</main>} />)
+      expect(requested).toEqual([])
+      advance(2000)
+      expect(requested).toEqual(['/brand/galpon-mark.svg', '/brand/galpon-wordmark.svg'])
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('un clic en la página actual no hace nada', () => {
