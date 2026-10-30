@@ -2,6 +2,8 @@
 
 import type { PointerEvent, ReactNode } from 'react'
 import { m, useMotionValue, useSpring } from 'motion/react'
+import { useCallback, useState } from 'react'
+import { MagneticClaimContext } from './magnetic-context'
 import { MotionFeatures } from './MotionFeatures'
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion'
 import { assertNonNegative } from './validate'
@@ -33,6 +35,10 @@ export interface MagneticProps {
  * El contenedor se agranda `reach` píxeles hacia cada lado (con un margen negativo del mismo
  * tamaño) para que el imán se sienta antes de tocar el contenido, sin cambiar el diseño.
  *
+ * Si adentro hay un `Button` de la tienda, el imán lo pone el botón (los valores del portafolio): el
+ * botón lo avisa por {@link MagneticClaimContext} y el contenedor deja de moverse, sin cambiar de
+ * estructura (no se remonta el contenido).
+ *
  * Con `prefers-reduced-motion: reduce` el contenido no se mueve.
  *
  * @param props - Ver {@link MagneticProps}.
@@ -48,6 +54,10 @@ export function Magnetic({
   assertNonNegative('strength', strength)
   assertNonNegative('reach', reach)
   const reduced = usePrefersReducedMotion()
+  const [claimed, setClaimed] = useState(false)
+  const claim = useCallback((): void => {
+    setClaimed(true)
+  }, [])
   const targetX = useMotionValue(0)
   const targetY = useMotionValue(0)
   const x = useSpring(targetX, MAGNET_SPRING)
@@ -64,9 +74,11 @@ export function Magnetic({
 
   if (reduced) {
     return (
-      <span className={className} style={wrapperStyle}>
-        {children}
-      </span>
+      <MagneticClaimContext value={claim}>
+        <span className={className} style={wrapperStyle}>
+          {children}
+        </span>
+      </MagneticClaimContext>
     )
   }
 
@@ -83,15 +95,17 @@ export function Magnetic({
   }
 
   return (
-    <MotionFeatures>
-      <span
-        className={className}
-        style={wrapperStyle}
-        onPointerMove={onPointerMove}
-        onPointerLeave={onPointerLeave}
-      >
-        <m.span style={innerStyle}>{children}</m.span>
-      </span>
-    </MotionFeatures>
+    <MagneticClaimContext value={claim}>
+      <MotionFeatures>
+        <span
+          className={className}
+          style={wrapperStyle}
+          onPointerMove={claimed ? undefined : onPointerMove}
+          onPointerLeave={claimed ? undefined : onPointerLeave}
+        >
+          <m.span style={innerStyle}>{children}</m.span>
+        </span>
+      </MotionFeatures>
+    </MagneticClaimContext>
   )
 }

@@ -33,10 +33,6 @@ export const HOME_COPY = {
   railLabel: 'Paradas del mate',
   /** El mate 3D: pista que invita a hacer scroll y desaparece al empezar. */
   scrollHint: 'Deslizá para recorrer',
-  /** Reseñas: botones del carrusel y nombre accesible de sus puntos. */
-  reviewsPrevious: 'Anterior',
-  reviewsNext: 'Siguiente',
-  reviewsDots: 'Elegir reseña',
   /** El mate 3D: nombre de cada parada (la portada, la bombilla y el agua), para el raíl y su encabezado. */
   stopNames: {
     hero: 'El mate',
@@ -73,30 +69,6 @@ export function kitDiscountTitle(discountLabel: string): string {
  */
 export function quoteLabel(text: string): string {
   return `“${text}”`
-}
-
-/**
- * Nombre accesible del punto de una reseña del carrusel, y lo que se anuncia al cambiar de reseña
- * con los botones.
- *
- * @param position - Posición de la reseña, un entero de 1 a `total`.
- * @param total - Cantidad de reseñas, un entero mayor o igual a 1.
- * @returns Por ejemplo `Reseña 2 de 5`.
- * @throws {RangeError} Si `position` no es un entero de 1 a `total` o `total` no es un entero mayor o igual a 1.
- */
-export function reviewPositionLabel(position: number, total: number): string {
-  if (
-    !Number.isInteger(total) ||
-    total < 1 ||
-    !Number.isInteger(position) ||
-    position < 1 ||
-    position > total
-  ) {
-    throw new RangeError(
-      `La reseña tiene que ser un entero de 1 a la cantidad de reseñas; se recibió ${String(position)} de ${String(total)}.`,
-    )
-  }
-  return `Reseña ${String(position)} de ${String(total)}`
 }
 
 /**

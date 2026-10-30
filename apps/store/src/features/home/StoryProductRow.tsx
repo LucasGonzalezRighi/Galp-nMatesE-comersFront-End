@@ -6,6 +6,8 @@ import Link from 'next/link'
 import type { ProductSummary } from '@galpon/api-client'
 import { remainingQuantityFor } from '@galpon/domain'
 import { IconButton, Price } from '../../components/ui'
+import { buttonFxClassName } from '../../components/ui/Button'
+import { ButtonFx } from '../../components/ui/ButtonFx'
 import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
 import { addProductToCart, clickOrigin, useCart } from '../cart'
@@ -18,6 +20,16 @@ export interface StoryProductRowProps {
   /** Fondo de la escena donde está: define el color de la línea que lo separa del siguiente. */
   tone: 'dark' | 'light'
 }
+
+/**
+ * El "+" lleno de gris (Ruling MR-16) pone el ícono en blanco aunque la fila le imponga su color
+ * (`text-inherit!`).
+ */
+const ADD_FILLED_TEXT = 'hover:text-[#fff]! focus-visible:text-[#fff]!'
+
+/** El ícono "+" gira 90° con el hover o el foco del botón. */
+const ADD_ICON_CLASS =
+  'ease-main transition-[rotate] duration-300 motion-safe:group-hover/btn:rotate-90 motion-safe:group-focus-visible/btn:rotate-90'
 
 /**
  * Fila de producto de una escena de la historia: nombre y precio (llevan a la ficha) y el botón
@@ -54,10 +66,15 @@ export function StoryProductRow({ product, tone }: StoryProductRowProps): ReactN
         aria-label={addProductLabel(product.name)}
         title={atCartLimit ? HOME_COPY.cartLimit : undefined}
         disabled={cannotBuy}
-        className="flex-none rounded-full! text-inherit! shadow-[inset_0_0_0_1px_currentColor]"
+        className={cx(
+          'flex-none rounded-full! text-inherit! shadow-[inset_0_0_0_1px_currentColor]',
+          !cannotBuy && buttonFxClassName('gray'),
+          !cannotBuy && ADD_FILLED_TEXT,
+        )}
         onClick={add}
       >
-        <PlusIcon size={15} aria-hidden="true" />
+        {cannotBuy ? null : <ButtonFx interactive={false} />}
+        <PlusIcon size={15} aria-hidden="true" className={ADD_ICON_CLASS} />
       </IconButton>
     </li>
   )

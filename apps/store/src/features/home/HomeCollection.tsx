@@ -47,6 +47,17 @@ const GLOW_STYLE: CSSProperties = {
   transition: 'opacity .4s',
 }
 
+/**
+ * Hover de la tarjeta de una línea (y su equivalente con el foco en el link): sube 4 px y el borde
+ * pasa a cobre al 40 % en 240 ms; con menos movimiento solo cambia el borde.
+ */
+const CARD_HOVER_CLASS =
+  'group/line ease-main transition-[translate,box-shadow] duration-240 hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent)_40%,transparent)] has-focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent)_40%,transparent)] motion-safe:hover:-translate-y-1 motion-safe:has-focus-visible:-translate-y-1'
+
+/** La flecha de "Ver línea" se corre 4 px a la derecha con el hover o el foco de la tarjeta. */
+const ARROW_HOVER_CLASS =
+  'ease-main transition-[translate] duration-240 motion-safe:group-hover/line:translate-x-1 motion-safe:group-has-focus-visible/line:translate-x-1'
+
 /** Props de {@link LineCard}. */
 interface LineCardProps {
   /** La línea de producto. */
@@ -59,7 +70,7 @@ interface LineCardProps {
 function LineCard({ line, position }: LineCardProps): ReactNode {
   return (
     <Tilt
-      className={`${CARD_SIZE} bg-surface has-focus-visible:outline-accent relative w-[min(78vw,440px)] cursor-pointer overflow-hidden rounded-[14px] shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2`}
+      className={`${CARD_SIZE} ${CARD_HOVER_CLASS} bg-surface has-focus-visible:outline-accent relative w-[min(78vw,440px)] cursor-pointer overflow-hidden rounded-[14px] shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2`}
     >
       <div aria-hidden="true" className="absolute -inset-[5%]" style={PHOTO_STYLE}>
         <ImageWithPlaceholder
@@ -95,7 +106,7 @@ function LineCard({ line, position }: LineCardProps): ReactNode {
           className="text-accent-300 inline-flex items-center gap-2 text-[13px]"
         >
           {HOME_COPY.viewLine}
-          <ArrowRightIcon size={14} />
+          <ArrowRightIcon size={14} className={ARROW_HOVER_CLASS} />
         </span>
       </div>
     </Tilt>

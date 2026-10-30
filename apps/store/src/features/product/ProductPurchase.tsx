@@ -126,6 +126,7 @@ export function ProductPurchase({ product, contactEmail }: ProductPurchaseProps)
             <Magnetic strength={0.22} className="min-w-0 flex-[1_1_220px] *:flex-1">
               <Button
                 size="lg"
+                fill="gray"
                 fullWidth
                 disabled={atCartLimit}
                 title={atCartLimit ? PRODUCT_COPY.cartLimit : undefined}

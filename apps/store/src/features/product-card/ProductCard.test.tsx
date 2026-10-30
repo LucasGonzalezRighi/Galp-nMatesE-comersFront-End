@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { ReactNode } from 'react'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProductSummary } from '@galpon/api-client'
@@ -113,9 +113,10 @@ describe('ProductCard', () => {
     expect(screen.getByText('CFT 0,00 %')).toBeVisible()
     expect(screen.getByText('Precio sin impuestos nacionales: $33.057')).toBeVisible()
     expect(screen.getByText('Ver detalle')).toBeInTheDocument()
-    expect(
-      screen.getByRole('img', { name: 'Mate Imperial Premium con virola de alpaca' }),
-    ).toBeVisible()
+    // La foto entra con un fundido al terminar de cargar (jsdom no la descarga: se avisa a mano).
+    const photo = screen.getByRole('img', { name: 'Mate Imperial Premium con virola de alpaca' })
+    fireEvent.load(photo)
+    expect(photo).toBeVisible()
     expect(screen.queryByText('Sin stock')).toBeNull()
     expect(screen.queryByText('Consultar')).toBeNull()
   })
@@ -255,5 +256,57 @@ describe('ProductCard', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Mate Imperial Premium' }))
 
     expect(router.push).not.toHaveBeenCalled()
+  })
+})
+
+describe('ProductCard: hover y foco', () => {
+  /** El contenedor que agrupa el hover de la tarjeta. */
+  function cardGroup(): HTMLElement {
+    const element = document.querySelector<HTMLElement>('[data-product-card]')
+    if (element === null) throw new Error('Falta la tarjeta.')
+    return element
+  }
+
+  it('al pasar el mouse (o con el foco adentro) la tarjeta sube 4 px y la foto se acerca a 1,04', () => {
+    renderCard(mate)
+
+    expect(cardGroup()).toHaveClass('group/card')
+    const article = cardGroup().querySelector('article')
+    expect(article).toHaveClass(
+      'motion-safe:group-hover/card:-translate-y-1',
+      'motion-safe:group-has-focus-visible/card:-translate-y-1',
+    )
+    const zoom = cardGroup().querySelector('[data-card-zoom]')
+    expect(zoom).toHaveClass(
+      'duration-600',
+      'ease-main',
+      'motion-safe:group-hover/card:scale-[1.04]',
+      'motion-safe:group-has-focus-visible/card:scale-[1.04]',
+    )
+  })
+
+  it('el nombre subraya desde la izquierda y la foto entra con un fundido', () => {
+    renderCard(mate)
+
+    expect(screen.getByRole('link', { name: 'Mate Imperial Premium' })).toHaveClass(
+      'after:origin-left',
+      'after:scale-x-0',
+      'group-hover/card:after:scale-x-100',
+      'group-has-focus-visible/card:after:scale-x-100',
+    )
+    expect(cardGroup().querySelector('[data-fade-image] img')).not.toBeNull()
+  })
+
+  it('el "+" se llena de gris con el ícono que gira 90° y la píldora "Ver detalle" también', () => {
+    renderCard(mate)
+
+    const add = screen.getByRole('button', { name: 'Agregar al carrito' })
+    expect(add).toHaveClass('[--btn-fill:var(--color-neutral-600)]')
+    expect(add.querySelector('[data-button-sweep]')).toHaveClass(
+      'group-hover/card:[clip-path:inset(0)]',
+    )
+    expect(add.querySelector('svg')).toHaveClass('motion-safe:group-hover/card:rotate-90')
+    const pill = screen.getByText('Ver detalle')
+    expect(pill.querySelector('[data-button-sweep]')).toHaveClass('bg-neutral-600')
   })
 })

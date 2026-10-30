@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 
+import type { MotionValue } from 'motion/react'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { motionValue } from 'motion/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockReducedMotion } from '../motion/test/support'
 import { Header } from './Header'
 import { closeSearch, useSearchOpen } from './search-trigger'
 import { TopBar } from './TopBar'
@@ -13,6 +16,30 @@ const route = vi.hoisted(() => ({ pathname: '/' }))
 vi.mock('next/navigation', () => ({
   usePathname: (): string => route.pathname,
 }))
+
+/** El scroll que lee el encabezado que se esconde (`useScroll` de Motion), movido a mano. */
+const motionScroll = vi.hoisted((): { y: unknown } => ({ y: null }))
+
+vi.mock('motion/react', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useScroll: (): { scrollY: unknown } => ({ scrollY: motionScroll.y }),
+}))
+
+let motionScrollY: MotionValue<number>
+
+/** Mueve el scroll que lee `useScrollDirection`. */
+function moveScroll(y: number): void {
+  act(() => {
+    motionScrollY.set(y)
+  })
+}
+
+/** El encabezado. */
+function header(): HTMLElement {
+  const element = document.querySelector('header')
+  if (element === null) throw new Error('Falta el encabezado')
+  return element
+}
 
 /** Muestra si el buscador está abierto, como lo haría el modal de la feature de búsqueda. */
 function SearchProbe(): string {
@@ -42,11 +69,15 @@ function glass(): Element {
 beforeEach(() => {
   route.pathname = '/'
   Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+  motionScrollY = motionValue(0)
+  motionScroll.y = motionScrollY
 })
 
 afterEach(() => {
   closeSearch()
   cleanup()
+  Reflect.deleteProperty(window, 'matchMedia')
+  window.history.pushState({}, '', '/')
 })
 
 describe('Header', () => {
@@ -79,6 +110,25 @@ describe('Header', () => {
       .getAllByRole('link')
       .filter((link) => link.getAttribute('aria-current') === 'page')
     expect(current.map((link) => link.textContent)).toEqual([label])
+  })
+
+  it('cada link subraya al pasar el mouse (240 ms, desde la izquierda); el activo, fijo', () => {
+    route.pathname = '/tienda'
+
+    render(<Header />)
+
+    const nav = screen.getByRole('navigation', { name: 'Principal' })
+    const underline = (name: string): Element | null =>
+      within(nav).getByRole('link', { name }).querySelector('[aria-hidden="true"]')
+    expect(underline('Inicio')).toHaveClass(
+      'scale-x-0',
+      'origin-left',
+      'duration-240',
+      'group-hover/nav:scale-x-100',
+      'group-focus-visible/nav:scale-x-100',
+    )
+    expect(underline('Tienda')).toHaveClass('scale-x-100')
+    expect(underline('Tienda')).not.toHaveClass('scale-x-0')
   })
 
   it('en una página que no es del menú no marca ningún link', () => {
@@ -201,6 +251,147 @@ describe('menú del celular', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('el encabezado que se esconde', () => {
+  it('se desliza hacia arriba al bajar más de 80 px y vuelve al subir', () => {
+    render(<Header />)
+    expect(header()).not.toHaveClass('-translate-y-full')
+    expect(header()).toHaveClass('duration-300', 'motion-reduce:transition-none')
+
+    moveScroll(60)
+    expect(header()).not.toHaveClass('-translate-y-full')
+
+    moveScroll(240)
+    expect(header()).toHaveClass('-translate-y-full')
+    expect(header()).toHaveAttribute('data-hidden')
+
+    moveScroll(200)
+    expect(header()).not.toHaveClass('-translate-y-full')
+    expect(header()).not.toHaveAttribute('data-hidden')
+  })
+
+  it('no se esconde con el foco adentro', () => {
+    render(<Header />)
+    const search = screen.getByRole('button', { name: 'Buscar' })
+
+    act(() => {
+      search.focus()
+    })
+    moveScroll(400)
+    expect(header()).not.toHaveClass('-translate-y-full')
+
+    act(() => {
+      search.blur()
+    })
+    expect(header()).toHaveClass('-translate-y-full')
+  })
+
+  it('no se esconde con el menú abierto', async () => {
+    render(<Header />)
+    await userEvent.click(screen.getByRole('button', { name: 'Menú' }))
+    await screen.findByRole('dialog', { name: 'Menú' })
+
+    moveScroll(400)
+    moveScroll(500)
+
+    expect(header()).not.toHaveClass('-translate-y-full')
+  })
+
+  it('la barra de progreso queda fuera del encabezado (no se esconde con él)', () => {
+    render(<Header />)
+
+    expect(header().querySelector('[style*="scaleX"]')).toBeNull()
+    expect(document.querySelector('[style*="scaleX"]')).not.toBeNull()
+  })
+})
+
+describe('el logo GALPÓN', () => {
+  /** Reemplaza `window.scrollTo` (jsdom no lo implementa). */
+  function stubWindowScroll(): ReturnType<typeof vi.fn> {
+    const scroll = vi.fn()
+    vi.stubGlobal('scrollTo', scroll)
+    return scroll
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('en el inicio sube todo con scroll suave, no navega y, ya arriba, lleva el foco al principio', async () => {
+    const scroll = stubWindowScroll()
+    render(
+      <>
+        <Header />
+        <main>
+          <h1>Encontrá tu mate.</h1>
+        </main>
+      </>,
+    )
+
+    const notPrevented = fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
+
+    expect(notPrevented).toBe(false)
+    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+    const title = screen.getByRole('heading', { name: 'Encontrá tu mate.' })
+    await waitFor(() => {
+      expect(title).toHaveFocus()
+    })
+    expect(title).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('si el scroll no llega arriba (se volvió a bajar), no mueve el foco', () => {
+    stubWindowScroll()
+    vi.useFakeTimers()
+    render(
+      <>
+        <Header />
+        <main>
+          <h1>Encontrá tu mate.</h1>
+        </main>
+      </>,
+    )
+    Object.defineProperty(window, 'scrollY', { value: 900, configurable: true })
+
+    fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
+    act(() => {
+      vi.advanceTimersByTime(4000)
+    })
+
+    expect(screen.getByRole('heading', { name: 'Encontrá tu mate.' })).not.toHaveFocus()
+    vi.useRealTimers()
+  })
+
+  it('con menos movimiento sube sin animar', () => {
+    mockReducedMotion(true)
+    const scroll = stubWindowScroll()
+    render(<Header />)
+
+    fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
+
+    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
+  })
+
+  it('en otra página navega al inicio como siempre, sin subir a mano', () => {
+    window.history.pushState({}, '', '/tienda')
+    const scroll = stubWindowScroll()
+    render(<Header />)
+    document.addEventListener('click', preventNavigation, { once: true })
+
+    fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
+
+    expect(scroll).not.toHaveBeenCalled()
+  })
+
+  it('con Ctrl (abrir en otra pestaña) no sube a mano', () => {
+    const scroll = stubWindowScroll()
+    render(<Header />)
+    document.addEventListener('click', preventNavigation, { once: true })
+
+    fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }), { ctrlKey: true })
+
+    expect(scroll).not.toHaveBeenCalled()
   })
 })
 

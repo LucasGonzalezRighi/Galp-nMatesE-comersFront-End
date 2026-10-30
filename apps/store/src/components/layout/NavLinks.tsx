@@ -21,8 +21,10 @@ export interface NavLinksListProps {
 }
 
 /**
- * Los seis links del encabezado de escritorio, con el activo subrayado (la línea crece desde la
- * izquierda) y `aria-current="page"`. No lee la ruta: recibe cuál está activo.
+ * Los seis links del encabezado de escritorio, con el activo subrayado y `aria-current="page"`.
+ * Al pasar el mouse (o con el foco del teclado) cada link muestra la píldora y una línea de 1 px que
+ * crece desde la izquierda en 240 ms; el activo la tiene fija. No lee la ruta: recibe cuál está
+ * activo.
  *
  * @param props - Ver {@link NavLinksListProps}.
  */
@@ -37,7 +39,7 @@ export function NavLinksList({ activeKey }: NavLinksListProps): ReactNode {
               href={asRoute(item.href)}
               aria-current={active ? 'page' : undefined}
               className={cx(
-                'hover:bg-accent/16 hover:text-foreground relative block rounded-full px-[14px] py-2 text-[14px] whitespace-nowrap no-underline hover:-translate-y-[2px] motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+                'group/nav hover:bg-accent/16 hover:text-foreground relative block rounded-full px-[14px] py-2 text-[14px] whitespace-nowrap no-underline hover:-translate-y-[2px] motion-reduce:transition-none motion-reduce:hover:translate-y-0',
                 active ? 'text-foreground' : 'text-neutral-300',
               )}
               style={LINK_TRANSITION}
@@ -46,8 +48,10 @@ export function NavLinksList({ activeKey }: NavLinksListProps): ReactNode {
               <span
                 aria-hidden="true"
                 className={cx(
-                  'bg-accent ease-main absolute right-3 bottom-[2px] left-3 h-px origin-left transition-[scale] duration-500 motion-reduce:transition-none',
-                  active ? 'scale-x-100' : 'scale-x-0',
+                  'bg-accent ease-main absolute right-3 bottom-[2px] left-3 h-px origin-left transition-[scale] duration-240 motion-reduce:transition-none',
+                  active
+                    ? 'scale-x-100'
+                    : 'scale-x-0 group-hover/nav:scale-x-100 group-focus-visible/nav:scale-x-100',
                 )}
               />
             </Link>

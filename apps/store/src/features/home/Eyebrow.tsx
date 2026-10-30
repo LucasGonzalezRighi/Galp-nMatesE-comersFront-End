@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Reveal } from '../../components/motion'
 import { cx } from '../../components/ui/cx'
 
 /**
@@ -15,6 +16,9 @@ export interface EyebrowProps {
   children: ReactNode
 }
 
+/** Cuánto tarda en dibujarse la raya, en milisegundos. */
+const EYEBROW_LINE_MS = 500
+
 /** Color y separación de cada tono (los del diseño). */
 const TONE_CLASSES: Record<EyebrowTone, string> = {
   section: 'text-accent tracking-[0.14em]',
@@ -26,14 +30,22 @@ const TONE_CLASSES: Record<EyebrowTone, string> = {
 
 /**
  * Rótulo corto en mayúsculas con una raya adelante, que va arriba de cada título del inicio
- * ("Colección", "Destacados", "El bombillón").
+ * ("Colección", "Destacados", "El bombillón"). La raya de 32 px se dibuja desde la izquierda al
+ * entrar en pantalla (`Reveal` de forma `bar`, 500 ms); con menos movimiento ya está dibujada.
  *
  * @param props - Ver {@link EyebrowProps}.
  */
 export function Eyebrow({ tone = 'section', children }: EyebrowProps): ReactNode {
   return (
     <span className={cx('flex items-center gap-3 text-[12px] uppercase', TONE_CLASSES[tone])}>
-      <span aria-hidden="true" className="h-px w-7 bg-current" />
+      <span aria-hidden="true" className="flex">
+        <Reveal
+          kind="bar"
+          as="span"
+          duration={EYEBROW_LINE_MS}
+          className="block h-px w-7 bg-current"
+        />
+      </span>
       {children}
     </span>
   )

@@ -126,6 +126,7 @@ export function CartDrawer(): ReactNode {
             ) : null}
             <Button
               asChild
+              fill="gray"
               disabled={!view.canCheckout || isUpdating}
               className="min-h-[48px] w-full gap-[10px] text-[15px] shadow-[0_0_30px_-10px_var(--color-accent)]"
             >
@@ -134,7 +135,7 @@ export function CartDrawer(): ReactNode {
                 {CART_COPY.checkout}
               </Link>
             </Button>
-            <Button variant="ghost" className="self-center" onClick={closeCart}>
+            <Button variant="ghost" fill="gray" className="self-center" onClick={closeCart}>
               {CART_COPY.keepShopping}
             </Button>
           </div>

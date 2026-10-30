@@ -109,6 +109,7 @@ export function KitSummary({
       <Magnetic strength={0.15} reach={8} fullWidth>
         <Button
           size="lg"
+          fill="gray"
           fullWidth
           disabled={!view.isComplete}
           onClick={onAdd}

@@ -95,12 +95,7 @@ export function HeroIntro({
       </SceneReveal>
       <SceneReveal kind="up" delay={320} className={cx('flex flex-wrap gap-[14px]', ctaClassName)}>
         <Magnetic>
-          <Button
-            asChild
-            variant="primary"
-            size="lg"
-            className={`${HOME_PILL_BUTTON} home-cta-fill`}
-          >
+          <Button asChild variant="primary" size="lg" className={HOME_PILL_BUTTON}>
             <Link href={asRoute('/tienda')}>
               {hero.primaryCtaLabel}
               <ArrowRightIcon size={HOME_ARROW_SIZE} aria-hidden="true" />
@@ -108,7 +103,7 @@ export function HeroIntro({
           </Button>
         </Magnetic>
         <Magnetic>
-          <Button asChild variant="secondary" size="lg" className="home-cta-fill rounded-full!">
+          <Button asChild variant="secondary" size="lg" className="rounded-full!">
             <Link href={asRoute('/kit')}>
               {hero.secondaryCtaLabel}
               {kitDiscountLabel === null ? null : <Tag variant="accent2">{kitDiscountLabel}</Tag>}

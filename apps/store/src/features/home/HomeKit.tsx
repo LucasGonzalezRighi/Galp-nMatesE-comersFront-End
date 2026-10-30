@@ -16,6 +16,13 @@ const SHADE_STYLE: CSSProperties = {
     'linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--color-background) 92%, transparent))',
 }
 
+/**
+ * Hover de cada pieza del kit (además del `Tilt`): sube 4 px y el borde pasa a cobre al 40 % en
+ * 240 ms; con menos movimiento solo cambia el borde.
+ */
+const PIECE_HOVER_CLASS =
+  'ease-main transition-[translate,box-shadow] duration-240 hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent)_40%,transparent)] motion-safe:hover:-translate-y-1'
+
 /** Props de {@link KitPiece}. */
 interface KitPieceProps {
   /** Lugar de la pieza en el kit, desde 1. */
@@ -44,7 +51,9 @@ function KitPiece({
   return (
     <Reveal kind="up" delay={delay}>
       <Float delay={floatDelay}>
-        <Tilt className="bg-surface relative aspect-[3/4] overflow-hidden rounded-[14px] shadow-sm">
+        <Tilt
+          className={`${PIECE_HOVER_CLASS} bg-surface relative aspect-[3/4] overflow-hidden rounded-[14px] shadow-sm`}
+        >
           <div aria-hidden="true" className="absolute inset-0">
             <ImageWithPlaceholder
               src={product?.mainImage?.url}
