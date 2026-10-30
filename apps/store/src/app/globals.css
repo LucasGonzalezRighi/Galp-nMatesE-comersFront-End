@@ -8,7 +8,7 @@
  * celular, 41 px a 1024 px y 64 px desde 1440 px. Hasta 1920 px de pantalla el contenido usa todo
  * el ancho menos ese margen (a 1905 px arranca en x = 64 px, como pidió Lucas: "usá más el
  * ancho, que no quede todo en el centro"); en pantallas más grandes el contenedor deja de crecer
- * y se centra. Los bloques de texto largo llevan su propio  para no pasar de ~75 caracteres.
+ * y se centra. Los bloques de texto largo llevan su propio `max-w` para no pasar de ~75 caracteres.
  * Header, barra superior, footer y todas las páginas lo usan.
  * `--site-inset` es el mismo margen para una pista que ocupa todo el ancho (la colección del
  * inicio): su primera tarjeta arranca donde arranca el contenido del contenedor.
