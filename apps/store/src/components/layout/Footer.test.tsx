@@ -110,20 +110,32 @@ describe('FooterView', () => {
     )
   })
 
-  it('desde 1024 px las columnas arrancan al 40 % del ancho, a 96 px o más de la frase (Ruling MR-23)', () => {
+  it('desde 1280 px las columnas arrancan al 40 % del ancho, a 96 px o más de la frase (Ruling MR-23)', () => {
     const { container } = render(
       <FooterView content={content} settings={settings} categories={categories} />,
     )
 
     const tagline = container.querySelector('[data-footer-row="0"]')
     const row = tagline?.parentElement
-    // La frase (360 px como mucho) en la primera columna; los links en la segunda, que empieza en
-    // el 40 % del contenedor o en 360 + 96 px si el 40 % queda más cerca.
-    expect(row).toHaveClass('lg:grid', 'lg:grid-cols-[max(40%,456px)_minmax(0,1fr)]', 'lg:gap-x-0')
+    // La frase (360 px como mucho) en la primera columna; los links en la segunda, que desde 1280 px
+    // empieza en el 40 % del contenedor o en 360 + 96 px si el 40 % queda más cerca. Entre 1024 y
+    // 1280 px la segunda columna mide lo que piden los links (la frase se angosta, a 48 px).
+    expect(row).toHaveClass(
+      'lg:grid',
+      'lg:grid-cols-[minmax(0,1fr)_auto]',
+      'lg:gap-x-12',
+      'xl:grid-cols-[max(40%,456px)_minmax(0,1fr)]',
+      'xl:gap-x-0',
+    )
     expect(tagline).toHaveClass('max-w-[360px]')
     expect(row?.children).toHaveLength(2)
-    // Los cuatro grupos de links, una sola fila a 1440 px: 48 px entre cada uno (con 64 px no entran).
-    expect(row?.children[1]).toHaveClass('gap-x-12')
+    // Los cuatro grupos de links, una sola fila desde 1024 px: sin saltar de fila y con 24 a 48 px
+    // entre cada uno según el ancho (a 1280 px, 30 px: con 48 LEGALES caía abajo).
+    expect(row?.children[1]).toHaveClass(
+      'gap-x-12',
+      'lg:flex-nowrap',
+      'lg:gap-x-[clamp(24px,20vw_-_226px,48px)]',
+    )
     expect(row?.children[1]?.children).toHaveLength(4)
   })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject, ReactNode } from 'react'
-import { domAnimation, LazyMotion, m } from 'motion/react'
+import { AnimatePresence, domAnimation, LazyMotion, m, useIsPresent } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { ProductSummary } from '@galpon/api-client'
@@ -186,6 +186,41 @@ function UnfoldedCards({ products, installments, showNetPrice }: UnfoldedCardsPr
   )
 }
 
+/** Props de {@link MoreButton}. */
+interface MoreButtonProps {
+  /** Despliega el resto de los productos. */
+  onMore: () => void
+}
+
+/**
+ * El botón centrado "Más productos". Con movimiento va dentro de un `AnimatePresence`: al tocarlo
+ * no desaparece de golpe (la banda del kit de abajo subiría ~90 px y volvería a bajar mientras
+ * crece la grilla), sino que su lugar se achica a 0 y se funde en lo mismo que tarda la grilla
+ * nueva en crecer, con la misma curva; mientras tanto queda inerte y oculto para los lectores.
+ * Con menos movimiento va sin `AnimatePresence` y se va de una.
+ *
+ * @param props - Ver {@link MoreButtonProps}.
+ */
+function MoreButton({ onMore }: MoreButtonProps): ReactNode {
+  const present = useIsPresent()
+  return (
+    <m.div
+      data-more-leaving={present ? undefined : ''}
+      aria-hidden={present ? undefined : true}
+      inert={!present}
+      className={present ? undefined : 'overflow-hidden'}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: UNFOLD_DURATION_S, ease: EASE_MAIN }}
+    >
+      <div className="flex justify-center pt-10">
+        <Button variant="secondary" size="lg" onClick={onMore}>
+          {CATALOG_COPY.moreProducts}
+        </Button>
+      </div>
+    </m.div>
+  )
+}
+
 /**
  * Grilla de la tienda con 4 hileras completas y, si hay más productos, el botón centrado "Más
  * productos" que despliega el resto (ver `UnfoldedCards`). Las hileras salen de las columnas que
@@ -193,8 +228,9 @@ function UnfoldedCards({ products, installments, showNetPrice }: UnfoldedCardsPr
  * antes de medir se suponen 6 (24 productos). Al cambiar de filtro, orden o búsqueda
  * (`collapseKey`) vuelve a 4 hileras.
  *
- * Los productos de abajo no se dibujan hasta que se piden, pero sus links quedan en un
- * `<noscript>` para que se puedan rastrear y abrir sin JavaScript.
+ * Al tocar el botón, su lugar se pliega mientras crece la grilla nueva (ver `MoreButton`). Los
+ * productos de abajo no se dibujan hasta que se piden, pero sus links quedan en un `<noscript>`
+ * para que se puedan rastrear y abrir sin JavaScript.
  *
  * @param props - Ver {@link CatalogGridProps}.
  */
@@ -206,6 +242,7 @@ export function CatalogGrid({
   showNetPrice,
 }: CatalogGridProps): ReactNode {
   const [hostRef, columns] = useGridColumns()
+  const reduced = usePrefersReducedMotion()
   const [more, setMore] = useState<MoreState>({ key: collapseKey, expanded: false })
 
   // Otro filtro, orden o búsqueda: se vuelve a plegar. Se ajusta durante el render, sin efectos.
@@ -219,42 +256,11 @@ export function CatalogGrid({
   const first = products.slice(0, limit)
   const rest = products.slice(limit)
 
-  let below: ReactNode = null
-  if (rest.length > 0 && expanded) {
-    below = (
-      <UnfoldedCards products={rest} installments={installments} showNetPrice={showNetPrice} />
-    )
-  } else if (rest.length > 0) {
-    below = (
-      <>
-        <div className="mt-10 flex justify-center">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => {
-              setMore({ key: collapseKey, expanded: true })
-            }}
-          >
-            {CATALOG_COPY.moreProducts}
-          </Button>
-        </div>
-        <noscript>
-          <ul
-            aria-label={CATALOG_COPY.moreProducts}
-            className="mt-6 flex list-none flex-wrap justify-center gap-x-5 gap-y-2 p-0 text-[14px]"
-          >
-            {rest.map((product) => (
-              <li key={product.id}>
-                <Link href={asRoute(`/producto/${encodeURIComponent(product.slug)}`)}>
-                  {product.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </noscript>
-      </>
-    )
+  const unfold = (): void => {
+    setMore({ key: collapseKey, expanded: true })
   }
+  const showButton = rest.length > 0 && !expanded
+  const moreButton = showButton ? <MoreButton key="more" onMore={unfold} /> : null
 
   return (
     <>
@@ -272,7 +278,28 @@ export function CatalogGrid({
           ))}
         </GridReplay>
       </div>
-      {below}
+      {rest.length > 0 && expanded ? (
+        <UnfoldedCards products={rest} installments={installments} showNetPrice={showNetPrice} />
+      ) : null}
+      <LazyMotion features={domAnimation}>
+        {reduced ? moreButton : <AnimatePresence initial={false}>{moreButton}</AnimatePresence>}
+      </LazyMotion>
+      {showButton ? (
+        <noscript>
+          <ul
+            aria-label={CATALOG_COPY.moreProducts}
+            className="mt-6 flex list-none flex-wrap justify-center gap-x-5 gap-y-2 p-0 text-[14px]"
+          >
+            {rest.map((product) => (
+              <li key={product.id}>
+                <Link href={asRoute(`/producto/${encodeURIComponent(product.slug)}`)}>
+                  {product.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </noscript>
+      ) : null}
     </>
   )
 }

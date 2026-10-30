@@ -106,10 +106,12 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
       <div className="site-container flex flex-col">
         <div className="site-footer-divider mb-14 h-px" style={DIVIDER_STYLE} />
         {/*
-         * Desde 1024 px los links arrancan al 40 % del contenedor (Ruling MR-23, Lucas: "más al
+         * Desde 1280 px los links arrancan al 40 % del contenedor (Ruling MR-23, Lucas: "más al
          * centro, hacia la izquierda"), o a 360 + 96 px si el 40 % queda más cerca de la frase.
+         * Entre 1024 y 1280 px la columna de los links mide lo que piden (arranca antes del 40 %)
+         * y la frase se angosta, así los cuatro grupos siguen en una fila.
          */}
-        <div className="flex flex-wrap justify-between gap-x-16 gap-y-10 lg:grid lg:grid-cols-[max(40%,456px)_minmax(0,1fr)] lg:gap-x-0">
+        <div className="flex flex-wrap justify-between gap-x-16 gap-y-10 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-12 xl:grid-cols-[max(40%,456px)_minmax(0,1fr)] xl:gap-x-0">
           <FooterRow index={0} className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
             <p className="text-[24px] tracking-[-0.02em]">{content.tagline}</p>
             <p className="text-[14px] text-neutral-400">{content.text}</p>
@@ -122,11 +124,11 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
             </a>
           </FooterRow>
           {/*
-           * Los cuatro grupos de links son una fila: entran de izquierda a derecha, un cuarto de fila
-           * entre cada uno. Con `gap-x-12` entran en la segunda columna a 1440 px (con `gap-x-16`
-           * faltaban ~3 px y LEGALES caía a una segunda fila).
+           * Los cuatro grupos de links son una fila desde 1024 px: entran de izquierda a derecha,
+           * sin saltar de fila. Suman ~560 px; el aire entre grupos va de 24 px (hasta 1250 px) a
+           * 48 px (desde ~1370 px): a 1280 px la columna mide 655 px y con 48 px LEGALES caía abajo.
            */}
-          <div className="flex flex-wrap gap-x-12 gap-y-10 text-[14px]">
+          <div className="flex flex-wrap gap-x-12 gap-y-10 text-[14px] lg:flex-nowrap lg:gap-x-[clamp(24px,20vw_-_226px,48px)]">
             <FooterRow index={1}>
               <nav aria-label={LAYOUT_COPY.footerShop} className="flex flex-col gap-[10px]">
                 <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerShop}</span>

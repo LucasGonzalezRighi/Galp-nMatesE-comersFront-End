@@ -475,9 +475,30 @@ describe('CatalogBrowser: más productos', () => {
     expect(moreButton()).not.toBeInTheDocument()
     expect(cardLink(25)).toHaveFocus()
     // Al terminar de crecer, la tarjeta enfocada se acerca a la pantalla para el teclado.
-    await vi.waitFor(() => {
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' })
-    })
+    await vi.waitFor(
+      () => {
+        expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' })
+      },
+      { timeout: 3000 },
+    )
+  })
+
+  it('el lugar del botón se achica y se funde mientras la grilla crece (la banda no salta)', async () => {
+    const user = userEvent.setup()
+    renderCatalog(null, { products: manyProducts })
+    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    // Sigue debajo de la grilla nueva, inerte y oculto para los lectores, hasta que se pliega.
+    const leaving = document.querySelector('[data-more-leaving]')
+    expect(leaving).not.toBeNull()
+    expect(leaving).toHaveAttribute('aria-hidden', 'true')
+    expect(leaving).toHaveAttribute('inert')
+    expect(leaving?.previousElementSibling?.contains(cardLink(25))).toBe(true)
+    await vi.waitFor(
+      () => {
+        expect(document.querySelector('[data-more-leaving]')).toBeNull()
+      },
+      { timeout: 3000 },
+    )
   })
 
   it('la tarjeta nueva no suma su entrada propia: su Reveal queda quieto y visible', async () => {

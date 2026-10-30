@@ -49,7 +49,7 @@ export function MobileMenu({ open, onClose, top }: MobileMenuProps): ReactNode {
     >
       <nav
         aria-label={LAYOUT_COPY.menuTitle}
-        className="bg-background/94 pointer-events-auto absolute inset-x-0 bottom-0 flex flex-col overflow-y-auto px-[clamp(20px,5vw,64px)] py-8 backdrop-blur-[18px]"
+        className="bg-background/94 pointer-events-auto absolute inset-x-0 bottom-0 flex flex-col overflow-y-auto px-(--site-gutter) py-8 backdrop-blur-[18px]"
         style={{ top }}
       >
         <ul className="flex flex-col gap-[6px]">

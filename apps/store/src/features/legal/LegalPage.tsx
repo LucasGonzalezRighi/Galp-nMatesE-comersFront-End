@@ -20,7 +20,7 @@ export interface LegalPageProps {
 export function LegalPage({ content }: LegalPageProps): ReactNode {
   const paragraphs = splitParagraphs(content.body)
   return (
-    <main className="mx-auto flex max-w-[860px] flex-col gap-[22px] px-[clamp(20px,5vw,64px)] pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]">
+    <main className="mx-auto flex max-w-[860px] flex-col gap-[22px] px-(--site-gutter) pt-[clamp(48px,7vw,96px)] pb-[clamp(72px,9vw,120px)]">
       <span className="text-accent before:bg-accent flex items-center gap-3 text-[12px] tracking-[0.14em] uppercase before:h-px before:w-7 before:content-['']">
         {LEGAL_COPY.eyebrow}
       </span>

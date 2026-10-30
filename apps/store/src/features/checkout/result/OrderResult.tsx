@@ -30,7 +30,7 @@ import { RESULT_COPY } from './result.copy'
 
 /** Contenedor de la pantalla, con las medidas del diseño. */
 const SHELL =
-  'mx-auto flex w-full max-w-[760px] flex-col items-start gap-[22px] px-[clamp(20px,5vw,64px)] py-[clamp(64px,9vw,120px)]'
+  'mx-auto flex w-full max-w-[760px] flex-col items-start gap-[22px] px-(--site-gutter) py-[clamp(64px,9vw,120px)]'
 
 /** Título principal. */
 const TITLE = 'm-0 text-[clamp(38px,5vw,64px)] leading-none tracking-[-0.035em]'
