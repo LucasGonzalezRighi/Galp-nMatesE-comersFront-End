@@ -25,9 +25,9 @@ function sourceFiles(): string[] {
 }
 
 describe('site-container: el contenedor único de la tienda', () => {
-  it('mide 1920 px como máximo, va centrado y tiene 20 a 64 px de margen lateral', () => {
+  it('mide 1920 px como máximo, va centrado y tiene 20 a 80 px de margen lateral', () => {
     expect(globals).toContain('--site-max: 1920px;')
-    expect(globals).toContain('--site-gutter: clamp(20px, 5.53vw - 15.6px, 64px);')
+    expect(globals).toContain('--site-gutter: clamp(20px, 5.71vw - 2.3px, 80px);')
     const rule = utility('site-container')
     expect(rule).toContain('margin-inline: auto;')
     expect(rule).toContain('width: 100%;')
