@@ -6,7 +6,7 @@ import { m, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { MotionFeatures } from '../motion/MotionFeatures'
 import { cx } from '../ui/cx'
-import { footerWordShare } from './footer-rise'
+import { clampCover, footerWordShare } from './footer-rise'
 import { useFooterMotion } from './FooterRise'
 
 /** Clase de la capa iluminada: encima de la fantasma, con su mismo tamaño. */
@@ -61,14 +61,15 @@ function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): Reac
   )
 }
 
+/** Props de {@link RisingWordmark}. */
+interface RisingWordmarkProps extends FooterWordmarkProps {
+  /** Cuánto subió el pie. */
+  cover: MotionValue<number>
+}
+
 /** La palabra que sube última con el pie, mientras pasa por encima de las reseñas quietas. */
-function RisingWordmark({
-  ghost,
-  lit,
-  className,
-  cover,
-}: FooterWordmarkProps & { cover: MotionValue<number> }): ReactNode {
-  const share = useTransform(cover, footerWordShare)
+function RisingWordmark({ ghost, lit, className, cover }: RisingWordmarkProps): ReactNode {
+  const share = useTransform(cover, (value) => footerWordShare(clampCover(value)))
   const y = useTransform(share, (value) => `${String((1 - value) * 55)}%`)
   const clipPath = useTransform(share, (value) => `inset(${String((1 - value) * 100)}% 0 0 0)`)
   return (
@@ -100,7 +101,8 @@ function RisingWordmark({
  *   arranca en el 60 % de esa entrada (`LIT_FROM`).
  * - `still` (menos movimiento o celular): la iluminada queda quieta y entera, sin recorte.
  *
- * Es decorativa (`aria-hidden`). Sin JavaScript se ve la fantasma con la iluminada entera encima.
+ * Es decorativa (`aria-hidden`). Sin JavaScript se ve la fantasma (el servidor dibuja el modo
+ * `scroll`, con la iluminada recortada del todo).
  *
  * @param props - Ver {@link FooterWordmarkProps}.
  */

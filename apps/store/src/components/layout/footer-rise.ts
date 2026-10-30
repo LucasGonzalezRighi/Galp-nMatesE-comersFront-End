@@ -17,6 +17,19 @@ export const FOOTER_ROW_SPAN = 0.45
 /** Desde qué parte de la subida entra la palabra GALPÓN (la última). */
 const WORD_FROM = 0.5
 
+/**
+ * Lleva un avance de scroll a la subida del pie: lo recorta de 0 a 1 y toma 0 si no es un número
+ * (por ejemplo, mientras el pie no tiene alto). Así las cuentas de abajo nunca reciben uno inválido.
+ *
+ * @param progress - El avance que da `useScroll`.
+ * @returns Un avance de 0 a 1.
+ * @example
+ * clampCover(1.0002) // 1
+ */
+export function clampCover(progress: number): number {
+  return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0
+}
+
 /** Exige un avance de la subida válido. */
 function assertCover(cover: number): void {
   if (!Number.isFinite(cover) || cover < 0 || cover > 1) {

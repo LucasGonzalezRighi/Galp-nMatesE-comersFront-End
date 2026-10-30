@@ -6,7 +6,7 @@ import { m, useScroll, useTransform } from 'motion/react'
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { useMediaQuery, usePrefersReducedMotion } from '../motion'
 import { MotionFeatures } from '../motion/MotionFeatures'
-import { footerRowShare, useFooterStage } from './footer-rise'
+import { clampCover, footerRowShare, useFooterStage } from './footer-rise'
 
 /** Desde este ancho el pie sube por encima de las reseñas quietas (como `footer.css`). */
 const DESKTOP_QUERY = '(min-width: 1024px)'
@@ -124,14 +124,15 @@ export interface FooterRowProps {
   children: ReactNode
 }
 
+/** Props de {@link RisingRow}. */
+interface RisingRowProps extends FooterRowProps {
+  /** Cuánto subió el pie. */
+  cover: MotionValue<number>
+}
+
 /** La fila que entra con la subida del pie. */
-function RisingRow({
-  index,
-  className,
-  children,
-  cover,
-}: FooterRowProps & { cover: MotionValue<number> }): ReactNode {
-  const share = useTransform(cover, (value) => footerRowShare(value, index))
+function RisingRow({ index, className, children, cover }: RisingRowProps): ReactNode {
+  const share = useTransform(cover, (value) => footerRowShare(clampCover(value), index))
   const y = useTransform(share, (value) => (1 - value) * 28)
   // Nítida del todo, sin filtro: un `blur(0px)` igual le costaría una capa al navegador.
   const filter = useTransform(share, (value) =>

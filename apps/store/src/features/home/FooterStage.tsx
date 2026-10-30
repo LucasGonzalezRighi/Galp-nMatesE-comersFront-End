@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { domAnimation, LazyMotion, m, useScroll, useTransform } from 'motion/react'
 import { useEffect, useRef } from 'react'
-import { easeInOutSine, registerFooterStage } from '../../components/layout/footer-rise'
+import { clampCover, easeInOutSine, registerFooterStage } from '../../components/layout/footer-rise'
 import { useMediaQuery, usePrefersReducedMotion } from '../../components/motion'
 
 /** Desde este ancho las reseñas quedan quietas y el pie sube por encima (como `footer.css`). */
@@ -23,7 +23,7 @@ function PinnedReviews({ children }: FooterStageProps): ReactNode {
   // 0 cuando el escenario llega arriba (el pie asoma abajo); 1 al final: el recorrido extra mide
   // lo mismo que el pie, así que es cuánto lo tapó.
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  const cover = useTransform(scrollYProgress, easeInOutSine)
+  const cover = useTransform(scrollYProgress, (value) => easeInOutSine(clampCover(value)))
   const scale = useTransform(cover, [0, 1], [1, 0.97])
   // Nítidas del todo, sin filtro: un `blur(0px)` igual le costaría una capa al navegador.
   const filter = useTransform(cover, (value) =>

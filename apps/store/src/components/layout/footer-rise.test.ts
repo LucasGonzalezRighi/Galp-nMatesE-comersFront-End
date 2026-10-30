@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clampCover,
   easeInOutSine,
   FOOTER_ROW_SPAN,
   FOOTER_ROW_STAGGER,
@@ -58,5 +59,14 @@ describe('footerWordShare', () => {
 
   it('lanza RangeError con un avance fuera de 0 a 1', () => {
     expect(() => footerWordShare(2)).toThrow(RangeError)
+  })
+})
+
+describe('clampCover', () => {
+  it('recorta el avance de scroll de 0 a 1 y toma 0 si no es un número', () => {
+    expect(clampCover(0.4)).toBe(0.4)
+    expect(clampCover(1.0002)).toBe(1)
+    expect(clampCover(-0.1)).toBe(0)
+    expect(clampCover(Number.NaN)).toBe(0)
   })
 })
