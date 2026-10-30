@@ -38,6 +38,17 @@ Credenciales de prueba del dashboard:
 Notas:
 
 - Los puertos son fijos (3000 y 5173); si alguno está ocupado, el comando falla.
+
+### Puertos
+
+| Puerto | Qué corre                                      |
+| ------ | ---------------------------------------------- |
+| 3000   | Tienda (`apps/store`, Next.js)                 |
+| 5173   | Dashboard (`apps/admin`, Vite)                 |
+| 3001   | Backend (la API en NestJS, repositorio aparte) |
+
+Para que las dos apps usen el backend local en vez de la API simulada: copiá `apps/store/.env.example` a `apps/store/.env.local` y `apps/admin/.env.example` a `apps/admin/.env.local`, descomentá en cada uno el bloque **Backend local** (apunta a `http://localhost:3001`) y reiniciá `npm run dev`. La tienda le habla al backend desde su servidor y por el rewrite `/api/v1`; el dashboard, directo desde el navegador, así que el backend tiene que aceptar CORS con credenciales desde `http://localhost:5173`.
+
 - Para levantar una sola app: `npm run dev:store` o `npm run dev:admin`.
 - La tienda y el dashboard **no comparten datos de prueba**: lo que se cambia en el dashboard no se ve en la tienda hasta que exista el backend real.
 - La primera vez que se genera el contrato (`npm run api:generate`) `npx` descarga `openapi-typescript`, así que hace falta conexión.
