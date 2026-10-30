@@ -4,10 +4,10 @@ import type { MotionValue } from 'motion/react'
 import type { ReactNode } from 'react'
 import { m, useMotionValueEvent, useTransform } from 'motion/react'
 import Image from 'next/image'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { StoryData } from './SceneBody'
 import type { MateStop } from './story-stops'
-import { ScrollStage, useScrollStage } from '../../components/motion'
+import { ScrollStage, useHeaderHideZone, useScrollStage } from '../../components/motion'
 import { cx } from '../../components/ui/cx'
 import { HeroIntro } from './HeroIntro'
 import { HOME_COPY } from './home.copy'
@@ -111,6 +111,10 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
     setUnavailable(true)
   }, [])
   const scenes = storyScenes(data.content.scenes)
+  // Mientras el escenario se ve, el encabezado puede esconderse al bajar; desde la colección queda
+  // fijo (Ruling MR-20). La capa de fondos ocupa el escenario entero.
+  const zoneRef = useRef<HTMLDivElement>(null)
+  useHeaderHideZone(zoneRef)
 
   const content = (stop: MateStop): ReactNode => {
     if (stop.key === 'hero') {
@@ -122,7 +126,11 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
 
   return (
     <>
-      <div aria-hidden="true" className="bg-background absolute inset-0 overflow-hidden">
+      <div
+        ref={zoneRef}
+        aria-hidden="true"
+        className="bg-background absolute inset-0 overflow-hidden"
+      >
         {MATE_STOPS.map((stop, index) => (
           <StageBackdrop
             key={stop.key}

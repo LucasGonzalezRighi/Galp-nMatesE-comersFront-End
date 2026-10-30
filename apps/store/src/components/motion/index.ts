@@ -13,6 +13,7 @@ export { Float } from './Float'
 export type { FloatProps } from './Float'
 export { GridReplay } from './GridReplay'
 export type { GridReplayProps } from './GridReplay'
+export { registerHeaderHideZone, useHeaderHideZone, useHeaderMayHide } from './header-hide-zone'
 export {
   HorizontalScroll,
   horizontalScrollTarget,

@@ -8,7 +8,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { AccountButton } from '../../features/account'
 import { CartButton } from '../../features/cart'
 import { asRoute } from '../../lib/routes'
-import { usePrefersReducedMotion, useScrollDirection } from '../motion'
+import { useHeaderMayHide, usePrefersReducedMotion, useScrollDirection } from '../motion'
 import { IconButton } from '../ui'
 import { cx } from '../ui/cx'
 import { LAYOUT_COPY } from './layout.copy'
@@ -75,11 +75,14 @@ const GLASS_LINE: CSSProperties = {
  * los 8 px de scroll aparece un fondo de vidrio, y arriba de todo corre la barra de progreso de
  * lectura (fuera del encabezado: queda aunque él se esconda).
  *
- * Al bajar más de 80 px se desliza hacia arriba (`translateY(-100%)`, 300 ms) y vuelve apenas se
- * sube ({@link useScrollDirection}); arriba de todo, con el menú abierto o con el foco adentro
- * siempre se ve. En el inicio, el logo no navega: sube todo con scroll suave (sin animar con menos
- * movimiento) y lleva el foco al principio (Ruling MR-17); el mate 3D vuelve a la portada solo,
- * porque su avance sale del scroll. En otra página lleva al inicio como cualquier link.
+ * Solo mientras el escenario del mate 3D del inicio está en pantalla ({@link useHeaderMayHide},
+ * Ruling MR-20), al bajar más de 80 px se desliza hacia arriba (`translateY(-100%)`, 300 ms) y
+ * vuelve apenas se sube ({@link useScrollDirection}); desde la colección en adelante, en las demás
+ * páginas, con menos movimiento, arriba de todo, con el menú abierto o con el foco adentro siempre
+ * se ve, bajes o subas. La barra "Botón de arrepentimiento" no se pega: sigue en el flujo. En el
+ * inicio, el logo no navega: sube todo con scroll suave (sin animar con menos movimiento) y lleva el
+ * foco al principio (Ruling MR-17); el mate 3D vuelve a la portada solo, porque su avance sale del
+ * scroll. En otra página lleva al inicio como cualquier link.
  */
 export function Header(): ReactNode {
   const scrolled = useScrolled()
@@ -89,7 +92,8 @@ export function Header(): ReactNode {
   const headerRef = useRef<HTMLElement>(null)
   const reduced = usePrefersReducedMotion()
   const direction = useScrollDirection(HIDE_AFTER_PX)
-  const hidden = direction === 'down' && !menuOpen && !focusInside
+  const mayHide = useHeaderMayHide()
+  const hidden = mayHide && !reduced && direction === 'down' && !menuOpen && !focusInside
 
   // Si la ventana se ensancha con el menú abierto, ya no hay hamburguesa: se cierra.
   useEffect(() => {

@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 
 import type { MotionValue } from 'motion/react'
+import type { ReactNode } from 'react'
 import type { Mock } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { motionValue } from 'motion/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HomeData } from './home-data'
 import type { MateSceneApi } from './mate3d/scene'
+import { useHeaderMayHide } from '../../components/motion'
 import {
   cleanUpAfterEach,
   installIntersectionObserver,
@@ -222,6 +224,26 @@ describe('MateStage', () => {
     )
     expect(stage().querySelector('canvas')).toBeNull()
     expect(createMateScene).not.toHaveBeenCalled()
+  })
+
+  it('mientras se ve, avisa que el encabezado puede esconderse al bajar (Ruling MR-20)', () => {
+    /** Muestra lo que lee el encabezado. */
+    function Probe(): ReactNode {
+      return useHeaderMayHide() ? 'puede esconderse' : 'queda a la vista'
+    }
+    const { rerender } = render(
+      <>
+        <Probe />
+        <MateStage data={data} />
+      </>,
+    )
+    expect(screen.getByText('queda a la vista')).toBeInTheDocument()
+    act(() => {
+      intersectAll()
+    })
+    expect(screen.getByText('puede esconderse')).toBeInTheDocument()
+    rerender(<Probe />)
+    expect(screen.getByText('queda a la vista')).toBeInTheDocument()
   })
 
   it('la pista "Deslizá para recorrer" se esconde al empezar', () => {

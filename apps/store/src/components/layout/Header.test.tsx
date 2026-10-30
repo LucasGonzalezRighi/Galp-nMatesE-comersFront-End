@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event'
 import { motionValue } from 'motion/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerHeaderHideZone } from '../motion/header-hide-zone'
 import { mockReducedMotion } from '../motion/test/support'
 import { Header } from './Header'
 import { closeSearch, useSearchOpen } from './search-trigger'
@@ -73,7 +74,20 @@ beforeEach(() => {
   motionScroll.y = motionScrollY
 })
 
+/** Lo que retira el escenario del mate de prueba (ver {@link showStage}). */
+let hideStage = (): void => undefined
+
+/** Simula que el escenario del mate 3D está en pantalla: el único lugar donde el encabezado se esconde. */
+function showStage(): void {
+  act(() => {
+    hideStage = registerHeaderHideZone()
+  })
+}
+
 afterEach(() => {
+  act(() => {
+    hideStage()
+  })
   closeSearch()
   cleanup()
   Reflect.deleteProperty(window, 'matchMedia')
@@ -255,8 +269,9 @@ describe('menú del celular', () => {
 })
 
 describe('el encabezado que se esconde', () => {
-  it('se desliza hacia arriba al bajar más de 80 px y vuelve al subir', () => {
+  it('con el escenario del mate a la vista se desliza hacia arriba al bajar más de 80 px y vuelve al subir', () => {
     render(<Header />)
+    showStage()
     expect(header()).not.toHaveClass('-translate-y-full')
     expect(header()).toHaveClass('duration-300', 'motion-reduce:transition-none')
 
@@ -272,8 +287,38 @@ describe('el encabezado que se esconde', () => {
     expect(header()).not.toHaveAttribute('data-hidden')
   })
 
+  it('sin el escenario del mate a la vista (la colección en adelante, las demás páginas) no se esconde nunca', () => {
+    render(<Header />)
+    moveScroll(400)
+    moveScroll(900)
+    expect(header()).not.toHaveClass('-translate-y-full')
+    expect(header()).not.toHaveAttribute('data-hidden')
+  })
+
+  it('escondido en el escenario, vuelve apenas el escenario sale de la pantalla aunque se siga bajando', () => {
+    render(<Header />)
+    showStage()
+    moveScroll(400)
+    expect(header()).toHaveAttribute('data-hidden')
+    act(() => {
+      hideStage()
+    })
+    expect(header()).not.toHaveAttribute('data-hidden')
+    moveScroll(1200)
+    expect(header()).not.toHaveAttribute('data-hidden')
+  })
+
+  it('con menos movimiento no se esconde', () => {
+    mockReducedMotion(true)
+    render(<Header />)
+    showStage()
+    moveScroll(400)
+    expect(header()).not.toHaveAttribute('data-hidden')
+  })
+
   it('no se esconde con el foco adentro', () => {
     render(<Header />)
+    showStage()
     const search = screen.getByRole('button', { name: 'Buscar' })
 
     act(() => {
@@ -290,6 +335,7 @@ describe('el encabezado que se esconde', () => {
 
   it('no se esconde con el menú abierto', async () => {
     render(<Header />)
+    showStage()
     await userEvent.click(screen.getByRole('button', { name: 'Menú' }))
     await screen.findByRole('dialog', { name: 'Menú' })
 
