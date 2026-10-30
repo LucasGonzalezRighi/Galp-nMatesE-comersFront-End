@@ -17,6 +17,7 @@ import { buildHomeData } from './home-data'
 import { mateStateAt } from './mate3d/keyframes'
 import { createMateScene } from './mate3d/scene'
 import { MateStage } from './MateStage'
+import { MATE_STOPS } from './story-stops'
 import { loadFixtureCatalog } from './test/fixture-catalog'
 
 /** El avance del scroll de la sección, que cada prueba mueve a mano (jsdom no hace scroll). */
@@ -164,6 +165,36 @@ describe('MateStage', () => {
     expect(currentBackdrop()).toBe('bombilla')
     goToStop(2)
     expect(currentBackdrop()).toBe('ritual')
+  })
+
+  it('cada fondo lleva el encuadre de su parada, fijo (no cambia con el scroll)', () => {
+    render(<MateStage data={data} />)
+    const images = Array.from(document.querySelectorAll<HTMLElement>('[data-backdrop] img'))
+    const framings = (): string[] =>
+      images.map((image) => `${image.style.objectPosition} | ${image.style.transform}`)
+    const expected = MATE_STOPS.map(
+      ({ framing }) =>
+        `${framing.objectPosition} | ${framing.scale === 1 ? '' : `scale(${String(framing.scale)})`}`,
+    )
+    expect(framings()).toEqual(expected)
+    goToStop(2)
+    expect(framings()).toEqual(expected)
+  })
+
+  it('el texto de la última parada se apaga en el mismo tramo final que el fundido a negro', () => {
+    const panels = (): HTMLElement => {
+      const element = document.querySelector<HTMLElement>('[data-stage-panels]')
+      if (element === null) throw new Error('Faltan los paneles de texto.')
+      return element
+    }
+    const { unmount } = render(<MateStage data={data} />)
+    expect(panels().style.opacity).toBe('1')
+    unmount()
+    // Al final de la salida el mate pasa por el medio: el texto ya no está.
+    progress.set(1)
+    render(<MateStage data={data} />)
+    expect(panels().style.opacity).toBe('0')
+    expect(document.querySelector<HTMLElement>('[data-stage-fade]')?.style.opacity).toBe('1')
   })
 
   it('monta el mate 3D y le pasa el estado del avance, sin la foto de respaldo', async () => {

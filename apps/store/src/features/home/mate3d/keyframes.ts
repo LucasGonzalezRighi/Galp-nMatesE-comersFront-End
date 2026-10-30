@@ -119,8 +119,8 @@ const MATE_FRONT: MatePlacement = [0.42, -0.1, 1.05, 16, -25, 0]
  * derecha; en el primer cuarto del hold 3 el chorro cae en el hueco y salpica, y al terminar el hold
  * cortó: quedan el charco, la yerba húmeda y el vapor. En las paradas 2 y 3 el mate está de
  * frente, como en la portada (la montañita asoma sobre la virola y el hueco queda bajo el borde
- * derecho). Al final va al centro, sube y crece hacia la cámara, apenas volcado hacia la bombilla,
- * como si te lo estuvieran dando.
+ * derecho). Al final va al medio, sube y crece hacia la cámara con la boca hacia quien mira,
+ * apenas volcado hacia la bombilla, como si te lo estuvieran dando.
  */
 export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   {
@@ -262,13 +262,14 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     from: 1,
     to: 1,
     state: {
-      // Va al centro, sube y crece hacia la cámara, como si te lo dieran: la boca apenas inclinada
-      // hacia quien mira (el giro X positivo la acerca a la cámara: se ven la montañita y la bombilla)
-      // y el mate apenas volcado a la derecha, hacia la bombilla, como cuando te lo pasan. Sube porque
-      // crece (el borde de la virola sube de unos 350 a unos 280 px a 1440 × 900); con el centro más
-      // arriba (y 0,18 o 0) o derecho, el encabezado le cortaba la punta de la bombilla. El fundido
-      // del escenario tapa el final.
-      mate: [0, -0.06, 1.45, 14, -10, -12],
+      // Va al medio, sube y crece hacia la cámara, como si te lo dieran (Lucas: "para arriba y al
+      // medio"): el centro sube de −0,1 a 0,1 y la boca se vuelca hacia quien mira (giro X 28: se ve
+      // la montañita entera), apenas volcado a la derecha, hacia la bombilla (giro Z −14). Con la
+      // boca hacia la cámara y ese vuelco la bombilla queda más acostada y, con la escala 1,25 (antes
+      // 1,45), su punta pasa unos 20 px debajo del encabezado (medido a 1440 × 900 y 1905 × 950 en
+      // 0,97, cuando todavía se ve). El texto de la parada 3 y el fundido del escenario se apagan en
+      // el mismo tramo final (`MateStage`): el mate pasa por el medio sin pisar letras.
+      mate: [0, 0.1, 1.25, 28, -10, -14],
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,

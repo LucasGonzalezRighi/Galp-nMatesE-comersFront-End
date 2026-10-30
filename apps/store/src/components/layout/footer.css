@@ -1,27 +1,57 @@
 /*
- * El pie que sube en el inicio: cuando la página tiene la sección marcada con
- * `data-footer-curtain` (las reseñas, clavadas con `sticky`), el pie sube una pantalla
- * (`margin-top` negativo sobre el espaciador que deja esa sección) y la tapa con su fondo opaco, que
- * queda quieta debajo. Solo en escritorio (1024 px o más) y con movimiento; en el celular, con
- * `prefers-reduced-motion: reduce` y en las demás páginas el pie sigue donde estaba. El contenido
- * llena la pantalla: con los márgenes `auto` de `FooterView`, las columnas quedan en el medio y la
- * palabra GALPÓN cierra la pantalla abajo. Se usa `svh` (con `vh` de respaldo) para que nada
- * salte al mostrarse u ocultarse la barra del navegador. Una línea fina y una sombra marcan su
- * borde de arriba: con el mismo fondo que las reseñas, sin ellas el pie cortaba las tarjetas sin
- * que se viera qué las tapaba.
+ * La línea fina en diagonal del borde de arriba: solo se ve con el pie que sube (abajo).
+ */
+.site-footer-line {
+  display: none;
+}
+
+/*
+ * El pie que sube en el inicio, como el del portafolio de Lucas: cuando la página tiene las
+ * reseñas quietas (`data-footer-stage`, ver `FooterStage`), el pie sube su propio alto por encima
+ * de ellas (un margen negativo de `--footer-h`, el alto que publica `FooterRise`) mientras quedan
+ * clavadas debajo, desenfocadas y oscurecidas. Su borde de arriba va en diagonal (`clip-path`,
+ * −2,2°) con una línea fina de cobre que lo sigue, y es vidrio esmerilado: fondo al 78 % y
+ * `backdrop-filter`, así las reseñas se ven borrosas a través. Sin la línea horizontal de arriba y
+ * con más aire arriba, para que la diagonal no corte las columnas. Solo en escritorio (1024 px o
+ * más) y con movimiento; en el celular, con `prefers-reduced-motion: reduce` y en las demás
+ * páginas el pie sigue en su lugar.
  */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  body:has([data-footer-curtain]) .site-footer {
+  body:has([data-footer-stage]) .site-footer {
+    --footer-edge: clamp(16px, 2.6vw, 36px);
     position: relative;
     z-index: 20;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: 100svh;
-    margin-top: -100vh;
-    margin-top: -100svh;
-    background: var(--color-background);
-    border-top: 1px solid color-mix(in srgb, var(--color-foreground) 12%, transparent);
-    box-shadow: 0 -24px 64px -16px rgb(0 0 0 / 0.65);
+    margin-top: calc(-1 * var(--footer-h, 0px));
+    padding-top: calc(var(--footer-edge) + 1.92vw + 48px);
+    background: color-mix(in srgb, var(--color-background) 78%, transparent);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    clip-path: polygon(
+      0 calc(var(--footer-edge) + 1.92vw - 1px),
+      100% calc(var(--footer-edge) - 1.92vw - 1px),
+      100% 100%,
+      0 100%
+    );
+  }
+
+  body:has([data-footer-stage]) .site-footer-line {
+    display: block;
+    position: absolute;
+    top: var(--footer-edge);
+    left: -6%;
+    width: 112%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-accent) 40%, transparent),
+      transparent
+    );
+    transform: rotate(-2.2deg);
+    pointer-events: none;
+  }
+
+  body:has([data-footer-stage]) .site-footer-divider {
+    display: none;
   }
 }

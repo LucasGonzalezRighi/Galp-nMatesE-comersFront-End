@@ -12,6 +12,12 @@ const YERBAL_PHOTO = '/hero/world/yerbal.jpg'
 /** Desde este ancho la sección se enciende al entrar y la foto entra con el zoom grande. */
 const DESKTOP_QUERY = '(min-width: 1024px)'
 
+/**
+ * Parte de la entrada de la foto en que la capa oscura ya se fue: antes del final del zoom, así no
+ * queda una franja vacía entre Destacados, que ya se apagó, y el Manifiesto (Task 8: ~250 px).
+ */
+export const MANIFESTO_SHADE_OFF = 0.55
+
 /** La foto, decorativa: la frase del Manifiesto no la necesita. */
 function YerbalPhoto(): ReactNode {
   return (
@@ -51,7 +57,7 @@ function MovingPhoto({ target, wide }: MovingPhotoProps): ReactNode {
   const { scrollYProgress: pass } = useScroll({ target, offset: ['start end', 'end start'] })
   const scale = useTransform(enter, [0, 1], [wide ? 1.25 : 1.12, 1])
   const y = useTransform(pass, [0, 1], ['-5%', '5%'])
-  const shade = useTransform(enter, [0, 1], [1, 0])
+  const shade = useTransform(enter, [0, MANIFESTO_SHADE_OFF], [1, 0])
   return (
     <>
       <m.div
@@ -88,14 +94,16 @@ function Veil(): ReactNode {
  * se lea: un degradé de `background` del 90 % arriba al 68 % a los dos tercios y al 78 % abajo
  * (más oscuro en el tercio de abajo, donde va el link: deja ver entre el 10 y el 32 % de la foto).
  * Con el halo y el cobre claro de `HomeManifesto`, medido en la tienda a 1440 y a 390 px, el
- * rótulo, la frase y el link quedan a 4,8:1 o más del píxel más claro de su zona. Va adentro de
- * una sección `relative overflow-hidden`, debajo del contenido (que lleva `relative z-10`).
+ * rótulo, la frase y el link quedan a 4,8:1 o más del píxel más claro de su zona. Va adentro del
+ * bloque `relative overflow-hidden` del Manifiesto y la banda de cifras (`PinnedManifesto`), debajo
+ * del contenido, y cubre los dos.
  *
  * Con movimiento la foto entra con zoom y hace parallax (`y` −5 % → 5 % de su alto mientras se ve,
  * sobre una capa que sobra un 6 % arriba y abajo: nunca se ve un borde). Desde 1024 px la entrada se
  * nota (Lucas, 2026-10-29): la escala va de 1,25 a 1 mientras la sección sube hasta el 20 % de
- * arriba de la ventana, y en el mismo tramo una capa del color de fondo, encima del velo, pasa de
- * opacidad 1 a 0: la sección se enciende al entrar. En el celular el zoom es el suave (1,12 → 1
+ * arriba de la ventana, y una capa del color de fondo, encima del velo, pasa de opacidad 1 a 0 en
+ * la primera parte de ese tramo ({@link MANIFESTO_SHADE_OFF}): la sección se enciende al entrar.
+ * En el celular el zoom es el suave (1,12 → 1
  * hasta el borde de arriba) y no hay capa. Con `prefers-reduced-motion: reduce` queda quieta, sin
  * estilos en línea.
  */

@@ -4,9 +4,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { cleanUpAfterEach } from '../../components/motion/test/support'
 import { FEATURED_EXIT, FeaturedExit } from './FeaturedExit'
-import { ManifestoBackdrop } from './ManifestoBackdrop'
+import { MANIFESTO_SHADE_OFF, ManifestoBackdrop } from './ManifestoBackdrop'
 import { ManifestoEnter } from './ManifestoEnter'
-import { PinnedStats } from './PinnedStats'
+import { PinnedManifesto } from './PinnedManifesto'
 
 cleanUpAfterEach()
 
@@ -147,6 +147,11 @@ describe('ManifestoBackdrop', () => {
     const { container } = render(<ManifestoBackdrop />)
     expect(container.querySelector('[data-manifesto-shade]')).toBeNull()
   })
+
+  it('la capa oscura se va antes de que termine el zoom: no queda una franja vacía arriba', () => {
+    expect(MANIFESTO_SHADE_OFF).toBeGreaterThanOrEqual(0.4)
+    expect(MANIFESTO_SHADE_OFF).toBeLessThanOrEqual(0.7)
+  })
 })
 
 describe('ManifestoEnter', () => {
@@ -176,29 +181,67 @@ describe('ManifestoEnter', () => {
   })
 })
 
-describe('PinnedStats', () => {
-  /** Dibuja la banda de cifras y el kit de prueba. */
-  function renderStack(): { band: HTMLElement; kit: HTMLElement } {
-    render(<PinnedStats stats={<p>Cifras</p>} kit={<p>Kit</p>} />)
-    return { band: wrapperOf('Cifras'), kit: wrapperOf('Kit') }
+describe('PinnedManifesto', () => {
+  /** Las piezas de la pantalla clavada: el Manifiesto, la banda, el kit y el bloque que se clava. */
+  interface Stack {
+    manifesto: HTMLElement
+    band: HTMLElement
+    kit: HTMLElement
+    block: HTMLElement
   }
 
-  it.each(STILL_CASES)('sin movimiento quedan apiladas, sin clavar (%o)', (media) => {
+  /** Dibuja el Manifiesto, la banda de cifras y el kit de prueba. */
+  function renderStack(): Stack {
+    const { container } = render(
+      <PinnedManifesto manifesto={<p>Frase</p>} stats={<p>Cifras</p>} kit={<p>Kit</p>} />,
+    )
+    const block = container.querySelector<HTMLElement>('[data-manifesto-block]')
+    if (block === null) throw new Error('Falta el bloque del Manifiesto y las cifras.')
+    return {
+      manifesto: wrapperOf('Frase'),
+      band: wrapperOf('Cifras'),
+      kit: wrapperOf('Kit'),
+      block,
+    }
+  }
+
+  /** Revisa que la foto del yerbal cubra el bloque entero: el Manifiesto y la banda. */
+  function expectPhotoBehind({ manifesto, band, block }: Stack): void {
+    const photo = block.querySelector('[data-manifesto-photo]')
+    expect(photo).not.toBeNull()
+    expect(photo?.closest('[aria-hidden="true"]')?.parentElement).toBe(block)
+    expect(block).toContainElement(manifesto)
+    expect(block).toContainElement(band)
+    expect(photo?.compareDocumentPosition(manifesto)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  }
+
+  it.each(STILL_CASES)('sin movimiento quedan apilados, sin clavar (%o)', (media) => {
     mockMedia(media)
-    const { band, kit } = renderStack()
-    expect(band).not.toHaveClass('sticky')
-    expect(band).not.toHaveAttribute('style')
+    const stack = renderStack()
+    const { manifesto, band, kit, block } = stack
+    expect(block).not.toHaveClass('sticky')
+    expect(block).not.toHaveAttribute('style')
+    expect(block).toHaveClass('relative', 'overflow-hidden')
     expect(kit).not.toHaveClass('z-10')
-    expect(band.compareDocumentPosition(kit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(manifesto.compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(block.contains(kit)).toBe(false)
+    expectPhotoBehind(stack)
   })
 
-  it('con movimiento y desde 1024 px la banda se clava y el kit sube por encima', () => {
+  it('con movimiento y desde 1024 px el Manifiesto y la banda se clavan juntos y el kit sube', () => {
     mockMedia({ reduced: false, wide: true })
-    const { band, kit } = renderStack()
-    expect(band).toHaveClass('sticky', 'top-0', 'z-0')
-    expect(band.style.opacity).toBe('1')
+    const stack = renderStack()
+    const { manifesto, band, kit, block } = stack
+    // Una pantalla clavada: el Manifiesto llena lo que deja la banda, que va pegada abajo.
+    expect(block).toHaveClass('home-pin', 'sticky', 'top-0', 'z-0', 'flex', 'flex-col', 'h-svh')
+    expect(block.style.opacity).toBe('1')
+    expect(manifesto).toHaveClass('flex-1', 'min-h-0')
+    expect(band.parentElement).toBe(block)
+    expect(block.lastElementChild).toBe(band)
+    expectPhotoBehind(stack)
+    // El kit, opaco, sube por encima.
     expect(kit).toHaveClass('relative', 'z-10', 'bg-background')
-    expect(band.parentElement).toBe(kit.parentElement)
-    expect(band.parentElement).toHaveClass('relative')
+    expect(kit.parentElement).toBe(block.parentElement)
+    expect(block.parentElement).toHaveClass('relative')
   })
 })

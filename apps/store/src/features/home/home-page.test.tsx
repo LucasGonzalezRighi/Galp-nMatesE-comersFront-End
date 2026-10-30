@@ -125,20 +125,31 @@ describe('HomePage', () => {
 })
 
 describe('HomeManifesto', () => {
-  it('la frase y el link van por encima de la foto del yerbal, que es decorativa', async () => {
+  it('muestra el rótulo, la frase y el link a Nosotros, por encima del fondo', async () => {
     const data = await homeData()
     const { container } = renderSection(<HomeManifesto data={data} />)
     const section = container.querySelector('section')
-    expect(section).toHaveClass('relative', 'overflow-hidden')
-    const photo = section?.querySelector('img')
-    expect(decodeURIComponent(photo?.getAttribute('src') ?? '')).toContain('/hero/world/yerbal.jpg')
-    expect(photo).toHaveAttribute('alt', '')
-    expect(photo?.closest('[aria-hidden="true"]')).not.toBeNull()
-    expect(section?.querySelector('[data-manifesto-veil]')).not.toBeNull()
+    expect(section).toHaveClass('home-manifesto', 'relative')
+    expect(section).toHaveTextContent(data.content.manifesto.eyebrow)
     expect(section).toHaveTextContent(data.content.manifesto.text)
     const link = screen.getByRole('link', { name: data.content.manifesto.ctaLabel })
     expect(link).toHaveAttribute('href', '/nosotros')
     expect(link.closest('.z-10')).not.toBeNull()
+  })
+
+  it('en el inicio, la foto del yerbal (decorativa) cubre el Manifiesto y la banda de cifras', async () => {
+    renderSection(await HomePage())
+    const section = document.querySelector('section.home-manifesto')
+    const block = section?.closest('[data-manifesto-block]')
+    expect(block).not.toBeNull()
+    const photo = block?.querySelector('img')
+    expect(decodeURIComponent(photo?.getAttribute('src') ?? '')).toContain('/hero/world/yerbal.jpg')
+    expect(photo).toHaveAttribute('alt', '')
+    expect(photo?.closest('[aria-hidden="true"]')).not.toBeNull()
+    expect(block?.querySelector('[data-manifesto-veil]')).not.toBeNull()
+    expect(block).toHaveTextContent('Piezas en catálogo')
+    // El kit va después, fuera del bloque (en escritorio sube por encima).
+    expect(block).not.toHaveTextContent('−10% en el kit.')
   })
 })
 

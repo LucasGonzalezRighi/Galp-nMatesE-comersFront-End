@@ -99,21 +99,24 @@ test.describe('tienda: el mate 3D del inicio', () => {
       expect(await horizontalOverflow(page)).toBe(0)
     })
 
-    test('el fondo de cada parada se ve nítido y apenas oscurecido, sin desenfoque', async ({
+    test('el fondo de cada parada se ve nítido y apenas oscurecido, con su encuadre fijo', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      for (const [stops, key] of [
-        [0.3, 'hero'],
-        [1.6, 'bombilla'],
-        [2.3, 'ritual'],
+      // En el vuelco y en la bombilla la foto va anclada a la derecha y acercada: su mate y su
+      // bombilla se corren a la izquierda y el mate 3D no los tapa.
+      for (const [stops, key, position, transform] of [
+        [0.3, 'hero', '100% 50%', 'matrix(1.2, 0, 0, 1.2, 0, 0)'],
+        [1.6, 'bombilla', '100% 50%', 'matrix(1.1, 0, 0, 1.1, 0, 0)'],
+        [2.3, 'ritual', '50% 50%', 'none'],
       ] as const) {
         await scrollToStops(page, stops)
         const backdrop = page.locator('[data-backdrop][data-current="true"]')
         await expect(backdrop).toHaveAttribute('data-backdrop', key)
         const photo = backdrop.locator('img')
         await expect(photo).toHaveCSS('filter', 'brightness(0.85) saturate(0.95)')
-        await expect(photo).toHaveCSS('transform', 'none')
+        await expect(photo).toHaveCSS('object-position', position)
+        await expect(photo).toHaveCSS('transform', transform)
       }
     })
 
@@ -122,10 +125,14 @@ test.describe('tienda: el mate 3D del inicio', () => {
     }) => {
       await gotoStore(page, '/')
       const fade = page.locator('[data-stage-fade]')
+      const panels = page.locator('[data-stage-panels]')
       await scrollToStops(page, 2.2)
       await expect(fade).toHaveCSS('opacity', '0')
+      await expect(panels).toHaveCSS('opacity', '1')
       await scrollToStops(page, STOPS)
       await expect(fade).toHaveCSS('opacity', '1')
+      // El texto de la última parada se apaga con el fundido: el mate sube al medio sin pisarlo.
+      await expect(panels).toHaveCSS('opacity', '0')
       await page.mouse.wheel(0, 900)
       await expect(
         page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' }),
@@ -226,6 +233,56 @@ test.describe('tienda: el mate 3D del inicio', () => {
         )
       expect(hidden).toBe(0)
     })
+  })
+})
+
+test.describe('tienda: el Manifiesto con las cifras, clavado (1440 × 900)', () => {
+  test.skip(({ isMobile }) => isMobile, 'Se clava solo en escritorio; en el celular va apilado.')
+  test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' })
+
+  test('la frase entera y la banda quedan quietas y el kit sube por encima', async ({ page }) => {
+    await gotoStore(page, '/')
+    const block = page.locator('[data-manifesto-block]')
+    await expect(block).toHaveCSS('position', 'sticky')
+    const trackTop = await block.evaluate(
+      (element) => (element.parentElement?.getBoundingClientRect().top ?? 0) + window.scrollY,
+    )
+    // Subir de a poco, como con la rueda: la frase se ilumina mientras la pantalla sube.
+    for (const share of [0.8, 0.5, 0.2, 0]) {
+      await page.evaluate(
+        (top) => {
+          window.scrollTo(0, top)
+        },
+        trackTop - 900 * share,
+      )
+      await page.waitForTimeout(200)
+    }
+    await page.evaluate((top) => {
+      window.scrollTo(0, top + 60)
+    }, trackTop)
+    // Clavada arriba, con la frase entera y la banda de cifras abajo.
+    await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
+    await expect(page.getByText('Piezas en catálogo')).toBeInViewport()
+    await expect
+      .poll(() =>
+        block
+          .locator('.home-manifesto p span')
+          .evaluateAll((words) =>
+            Math.min(...words.map((word) => Number(getComputedStyle(word).opacity))),
+          ),
+      )
+      .toBe(1)
+    // Más abajo sigue en su lugar, atenuada, y el kit sube por encima.
+    await page.evaluate((top) => {
+      window.scrollTo(0, top + 450)
+    }, trackTop)
+    await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
+    await expect
+      .poll(() => block.evaluate((element) => Number(getComputedStyle(element).opacity)))
+      .toBeLessThan(0.9)
+    await expect(
+      page.getByRole('heading', { level: 2, name: /Mate, bombilla y\s*yerba/ }),
+    ).toBeInViewport()
   })
 })
 

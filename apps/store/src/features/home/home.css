@@ -3,8 +3,8 @@
  * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
  * entrada del título de la portada, encuadre de la foto del mate, fondos del mate 3D (nítidos y
  * apenas oscurecidos), relleno de los botones de la portada, palabra fantasma, entrada escalonada
- * de las paradas del mate 3D, la línea de su pista, la altura del Manifiesto sobre el yerbal y el
- * color de su link.
+ * de las paradas del mate 3D, la línea de su pista, la altura del Manifiesto sobre el yerbal, el
+ * color de su link y la pantalla clavada del Manifiesto con la banda de cifras.
  * Con `prefers-reduced-motion: reduce` nada se anima.
  */
 
@@ -296,4 +296,26 @@
  */
 .home-manifesto-cta {
   color: var(--color-accent-300);
+}
+
+/*
+ * La pantalla clavada del Manifiesto con la banda de cifras (`PinnedManifesto`, desde 1024 px y con
+ * movimiento): el Manifiesto llena el alto que deja la banda, con el texto centrado debajo del
+ * encabezado, y la banda, más baja, deja ver apenas el yerbal a través de su fondo.
+ */
+.home-pin .home-manifesto {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-block: 64px 16px;
+}
+
+.home-pin .home-bg-stats {
+  padding-block: clamp(28px, 4.5vh, 56px);
+  background:
+    radial-gradient(
+      900px 420px at 85% -40%,
+      color-mix(in srgb, var(--color-section-glow) 70%, transparent),
+      transparent 64%
+    ),
+    color-mix(in srgb, var(--color-section) 88%, transparent);
 }

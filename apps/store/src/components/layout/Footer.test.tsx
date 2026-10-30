@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
 import { mockReducedMotion } from '../motion/test/support'
+import { registerFooterStage } from './footer-rise'
 import { FooterView, formatCuit, sellerLines } from './FooterView'
 
 afterEach(cleanup)
@@ -212,6 +213,174 @@ describe('FooterView: la palabra GALPÓN', () => {
 
     expect(container.querySelector('footer')).toHaveClass('site-footer')
   })
+
+  it('entre los medios de pago y la palabra quedan 64 px: la bombilla del logo no toca "Visa"', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const frame = container.querySelector('[data-wordmark-layer="ghost"]')?.parentElement
+    expect(frame).toHaveClass('mt-16')
+    expect(frame?.className).not.toMatch(/mt-\[clamp\(-/)
+  })
+})
+
+/** Lo que el navegador simulado responde a las consultas de medios. */
+interface MediaState {
+  /** Si el usuario pidió menos movimiento. */
+  reduced: boolean
+  /** Si la ventana mide 1024 px o más. */
+  wide: boolean
+}
+
+/** Simula `window.matchMedia` con la preferencia de movimiento y el ancho de la ventana. */
+function mockMedia({ reduced, wide }: MediaState): void {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string): MediaQueryList => ({
+      matches:
+        (query.includes('prefers-reduced-motion') && reduced) ||
+        (query.includes('min-width: 1024px') && wide),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  })
+}
+
+/** Las filas que entran en cascada, en el orden de la página. */
+function rows(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-footer-row]'))
+}
+
+/** El marco de la palabra GALPÓN (el que sube). */
+function wordFrame(container: HTMLElement): HTMLElement | null {
+  return (
+    container.querySelector<HTMLElement>('[data-wordmark-layer="ghost"]')?.parentElement ?? null
+  )
+}
+
+describe('FooterView: el pie que sube por encima de las reseñas', () => {
+  let unregister: (() => void) | null = null
+
+  afterEach(() => {
+    unregister?.()
+    unregister = null
+    Reflect.deleteProperty(window, 'matchMedia')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    document.documentElement.style.removeProperty('--footer-h')
+  })
+
+  it('publica su alto en --footer-h mientras está montado', () => {
+    const observers: (() => void)[] = []
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          observers.push(callback)
+        }
+        observe = vi.fn()
+        unobserve = vi.fn()
+        disconnect = vi.fn()
+      },
+    )
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(640)
+    const { unmount } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const root = document.documentElement
+    expect(root.style.getPropertyValue('--footer-h')).toBe('640px')
+    height.mockReturnValue(700)
+    for (const notify of observers) notify()
+    expect(root.style.getPropertyValue('--footer-h')).toBe('700px')
+    unmount()
+    expect(root.style.getPropertyValue('--footer-h')).toBe('')
+  })
+
+  it('las filas van en orden: la frase con el mail, los cuatro grupos de links y el copyright', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    const all = rows(container)
+    expect(all.map((row) => row.dataset.footerRow)).toEqual(['0', '1', '1.25', '1.5', '1.75', '3'])
+    expect(all[0]).toHaveTextContent(content.tagline)
+    expect(all[1]).toHaveTextContent('Tienda')
+    expect(all[4]).toHaveTextContent('Legales')
+    expect(all[5]).toHaveTextContent('Galpón Mates')
+    expect(all[5]).toHaveTextContent('Visa')
+    // La línea en diagonal de arriba es decorativa.
+    expect(container.querySelector('.site-footer-line')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('con los datos del vendedor, su bloque es la fila 2', () => {
+    const { container } = render(
+      <FooterView
+        content={content}
+        settings={{ ...settings, seller: { ...emptySeller, legalName: 'Galpón SRL' } }}
+        categories={categories}
+      />,
+    )
+
+    const seller = rows(container).find((row) => row.dataset.footerRow === '2')
+    expect(seller).toHaveTextContent('Galpón SRL')
+  })
+
+  it('sin reseñas quietas (las demás páginas) las filas y la palabra quedan como siempre', () => {
+    mockMedia({ reduced: false, wide: true })
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
+    // La palabra sube apenas mientras entra, como antes (del 24 % a su lugar).
+    expect(wordFrame(container)?.style.transform).toMatch(/translateY\(24%\)/)
+  })
+
+  it('sobre las reseñas quietas las filas esperan borrosas y abajo, y GALPÓN más abajo y apagada', () => {
+    mockMedia({ reduced: false, wide: true })
+    unregister = registerFooterStage()
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    for (const row of rows(container)) {
+      expect(row.style.opacity).toBe('0')
+      expect(row.style.transform).toMatch(/translateY\(28px\)/)
+      expect(row.style.filter).toBe('blur(6px)')
+    }
+    const frame = wordFrame(container)
+    expect(frame?.style.transform).toMatch(/translateY\(55%\)/)
+    expect(frame?.style.opacity).toBe('0')
+    const lit = container.querySelector<HTMLElement>('[data-wordmark-layer="lit"]')
+    expect(lit?.style.clipPath).toBe('inset(100% 0 0 0)')
+  })
+
+  it.each([
+    { reduced: true, wide: true },
+    { reduced: false, wide: false },
+  ])(
+    'sin movimiento o en el celular: filas a la vista y la palabra iluminada y quieta (%o)',
+    (media) => {
+      mockMedia(media)
+      unregister = registerFooterStage()
+      const { container } = render(
+        <FooterView content={content} settings={settings} categories={categories} />,
+      )
+
+      for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
+      const lit = container.querySelector('[data-wordmark-layer="lit"]')
+      expect(lit).not.toHaveAttribute('style')
+      expect(lit?.parentElement).not.toHaveAttribute('style')
+    },
+  )
 })
 
 describe('formatCuit y sellerLines', () => {

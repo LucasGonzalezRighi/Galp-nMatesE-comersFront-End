@@ -16,6 +16,7 @@ import { MateCanvas } from './mate3d/MateCanvas'
 import { SceneBody } from './SceneBody'
 import { stageLayout } from './stage-layout'
 import {
+  backdropFramingStyle,
   backdropOpacity,
   MATE_PHOTO,
   MATE_PHOTO_FRAMING,
@@ -57,8 +58,9 @@ interface StageBackdropProps {
 
 /**
  * El fondo de una parada: su foto a pantalla completa, nítida y apenas oscurecida por CSS
- * (`.home-backdrop` en `home.css`). Se ve entero durante su parada y aparece encima del anterior
- * con la curva del recorrido ({@link backdropOpacity}). Solo el primero carga con prioridad.
+ * (`.home-backdrop` en `home.css`), con el encuadre de su parada (`framing`, fijo: el mate 3D no
+ * tapa lo importante de la foto). Se ve entero durante su parada y aparece encima del anterior con
+ * la curva del recorrido ({@link backdropOpacity}). Solo el primero carga con prioridad.
  */
 function StageBackdrop({ stop, index, current, progress }: StageBackdropProps): ReactNode {
   const opacity = useTransform(progress, (value) => backdropOpacity(value, MATE_STOP_COUNT, index))
@@ -77,6 +79,7 @@ function StageBackdrop({ stop, index, current, progress }: StageBackdropProps): 
         sizes="100vw"
         priority={index === 0}
         className="home-backdrop object-cover"
+        style={backdropFramingStyle(stop.framing)}
       />
     </m.div>
   )
@@ -102,6 +105,8 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
     setStarted(value > HINT_LIMIT)
   })
   const fade = useTransform(progress, [FADE_FROM, 1], [0, 1])
+  // El texto de la última parada se apaga en el mismo tramo: el mate pasa por el medio sin pisarlo.
+  const panelsOpacity = useTransform(progress, [FADE_FROM, 1], [1, 0])
   const onUnavailable = useCallback(() => {
     setUnavailable(true)
   }, [])
@@ -155,7 +160,7 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
         className="bg-background pointer-events-none absolute inset-0"
         style={{ opacity: fade }}
       />
-      <div className="relative h-full">
+      <m.div data-stage-panels="" className="relative h-full" style={{ opacity: panelsOpacity }}>
         {MATE_STOPS.map((stop, index) => (
           <StoryStop
             key={stop.key}
@@ -167,7 +172,7 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
             {content(stop)}
           </StoryStop>
         ))}
-      </div>
+      </m.div>
       <StoryRail stops={MATE_STOPS} current={current} onSelect={scrollToStop} />
       <p
         aria-hidden="true"
@@ -203,9 +208,9 @@ export interface MateStageProps {
  * Detrás, la foto de cada parada nítida (`pieces`, `bombilla`, `ritual`) con fundido cruzado;
  * delante, el velo del color de fondo a la izquierda y los paneles de texto apilados, donde solo se
  * ve el de la parada actual (`StoryStop`); el raíl marca la actual y lleva a cualquiera; la pista
- * se esconde al empezar. Al final de la tercera parada el mate se va y el escenario se funde a
- * negro antes de la colección. Sin WebGL, en lugar del lienzo va la foto del mate. Solo se animan
- * `transform`, `opacity` y el lienzo.
+ * se esconde al empezar. Al final de la tercera parada el mate sube al medio y se va, su texto se
+ * apaga y el escenario se funde a negro antes de la colección (los dos en el mismo tramo final). Sin
+ * WebGL, en lugar del lienzo va la foto del mate. Solo se animan `transform`, `opacity` y el lienzo.
  *
  * Lo monta `HomeStory` después de hidratar, desde 1024 × 700 y sin `prefers-reduced-motion`.
  *

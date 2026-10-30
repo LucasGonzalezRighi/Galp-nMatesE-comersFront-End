@@ -179,19 +179,24 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(state.mate).toEqual(moment('bombilla').mate)
   })
 
-  it('salida (1): el mate sube al centro y crece hacia la cámara, como si te lo dieran', () => {
+  it('salida (1): el mate sube al medio y crece hacia la cámara, como si te lo dieran', () => {
     const exit = mateStateAt(1)
     const end = moment('agua-fin')
     expect(exit).toEqual(moment('salida'))
     expect(Math.abs(exit.mate[0])).toBeLessThanOrEqual(0.05)
-    expect(exit.mate[1]).toBeGreaterThan(end.mate[1])
-    // Sube y crece, pero sin que el encabezado le corte la bombilla: el centro no pasa de la mitad.
-    expect(exit.mate[1]).toBeLessThanOrEqual(0)
-    expect(exit.mate[2]).toBeGreaterThanOrEqual(1.4)
-    // La boca apenas inclinada hacia quien mira (giro X positivo, como la portada), sin volcarlo.
-    expect(exit.mate[3]).toBeGreaterThan(0)
-    expect(exit.mate[3]).toBeLessThanOrEqual(18)
+    // Sube de verdad (Lucas: "para arriba y al medio"): el centro pasa por encima de la mitad.
+    expect(exit.mate[1]).toBeGreaterThanOrEqual(0.08)
+    expect(exit.mate[1] - end.mate[1]).toBeGreaterThanOrEqual(0.18)
+    // Crece hacia la cámara, pero menos que antes (1,45), para que la bombilla no pase bajo el
+    // encabezado.
+    expect(exit.mate[2]).toBeGreaterThanOrEqual(1.25)
+    expect(exit.mate[2]).toBeLessThanOrEqual(1.35)
+    // La boca se vuelca hacia quien mira (giro X positivo, más que en la parada 3): se ve la
+    // montañita y la bombilla queda más acostada, con la punta debajo del encabezado.
+    expect(exit.mate[3]).toBeGreaterThan(end.mate[3])
+    expect(exit.mate[3]).toBeLessThanOrEqual(32)
     // Apenas volcado hacia la bombilla, como cuando te lo pasan.
+    expect(exit.mate[5]).toBeLessThan(0)
     expect(Math.abs(exit.mate[5])).toBeLessThanOrEqual(15)
     expect(offscreen(exit.thermos)).toBe(true)
     expect(exit).toMatchObject({ steam: 0.5, water: 0, splash: 0, attached: 1 })

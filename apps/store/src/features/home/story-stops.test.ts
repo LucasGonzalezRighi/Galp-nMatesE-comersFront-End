@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildHomeData } from './home-data'
 import { MATE_STOP_COUNT } from './mate3d/keyframes'
 import { HOLD_SHARE } from './stage-layout'
-import { backdropOpacity, MATE_STOPS, storyScenes } from './story-stops'
+import { backdropFramingStyle, backdropOpacity, MATE_STOPS, storyScenes } from './story-stops'
 import { loadFixtureCatalog } from './test/fixture-catalog'
 
 describe('storyScenes', () => {
@@ -30,6 +30,48 @@ describe('MATE_STOPS', () => {
       ['bombilla', 'La bombilla', '/hero/world/bombilla.jpg'],
       ['ritual', 'El agua', '/hero/world/ritual.jpg'],
     ])
+  })
+
+  it('cada parada lleva el encuadre de su foto: anclaje en porcentajes y una escala de 1 o más', () => {
+    for (const { framing } of MATE_STOPS) {
+      expect(framing.objectPosition).toMatch(/^\d+(\.\d+)?% \d+(\.\d+)?%$/)
+      expect(framing.scale).toBeGreaterThanOrEqual(1)
+      // Sin pasar de 1,35: la foto (1600 px) se vería borrosa a 1905 px de ancho.
+      expect(framing.scale).toBeLessThanOrEqual(1.35)
+    }
+  })
+
+  it('en el vuelco la foto se corre a la izquierda: su bombilla queda fuera del mate 3D', () => {
+    const [hero] = MATE_STOPS
+    // Anclada a la derecha y acercada: el mate y la bombilla de la foto se corren a la izquierda.
+    expect(hero?.framing.objectPosition).toMatch(/^(100|[6-9]\d)% /)
+    expect(hero?.framing.scale).toBeGreaterThan(1.15)
+  })
+})
+
+describe('backdropFramingStyle', () => {
+  it('pone el anclaje y acerca la foto desde ese mismo punto', () => {
+    expect(backdropFramingStyle({ objectPosition: '30% 50%', scale: 1.15 })).toEqual({
+      objectPosition: '30% 50%',
+      transform: 'scale(1.15)',
+      transformOrigin: '30% 50%',
+    })
+  })
+
+  it('con escala 1 solo ancla la foto, sin transformarla', () => {
+    expect(backdropFramingStyle({ objectPosition: '50% 50%', scale: 1 })).toEqual({
+      objectPosition: '50% 50%',
+    })
+  })
+
+  it('lanza RangeError con una escala menor a 1 o un anclaje que no son dos porcentajes', () => {
+    expect(() => backdropFramingStyle({ objectPosition: '50% 50%', scale: 0.9 })).toThrow(
+      RangeError,
+    )
+    expect(() => backdropFramingStyle({ objectPosition: '50% 50%', scale: Number.NaN })).toThrow(
+      RangeError,
+    )
+    expect(() => backdropFramingStyle({ objectPosition: 'left top', scale: 1 })).toThrow(RangeError)
   })
 })
 

@@ -5,6 +5,7 @@ import type { Category, FooterContent, PublicSettings } from '@galpon/api-client
 import { asRoute } from '../../lib/routes'
 import { Reveal } from '../motion'
 import { Tag } from '../ui'
+import { FooterRise, FooterRow } from './FooterRise'
 import { FooterWordmark } from './FooterWordmark'
 import { FooterYear } from './FooterYear'
 import { LAYOUT_COPY } from './layout.copy'
@@ -82,10 +83,14 @@ export interface FooterViewProps {
 /**
  * Pie de página (spec 9.5, 9.6 y 14.6): frase, bajada y mail; columnas Tienda (las líneas), Ayuda
  * (con el "Botón de arrepentimiento" destacado), Galpón y Legales; datos del vendedor y link a
- * Data Fiscal; "© año Galpón Mates", medios de pago y el logo grande con recorte, que se ilumina
- * de abajo hacia arriba y sube apenas sobre el final de las columnas ({@link FooterWordmark}).
- * En el inicio, en escritorio, el pie sube por encima de las reseñas (`footer.css`) y ocupa una
- * pantalla: las columnas quedan en el medio y la palabra, abajo.
+ * Data Fiscal; "© año Galpón Mates", medios de pago y, 64 px más abajo (la bombilla del logo no
+ * toca los medios de pago), el logo grande con recorte, que se ilumina de abajo hacia arriba
+ * ({@link FooterWordmark}).
+ *
+ * En el inicio, en escritorio y con movimiento, el pie sube por encima de las reseñas quietas como
+ * el del portafolio de Lucas ({@link FooterRise} y `footer.css`): borde de arriba en diagonal con
+ * una línea fina, vidrio esmerilado, las filas ({@link FooterRow}) que entran en cascada pegadas
+ * al scroll y GALPÓN al final. En las demás páginas queda en su lugar.
  *
  * @param props - Ver {@link FooterViewProps}.
  */
@@ -93,12 +98,13 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
   const seller = sellerLines(settings.seller)
   const dataFiscalUrl = settings.seller.dataFiscalUrl
   return (
-    <footer className="site-footer relative overflow-hidden pt-[72px]">
-      <div className="site-container flex flex-1 flex-col">
-        {/* Los márgenes `auto` solo actúan con el pie que sube: centran las columnas en la pantalla. */}
-        <div className="mt-auto mb-14 h-px" style={DIVIDER_STYLE} />
+    <FooterRise className="site-footer relative overflow-hidden pt-[72px]">
+      {/* La línea fina que sigue el borde en diagonal: solo con el pie que sube (`footer.css`). */}
+      <div aria-hidden="true" className="site-footer-line" />
+      <div className="site-container flex flex-col">
+        <div className="site-footer-divider mb-14 h-px" style={DIVIDER_STYLE} />
         <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
-          <div className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
+          <FooterRow index={0} className="flex max-w-[360px] flex-[1_1_260px] flex-col gap-[14px]">
             <p className="text-[24px] tracking-[-0.02em]">{content.tagline}</p>
             <p className="text-[14px] text-neutral-400">{content.text}</p>
             <a
@@ -108,76 +114,88 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
               <EnvelopeIcon size={16} aria-hidden="true" />
               {settings.contactEmail}
             </a>
-          </div>
+          </FooterRow>
+          {/* Los cuatro grupos de links son una fila: entran de izquierda a derecha, un cuarto de fila entre cada uno. */}
           <div className="flex flex-wrap gap-x-16 gap-y-10 text-[14px]">
-            <nav aria-label={LAYOUT_COPY.footerShop} className="flex flex-col gap-[10px]">
-              <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerShop}</span>
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={asRoute(`/tienda/${category.slug}`)}
-                  className={COLUMN_LINK}
-                >
-                  {category.name}
+            <FooterRow index={1}>
+              <nav aria-label={LAYOUT_COPY.footerShop} className="flex flex-col gap-[10px]">
+                <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerShop}</span>
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={asRoute(`/tienda/${category.slug}`)}
+                    className={COLUMN_LINK}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </nav>
+            </FooterRow>
+            <FooterRow index={1.25}>
+              <nav aria-label={LAYOUT_COPY.footerHelp} className="flex flex-col gap-[10px]">
+                <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerHelp}</span>
+                <Link href={asRoute('/preguntas-frecuentes')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.faq}
                 </Link>
-              ))}
-            </nav>
-            <nav aria-label={LAYOUT_COPY.footerHelp} className="flex flex-col gap-[10px]">
-              <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerHelp}</span>
-              <Link href={asRoute('/preguntas-frecuentes')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.faq}
-              </Link>
-              <Link href={asRoute('/preguntas-frecuentes#envios')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.shipping}
-              </Link>
-              <Link href={asRoute('/preguntas-frecuentes#cambios')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.returns}
-              </Link>
-              <Link href={asRoute('/contacto')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.contact}
-              </Link>
-              <Link
-                href={asRoute('/arrepentimiento')}
-                className="text-accent hover:text-accent-300 no-underline"
-              >
-                {LAYOUT_COPY.withdrawal}
-              </Link>
-            </nav>
-            <nav aria-label={LAYOUT_COPY.footerSite} className="flex flex-col gap-[10px]">
-              <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerSite}</span>
-              <Link href={asRoute('/nosotros')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.about}
-              </Link>
-              <Link href={asRoute('/kit')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.kit}
-              </Link>
-              <Link href={asRoute('/tienda')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.catalog}
-              </Link>
-            </nav>
-            <nav aria-label={LAYOUT_COPY.footerLegal} className="flex flex-col gap-[10px]">
-              <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerLegal}</span>
-              <Link href={asRoute('/terminos')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.terms}
-              </Link>
-              <Link href={asRoute('/privacidad')} className={COLUMN_LINK}>
-                {LAYOUT_COPY.privacy}
-              </Link>
-              {content.consumerDefenseUrl === null ? null : (
-                <a
-                  href={content.consumerDefenseUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={COLUMN_LINK}
+                <Link href={asRoute('/preguntas-frecuentes#envios')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.shipping}
+                </Link>
+                <Link href={asRoute('/preguntas-frecuentes#cambios')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.returns}
+                </Link>
+                <Link href={asRoute('/contacto')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.contact}
+                </Link>
+                <Link
+                  href={asRoute('/arrepentimiento')}
+                  className="text-accent hover:text-accent-300 no-underline"
                 >
-                  {LAYOUT_COPY.consumerDefense}
-                </a>
-              )}
-            </nav>
+                  {LAYOUT_COPY.withdrawal}
+                </Link>
+              </nav>
+            </FooterRow>
+            <FooterRow index={1.5}>
+              <nav aria-label={LAYOUT_COPY.footerSite} className="flex flex-col gap-[10px]">
+                <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerSite}</span>
+                <Link href={asRoute('/nosotros')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.about}
+                </Link>
+                <Link href={asRoute('/kit')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.kit}
+                </Link>
+                <Link href={asRoute('/tienda')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.catalog}
+                </Link>
+              </nav>
+            </FooterRow>
+            <FooterRow index={1.75}>
+              <nav aria-label={LAYOUT_COPY.footerLegal} className="flex flex-col gap-[10px]">
+                <span className={COLUMN_TITLE}>{LAYOUT_COPY.footerLegal}</span>
+                <Link href={asRoute('/terminos')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.terms}
+                </Link>
+                <Link href={asRoute('/privacidad')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.privacy}
+                </Link>
+                {content.consumerDefenseUrl === null ? null : (
+                  <a
+                    href={content.consumerDefenseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={COLUMN_LINK}
+                  >
+                    {LAYOUT_COPY.consumerDefense}
+                  </a>
+                )}
+              </nav>
+            </FooterRow>
           </div>
         </div>
         {seller.length === 0 && dataFiscalUrl === null ? null : (
-          <div className="mt-12 flex flex-col gap-1 text-[12px] leading-[1.6] text-neutral-500">
+          <FooterRow
+            index={2}
+            className="mt-12 flex flex-col gap-1 text-[12px] leading-[1.6] text-neutral-500"
+          >
             {seller.map((line) => (
               <p key={line}>{line}</p>
             ))}
@@ -191,10 +209,12 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
                 {LAYOUT_COPY.dataFiscal}
               </a>
             )}
-          </div>
+          </FooterRow>
         )}
-        {/* Por encima de la palabra: GALPÓN se superpone apenas y no tapa los medios de pago. */}
-        <div className="relative z-20 mt-auto flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-500">
+        <FooterRow
+          index={3}
+          className="relative z-20 flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-500"
+        >
           <span>
             © <FooterYear /> {LAYOUT_COPY.brand}
           </span>
@@ -206,9 +226,10 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
               ))}
             </div>
           )}
-        </div>
+        </FooterRow>
+        {/* 64 px de aire: la bombilla del logo no toca los medios de pago. */}
         <FooterWordmark
-          className="pointer-events-none z-10 mt-[clamp(-48px,-3vw,-16px)] w-full"
+          className="pointer-events-none z-10 mt-16 w-full"
           ghost={
             <Reveal kind="clip" duration={1600} className="w-full">
               <Wordmark anchor="bottom" className="w-full" style={GHOST_WORDMARK_STYLE} />
@@ -217,6 +238,6 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
           lit={<Wordmark anchor="bottom" className="w-full" style={LIT_WORDMARK_STYLE} />}
         />
       </div>
-    </footer>
+    </FooterRise>
   )
 }
