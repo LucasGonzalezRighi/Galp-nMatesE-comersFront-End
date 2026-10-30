@@ -5,10 +5,10 @@
 /*
  * Contenedor único de la tienda (Ruling MR-11): 1920 px de ancho como máximo (contando el margen
  * lateral), centrado, con un margen lateral que crece de forma lineal con la pantalla: 20 px en
- * celular (390 px), 56 px a 1024 px y 80 px desde 1440 px. Hasta 1920 px de pantalla el contenido
- * usa todo el ancho menos ese margen (a 1905 px arranca en x = 80 px; Lucas pidió "usá más el
- * ancho, que no quede todo en el centro" y después "apenas un poco más de padding a los
- * costados"); en pantallas más grandes el contenedor deja de crecer
+ * celular (390 px), 66 px a 1024 px y 96 px desde 1440 px. Hasta 1920 px de pantalla el contenido
+ * usa todo el ancho menos ese margen (a 1905 px arranca en x = 96 px; Lucas pidió "usá más el
+ * ancho, que no quede todo en el centro" y después, dos veces, un poco más de margen igual a los
+ * dos costados); en pantallas más grandes el contenedor deja de crecer
  * y se centra. Los bloques de texto largo llevan su propio `max-w` para no pasar de ~75 caracteres.
  * Header, barra superior, footer y todas las páginas lo usan.
  * `--site-inset` es el mismo margen para una pista que ocupa todo el ancho (la colección del
@@ -16,7 +16,7 @@
  */
 :root {
   --site-max: 1920px;
-  --site-gutter: clamp(20px, 5.71vw - 2.3px, 80px);
+  --site-gutter: clamp(20px, 7.24vw - 8.2px, 96px);
   --site-inset: max(var(--site-gutter), calc((100% - var(--site-max)) / 2 + var(--site-gutter)));
 }
 
