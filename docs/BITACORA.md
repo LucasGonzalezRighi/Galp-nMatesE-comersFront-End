@@ -215,6 +215,8 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 ## Mate 3D realista (2026-10-29)
 
+> Las paradas 2 y 3 "vistas desde arriba" de abajo quedaron superadas por los "Ajustes de Lucas" (al final de esta entrada) y por la "Segunda ronda de Lucas".
+
 **Pedido de Lucas** (plan `2026-10-29-mate-3d-realista.md`, con sus fotos y el reel "Cómo hacer la montañita perfecta"): fondos nítidos y apenas oscurecidos, el mate que se inclina para recibir la yerba, la montañita con su pared, el termo con un chorro fino y realismo en todo ("que no sea medio caricatura").
 
 **Qué quedó**: la escena se partió en módulos (`mate3d/scene/`: materiales, colocación, mate, paquete, yerba, bombilla y agua, con el contrato `create → update/dispose` y `three` solo por tipos) y el estado pasó a la v2 (`slope`, `wall`, `thermos`, `puddle`, `splash`). En la parada 1 el mate se inclina 55° a la izquierda, el paquete de Canarias vuelca desde su pico (con la solapa que se abre) y caen hojitas y polvo que se juntan contra la pared baja; el mate se endereza con la yerba contra la pared izquierda. En la 2, visto desde arriba, la montañita queda a la izquierda con la pared recta (un campo de alturas de 48 × 96 con la foto real de Lucas, relieve y grano) y la bombilla baja al hueco y se apoya en la virola. En la 3 entra el pico del termo arriba a la derecha y un chorro fino con refracción (transmisión, índice 1,33) cae en el hueco: salpica apenas, oscurece la yerba, deja un charco y sube vapor. Detrás, la foto de cada parada nítida (`brightness(0.85) saturate(0.95)`) con el velo reforzado del lado del texto.
@@ -229,6 +231,8 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 ## Efectos del inicio (2026-10-29)
 
+> Los valores de Destacados de abajo (0,3 / 0,96 / 32 px) quedaron superados por los "Ajustes de Lucas" de "Mate 3D realista", y el carrusel, las cifras clavadas solas y el pie, por la "Segunda ronda de Lucas".
+
 **Pedido de Lucas** (plan `2026-10-29-inicio-efectos.md`): movimiento con sentido en el resto del inicio, sin perder la lectura.
 
 **Qué quedó**: Destacados se despide al salir (la grilla baja a 0,3 de opacidad, 0,96 de escala y sube 32 px, ligado al scroll); el Manifiesto va sobre el yerbal con zoom lento y parallax y un solo velo en degradé (la frase da 5,3:1 en el peor píxel y 14,4:1 de media); la banda de cifras se clava y "Armá tu kit" sube por encima mientras la banda se atenúa; las reseñas son un carrusel de cinco (con Gianfranco Galimberti, 4,5, y Lucas González Righi, 5) con botones, puntos y avance cada 6 s; y el pie sube por encima de las reseñas clavadas mientras GALPÓN se enciende de abajo hacia arriba. Todo con `transform`, `opacity` y `clip-path`; con menos movimiento y en el celular, apilado y quieto.
@@ -238,6 +242,29 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 **Pulido final** (Task 7): el rótulo "Manifiesto" y el link "Conocé la historia del galpón" no llegaban a 4,5:1 sobre los brillos del yerbal (3,5 y 1,8 en el peor píxel); el texto lleva el halo de las paradas del mate, el rótulo y el link van en cobre claro (`accent-300`) y el velo se oscurece en el tercio de abajo (90 → 68 % a los dos tercios → 78 % abajo): los tres quedan a 4,9:1 o más a 1440 y a 390 px. En el carrusel, al llegar al final se marca el último punto (con tres a la vista se marcaban hasta el tercero) y el avance automático también espera con el carrusel fuera de pantalla. Las reseñas clavadas quedan centradas debajo del encabezado y el pie que sube reparte la pantalla: las columnas en el medio y GALPÓN abajo (antes el tercio de arriba quedaba vacío).
 
 **Para el back**: `rating` de las reseñas (`Review`, `ReviewInput`) acepta pasos de 0,5 de 1 a 5 (`multipleOf: 0.5`; 4,5 vale y 4,3 no). `docs/api/validation-cases.json`, la fuente que comparte el back, ya está actualizado: el caso "media estrella" (4,5) pasó de inválido a válido y se sumó "un paso que no es de media estrella" (4,3, inválido). En la distribución (`ProductReviewStats.distribution` en el OpenAPI), una media cuenta en la fila de su parte entera (4,5 → 4): así toda reseña cae en una fila y la suma es `count`.
+
+## Segunda ronda de Lucas (2026-10-29)
+
+**Pedido de Lucas** (Rulings MR-11 a MR-28 de `progress.md` del workspace, con capturas en `refs/`): mirando la tienda en su pantalla de 1905 px pidió, en tres tandas, un contenedor más ancho, el Manifiesto con las cifras clavado y el kit encima, una cinta de reseñas continua, el pie como el de su portafolio con GALPÓN, efectos de hover y de scroll en todo el inicio, y después una lista de correcciones.
+
+**Qué quedó**:
+
+- **Contenedor** (Task 9, `59ae56e` + `89023c1`): `@utility site-container` en toda la tienda, hasta 1920 px, con los costados en 96 px en pantallas grandes (`c891026`).
+- **Manifiesto y cifras clavados** (Task 10 `6a08efc`, fix `072d40f`): una pantalla `sticky` con la frase y la banda de cifras sobre el yerbal; "Armá tu kit" sube por encima con una sombra y la pantalla clavada se desenfoca (0 → 4 px), se oscurece (brillo 1 → 0,5) y se achica desde arriba (1 → 0,97). La frase va en cuatro renglones con "Conocé la historia del galpón" a la derecha del último (`68f22f0`). Las cifras cuentan de 0 juntas en 1,6 s recién con la banda entera a la vista, una vez por carga, cada número centrado sobre su rótulo (`673a9b2`, `3b5dd0a`).
+- **Reseñas** (Task 11, `6396f09`): cinta continua de borde a borde (~40 px/s, se pausa con el mouse o el foco), sin puntos ni flechas.
+- **El pie como el del portafolio** (Task 10 + fix de la ola, Task 12): las reseñas quedan quietas mientras el pie sube su propio alto por encima (`FooterStage`, `FooterRise`, `--footer-h`), con el borde de arriba en diagonal, una línea fina y vidrio esmerilado; sus filas entran en cascada desde el desenfoque y GALPÓN sube última en una ola de 20 franjas (12 en el celular). La página termina en la palabra cortada a la mitad de sus letras (`06628e4`): el marco mide 169 de los 279 de alto del logo (las letras van de 72 a 266), así se ven la bombilla y la mitad de arriba de las letras, como en `refs/fin-de-pagina-lucas.png`. Las columnas de links arrancan al 40 % del contenedor (`5afda10`).
+- **Encabezado** (`0acb864`): se esconde al bajar solo sobre el mate 3D; desde la colección, y en las demás páginas, queda fijo. El logo del inicio vuelve arriba de todo con el mate vacío (MR-17).
+- **Inicio sin rótulos chicos ni números** (`68f22f0`): fuera `Eyebrow`, los "01 / 03" de las paradas (quedan como `aria-label`), los 01…06 de la colección, del kit y de los pasos del agua.
+- **Tarjeta de producto** (`655f019`): la píldora "Ver detalle" sube con el hover de la tarjeta, pero ella y el "+" se llenan de gris solo con su propio hover o foco.
+- **Tienda y kit** (Task 14 `3f507d2`, Task 12 `06628e4`): cuatro hileras con "Más productos" y, fuera del inicio, un pie sutil y al final: en el flujo, sin cortina, diagonal ni vidrio, con las filas que entran con un fundido y GALPÓN apagada.
+
+**Lecciones**:
+
+- Con Cache Components, Next deja la página anterior **oculta en el documento** (React `Activity`) al navegar. El pie subía sobre `/tienda` y `/kit` porque `body:has([data-footer-stage])` seguía encontrando las reseñas del inicio ocultas. Las marcas de una página tienen que salir de sus efectos (que sí se limpian al ocultarse), no de su DOM: ahora el inicio marca `<html>` con `data-footer-rise` y `data-footer-home`.
+- Un elemento `sticky` queda al 0,99999 de intersección: `useInView` con `amount: 'all'` no disparaba si la rueda salteaba los 43 px en que la banda se ve entera antes de clavarse, y las cifras se quedaban en 0. Alcanza con 0,98. `CountUp` además mostraba el número final un cuadro antes de contar.
+- `overflow: hidden` hace de un elemento un contenedor de scroll y rompe `animation-timeline: view()` adentro: el pie usa `overflow: clip`.
+
+**Visto**: tienda compilada en el puerto 4300 con la GPU real; E2E de la tienda en escritorio y celular (`home`, `home-reviews`, `home-fixes`, `footer`, `smoke`, `a11y`, `reduced-motion`, `visual`, `csp`, `navigation`, `cart`, `checkout`, `reviews`, `catalog-more`) en verde (el hover del link del Manifiesto a 1366 × 657 falló una vez con dos workers en paralelo y pasa solo). Capturas a 1905 × 950 y 1440 × 900 en `.superpowers/sdd/2026-10-29-mate-3d-realista/captures/t12-*` y video de 30 s en `media/mate-3d/inicio-v3-1905.mp4` (fuera del repo).
 
 ## Próximos pasos: P5
 
