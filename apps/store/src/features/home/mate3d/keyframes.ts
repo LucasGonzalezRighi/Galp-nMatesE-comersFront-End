@@ -67,7 +67,7 @@ export interface MateState {
 
 /** Nombre de cada momento del recorrido. */
 export type MateMoment =
-  'agua' | 'agua-fin' | 'bombilla' | 'inclinado' | 'inicio' | 'lleno' | 'salida'
+  'agua' | 'agua-fin' | 'boca' | 'bombilla' | 'inclinado' | 'inicio' | 'lleno' | 'salida'
 
 /** Un momento del recorrido y el tramo del avance en que la escena se queda en él. */
 export interface MateKeyframe {
@@ -111,6 +111,42 @@ const MATE_COVER: MatePlacement = [0.42, -0.1, 1, 10, -25, 0]
 const MATE_FRONT: MatePlacement = [0.42, -0.1, 1.05, 16, -25, 0]
 
 /**
+ * Avance en que empieza la zambullida: el fin del hold de la parada 3 (`agua-fin`). Desde acá hasta
+ * 1 el mate gira hasta mirar con la boca a la cámara, va al medio y crece hasta que la yerba llena
+ * la pantalla (Ruling MR-22). `MateStage` apaga el texto y el raíl en el primer 20 % de ese tramo.
+ */
+export const DIVE_FROM = 2 * SPAN + HOLD
+
+/** Avance en que el mate ya mira con la boca a la cámara, en el medio (`boca`): un tercio del tramo. */
+const MOUTH_AT = DIVE_FROM + (1 - DIVE_FROM) / 3
+
+/** Giro X con que la boca mira a la cámara (un poco menos de 90°: se lee el borde de la virola). */
+const MOUTH_TURN = 86
+
+/**
+ * Cuánto asoma el centro de la boca por encima del centro del mate, en fracciones de media pantalla
+ * por unidad de escala: la boca está 0,43 sobre el centro (1,01 − 0,58 en `scene/mate.ts`), con el
+ * giro X de {@link MOUTH_TURN} asoma 0,43 · cos 86° = 0,03 y la media pantalla mide
+ * tan 14° · 7 = 1,745 (la cámara de `scene.ts`).
+ */
+const MOUTH_LIFT = (0.43 * Math.cos((MOUTH_TURN * Math.PI) / 180)) / 1.745
+
+/**
+ * El mate con la boca hacia la cámara y el centro de la boca en el medio de la pantalla, a una
+ * escala: baja lo que la boca asoma, así la yerba queda centrada mientras crece.
+ */
+function mouthToCamera(scale: number): MatePlacement {
+  return [0, -MOUTH_LIFT * scale, scale, MOUTH_TURN, 0, 0]
+}
+
+/**
+ * Escala final de la zambullida: con 8 la yerba (radio 0,4 · 8 = 3,2 a 3,6 de la cámara) cubre la
+ * diagonal de la pantalla hasta 2,4:1, también en el fondo del hueco, y la virola queda fuera del
+ * cuadro.
+ */
+const DIVE_SCALE = 8
+
+/**
  * Los momentos del recorrido, en orden. En el hold de la parada 1 el mate se inclina 55° a la
  * izquierda, el paquete entra por arriba a la izquierda, vuelca sobre la boca y la yerba se junta
  * contra la pared baja; el paquete se va por donde vino y, entre la 1 y la 2, el mate se endereza con
@@ -119,8 +155,8 @@ const MATE_FRONT: MatePlacement = [0.42, -0.1, 1.05, 16, -25, 0]
  * derecha; en el primer cuarto del hold 3 el chorro cae en el hueco y salpica, y al terminar el hold
  * cortó: quedan el charco, la yerba húmeda y el vapor. En las paradas 2 y 3 el mate está de
  * frente, como en la portada (la montañita asoma sobre la virola y el hueco queda bajo el borde
- * derecho). Al final va al medio, sube y crece hacia la cámara con la boca hacia quien mira,
- * apenas volcado hacia la bombilla, como si te lo estuvieran dando.
+ * derecho). Al final viene la zambullida ({@link DIVE_FROM}): el mate gira hasta mirar con la boca a
+ * la cámara, va al medio (`boca`) y crece hasta que la yerba llena la pantalla (`salida`).
  */
 export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   {
@@ -237,8 +273,8 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   },
   {
     name: 'agua-fin',
-    from: 2 * SPAN + HOLD,
-    to: 2 * SPAN + HOLD,
+    from: DIVE_FROM,
+    to: DIVE_FROM,
     state: {
       mate: MATE_FRONT,
       bombilla: BOMBILLA_OUT,
@@ -258,18 +294,14 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
     },
   },
   {
-    name: 'salida',
-    from: 1,
-    to: 1,
+    name: 'boca',
+    from: MOUTH_AT,
+    to: MOUTH_AT,
     state: {
-      // Va al medio, sube y crece hacia la cámara, como si te lo dieran (Lucas: "para arriba y al
-      // medio"): el centro sube de −0,1 a 0,1 y la boca se vuelca hacia quien mira (giro X 28: se ve
-      // la montañita entera), apenas volcado a la derecha, hacia la bombilla (giro Z −14). Con la
-      // boca hacia la cámara y ese vuelco la bombilla queda más acostada y, con la escala 1,25 (antes
-      // 1,45), su punta pasa unos 20 px debajo del encabezado (medido a 1440 × 900 y 1905 × 950 en
-      // 0,97, cuando todavía se ve). El texto de la parada 3 y el fundido del escenario se apagan en
-      // el mismo tramo final (`MateStage`): el mate pasa por el medio sin pisar letras.
-      mate: [0, 0.1, 1.25, 28, -10, -14],
+      // El mate gira hasta mirar con la boca a la cámara y va al medio, todavía entero (la virola
+      // rodea la yerba): se ven la montañita con su pared, el hueco húmedo y la bombilla, que apunta
+      // hacia quien mira. El vapor se apagó y el termo ya se fue.
+      mate: mouthToCamera(1.8),
       bombilla: BOMBILLA_OUT,
       attached: 1,
       pack: PACK_OUT,
@@ -279,7 +311,34 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
       wall: 1,
       wet: 1,
       water: 0,
-      steam: 0.5,
+      steam: 0,
+      puddle: 1,
+      splash: 0,
+      pour: 0,
+      tilt: -10,
+    },
+  },
+  {
+    name: 'salida',
+    from: 1,
+    to: 1,
+    state: {
+      // La zambullida (Ruling MR-22, Lucas eligió "Zoom adentro del mate"): con la boca centrada, el
+      // mate crece ×8 hasta que la virola sale del cuadro y la yerba llena la pantalla; se siente que
+      // la cámara entra en el mate. La bombilla, calzada y acostada hacia la derecha, pasa de largo
+      // por el costado (sale del cuadro entre las escalas 2 y 3). El escenario termina acá: la capa de
+      // yerba del DOM (`MateStage`) tapa el lienzo y es el primer cuadro de la colección.
+      mate: mouthToCamera(DIVE_SCALE),
+      bombilla: BOMBILLA_OUT,
+      attached: 1,
+      pack: PACK_OUT,
+      thermos: THERMOS_OUT,
+      fill: 1,
+      slope: 1,
+      wall: 1,
+      wet: 1,
+      water: 0,
+      steam: 0,
       puddle: 1,
       splash: 0,
       pour: 0,

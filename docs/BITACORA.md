@@ -266,6 +266,25 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **Visto**: tienda compilada en el puerto 4300 con la GPU real; E2E de la tienda en escritorio y celular (`home`, `home-reviews`, `home-fixes`, `footer`, `smoke`, `a11y`, `reduced-motion`, `visual`, `csp`, `navigation`, `cart`, `checkout`, `reviews`, `catalog-more`) en verde (el hover del link del Manifiesto a 1366 × 657 falló una vez con dos workers en paralelo y pasa solo). Capturas a 1905 × 950 y 1440 × 900 en `.superpowers/sdd/2026-10-29-mate-3d-realista/captures/t12-*` y video de 30 s en `media/mate-3d/inicio-v3-1905.mp4` (fuera del repo).
 
+## Zambullida (2026-10-30)
+
+**Pedido de Lucas** (Ruling MR-22, con tres capturas de cómo terminaba el mate 3D): no le gustaba la salida. Al final del agua el mate se iba, el escenario se fundía a negro, quedaba una pantalla entera vacía con el raíl "El agua" flotando encima (hasta encima de la colección) y la colección aparecía sin transición. Eligió **"Zoom adentro del mate"**.
+
+**Qué quedó** (Task 13):
+
+- **La zambullida** (`mate3d/keyframes.ts`): desde el fin del hold de la parada 3 (`DIVE_FROM`, 0,85) el mate gira hasta mirar con la boca a la cámara (giro X 86°, Y 0) y va al medio (`boca`, escala 1,8, a un tercio del tramo); después crece hasta ×8 (`salida`) y la virola sale del cuadro: la yerba llena la pantalla. La boca queda centrada mientras crece (el mate baja lo que la boca asoma, `mouthToCamera`). El vapor se apaga, el termo ya se fue y la bombilla, calzada y acostada, pasa de largo por la derecha. Todo pegado al scroll y reversible.
+- **Sin negro ni pantalla vacía** (`MateStage`): el texto de la parada 3 y el raíl se apagan en el primer 20 % del tramo (el raíl además con `visibility: hidden`, así no se toca ni queda encima de nada); entre 0,97 y 0,995 la yerba real del DOM (`YerbaDepth`: la textura del mate 3D en mosaico de 190 vh, girada 0,5 rad, multiplicada por `#9a8960` y con viñeta) se funde con el lienzo, y desde 0,999 el lienzo sale del árbol de dibujo y la escena se pausa. El escenario termina en la yerba.
+- **La colección desde la profundidad** (`CollectionEntrance`, `collection-entrance.ts`): `MateStage` avisa que está montado (`registerMateStage`); la colección arranca una ventana más arriba con una capa de yerba `sticky` igual a la del escenario (misma escala, 1,15), que tapa el escenario mientras se va. Con `useScroll` (de `start end` a `start start`; la entrada es hasta `start 15%`) la yerba se aleja y se disuelve (1,15 → 1, desenfoque 0 → 10 px, opacidad 1 → 0), el título sube con máscara y las siete tarjetas salen de `perspective(1200px) translateZ(-600px) rotateX(10deg) scale(0.7)` con 12 px de desenfoque, desfasadas 0,08, con curva senoidal; al final no llevan transformación ni filtro y la pista horizontal sigue igual. Sin el mate 3D (celular, ventanas bajas) la colección entra con un fundido; con menos movimiento, quieta.
+- **Distancia**: del final del agua al título de la colección leído entero hay menos de una pantalla de scroll (la zambullida dura 0,45 de pantalla y el título termina de subir a 0,38 más).
+
+**Lecciones**:
+
+- Un `position: fixed` dentro de la página depende de que ningún ancestro tenga `transform` o `filter` (la entrada de página y la intro animan esas propiedades). La capa de yerba de la colección es `sticky` dentro de un contenedor que arranca una ventana más arriba (`-100svh`): queda fija a la ventana igual, sin depender de los ancestros. Ese contenedor no recibe el mouse, porque tapa la última pantalla del escenario.
+- Para que dos capas se vean iguales en el corte, que compartan el componente y la escala (`YerbaDepth`, `BRIDGE_START_SCALE`). El tono se ajustó midiendo las capturas: la yerba 3D bajo la luz del estudio da rgb(114 89 46) en la montañita y rgb(44 34 15) en el hueco; con el tinte gris de la escena la del DOM se leía verdosa.
+- `display: none` es la forma de pausar `MateCanvas` sin tocarlo: su `IntersectionObserver` lo da por fuera de pantalla.
+
+**Visto**: tienda compilada en el puerto 4300 con la GPU real (Intel UHD, ANGLE D3D11). Cuadros por segundo con una rueda pareja: 58,2 en la zambullida y 58 a 59,3 en la entrada de la colección con el desenfoque en las tarjetas (p95 16,8 ms), así que el desenfoque quedó. Capturas a 1905 × 950 en `.superpowers/sdd/2026-10-29-mate-3d-realista/captures/zambullida-{1..6}.png` y video de 15 s en `media/mate-3d/zambullida-1905.mp4` (fuera del repo).
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

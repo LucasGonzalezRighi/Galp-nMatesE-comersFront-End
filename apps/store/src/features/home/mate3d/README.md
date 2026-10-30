@@ -94,7 +94,8 @@ interpolación usa la curva quíntica del diseño (quieta el primer y el último
 | `bombilla`  | todo el hold 2  | Parada 2: el mate de frente, en el lugar de la portada (giro X 16, escala 1,05); la montañita asoma sobre la virola con su pared recta (`wall 1`) y la bombilla calzada se apoya en la virola derecha.                                                         |
 | `agua`      | 2/3 + hold·0,25 | El mate quieto, igual que en la 2; el pico del termo arriba a la derecha y el chorro entra justo adentro del borde derecho, al lado de la bombilla (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); las gotas y el vapor asoman sobre la virola. |
 | `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                                                                                                         |
-| `salida`    | 1               | El mate va al centro, sube y crece hacia la cámara (escala 1,45), con la boca apenas hacia quien mira y volcado 12° hacia la bombilla, como cuando te lo pasan; termo fuera y vapor a medias. El fundido del escenario tapa el final y entra el catálogo.      |
+| `boca`      | 0,85 + 0,05     | Primer tercio de la zambullida (desde `DIVE_FROM`, el fin del hold 3): el mate gira hasta mirar con la boca a la cámara (giro X 86, Y 0) y va al medio, todavía entero (escala 1,8); el vapor se apagó y el termo se fue.                                      |
+| `salida`    | 1               | La zambullida (Ruling MR-22): con la boca centrada el mate crece ×8 hasta que la virola sale del cuadro y la yerba llena la pantalla; la bombilla pasa de largo por la derecha. `MateStage` funde ahí la yerba del DOM y el escenario termina en ella.         |
 
 Las colocaciones de `inclinado` se midieron con `three` a 16:9: el pico del paquete (x 0,3) queda
 sobre la boca inclinada y la yerba cae casi vertical. Las paradas 2 y 3 ponen el mate de frente, en
@@ -175,6 +176,14 @@ cae al lado de la bombilla (`IMPACT_OFFSET` `{ 0,12; −0,02; 0,06 }`) y las got
 saltan de 0,26 a 0,39 (antes 0,02 a 0,05), más juntas (0,05 a 0,15) y apenas más grandes (0,01 a
 0,019) para asomar sobre el borde, porque el hueco quedó bajo la virola. La salida pasó de "se aleja
 abajo a la derecha" a "te lo pasan": al centro, más grande y volcado hacia la bombilla.
+
+La zambullida (Task 13 del mate realista, Ruling MR-22, 2026-10-30) reemplazó a "te lo pasan": el
+mate gira con la boca hacia la cámara (`boca`) y crece ×8 (`salida`) hasta que la yerba llena la
+pantalla. `mouthToCamera(escala)` lo baja lo que la boca asoma (0,43 · cos 86° por unidad de escala,
+sobre la media pantalla de 1,745), así la yerba queda centrada mientras crece. Con 8 la yerba cubre la
+diagonal hasta 2,4:1, también en el fondo del hueco. El texto y el raíl se apagan en el primer 20 %
+del tramo (`MateStage`), la yerba del DOM (`YerbaDepth`) tapa el lienzo entre 0,97 y 0,995 y desde
+0,999 el lienzo va con `display: none` (la escena se pausa sola).
 
 ## Rendimiento y respaldo
 

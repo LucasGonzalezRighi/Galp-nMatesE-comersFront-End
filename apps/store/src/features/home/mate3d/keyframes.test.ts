@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MateMoment, MatePlacement, MateState } from './keyframes'
 import { HOLD_SHARE } from '../stage-layout'
-import { lerpMateState, MATE_KEYFRAMES, mateStateAt } from './keyframes'
+import { DIVE_FROM, lerpMateState, MATE_KEYFRAMES, mateStateAt } from './keyframes'
 
 /** Tramo del avance que ocupa cada una de las tres paradas. */
 const SPAN = 1 / 3
@@ -179,27 +179,65 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(state.mate).toEqual(moment('bombilla').mate)
   })
 
-  it('salida (1): el mate sube al medio y crece hacia la cámara, como si te lo dieran', () => {
-    const exit = mateStateAt(1)
-    const end = moment('agua-fin')
-    expect(exit).toEqual(moment('salida'))
-    expect(Math.abs(exit.mate[0])).toBeLessThanOrEqual(0.05)
-    // Sube de verdad (Lucas: "para arriba y al medio"): el centro pasa por encima de la mitad.
-    expect(exit.mate[1]).toBeGreaterThanOrEqual(0.08)
-    expect(exit.mate[1] - end.mate[1]).toBeGreaterThanOrEqual(0.18)
-    // Crece hacia la cámara, pero menos que antes (1,45), para que la bombilla no pase bajo el
-    // encabezado.
-    expect(exit.mate[2]).toBeGreaterThanOrEqual(1.25)
-    expect(exit.mate[2]).toBeLessThanOrEqual(1.35)
-    // La boca se vuelca hacia quien mira (giro X positivo, más que en la parada 3): se ve la
-    // montañita y la bombilla queda más acostada, con la punta debajo del encabezado.
-    expect(exit.mate[3]).toBeGreaterThan(end.mate[3])
-    expect(exit.mate[3]).toBeLessThanOrEqual(32)
-    // Apenas volcado hacia la bombilla, como cuando te lo pasan.
-    expect(exit.mate[5]).toBeLessThan(0)
-    expect(Math.abs(exit.mate[5])).toBeLessThanOrEqual(15)
-    expect(offscreen(exit.thermos)).toBe(true)
-    expect(exit).toMatchObject({ steam: 0.5, water: 0, splash: 0, attached: 1 })
+  it('la zambullida empieza al terminar el hold 3 (agua-fin) y ocupa el resto del recorrido', () => {
+    expect(DIVE_FROM).toBeCloseTo(holdEnd(2), 9)
+    expect(keyframe('agua-fin').to).toBe(DIVE_FROM)
+    expect(keyframe('salida').from).toBe(1)
+  })
+
+  it('boca (primer tercio de la zambullida): el mate gira hasta mirar con la boca a la cámara, en el medio', () => {
+    const { from, to, state } = keyframe('boca')
+    expect(from).toBeCloseTo(DIVE_FROM + (1 - DIVE_FROM) / 3, 9)
+    expect(to).toBe(from)
+    const [x, y, scale, rotateX, rotateY, rotateZ] = state.mate
+    // La boca mira a la cámara (giro X de 80 a 88, sin giro Y ni Z) y queda en el medio.
+    expect(rotateX).toBeGreaterThanOrEqual(80)
+    expect(rotateX).toBeLessThanOrEqual(88)
+    expect(rotateY).toBe(0)
+    expect(rotateZ).toBe(0)
+    expect(x).toBe(0)
+    expect(Math.abs(y)).toBeLessThanOrEqual(0.05)
+    // Todavía se ve el mate entero: la virola rodea la yerba.
+    expect(scale).toBeGreaterThan(1.05)
+    expect(scale).toBeLessThan(2.5)
+    // El vapor se apagó, el termo ya está fuera y la bombilla sigue calzada.
+    expect(state).toMatchObject({ steam: 0, water: 0, splash: 0, attached: 1, wet: 1, puddle: 1 })
+    expect(offscreen(state.thermos)).toBe(true)
+  })
+
+  it('salida (1): la zambullida, la yerba llena la pantalla con la boca hacia la cámara y centrada', () => {
+    const dive = mateStateAt(1)
+    const mouth = moment('boca')
+    expect(dive).toEqual(moment('salida'))
+    const [x, y, scale, rotateX, rotateY, rotateZ] = dive.mate
+    expect(rotateX).toBeGreaterThanOrEqual(80)
+    expect(rotateX).toBeLessThanOrEqual(88)
+    expect(rotateY).toBe(0)
+    expect(rotateZ).toBe(0)
+    // Crece hasta que la virola sale del cuadro (de ×6 a ×8).
+    expect(scale).toBeGreaterThanOrEqual(6)
+    expect(scale).toBeLessThanOrEqual(8)
+    // Centrado: el centro de la boca en el medio de la pantalla. La boca asoma por encima del centro
+    // del mate (0,43·cos giroX por unidad de escala, sobre media pantalla de 1,745): el mate baja
+    // lo mismo, así la yerba no se corre mientras crece.
+    expect(x).toBe(0)
+    const lift = (0.43 * Math.cos((rotateX * Math.PI) / 180)) / 1.745
+    expect(y + lift * scale).toBeCloseTo(0, 2)
+    expect(mouth.mate[1] + lift * mouth.mate[2]).toBeCloseTo(0, 2)
+    expect(rotateX).toBe(mouth.mate[3])
+    expect(offscreen(dive.thermos)).toBe(true)
+    expect(dive).toMatchObject({ steam: 0, water: 0, splash: 0, attached: 1 })
+  })
+
+  it('la zambullida es continua: la escala crece sin volver atrás y el mate llega al medio', () => {
+    const steps = 40
+    let previous = mateStateAt(DIVE_FROM).mate[2]
+    for (let step = 1; step <= steps; step += 1) {
+      const scale = mateStateAt(DIVE_FROM + ((1 - DIVE_FROM) * step) / steps).mate[2]
+      expect(scale).toBeGreaterThanOrEqual(previous)
+      previous = scale
+    }
+    expect(Math.abs(mateStateAt(keyframe('boca').from).mate[0])).toBe(0)
   })
 
   it('van en orden, sin solaparse, de 0 a 1', () => {
@@ -210,6 +248,7 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
       'bombilla',
       'agua',
       'agua-fin',
+      'boca',
       'salida',
     ])
     expect(MATE_KEYFRAMES[0].from).toBe(0)

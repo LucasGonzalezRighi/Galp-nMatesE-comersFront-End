@@ -10,6 +10,12 @@ const RAIL = { name: 'Paradas del mate' } as const
 /** Cuántas paradas tiene el mate 3D. */
 const STOPS = 3
 
+/**
+ * Dónde empieza la zambullida, en paradas: al terminar el hold de la parada 3 (el 55 % de su tramo),
+ * como `DIVE_FROM` de `mate3d/keyframes.ts`.
+ */
+const DIVE_STOPS = 2.55
+
 /** Las escenas que quedan apiladas en el celular y con menos movimiento. */
 const STACKED_SCENES = 2
 
@@ -42,6 +48,17 @@ async function scrollToStops(page: Page, stops: number): Promise<void> {
     },
     [stops, STOPS] as const,
   )
+}
+
+/**
+ * Lleva la página a un avance de la entrada de la colección (0: asoma abajo, al soltarse el
+ * escenario; 1: llegó al 15 % de arriba de la ventana). Se mide desde el final del escenario.
+ */
+async function scrollToEntry(page: Page, entry: number): Promise<void> {
+  await page.getByRole('region', STAGE).evaluate((section, value) => {
+    const bottom = section.getBoundingClientRect().bottom + window.scrollY
+    window.scrollTo(0, bottom - window.innerHeight + value * 0.85 * window.innerHeight)
+  }, entry)
 }
 
 /** La parada (desde 0) del elemento que tiene el foco, o `null` si no está en una. */
@@ -162,23 +179,80 @@ test.describe('tienda: el mate 3D del inicio', () => {
       }
     })
 
-    test('al bajar hasta el final el escenario se funde a negro y entra la colección', async ({
+    test('al final del agua el mate se zambulle: el texto y el raíl se apagan y la yerba llena la pantalla, sin negro', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      const fade = page.locator('[data-stage-fade]')
       const panels = page.locator('[data-stage-panels]')
-      await scrollToStops(page, 2.2)
-      await expect(fade).toHaveCSS('opacity', '0')
+      const rail = page.getByRole('navigation', RAIL)
+      const dive = page.locator('[data-stage-dive]')
+      await scrollToStops(page, DIVE_STOPS)
       await expect(panels).toHaveCSS('opacity', '1')
-      await scrollToStops(page, STOPS)
-      await expect(fade).toHaveCSS('opacity', '1')
-      // El texto de la última parada se apaga con el fundido: el mate sube al medio sin pisarlo.
+      await expect(rail).toBeVisible()
+      await expect(dive).toHaveCSS('opacity', '0')
+      // En el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl.
+      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.2)
       await expect(panels).toHaveCSS('opacity', '0')
-      await page.mouse.wheel(0, 900)
+      await expect(rail).toBeHidden()
+      // Sin fundido a negro: el escenario termina con la yerba a pantalla completa.
+      await expect(page.locator('[data-stage-fade]')).toHaveCount(0)
+      await scrollToStops(page, STOPS)
+      await expect(dive).toHaveCSS('opacity', '1')
+      const box = await dive.boundingBox()
+      expect(box?.x).toBeLessThanOrEqual(0)
+      expect(box?.y).toBeLessThanOrEqual(0)
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeGreaterThanOrEqual(1440)
+      expect((box?.y ?? 0) + (box?.height ?? 0)).toBeGreaterThanOrEqual(900)
+    })
+
+    test('entre el final del agua y el título de la colección no hay más de una pantalla de scroll', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const title = page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' })
+      await scrollToStops(page, DIVE_STOPS)
+      const waterEnd = await page.evaluate(() => window.scrollY)
+      // Una pantalla después del final del agua el título ya subió con la máscara y se lee entero.
+      await page.evaluate((top) => {
+        window.scrollTo(0, top + window.innerHeight)
+      }, waterEnd)
+      await expect(title).toBeInViewport({ ratio: 1 })
+      await expect(title.locator('[data-entrance-title]')).toHaveCSS('transform', 'none')
+      // En el medio no hay una pantalla vacía: la capa de yerba tapa el escenario mientras se va.
+      await scrollToEntry(page, 0.1)
+      await expect(page.locator('[data-collection-bridge]')).toBeVisible()
+      await expect(page.locator('[data-collection-yerba]')).not.toHaveCSS('opacity', '0')
+    })
+
+    test('el raíl no se ve con la colección en pantalla y la colección termina visible y sin transformaciones', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const rail = page.getByRole('navigation', RAIL)
+      const cards = page.locator('[data-entrance-card]')
+      await scrollToEntry(page, 0.3)
+      await expect(rail).toBeHidden()
+      await scrollToEntry(page, 1)
+      await expect(rail).toBeHidden()
+      // La yerba ya se disolvió; su fondo oscuro sigue tapando el 15 % del escenario que se va.
+      await expect(page.locator('[data-collection-yerba]')).toHaveCSS('opacity', '0')
+      await expect(cards).toHaveCount(7)
+      for (const card of await cards.all()) {
+        await expect(card).toHaveCSS('transform', 'none')
+        await expect(card).toHaveCSS('filter', 'none')
+        await expect(card).toHaveCSS('opacity', '1')
+      }
       await expect(
         page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' }),
       ).toBeInViewport()
+      // Después, la pista horizontal sigue igual: con la colección clavada, las tarjetas se corren.
+      const first = cards.first()
+      const before = (await first.boundingBox())?.x ?? 0
+      await page.mouse.wheel(0, 600)
+      await expect.poll(async () => (await first.boundingBox())?.x ?? 0).toBeLessThan(before - 100)
+      await expect(rail).toBeHidden()
+      // Con la colección clavada el escenario ya se fue: la capa de yerba tampoco se ve.
+      await expect(page.locator('[data-collection-bridge]')).toBeHidden()
     })
 
     test('con Tab se recorren las tres paradas y cada una viene a la vista', async ({ page }) => {

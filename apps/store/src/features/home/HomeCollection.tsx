@@ -4,9 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Category } from '@galpon/api-client'
 import type { HomeData } from './home-data'
-import { Float, HorizontalScroll, Reveal, Tilt } from '../../components/motion'
+import { Float, HorizontalScroll, Tilt } from '../../components/motion'
 import { ImageWithPlaceholder } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
+import { CollectionEntrance, EntranceCard, EntranceTitle } from './CollectionEntrance'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY, linePhotoPlaceholder, piecesLabel } from './home.copy'
 
@@ -112,8 +113,11 @@ export interface HomeCollectionProps {
 /**
  * Colección en scroll horizontal (spec 9.5): la sección queda fija y las líneas de producto
  * pasan de lado a lado con el scroll (sin rótulo ni números: Ruling MR-23) y, al final, la tarjeta
- * "Ver todo el catálogo · N piezas". Con `prefers-reduced-motion: reduce` es una fila con scroll
- * propio. No se dibuja si no hay líneas con piezas.
+ * "Ver todo el catálogo · N piezas". Después del mate 3D sale de adentro del mate: la yerba en que
+ * termina la zambullida se disuelve, el título sube con máscara y las tarjetas salen de la
+ * profundidad una tras otra (`CollectionEntrance`, Ruling MR-22); sin el mate 3D entra con un
+ * fundido. Con `prefers-reduced-motion: reduce` es una fila con scroll propio, quieta. No se dibuja
+ * si no hay líneas con piezas.
  *
  * @param props - Ver {@link HomeCollectionProps}.
  */
@@ -122,42 +126,46 @@ export function HomeCollection({ data }: HomeCollectionProps): ReactNode {
   if (lines.length === 0) return null
   const { collection } = data.content
   return (
-    <HorizontalScroll
-      trackStyle={TRACK_STYLE}
-      header={
-        <div className={HOME_CONTAINER}>
-          <Reveal kind="up" as="h2" className={HOME_SECTION_TITLE}>
-            {collection.title}
-          </Reveal>
-        </div>
-      }
-    >
-      {lines.map((line) => (
-        <LineCard key={line.id} line={line} />
-      ))}
-      <div className="relative h-[min(56vh,500px)] w-[min(60vw,300px)] flex-none">
-        <Link
-          href={asRoute('/tienda')}
-          className="text-foreground flex size-full flex-col justify-end gap-3 rounded-[14px] bg-[radial-gradient(320px_260px_at_30%_20%,color-mix(in_srgb,var(--color-accent-800)_70%,transparent),transparent_70%)] p-6 no-underline shadow-[inset_0_0_0_1px_var(--color-neutral-800)]"
-        >
-          <Float className="mb-auto">
-            <Image
-              src="/brand/galpon-mark.png"
-              alt=""
-              width={58}
-              height={77}
-              className="h-auto w-[58px]"
-            />
-          </Float>
-          <span className="text-[28px] leading-[1.1] tracking-[-0.02em]">
-            {HOME_COPY.viewCatalog}
-          </span>
-          <span className="text-accent-300 inline-flex items-center gap-2 text-[13px]">
-            {piecesLabel(stats.pieces)}
-            <ArrowRightIcon size={14} aria-hidden="true" />
-          </span>
-        </Link>
-      </div>
-    </HorizontalScroll>
+    <CollectionEntrance>
+      <HorizontalScroll
+        trackStyle={TRACK_STYLE}
+        header={
+          <div className={HOME_CONTAINER}>
+            <EntranceTitle className={HOME_SECTION_TITLE}>{collection.title}</EntranceTitle>
+          </div>
+        }
+      >
+        {lines.map((line, index) => (
+          <EntranceCard key={line.id} index={index}>
+            <LineCard line={line} />
+          </EntranceCard>
+        ))}
+        <EntranceCard index={lines.length}>
+          <div className="relative h-[min(56vh,500px)] w-[min(60vw,300px)] flex-none">
+            <Link
+              href={asRoute('/tienda')}
+              className="text-foreground flex size-full flex-col justify-end gap-3 rounded-[14px] bg-[radial-gradient(320px_260px_at_30%_20%,color-mix(in_srgb,var(--color-accent-800)_70%,transparent),transparent_70%)] p-6 no-underline shadow-[inset_0_0_0_1px_var(--color-neutral-800)]"
+            >
+              <Float className="mb-auto">
+                <Image
+                  src="/brand/galpon-mark.png"
+                  alt=""
+                  width={58}
+                  height={77}
+                  className="h-auto w-[58px]"
+                />
+              </Float>
+              <span className="text-[28px] leading-[1.1] tracking-[-0.02em]">
+                {HOME_COPY.viewCatalog}
+              </span>
+              <span className="text-accent-300 inline-flex items-center gap-2 text-[13px]">
+                {piecesLabel(stats.pieces)}
+                <ArrowRightIcon size={14} aria-hidden="true" />
+              </span>
+            </Link>
+          </div>
+        </EntranceCard>
+      </HorizontalScroll>
+    </CollectionEntrance>
   )
 }

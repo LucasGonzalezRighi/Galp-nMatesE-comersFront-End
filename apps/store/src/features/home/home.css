@@ -309,3 +309,40 @@
     ),
     color-mix(in srgb, var(--color-section) 88%, transparent);
 }
+
+/*
+ * La yerba vista desde adentro del mate (`YerbaDepth`, la zambullida del Ruling MR-22): el último
+ * cuadro del escenario del mate y el primero de la colección. La foto real de la yerba (la textura
+ * del mate 3D, ya en la caché) en mosaico de 190 vh (las hojas del tamaño con que se ven en el mate
+ * 3D al final de la zambullida), girada 0,5 rad como en la escena (así no se leen las rosetas del
+ * espejado) y multiplicada por un tostado (`#9a8960`) que la deja del tono de la yerba 3D bajo la
+ * luz del estudio (medido en las capturas a 1905 × 950: la montañita da rgb(114 89 46) y el hueco
+ * rgb(44 34 15); con el tinte gris de la escena se leía verdosa); encima, una viñeta oscura en los
+ * bordes, el borde del mate que ya salió del cuadro. Nada se anima acá: la capa que la contiene se
+ * mueve.
+ */
+.home-yerba-depth {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.home-yerba-depth-photo {
+  position: absolute;
+  inset: -50%;
+  background: url('/hero/3d/yerba-albedo.jpg') 37% 21% / 190vh repeat #9a8960;
+  background-blend-mode: multiply;
+  transform: rotate(-28.6deg);
+}
+
+.home-yerba-depth-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 75% 80% at 50% 50%,
+    transparent 40%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 78%,
+    color-mix(in srgb, var(--color-background) 92%, transparent) 100%
+  );
+}

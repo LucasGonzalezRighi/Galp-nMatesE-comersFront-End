@@ -16,8 +16,9 @@ import {
   mockReducedMotion,
 } from '../../components/motion/test/support'
 import { buildHomeData } from './home-data'
-import { mateStateAt } from './mate3d/keyframes'
+import { DIVE_FROM, mateStateAt } from './mate3d/keyframes'
 import { createMateScene } from './mate3d/scene'
+import { useMateStagePresent } from './mate-stage-presence'
 import { MateStage } from './MateStage'
 import { MATE_STOPS } from './story-stops'
 import { loadFixtureCatalog } from './test/fixture-catalog'
@@ -71,10 +72,28 @@ beforeEach(async () => {
   data = buildHomeData(await loadFixtureCatalog())
 })
 
+/** El elemento con ese atributo, o un error si no está. */
+function byData(attribute: string): HTMLElement {
+  const element = document.querySelector<HTMLElement>(`[${attribute}]`)
+  if (element === null) throw new Error(`Falta [${attribute}].`)
+  return element
+}
+
 /** Lleva el recorrido a la mitad de la parada quieta `index` (de 3). */
 function goToStop(index: number): void {
   act(() => {
     progress.set((index + 0.25) / 3)
+  })
+}
+
+/**
+ * Lleva el recorrido a un avance y espera un cuadro: Motion escribe los estilos ligados al scroll
+ * en el cuadro siguiente.
+ */
+async function moveTo(value: number): Promise<void> {
+  await act(async () => {
+    progress.set(value)
+    await new Promise((resolve) => setTimeout(resolve, 40))
   })
 }
 
@@ -185,20 +204,51 @@ describe('MateStage', () => {
     expect(framings()).toEqual(expected)
   })
 
-  it('el texto de la última parada se apaga en el mismo tramo final que el fundido a negro', () => {
-    const panels = (): HTMLElement => {
-      const element = document.querySelector<HTMLElement>('[data-stage-panels]')
-      if (element === null) throw new Error('Faltan los paneles de texto.')
-      return element
-    }
-    const { unmount } = render(<MateStage data={data} />)
-    expect(panels().style.opacity).toBe('1')
-    unmount()
-    // Al final de la salida el mate pasa por el medio: el texto ya no está.
-    progress.set(1)
+  it('en el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl, sin fundido a negro', async () => {
     render(<MateStage data={data} />)
-    expect(panels().style.opacity).toBe('0')
-    expect(document.querySelector<HTMLElement>('[data-stage-fade]')?.style.opacity).toBe('1')
+    const panels = byData('data-stage-panels')
+    const rail = byData('data-stage-rail')
+    await moveTo(DIVE_FROM)
+    expect(panels.style.opacity).toBe('1')
+    expect(rail.style.opacity).toBe('1')
+    expect(rail.style.visibility).toBe('visible')
+    await moveTo(DIVE_FROM + (1 - DIVE_FROM) * 0.2)
+    expect(panels.style.opacity).toBe('0')
+    expect(panels.style.pointerEvents).toBe('none')
+    // El raíl no queda encima del mate ni de la colección: tampoco se puede tocar.
+    expect(rail.style.opacity).toBe('0')
+    expect(rail.style.visibility).toBe('hidden')
+    expect(document.querySelector('[data-stage-fade]')).toBeNull()
+  })
+
+  it('al final de la zambullida la yerba real tapa el lienzo y el lienzo deja de dibujarse', async () => {
+    render(<MateStage data={data} />)
+    const dive = byData('data-stage-dive')
+    const canvasLayer = byData('data-stage-canvas')
+    await moveTo(DIVE_FROM)
+    expect(dive.style.opacity).toBe('0')
+    expect(canvasLayer.style.display).toBe('block')
+    await moveTo(1)
+    // El escenario termina cuando la yerba llena la pantalla: es el primer cuadro de la colección.
+    expect(dive.style.opacity).toBe('1')
+    expect(dive.querySelector('[data-yerba-depth]')).not.toBeNull()
+    expect(canvasLayer.style.display).toBe('none')
+  })
+
+  it('mientras está montado avisa que hay escenario: la colección entra desde la yerba', () => {
+    /** Muestra lo que lee la colección. */
+    function Probe(): ReactNode {
+      return useMateStagePresent() ? 'con escenario' : 'sin escenario'
+    }
+    const { rerender } = render(
+      <>
+        <Probe />
+        <MateStage data={data} />
+      </>,
+    )
+    expect(screen.getByText('con escenario')).toBeInTheDocument()
+    rerender(<Probe />)
+    expect(screen.getByText('sin escenario')).toBeInTheDocument()
   })
 
   it('monta el mate 3D y le pasa el estado del avance, sin la foto de respaldo', async () => {
