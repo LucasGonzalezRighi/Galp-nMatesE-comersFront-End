@@ -112,14 +112,19 @@ test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', ()
         const box = element.parentElement?.getBoundingClientRect()
         return { right: box?.right ?? 0 }
       })
+      // A la altura del último renglón: el borde de abajo del link cerca del de la frase. Se espera
+      // a que termine la entrada del Manifiesto (sube con el scroll), que arranca al saltar la intro.
+      await expect
+        .poll(async () => {
+          const linkBox = await link.boundingBox()
+          const phraseBox = await phrase.boundingBox()
+          if (linkBox === null || phraseBox === null) return Number.POSITIVE_INFINITY
+          return Math.abs(linkBox.y + linkBox.height - (phraseBox.y + phraseBox.height))
+        })
+        .toBeLessThan(40)
       const linkBox = await link.boundingBox()
-      const phraseBox = await phrase.boundingBox()
-      if (linkBox === null || phraseBox === null) throw new Error('Falta la frase o el link.')
+      if (linkBox === null) throw new Error('Falta el link.')
       expect(Math.abs(linkBox.x + linkBox.width - container.right)).toBeLessThan(2)
-      // A la altura del último renglón: el borde de abajo del link cerca del de la frase...
-      expect(Math.abs(linkBox.y + linkBox.height - (phraseBox.y + phraseBox.height))).toBeLessThan(
-        40,
-      )
       // ...y a su derecha, sin pisarlo.
       expect(linkBox.x).toBeGreaterThan(lines.lastRight)
     })
@@ -195,9 +200,12 @@ test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', ()
 test.describe('tienda: las columnas del pie, más al centro (Ruling MR-23)', () => {
   test.skip(({ isMobile }) => isMobile, 'En el celular las columnas van apiladas.')
 
+  // Hasta 1024 px (laptop de 1280 × 720 y más chicas) los cuatro grupos siguen en una fila.
   for (const viewport of [
     { width: 1905, height: 950 },
     { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+    { width: 1024, height: 768 },
   ]) {
     test.describe(`a ${String(viewport.width)} × ${String(viewport.height)}`, () => {
       test.use({ viewport, reducedMotion: 'reduce' })
@@ -205,6 +213,10 @@ test.describe('tienda: las columnas del pie, más al centro (Ruling MR-23)', () 
       test('las columnas arrancan cerca del 40 % del contenedor, a 96 px o más de la frase', async ({
         page,
       }) => {
+        test.skip(
+          viewport.width < 1280,
+          'Entre 1024 y 1280 px arrancan antes, para entrar en una fila.',
+        )
         await gotoStore(page, '/tienda')
         const footer = page.locator('footer.site-footer')
         await footer.scrollIntoViewIfNeeded()

@@ -30,16 +30,57 @@ export const STORE_SCREENS: readonly StoreScreen[] = [
   { name: 'privacy', path: '/privacidad', heading: 'Política de privacidad' },
 ]
 
+/** La capa de la intro del inicio y del telón entre páginas (Ruling MR-29). */
+export const INTRO_LAYER = '[data-intro]'
+
+/** Opciones de {@link gotoStore}. */
+export interface GotoStoreOptions {
+  /**
+   * Qué hacer con la intro del inicio: `'skip'` (por defecto) la salta y espera a que se abra;
+   * `'keep'` la deja correr (las pruebas de la propia intro).
+   */
+  intro?: 'keep' | 'skip'
+}
+
+/**
+ * Espera a que no haya intro ni telón por encima de la página. Si la intro del inicio está
+ * trazando, la salta como lo haría la rueda del mouse: un evento `wheel` despachado en `window`
+ * (solo lo escucha el proveedor de la transición, no mueve el scroll ni cambia la modalidad de
+ * entrada del navegador, así que `:focus-visible` sigue igual). Con menos movimiento no hay capa.
+ *
+ * @param page - Página de Playwright.
+ */
+export async function settleIntro(page: Page): Promise<void> {
+  // La tapa del servidor se va cuando hidrata la intro, que ya pidió la capa en ese mismo cuadro.
+  await expect(page.locator('[data-intro-cover]')).toHaveCount(0, { timeout: 10_000 })
+  const layer = page.locator(INTRO_LAYER)
+  await expect
+    .poll(
+      async () => {
+        await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel')))
+        return layer.count()
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(0)
+}
+
 /**
  * Abre una ruta de la tienda y espera a que la página esté hidratada: a que React haya tomado el
  * botón del carrito del encabezado (está en todas las páginas). Sin esa espera, un clic rápido
  * sobre un botón podría llegar antes que su manejador, porque la tienda compilada sirve el HTML
- * antes de ejecutar el JavaScript.
+ * antes de ejecutar el JavaScript. En el inicio, además, salta la intro (ver
+ * {@link GotoStoreOptions}): las pruebas que no son de la intro arrancan con la portada a la vista.
  *
  * @param page - Página de Playwright.
  * @param path - Ruta de la tienda, por ejemplo `/tienda`.
+ * @param options - Ver {@link GotoStoreOptions}.
  */
-export async function gotoStore(page: Page, path: string): Promise<void> {
+export async function gotoStore(
+  page: Page,
+  path: string,
+  options: GotoStoreOptions = {},
+): Promise<void> {
   await page.goto(path)
   const cartButton = page.getByRole('button', { name: /^Abrir carrito/ })
   await expect
@@ -49,4 +90,5 @@ export async function gotoStore(page: Page, path: string): Promise<void> {
       ),
     )
     .toBe(true)
+  if (options.intro !== 'keep' && new URL(page.url()).pathname === '/') await settleIntro(page)
 }

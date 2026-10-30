@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { gotoStore, STORE_SCREENS } from '../support/store'
+import { gotoStore, settleIntro, STORE_SCREENS } from '../support/store'
 import { expect, test } from '../support/test'
 
 /**
@@ -47,6 +47,8 @@ test.describe('tienda: navegación', () => {
       await goThroughHeader(page, isMobile, stop.label)
       await expect(page).toHaveURL(stop.url)
       await expect(page.getByRole('heading', { level: 1, name: stop.heading })).toBeVisible()
+      // El telón (Ruling MR-29) baja, navega y se abre: el próximo clic va con la página a la vista.
+      await settleIntro(page)
     }
   })
 

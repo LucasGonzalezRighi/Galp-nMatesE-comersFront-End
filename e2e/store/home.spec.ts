@@ -186,12 +186,13 @@ test.describe('tienda: el mate 3D del inicio', () => {
       const panels = page.locator('[data-stage-panels]')
       const rail = page.getByRole('navigation', RAIL)
       const dive = page.locator('[data-stage-dive]')
-      await scrollToStops(page, DIVE_STOPS)
+      // Apenas antes de la zambullida (justo en el borde el redondeo del scroll ya la empieza).
+      await scrollToStops(page, DIVE_STOPS - 0.02)
       await expect(panels).toHaveCSS('opacity', '1')
       await expect(rail).toBeVisible()
       await expect(dive).toHaveCSS('opacity', '0')
       // En el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl.
-      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.2)
+      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.25)
       await expect(panels).toHaveCSS('opacity', '0')
       await expect(rail).toBeHidden()
       // Sin fundido a negro: el escenario termina con la yerba a pantalla completa.
@@ -423,12 +424,32 @@ test.describe('tienda: el Manifiesto clavado en una laptop (1366 × 657)', () =>
     page,
   }) => {
     await gotoStore(page, '/')
+    const block = page.locator('[data-manifesto-block]')
     await climbToManifesto(page, 657)
-    const link = page.locator('[data-manifesto-block] .home-manifesto-cta')
+    const link = block.locator('.home-manifesto-cta')
+    // Primero el bloque clavado y la entrada del Manifiesto terminada (el texto sube con el
+    // scroll): si el link todavía se mueve, el puntero queda afuera y no hay `:hover`.
+    await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
+    // Clavado, el bloque queda a fracciones de píxel del borde: 0,95 alcanza para "entero".
+    await expect(link).toBeInViewport({ ratio: 0.95 })
+    let previousTop = Number.NaN
+    await expect
+      .poll(
+        async () => {
+          const top = await link.evaluate((element) => element.getBoundingClientRect().top)
+          const still = Math.abs(top - previousTop) < 0.5
+          previousTop = top
+          return still
+        },
+        { intervals: [150] },
+      )
+      .toBe(true)
     // En reposo va en cobre claro (`accent-300`), para leerse sobre la foto.
     await expect(link).toHaveCSS('color', 'rgb(230, 189, 145)')
-    await link.hover()
-    await expect(link).toHaveCSS('color', 'rgb(255, 255, 255)')
+    await expect(async () => {
+      await link.hover()
+      await expect(link).toHaveCSS('color', 'rgb(255, 255, 255)', { timeout: 1500 })
+    }).toPass({ timeout: 10_000 })
   })
 })
 

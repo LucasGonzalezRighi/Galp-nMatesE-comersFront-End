@@ -83,15 +83,23 @@ async function waitUntilStill(locator: Locator): Promise<void> {
     .toBe(true)
 }
 
-/** Comprueba que la última tarjeta termina antes del pie, con el aire de la tienda en el medio. */
+/**
+ * Comprueba que la tienda termina antes del pie con su aire en el medio: se mide desde el final del
+ * contenedor de la tienda (la grilla, el botón y la banda del kit), no desde la última tarjeta, que
+ * ya tiene la banda del kit debajo y pasaría aunque no hubiera aire.
+ */
 async function expectClearOfFooter(page: Page): Promise<void> {
   const last = cards(page).last()
   await last.scrollIntoViewIfNeeded()
   await waitUntilStill(last)
   const lastBottom = await documentBottomOf(last)
+  const storeBottom = await last.evaluate((card) => {
+    const box = card.closest('.site-container')?.getBoundingClientRect()
+    return box === undefined ? Number.NaN : box.bottom + window.scrollY
+  })
   const footerTop = await documentTopOf(footer(page))
-  expect(lastBottom).toBeLessThan(footerTop)
-  expect(footerTop - lastBottom).toBeGreaterThanOrEqual(MIN_FOOTER_GAP)
+  expect(lastBottom).toBeLessThan(storeBottom)
+  expect(footerTop - storeBottom).toBeGreaterThanOrEqual(MIN_FOOTER_GAP)
 }
 
 const VIEWPORTS = [
@@ -101,6 +109,8 @@ const VIEWPORTS = [
 
 for (const viewport of VIEWPORTS) {
   test.describe(`tienda: más productos a ${String(viewport.width)} × ${String(viewport.height)}`, () => {
+    // Los dos anchos ya van en el proyecto de escritorio; el del celular emularía un Pixel a 1905.
+    test.skip(({ isMobile }) => isMobile, 'Los anchos se fijan en el proyecto de escritorio.')
     test.use({ viewport })
 
     test('muestra 4 hileras y el botón centrado; al tocarlo despliega el resto', async ({

@@ -197,13 +197,15 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
       expect(await opacityOf(grid)()).toBeGreaterThan(0.3)
 
       // El Manifiesto asomando (su borde de arriba a 600 px): la capa oscura todavía lo tapa en parte
-      // y el texto apenas empieza a aparecer; ya arriba, la foto encendida y el texto entero.
+      // y el texto apenas empieza a aparecer; ya arriba (clavado), la foto encendida y el texto
+      // entero. El texto termina de entrar con su borde a ~85 px de arriba: desde 3d18c7a la fila de
+      // la frase y el link es un renglón más baja a 1440 y el texto, centrado, queda más abajo.
       const manifestoTop = await documentTopOf(page, block)
       await scrollPageTo(page, manifestoTop - 600)
       await expect.poll(opacityOf(shade)).toBeLessThan(0.75)
       expect(await opacityOf(shade)()).toBeGreaterThan(0.1)
       expect(await opacityOf(text)()).toBeLessThan(0.3)
-      await scrollPageTo(page, manifestoTop - 100)
+      await scrollPageTo(page, manifestoTop)
       await expect.poll(opacityOf(shade)).toBe(0)
       await expect.poll(opacityOf(text)).toBe(1)
     })
