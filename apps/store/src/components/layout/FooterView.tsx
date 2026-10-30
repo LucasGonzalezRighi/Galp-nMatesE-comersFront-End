@@ -3,7 +3,6 @@ import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr/Envelope'
 import Link from 'next/link'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
 import { asRoute } from '../../lib/routes'
-import { Reveal } from '../motion'
 import { Tag } from '../ui'
 import { FooterRise, FooterRow } from './FooterRise'
 import { FooterWordmark } from './FooterWordmark'
@@ -90,7 +89,8 @@ export interface FooterViewProps {
  * En el inicio, en escritorio y con movimiento, el pie sube por encima de las reseñas quietas como
  * el del portafolio de Lucas ({@link FooterRise} y `footer.css`): borde de arriba en diagonal con
  * una línea fina, vidrio esmerilado, las filas ({@link FooterRow}) que entran en cascada pegadas
- * al scroll y GALPÓN al final. En las demás páginas queda en su lugar.
+ * al scroll y GALPÓN al final, que sube en ola (20 franjas verticales, 12 en el celular). En las
+ * demás páginas queda en su lugar y solo la palabra sube en ola al entrar en pantalla.
  *
  * @param props - Ver {@link FooterViewProps}.
  */
@@ -230,11 +230,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
         {/* 64 px de aire: la bombilla del logo no toca los medios de pago. */}
         <FooterWordmark
           className="pointer-events-none z-10 mt-16 w-full"
-          ghost={
-            <Reveal kind="clip" duration={1600} className="w-full">
-              <Wordmark anchor="bottom" className="w-full" style={GHOST_WORDMARK_STYLE} />
-            </Reveal>
-          }
+          ghost={<Wordmark anchor="bottom" className="w-full" style={GHOST_WORDMARK_STYLE} />}
           lit={<Wordmark anchor="bottom" className="w-full" style={LIT_WORDMARK_STYLE} />}
         />
       </div>

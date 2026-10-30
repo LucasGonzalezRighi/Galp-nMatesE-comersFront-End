@@ -4,29 +4,18 @@ import type { MotionValue } from 'motion/react'
 import type { ReactNode } from 'react'
 import { m, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
-import { MotionFeatures } from '../motion/MotionFeatures'
 import { cx } from '../ui/cx'
-import { clampCover, footerWordShare } from './footer-rise'
+import {
+  clampCover,
+  footerWordProgress,
+  WORD_STRIP_DROP,
+  wordStripClip,
+  wordStripShare,
+} from './footer-rise'
 import { useFooterMotion } from './FooterRise'
 
 /** Clase de la capa iluminada: encima de la fantasma, con su mismo tamaño. */
 const LIT_LAYER = 'absolute inset-0 block'
-
-/**
- * Parte de la entrada de la palabra en que empieza a encenderse: la palabra entra por abajo con su
- * parte de arriba primero, así que si se encendiera desde el principio la luz subiría fuera de
- * pantalla. Desde el 60 % de la entrada, el borde de la luz se ve subir por la palabra.
- */
-const LIT_FROM = 0.6
-
-/**
- * Recorte de la capa iluminada según el avance de la entrada de la palabra (0 a 1): se enciende de
- * {@link LIT_FROM} a 1 con `inset(calc((1 − lit) × 100 %) 0 0 0)`, así se ve de abajo hacia arriba.
- */
-function litClipPath(progress: number): string {
-  const lit = Math.min(1, Math.max(0, (progress - LIT_FROM) / (1 - LIT_FROM)))
-  return `inset(${String((1 - lit) * 100)}% 0 0 0)`
-}
 
 /** Props de {@link FooterWordmark}. */
 export interface FooterWordmarkProps {
@@ -38,18 +27,35 @@ export interface FooterWordmarkProps {
   className?: string
 }
 
-/** La palabra que se ilumina y sube con el scroll mientras entra en pantalla. */
-function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): ReactNode {
-  const frame = useRef<HTMLDivElement | null>(null)
-  const { scrollYProgress } = useScroll({ target: frame, offset: ['start end', 'end end'] })
-  const y = useTransform(scrollYProgress, [0, 1], ['24%', '0%'])
-  const clipPath = useTransform(scrollYProgress, litClipPath)
+/** Props de {@link WaveStrip}. */
+interface WaveStripProps {
+  /** La franja, desde 0 (la de la izquierda). */
+  index: number
+  /** Cuántas franjas tiene la palabra. */
+  count: number
+  /** Avance de la palabra, de 0 a 1. */
+  progress: MotionValue<number>
+  /** La palabra fantasma. */
+  ghost: ReactNode
+  /** La palabra iluminada. */
+  lit: ReactNode
+}
+
+/**
+ * Una franja vertical de la palabra: la palabra entera (fantasma e iluminada) recortada a su
+ * tajada con `clip-path`, que sube desde abajo (`translateY` de {@link WORD_STRIP_DROP} % a 0),
+ * aparece y se ilumina de abajo hacia arriba con su propio tramo del avance (`wordStripShare`).
+ * Todas se apilan en el mismo lugar: la primera da el alto del marco y las demás van encima.
+ */
+function WaveStrip({ index, count, progress, ghost, lit }: WaveStripProps): ReactNode {
+  const share = useTransform(progress, (value) => wordStripShare(value, index, count))
+  const y = useTransform(share, (value) => `${String((1 - value) * WORD_STRIP_DROP)}%`)
+  const clipPath = useTransform(share, (value) => `inset(${String((1 - value) * 100)}% 0 0 0)`)
   return (
-    <m.div
-      ref={frame}
-      aria-hidden="true"
-      className={cx('relative will-change-transform', className)}
-      style={{ y }}
+    <m.span
+      data-wordmark-strip={String(index)}
+      className={cx('block', index === 0 ? 'relative' : 'absolute inset-0')}
+      style={{ clipPath: wordStripClip(index, count), y, opacity: share }}
     >
       <span data-wordmark-layer="ghost" className="block">
         {ghost}
@@ -57,69 +63,102 @@ function ScrollLitWordmark({ ghost, lit, className }: FooterWordmarkProps): Reac
       <m.span data-wordmark-layer="lit" className={LIT_LAYER} style={{ clipPath }}>
         {lit}
       </m.span>
-    </m.div>
+    </m.span>
+  )
+}
+
+/** Props de {@link WaveStrips}. */
+interface WaveStripsProps {
+  /** Cuántas franjas. */
+  count: number
+  /** Avance de la palabra, de 0 a 1. */
+  progress: MotionValue<number>
+  /** La palabra fantasma. */
+  ghost: ReactNode
+  /** La palabra iluminada. */
+  lit: ReactNode
+}
+
+/** Las franjas de la palabra, de izquierda a derecha. */
+function WaveStrips({ count, progress, ghost, lit }: WaveStripsProps): ReactNode {
+  const indices = Array.from({ length: count }, (_, index) => index)
+  return indices.map((index) => (
+    <WaveStrip
+      key={index}
+      index={index}
+      count={count}
+      progress={progress}
+      ghost={ghost}
+      lit={lit}
+    />
+  ))
+}
+
+/** Props de las palabras que suben en ola. */
+interface WaveWordmarkProps extends FooterWordmarkProps {
+  /** Cuántas franjas. */
+  count: number
+}
+
+/** La palabra en ola, pegada al scroll de su propio marco mientras entra en pantalla. */
+function ScrollWordmark({ ghost, lit, className, count }: WaveWordmarkProps): ReactNode {
+  const frame = useRef<HTMLDivElement | null>(null)
+  // 0 cuando el marco asoma abajo de la ventana; 1 cuando su borde de abajo llega al de la ventana.
+  const { scrollYProgress } = useScroll({ target: frame, offset: ['start end', 'end end'] })
+  const progress = useTransform(scrollYProgress, clampCover)
+  return (
+    <div ref={frame} aria-hidden="true" data-wordmark="" className={cx('relative', className)}>
+      <WaveStrips count={count} progress={progress} ghost={ghost} lit={lit} />
+    </div>
   )
 }
 
 /** Props de {@link RisingWordmark}. */
-interface RisingWordmarkProps extends FooterWordmarkProps {
+interface RisingWordmarkProps extends WaveWordmarkProps {
   /** Cuánto subió el pie. */
   cover: MotionValue<number>
 }
 
-/** La palabra que sube última con el pie, mientras pasa por encima de las reseñas quietas. */
-function RisingWordmark({ ghost, lit, className, cover }: RisingWordmarkProps): ReactNode {
-  const share = useTransform(cover, (value) => footerWordShare(clampCover(value)))
-  const y = useTransform(share, (value) => `${String((1 - value) * 55)}%`)
-  const clipPath = useTransform(share, (value) => `inset(${String((1 - value) * 100)}% 0 0 0)`)
+/** La palabra en ola que llega última, pegada a la subida del pie sobre las reseñas quietas. */
+function RisingWordmark({ ghost, lit, className, count, cover }: RisingWordmarkProps): ReactNode {
+  const progress = useTransform(cover, (value) => footerWordProgress(clampCover(value)))
   return (
-    <m.div
-      aria-hidden="true"
-      className={cx('relative will-change-transform', className)}
-      style={{ y, opacity: share }}
-    >
-      <span data-wordmark-layer="ghost" className="block">
-        {ghost}
-      </span>
-      <m.span data-wordmark-layer="lit" className={LIT_LAYER} style={{ clipPath }}>
-        {lit}
-      </m.span>
-    </m.div>
+    <div aria-hidden="true" data-wordmark="" className={cx('relative', className)}>
+      <WaveStrips count={count} progress={progress} ghost={ghost} lit={lit} />
+    </div>
   )
 }
 
 /**
- * La palabra GALPÓN gigante del pie, con dos capas superpuestas: la fantasma de siempre y una
- * iluminada que se enciende de abajo hacia arriba (`clip-path`). Cómo entra depende del modo del
- * pie (`FooterRise`):
+ * La palabra GALPÓN gigante del pie, iluminada de abajo hacia arriba, que sube en ola con el
+ * scroll (Lucas: "sube solo con un estilo ondulado y suave con el scrolling"). Se dibuja como 20
+ * franjas verticales (12 en el celular, por debajo de 1024 px) que repiten la misma palabra, cada
+ * una recortada a su tajada; cada franja sube desde abajo, aparece y se ilumina con su propio tramo
+ * del avance, desfasado según su lugar y con la curva senoidal, así el borde de arriba de la palabra
+ * es una ola que la recorre de izquierda a derecha y al final queda entera y quieta. De dónde sale
+ * el avance depende del modo del pie (`FooterRise`):
  *
- * - `rise` (el pie sube por encima de las reseñas quietas del inicio): llega última, pegada a la
- *   subida del pie (`footerWordShare`, de la mitad al final): sube del 55 % de su alto a su lugar,
- *   pasa de transparente a opaca y se enciende en el mismo tramo.
- * - `scroll` (las demás páginas en escritorio): mientras entra en pantalla (`useScroll` sobre la
- *   propia palabra, de `start end` a `end end`) sube del 24 % de su alto a su lugar y la luz
- *   arranca en el 60 % de esa entrada (`LIT_FROM`).
- * - `still` (menos movimiento o celular): la iluminada queda quieta y entera, sin recorte.
+ * - `rise` (el pie sube por encima de las reseñas quietas del inicio): llega última, de la mitad
+ *   de la subida al final (`footerWordProgress`).
+ * - `scroll` (las demás páginas y el celular): mientras el marco de la palabra entra en pantalla
+ *   (`useScroll` sobre él mismo, de `start end` a `end end`).
+ * - `still` (menos movimiento): la palabra entera, iluminada y quieta, sin franjas.
  *
- * Es decorativa (`aria-hidden`). Sin JavaScript se ve la fantasma (el servidor dibuja el modo
- * `scroll`, con la iluminada recortada del todo).
+ * Es decorativa (`aria-hidden`) y no tiene nombre accesible. Sin JavaScript las franjas esperan
+ * abajo y transparentes.
  *
  * @param props - Ver {@link FooterWordmarkProps}.
  */
 export function FooterWordmark(props: FooterWordmarkProps): ReactNode {
-  const { mode, cover } = useFooterMotion()
+  const { mode, cover, strips } = useFooterMotion()
   if (mode === 'rise' && cover !== null) {
-    return <RisingWordmark {...props} cover={cover} />
+    return <RisingWordmark {...props} count={strips} cover={cover} />
   }
   if (mode === 'scroll') {
-    return (
-      <MotionFeatures>
-        <ScrollLitWordmark {...props} />
-      </MotionFeatures>
-    )
+    return <ScrollWordmark {...props} count={strips} />
   }
   return (
-    <div aria-hidden="true" className={cx('relative', props.className)}>
+    <div aria-hidden="true" data-wordmark="" className={cx('relative', props.className)}>
       <span data-wordmark-layer="ghost" className="block">
         {props.ghost}
       </span>

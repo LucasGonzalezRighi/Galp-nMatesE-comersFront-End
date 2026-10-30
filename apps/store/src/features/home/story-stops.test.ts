@@ -44,6 +44,8 @@ describe('MATE_STOPS', () => {
   it('en el vuelco la foto se corre a la izquierda: su bombilla queda fuera del mate 3D', () => {
     const [hero] = MATE_STOPS
     // Anclada a la derecha y acercada: el mate y la bombilla de la foto se corren a la izquierda.
+    // Es el desvío documentado del Ruling MR-11 (2), que los quiere a la derecha del mate 3D: lo
+    // fija como está hasta que Lucas decida (ver el TSDoc de `MATE_STOPS`).
     expect(hero?.framing.objectPosition).toMatch(/^(100|[6-9]\d)% /)
     expect(hero?.framing.scale).toBeGreaterThan(1.15)
   })

@@ -5,7 +5,13 @@ import {
   FOOTER_ROW_SPAN,
   FOOTER_ROW_STAGGER,
   footerRowShare,
-  footerWordShare,
+  footerWordProgress,
+  WORD_STRIP_DROP,
+  WORD_STRIPS_NARROW,
+  WORD_STRIPS_WIDE,
+  WORD_WAVE_SPREAD,
+  wordStripClip,
+  wordStripShare,
 } from './footer-rise'
 
 describe('easeInOutSine', () => {
@@ -49,16 +55,85 @@ describe('footerRowShare', () => {
   })
 })
 
-describe('footerWordShare', () => {
-  it('GALPÓN entra último: de la mitad del recorrido al final', () => {
-    expect(footerWordShare(0)).toBe(0)
-    expect(footerWordShare(0.5)).toBe(0)
-    expect(footerWordShare(0.75)).toBeCloseTo(0.5, 12)
-    expect(footerWordShare(1)).toBeCloseTo(1, 12)
+describe('footerWordProgress', () => {
+  it('GALPÓN entra último: de la mitad del recorrido al final, lineal', () => {
+    expect(footerWordProgress(0)).toBe(0)
+    expect(footerWordProgress(0.5)).toBe(0)
+    expect(footerWordProgress(0.75)).toBeCloseTo(0.5, 12)
+    expect(footerWordProgress(1)).toBe(1)
   })
 
   it('lanza RangeError con un avance fuera de 0 a 1', () => {
-    expect(() => footerWordShare(2)).toThrow(RangeError)
+    expect(() => footerWordProgress(2)).toThrow(RangeError)
+    expect(() => footerWordProgress(Number.NaN)).toThrow(RangeError)
+  })
+})
+
+describe('wordStripShare', () => {
+  it('son 20 franjas en escritorio y 12 en el celular, desfasadas la mitad del recorrido', () => {
+    expect(WORD_STRIPS_WIDE).toBe(20)
+    expect(WORD_STRIPS_NARROW).toBe(12)
+    expect(WORD_WAVE_SPREAD).toBe(0.5)
+    expect(WORD_STRIP_DROP).toBe(70)
+  })
+
+  it('la primera sale sin atraso y está entera a la mitad; la última llega al final', () => {
+    expect(wordStripShare(0, 0, 20)).toBe(0)
+    expect(wordStripShare(0.25, 0, 20)).toBeCloseTo(0.5, 12)
+    expect(wordStripShare(0.5, 0, 20)).toBeCloseTo(1, 12)
+    // La última espera la mitad del recorrido.
+    expect(wordStripShare(0.5, 19, 20)).toBe(0)
+    expect(wordStripShare(0.75, 19, 20)).toBeCloseTo(0.5, 12)
+    expect(wordStripShare(1, 19, 20)).toBeCloseTo(1, 12)
+  })
+
+  it('es una ola: en cada momento cada franja va más atrás que la de su izquierda', () => {
+    for (const count of [WORD_STRIPS_WIDE, WORD_STRIPS_NARROW]) {
+      for (const progress of [0.2, 0.4, 0.6, 0.8]) {
+        const shares = Array.from({ length: count }, (_, index) =>
+          wordStripShare(progress, index, count),
+        )
+        for (let index = 1; index < count; index += 1) {
+          expect(shares[index]).toBeLessThanOrEqual(shares[index - 1] ?? 0)
+        }
+      }
+      // Al final, todas enteras.
+      for (let index = 0; index < count; index += 1) {
+        expect(wordStripShare(1, index, count)).toBeCloseTo(1, 12)
+      }
+    }
+  })
+
+  it('con una sola franja no hay atraso', () => {
+    expect(wordStripShare(0.5, 0, 1)).toBeCloseTo(1, 12)
+  })
+
+  it('lanza RangeError con un avance fuera de 0 a 1 o una franja que no existe', () => {
+    expect(() => wordStripShare(1.1, 0, 20)).toThrow(RangeError)
+    expect(() => wordStripShare(Number.NaN, 0, 20)).toThrow(RangeError)
+    expect(() => wordStripShare(0.5, 20, 20)).toThrow(RangeError)
+    expect(() => wordStripShare(0.5, -1, 20)).toThrow(RangeError)
+    expect(() => wordStripShare(0.5, 0.5, 20)).toThrow(RangeError)
+    expect(() => wordStripShare(0.5, 0, 0)).toThrow(RangeError)
+  })
+})
+
+describe('wordStripClip', () => {
+  it('cada franja recorta su tajada con medio píxel de solape contra sus vecinas', () => {
+    expect(wordStripClip(0, 4)).toBe('inset(0 calc(75% - 0.5px) 0 0)')
+    expect(wordStripClip(1, 4)).toBe('inset(0 calc(50% - 0.5px) 0 calc(25% - 0.5px))')
+    expect(wordStripClip(3, 4)).toBe('inset(0 0 0 calc(75% - 0.5px))')
+  })
+
+  it('redondea los porcentajes a milésimas y la palabra entera es una sola franja sin recorte', () => {
+    expect(wordStripClip(1, 12)).toBe('inset(0 calc(83.333% - 0.5px) 0 calc(8.333% - 0.5px))')
+    expect(wordStripClip(0, 1)).toBe('inset(0 0 0 0)')
+  })
+
+  it('lanza RangeError con una franja que no existe', () => {
+    expect(() => wordStripClip(12, 12)).toThrow(RangeError)
+    expect(() => wordStripClip(0, 0)).toThrow(RangeError)
+    expect(() => wordStripClip(Number.NaN, 4)).toThrow(RangeError)
   })
 })
 

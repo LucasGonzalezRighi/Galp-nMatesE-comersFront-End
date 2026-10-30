@@ -17,6 +17,25 @@ export const FOOTER_ROW_SPAN = 0.45
 /** Desde qué parte de la subida entra la palabra GALPÓN (la última). */
 const WORD_FROM = 0.5
 
+/** Franjas verticales de la palabra GALPÓN en escritorio. */
+export const WORD_STRIPS_WIDE = 20
+
+/** Franjas verticales de la palabra GALPÓN en el celular (menos, para dibujar menos capas). */
+export const WORD_STRIPS_NARROW = 12
+
+/**
+ * Cuánto se desfasa la última franja respecto de la primera, como parte del recorrido de la
+ * palabra: la primera sube de 0 a 0,5 y la última de 0,5 a 1, así el borde de arriba de la palabra
+ * es una ola que la recorre de izquierda a derecha y al final queda entera.
+ */
+export const WORD_WAVE_SPREAD = 0.5
+
+/** Cuánto baja una franja antes de subir, en porcentaje de su propio alto. */
+export const WORD_STRIP_DROP = 70
+
+/** Cuánto se solapan dos franjas vecinas (cada una sobra medio píxel de su lado) para que no haya juntas. */
+const WORD_STRIP_OVERLAP = '0.5px'
+
 /**
  * Lleva un avance de scroll a la subida del pie: lo recorta de 0 a 1 y toma 0 si no es un número
  * (por ejemplo, mientras el pie no tiene alto). Así las cuentas de abajo nunca reciben uno inválido.
@@ -30,12 +49,10 @@ export function clampCover(progress: number): number {
   return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0
 }
 
-/** Exige un avance de la subida válido. */
-function assertCover(cover: number): void {
+/** Exige un avance de 0 a 1; `what` dice de qué es, para el mensaje. */
+function assertCover(cover: number, what = 'Cuánto subió el pie'): void {
   if (!Number.isFinite(cover) || cover < 0 || cover > 1) {
-    throw new RangeError(
-      `Cuánto subió el pie tiene que ser un número de 0 a 1; se recibió ${String(cover)}.`,
-    )
+    throw new RangeError(`${what} tiene que ser un número de 0 a 1; se recibió ${String(cover)}.`)
   }
 }
 
@@ -77,18 +94,79 @@ export function footerRowShare(cover: number, index: number): number {
 }
 
 /**
- * Cuánto entró la palabra GALPÓN, que llega última: de la mitad de la subida al final, con la
- * curva senoidal.
+ * Cuánto avanzó la entrada de la palabra GALPÓN, que llega última: de la mitad de la subida al
+ * final, lineal. Alimenta a las franjas ({@link wordStripShare}), cada una con su propia curva.
  *
  * @param cover - Cuánto subió el pie, de 0 a 1.
- * @returns Cuánto entró, de 0 (abajo, transparente y apagada) a 1 (en su lugar e iluminada).
+ * @returns El avance de la palabra, de 0 (no empezó) a 1 (entera).
  * @throws {RangeError} Si `cover` no es un número de 0 a 1.
  * @example
- * footerWordShare(0.75) // 0.5
+ * footerWordProgress(0.75) // 0.5
  */
-export function footerWordShare(cover: number): number {
+export function footerWordProgress(cover: number): number {
   assertCover(cover)
-  return easeInOutSine((cover - WORD_FROM) / (1 - WORD_FROM))
+  return Math.min(1, Math.max(0, (cover - WORD_FROM) / (1 - WORD_FROM)))
+}
+
+/** Exige un índice de franja válido para `count` franjas. */
+function assertStrip(index: number, count: number): void {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new RangeError(
+      `La cantidad de franjas tiene que ser un entero de 1 o más; se recibió ${String(count)}.`,
+    )
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= count) {
+    throw new RangeError(
+      `La franja tiene que ser un entero de 0 a ${String(count - 1)}; se recibió ${String(index)}.`,
+    )
+  }
+}
+
+/**
+ * Cuánto subió una franja de la palabra GALPÓN: cada una tiene su tramo del avance, con la curva
+ * senoidal y desfasado según su lugar (la primera sale sin atraso, la última con un atraso de
+ * {@link WORD_WAVE_SPREAD} y las del medio en proporción), así el borde de arriba de la palabra
+ * forma una ola que la recorre de izquierda a derecha. Con el avance en 1 todas están enteras.
+ *
+ * @param progress - Avance de la palabra, de 0 a 1 (ver {@link footerWordProgress}).
+ * @param index - La franja, desde 0 (la de la izquierda).
+ * @param count - Cuántas franjas tiene la palabra, un entero de 1 o más.
+ * @returns Cuánto subió, de 0 (abajo, apagada) a 1 (en su lugar e iluminada).
+ * @throws {RangeError} Si `progress` no es un número de 0 a 1 o `index` o `count` no son válidos.
+ * @example
+ * wordStripShare(0.5, 0, 20) // 1
+ */
+export function wordStripShare(progress: number, index: number, count: number): number {
+  assertCover(progress, 'El avance de la palabra')
+  assertStrip(index, count)
+  const delay = count === 1 ? 0 : (WORD_WAVE_SPREAD * index) / (count - 1)
+  return easeInOutSine((progress - delay) / (1 - WORD_WAVE_SPREAD))
+}
+
+/** Un borde de franja en porcentaje, redondeado a milésimas, con su medio píxel de solape. */
+function stripEdge(percent: number): string {
+  const rounded = Math.round(percent * 1000) / 1000
+  return rounded === 0 ? '0' : `calc(${String(rounded)}% - ${WORD_STRIP_OVERLAP})`
+}
+
+/**
+ * El recorte (`clip-path`) de una franja vertical de la palabra: `inset(0 derecha 0 izquierda)`
+ * con los porcentajes redondeados a milésimas y medio píxel de solape con cada vecina (los bordes
+ * de la palabra no se solapan con nada). Todas las franjas dibujan la misma máscara y cada una
+ * muestra solo su tajada.
+ *
+ * @param index - La franja, desde 0 (la de la izquierda).
+ * @param count - Cuántas franjas tiene la palabra, un entero de 1 o más.
+ * @returns El valor de `clip-path`.
+ * @throws {RangeError} Si `index` o `count` no son válidos.
+ * @example
+ * wordStripClip(1, 4) // "inset(0 calc(50% - 0.5px) 0 calc(25% - 0.5px))"
+ */
+export function wordStripClip(index: number, count: number): string {
+  assertStrip(index, count)
+  const left = (index / count) * 100
+  const right = ((count - 1 - index) / count) * 100
+  return `inset(0 ${stripEdge(right)} 0 ${stripEdge(left)})`
 }
 
 /** Cuántas reseñas quietas hay montadas (una en el inicio; ninguna en las demás páginas). */

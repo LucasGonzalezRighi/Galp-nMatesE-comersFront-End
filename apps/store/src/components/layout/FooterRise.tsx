@@ -6,15 +6,22 @@ import { m, useScroll, useTransform } from 'motion/react'
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { useMediaQuery, usePrefersReducedMotion } from '../motion'
 import { MotionFeatures } from '../motion/MotionFeatures'
-import { clampCover, footerRowShare, useFooterStage } from './footer-rise'
+import {
+  clampCover,
+  footerRowShare,
+  useFooterStage,
+  WORD_STRIPS_NARROW,
+  WORD_STRIPS_WIDE,
+} from './footer-rise'
 
 /** Desde este ancho el pie sube por encima de las reseñas quietas (como `footer.css`). */
 const DESKTOP_QUERY = '(min-width: 1024px)'
 
 /**
  * Cómo entra el contenido del pie: `rise` sube por encima de las reseñas quietas del inicio (filas
- * en cascada y GALPÓN al final); `scroll` es el de las demás páginas en escritorio (la palabra
- * sube apenas al entrar); `still` es sin movimiento o en el celular (todo a la vista, quieto).
+ * en cascada y GALPÓN en ola al final); `scroll` es el de las demás páginas y el del celular (las
+ * filas quietas y la palabra sube en ola mientras entra en pantalla); `still` es con menos
+ * movimiento (todo a la vista y quieto, con la palabra entera).
  */
 export type FooterMotionMode = 'rise' | 'scroll' | 'still'
 
@@ -24,10 +31,16 @@ interface FooterMotion {
   mode: FooterMotionMode
   /** Cuánto subió el pie, de 0 (asoma abajo) a 1 (llegó al final de la página). */
   cover: MotionValue<number> | null
+  /** En cuántas franjas verticales se dibuja la palabra GALPÓN: 20 en escritorio, 12 en el celular. */
+  strips: number
 }
 
 /** Sin `FooterRise` alrededor, todo queda a la vista y quieto. */
-const FooterMotionContext = createContext<FooterMotion>({ mode: 'still', cover: null })
+const FooterMotionContext = createContext<FooterMotion>({
+  mode: 'still',
+  cover: null,
+  strips: WORD_STRIPS_WIDE,
+})
 
 /** Nada que escuchar: solo distingue el servidor y la hidratación del resto. */
 function subscribeNothing(): () => void {
@@ -70,8 +83,9 @@ export interface FooterRiseProps {
  *
  * El modo sale del aviso de las reseñas quietas (`useFooterStage`), de `prefers-reduced-motion` y
  * del ancho: `rise` solo con reseñas quietas, con movimiento y desde 1024 px; `still` con menos
- * movimiento o en el celular; `scroll` en el resto, y también en el servidor y en la hidratación
- * (que no conocen la ventana), como el pie de siempre.
+ * movimiento; `scroll` en el resto (las demás páginas y el celular), y también en el servidor y en
+ * la hidratación (que no conocen la ventana). La palabra GALPÓN se dibuja en 20 franjas, o en 12
+ * por debajo de 1024 px (una vez hidratado).
  *
  * @param props - Ver {@link FooterRiseProps}.
  */
@@ -99,9 +113,13 @@ export function FooterRise({ className, children }: FooterRiseProps): ReactNode 
     }
   }, [])
   let mode: FooterMotionMode = 'scroll'
-  if (reduced || (hydrated && !wide)) mode = 'still'
+  if (reduced) mode = 'still'
   else if (stage && wide) mode = 'rise'
-  const motion = useMemo(() => ({ mode, cover: scrollYProgress }), [mode, scrollYProgress])
+  const strips = hydrated && !wide ? WORD_STRIPS_NARROW : WORD_STRIPS_WIDE
+  const motion = useMemo(
+    () => ({ mode, cover: scrollYProgress, strips }),
+    [mode, scrollYProgress, strips],
+  )
   return (
     <footer ref={ref} className={className}>
       <FooterMotionContext value={motion}>

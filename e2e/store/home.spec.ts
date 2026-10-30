@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
@@ -50,6 +50,48 @@ async function focusedStop(page: Page): Promise<string | null> {
     () =>
       document.activeElement?.closest('[data-stage-stop]')?.getAttribute('data-stage-stop') ?? null,
   )
+}
+
+/**
+ * Sube de a poco, como con la rueda, hasta que el Manifiesto queda clavado con la frase entera
+ * (60 px adentro del recorrido); devuelve el `top` del recorrido en el documento.
+ */
+async function climbToManifesto(page: Page, viewportHeight: number): Promise<number> {
+  const block = page.locator('[data-manifesto-block]')
+  await expect(block).toHaveCSS('position', 'sticky')
+  const trackTop = await block.evaluate(
+    (element) => (element.parentElement?.getBoundingClientRect().top ?? 0) + window.scrollY,
+  )
+  for (const share of [0.8, 0.5, 0.2, 0]) {
+    await page.evaluate(
+      (top) => {
+        window.scrollTo(0, top)
+      },
+      trackTop - viewportHeight * share,
+    )
+    await page.waitForTimeout(200)
+  }
+  await page.evaluate((top) => {
+    window.scrollTo(0, top + 60)
+  }, trackTop)
+  return trackTop
+}
+
+/** Cuánto lo tapa el kit: desenfoque (px), brillo y escala del bloque clavado (sin tapar: 0, 1 y 1). */
+async function coverOf(
+  block: Locator,
+): Promise<{ blur: number; brightness: number; scale: number }> {
+  return await block.evaluate((element) => {
+    const style = getComputedStyle(element)
+    const blur = /blur\(([\d.]+)px\)/.exec(style.filter)
+    const brightness = /brightness\(([\d.]+)\)/.exec(style.filter)
+    const matrix = /^matrix\(([\d.-]+),/.exec(style.transform)
+    return {
+      blur: Number(blur?.[1] ?? 0),
+      brightness: Number(brightness?.[1] ?? 1),
+      scale: Number(matrix?.[1] ?? 1),
+    }
+  })
 }
 
 test.describe('tienda: el mate 3D del inicio', () => {
@@ -243,23 +285,7 @@ test.describe('tienda: el Manifiesto con las cifras, clavado (1440 × 900)', () 
   test('la frase entera y la banda quedan quietas y el kit sube por encima', async ({ page }) => {
     await gotoStore(page, '/')
     const block = page.locator('[data-manifesto-block]')
-    await expect(block).toHaveCSS('position', 'sticky')
-    const trackTop = await block.evaluate(
-      (element) => (element.parentElement?.getBoundingClientRect().top ?? 0) + window.scrollY,
-    )
-    // Subir de a poco, como con la rueda: la frase se ilumina mientras la pantalla sube.
-    for (const share of [0.8, 0.5, 0.2, 0]) {
-      await page.evaluate(
-        (top) => {
-          window.scrollTo(0, top)
-        },
-        trackTop - 900 * share,
-      )
-      await page.waitForTimeout(200)
-    }
-    await page.evaluate((top) => {
-      window.scrollTo(0, top + 60)
-    }, trackTop)
+    const trackTop = await climbToManifesto(page, 900)
     // Clavada arriba, con la frase entera y la banda de cifras abajo.
     await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
     await expect(page.getByText('Piezas en catálogo')).toBeInViewport()
@@ -272,17 +298,63 @@ test.describe('tienda: el Manifiesto con las cifras, clavado (1440 × 900)', () 
           ),
       )
       .toBe(1)
-    // Más abajo sigue en su lugar, atenuada, y el kit sube por encima.
+    // Más abajo sigue en su lugar, desenfocada, oscurecida y achicada (Ruling MR-18), y el kit sube
+    // por encima con una sombra hacia arriba en su borde.
     await page.evaluate((top) => {
       window.scrollTo(0, top + 450)
     }, trackTop)
     await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
-    await expect
-      .poll(() => block.evaluate((element) => Number(getComputedStyle(element).opacity)))
-      .toBeLessThan(0.9)
+    await expect.poll(async () => (await coverOf(block)).blur).toBeGreaterThan(1)
+    const cover = await coverOf(block)
+    expect(cover.brightness).toBeLessThan(0.9)
+    expect(cover.scale).toBeLessThan(1)
+    await expect(block.locator('xpath=following-sibling::div[1]')).toHaveCSS(
+      'box-shadow',
+      /rgba\(0, 0, 0, 0\.6\) 0px -24px 48px -20px/,
+    )
     await expect(
       page.getByRole('heading', { level: 2, name: /Mate, bombilla y\s*yerba/ }),
     ).toBeInViewport()
+  })
+})
+
+// La ventana útil de una laptop de 1366 × 768 (con la barra del navegador) mide ~657 de alto: ahí la
+// frase, el link y la banda de cifras no entraban juntos y el overflow del bloque cortaba el link.
+test.describe('tienda: el Manifiesto clavado en una laptop (1366 × 657)', () => {
+  test.skip(({ isMobile }) => isMobile, 'Se clava solo en escritorio; en el celular va apilado.')
+  test.use({ viewport: { width: 1366, height: 657 }, reducedMotion: 'no-preference' })
+
+  test('la frase, el link y la banda de cifras entran enteros entre el header y el borde', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const block = page.locator('[data-manifesto-block]')
+    await climbToManifesto(page, 657)
+    await expect.poll(async () => (await block.boundingBox())?.y).toBe(0)
+    const header = await page.getByRole('banner').boundingBox()
+    const phrase = await block.locator('.home-manifesto p').boundingBox()
+    const link = await block.locator('.home-manifesto-cta').boundingBox()
+    const band = await block.locator('.home-bg-stats').boundingBox()
+    if (header === null || phrase === null || link === null || band === null) {
+      throw new Error('Falta el header, la frase, el link o la banda de cifras.')
+    }
+    // La frase no queda bajo el header (64 px, aunque esté escondido), el link termina antes de la
+    // banda y la banda, dentro de la ventana.
+    expect(phrase.y).toBeGreaterThanOrEqual(header.height)
+    expect(link.y + link.height).toBeLessThanOrEqual(band.y)
+    expect(band.y + band.height).toBeLessThanOrEqual(657)
+  })
+
+  test('con el mouse encima, el link se llena y su texto se pone blanco (Ruling MR-16)', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    await climbToManifesto(page, 657)
+    const link = page.locator('[data-manifesto-block] .home-manifesto-cta')
+    // En reposo va en cobre claro (`accent-300`), para leerse sobre la foto.
+    await expect(link).toHaveCSS('color', 'rgb(230, 189, 145)')
+    await link.hover()
+    await expect(link).toHaveCSS('color', 'rgb(255, 255, 255)')
   })
 })
 
@@ -298,5 +370,65 @@ test.describe('tienda: el inicio en el celular (390 × 844)', () => {
     await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
     await expect(page.locator('canvas')).toHaveCount(0)
     expect(await horizontalOverflow(page)).toBe(0)
+  })
+})
+
+test.describe('tienda: la palabra GALPÓN del pie sube en ola (1905 × 950)', () => {
+  test.skip(({ isMobile }) => isMobile, 'La ola del celular tiene 12 franjas: se prueba aparte.')
+  test.use({ viewport: { width: 1905, height: 950 }, reducedMotion: 'no-preference' })
+
+  test('20 franjas que suben una tras otra de izquierda a derecha y al final quedan enteras', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const strips = page.locator('footer.site-footer [data-wordmark-strip]')
+    await expect(strips).toHaveCount(20)
+    // Al hidratar, el escenario y el clavado le dan su alto a la página: esperar a que quede quieto.
+    let lastHeight = 0
+    await expect
+      .poll(
+        async () => {
+          const height = await page.evaluate(() => document.documentElement.scrollHeight)
+          const settled = height === lastHeight
+          lastHeight = height
+          return settled
+        },
+        { intervals: [500], timeout: 15_000 },
+      )
+      .toBe(true)
+    const opacities = async (): Promise<number[]> =>
+      await strips.evaluateAll((elements) =>
+        elements.map((element) => Number(getComputedStyle(element).opacity)),
+      )
+    /** Deja el scroll a `share` veces el alto del pie del final de la página. */
+    const scrollFromEnd = async (share: number): Promise<void> => {
+      await page.evaluate((fraction) => {
+        const footerHeight = document.querySelector('footer.site-footer')?.clientHeight ?? 0
+        const end = document.documentElement.scrollHeight - window.innerHeight
+        window.scrollTo(0, end - fraction * footerHeight - 300)
+        window.scrollTo(0, end - fraction * footerHeight)
+      }, share)
+      await page.waitForTimeout(500)
+    }
+
+    // A mitad de la subida la palabra es una ola: las de la izquierda ya subieron y las de la
+    // derecha todavía esperan, y cada una va más atrás que la de su izquierda.
+    await scrollFromEnd(0.25)
+    await expect.poll(async () => (await opacities())[0]).toBeGreaterThan(0.5)
+    const midway = await opacities()
+    expect(midway[19]).toBeLessThan(0.5)
+    for (let index = 1; index < midway.length; index += 1) {
+      expect(midway[index]).toBeLessThanOrEqual((midway[index - 1] ?? 0) + 0.001)
+    }
+
+    // Al final, todas enteras y encendidas.
+    await scrollFromEnd(0)
+    await expect.poll(async () => Math.min(...(await opacities()))).toBe(1)
+    const clips = await strips
+      .locator('[data-wordmark-layer="lit"]')
+      .evaluateAll((elements) => elements.map((element) => (element as HTMLElement).style.clipPath))
+    // Sin recorte arriba (el navegador puede acortar los ceros de `inset(0% 0 0 0)`).
+    expect(clips).toHaveLength(20)
+    for (const clip of clips) expect(clip).toMatch(/^inset\(0%/)
   })
 })

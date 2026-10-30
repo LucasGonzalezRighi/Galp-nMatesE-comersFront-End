@@ -292,9 +292,12 @@
 /*
  * El link del Manifiesto va sobre la foto del yerbal: en cobre claro (`accent-300`) para que se lea
  * a 4,5:1 o más contra el píxel más claro de su zona. La regla está fuera de las capas de Tailwind,
- * así que gana sobre el `text-accent` del botón fantasma sin `!important`.
+ * así que gana sobre el `text-accent` del botón fantasma sin `!important`. Solo en reposo: con el
+ * mouse encima o el foco del teclado el botón se llena de verde y su texto tiene que ponerse blanco
+ * (`hover:text-[#fff]` y `focus-visible:text-[#fff]` de `Button`, Ruling MR-16); si esta regla
+ * también ganara ahí, el cobre claro (#e6bd91) quedaría sobre el verde (#516324) a 3,8:1.
  */
-.home-manifesto-cta {
+.home-manifesto-cta:not(:hover):not(:focus-visible) {
   color: var(--color-accent-300);
 }
 
@@ -307,6 +310,17 @@
   flex: 1 1 auto;
   min-height: 0;
   padding-block: 64px 16px;
+}
+
+/*
+ * La frase clavada también se achica con el alto de la ventana: la pantalla clavada mide una
+ * ventana, y la frase (5 renglones), el link y la banda de cifras (~180 px) no entran juntos en una
+ * laptop de 1366 × 768 (la ventana útil mide ~657). A 7,2 vh la letra baja de 64 px recién por
+ * debajo de 889 px de alto, así que en pantallas altas queda como siempre. Fuera de las capas de
+ * Tailwind, gana sobre el `text-[clamp(…)]` de la frase.
+ */
+.home-pin .home-manifesto-phrase {
+  font-size: clamp(30px, min(4.6vw, 7.2vh), 64px);
 }
 
 .home-pin .home-bg-stats {

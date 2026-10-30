@@ -106,7 +106,8 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
       await scrollPageTo(page, await page.evaluate(() => document.documentElement.scrollHeight))
       // Menos de un píxel: el alto de la página puede tener decimales y el scroll llega a un entero.
       expect(await topOf(pageFooter)).toBeLessThan(1)
-      const lit = pageFooter.locator('[data-wordmark-layer="lit"]')
+      // La palabra son franjas en ola: la última es la que termina de encenderse.
+      const lit = pageFooter.locator('[data-wordmark-layer="lit"]').last()
       await expect(lit).toBeInViewport()
       // Al final la palabra iluminada quedó entera: el recorte ya no tapa nada.
       await expect
@@ -208,7 +209,7 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
         await expect(page.locator('[data-footer-spacer]')).toBeHidden()
         await scrollPageTo(page, await page.evaluate(() => document.documentElement.scrollHeight))
         expect(await topOf(pageFooter)).toBeGreaterThanOrEqual((await bottomOf(section)) - 1)
-        await expect(pageFooter.locator('[data-wordmark-layer="lit"]')).toBeInViewport()
+        await expect(pageFooter.locator('[data-wordmark-layer="lit"]').first()).toBeInViewport()
       })
     })
   }

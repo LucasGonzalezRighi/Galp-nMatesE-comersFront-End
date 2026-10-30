@@ -82,6 +82,13 @@ export interface MateStop {
  * y el mate 3D (medido a 1440 × 900 y a 1905 × 950, también con el mate volcado y el paquete). En
  * la bombilla, lo mismo con 1,1: el borde del mate de la foto sale de atrás del mate 3D, que queda
  * sobre la mano. En el agua el mate 3D tapa solo la pava: queda centrada.
+ *
+ * Desvío abierto del Ruling MR-11 (2), que pide el mate y la bombilla de la foto a la DERECHA del
+ * mate 3D o fuera de cuadro: la foto (1600 × 893) solo se recorta en vertical a 1905 px, así que
+ * correrlos a la derecha pide un zoom de 1,9× o más (se vería borrosa). Hoy quedan a la izquierda
+ * del mate 3D, entre el texto y él, sin que este los tape; a 1440 el mate de la foto queda en
+ * parte detrás del título. Cambiar eso es decisión de Lucas: aceptarlo o cambiar la composición
+ * (otra foto, o un recorte de `pieces.jpg` con el mate a la derecha).
  */
 export const MATE_STOPS: readonly MateStop[] = [
   {

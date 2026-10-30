@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { domAnimation, LazyMotion, m, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
+import { clampCover, easeInOutSine } from '../../components/layout/footer-rise'
 import { useMediaQuery, usePrefersReducedMotion } from '../../components/motion'
 import { ManifestoBackdrop } from './ManifestoBackdrop'
 import { ManifestoPinContext } from './ManifestoPhrase'
@@ -29,13 +30,18 @@ function PinnedLayers({ manifesto, stats, kit }: PinnedManifestoProps): ReactNod
   const kitRef = useRef<HTMLDivElement>(null)
   // 0 cuando el kit asoma abajo de la ventana; 1 cuando su borde llega arriba y tapa la pantalla.
   const { scrollYProgress } = useScroll({ target: kitRef, offset: ['start end', 'start start'] })
-  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.45])
+  const cover = useTransform(scrollYProgress, (value) => easeInOutSine(clampCover(value)))
+  const scale = useTransform(cover, [0, 1], [1, 0.97])
+  // Nítida del todo, sin filtro: un `blur(0px)` igual le costaría una capa al navegador.
+  const filter = useTransform(cover, (value) =>
+    value < 0.0005 ? 'none' : `blur(${String(value * 4)}px) brightness(${String(1 - value * 0.5)})`,
+  )
   return (
     <div ref={trackRef} className="relative">
       <m.div
         data-manifesto-block=""
-        className="home-pin sticky top-0 z-0 flex h-svh flex-col overflow-hidden"
-        style={{ opacity }}
+        className="home-pin sticky top-0 z-0 flex h-svh origin-top flex-col overflow-hidden"
+        style={{ scale, filter }}
       >
         <ManifestoBackdrop />
         {/* Clavada, la frase se ilumina con el recorrido de la pantalla, no con su propio lugar. */}
@@ -44,7 +50,11 @@ function PinnedLayers({ manifesto, stats, kit }: PinnedManifestoProps): ReactNod
         </ManifestoPinContext>
         <div className="relative">{stats}</div>
       </m.div>
-      <div ref={kitRef} className="bg-background relative z-10">
+      {/* El borde de arriba del kit tiene una sombra hacia arriba: sube "por encima", no pegado. */}
+      <div
+        ref={kitRef}
+        className="bg-background relative z-10 shadow-[0_-24px_48px_-20px_rgb(0_0_0/.6)]"
+      >
         {kit}
       </div>
     </div>
@@ -57,7 +67,8 @@ function PinnedLayers({ manifesto, stats, kit }: PinnedManifestoProps): ReactNod
  * pantalla `sticky top-0` de `100svh` con el Manifiesto arriba (el alto que deja la banda, con el
  * texto centrado) y la banda de cifras pegada abajo, todo sobre la foto del yerbal
  * ({@link ManifestoBackdrop}, que cubre también la banda); "Armá tu kit", con fondo opaco, sube por
- * encima y, mientras la tapa, la pantalla clavada se atenúa de opacidad 1 a 0,45. La entrada del
+ * encima y, mientras la tapa, la pantalla clavada se desenfoca (de 0 a 4 px), se oscurece (brillo de 1 a 0,5) y se achica (escala de 1 a 0,97), como
+ * las reseñas del pie, y el kit sube con una sombra hacia arriba. La entrada del
  * Manifiesto (el zoom de la foto, la capa que se enciende, el texto que sube y la frase que se
  * ilumina, medida sobre este recorrido por `ManifestoPhrase`) termina antes de clavarse. Todo
  * sigue en el DOM y enfocable.

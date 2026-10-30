@@ -4,7 +4,12 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
 import { mockReducedMotion } from '../motion/test/support'
-import { registerFooterStage } from './footer-rise'
+import {
+  registerFooterStage,
+  WORD_STRIPS_NARROW,
+  WORD_STRIPS_WIDE,
+  wordStripClip,
+} from './footer-rise'
 import { FooterView, formatCuit, sellerLines } from './FooterView'
 
 afterEach(cleanup)
@@ -204,6 +209,8 @@ describe('FooterView: la palabra GALPÓN', () => {
     const lit = container.querySelector('[data-wordmark-layer="lit"]')
     expect(lit?.getAttribute('style') ?? '').not.toMatch(/clip-path|transform/)
     expect(lit?.parentElement?.getAttribute('style') ?? '').not.toMatch(/transform/)
+    // Una sola palabra entera, sin franjas.
+    expect(container.querySelector('[data-wordmark-strip]')).toBeNull()
   })
 
   it('el pie lleva la clase con que sube por encima del inicio (ver footer.css)', () => {
@@ -219,7 +226,7 @@ describe('FooterView: la palabra GALPÓN', () => {
       <FooterView content={content} settings={settings} categories={categories} />,
     )
 
-    const frame = container.querySelector('[data-wordmark-layer="ghost"]')?.parentElement
+    const frame = container.querySelector('[data-wordmark]')
     expect(frame).toHaveClass('mt-16')
     expect(frame?.className).not.toMatch(/mt-\[clamp\(-/)
   })
@@ -258,11 +265,9 @@ function rows(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-footer-row]'))
 }
 
-/** El marco de la palabra GALPÓN (el que sube). */
-function wordFrame(container: HTMLElement): HTMLElement | null {
-  return (
-    container.querySelector<HTMLElement>('[data-wordmark-layer="ghost"]')?.parentElement ?? null
-  )
+/** Las franjas verticales de la palabra GALPÓN, de izquierda a derecha. */
+function wordStrips(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-wordmark-strip]'))
 }
 
 describe('FooterView: el pie que sube por encima de las reseñas', () => {
@@ -340,8 +345,13 @@ describe('FooterView: el pie que sube por encima de las reseñas', () => {
     )
 
     for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
-    // La palabra sube apenas mientras entra, como antes (del 24 % a su lugar).
-    expect(wordFrame(container)?.style.transform).toMatch(/translateY\(24%\)/)
+    // La palabra son 20 franjas que suben en ola mientras entra: antes de entrar, abajo y apagadas.
+    const strips = wordStrips(container)
+    expect(strips).toHaveLength(WORD_STRIPS_WIDE)
+    for (const strip of strips) {
+      expect(strip.style.transform).toMatch(/translateY\(70%\)/)
+      expect(strip.style.opacity).toBe('0')
+    }
   })
 
   it('sobre las reseñas quietas las filas esperan borrosas y abajo, y GALPÓN más abajo y apagada', () => {
@@ -356,31 +366,71 @@ describe('FooterView: el pie que sube por encima de las reseñas', () => {
       expect(row.style.transform).toMatch(/translateY\(28px\)/)
       expect(row.style.filter).toBe('blur(6px)')
     }
-    const frame = wordFrame(container)
-    expect(frame?.style.transform).toMatch(/translateY\(55%\)/)
-    expect(frame?.style.opacity).toBe('0')
-    const lit = container.querySelector<HTMLElement>('[data-wordmark-layer="lit"]')
-    expect(lit?.style.clipPath).toBe('inset(100% 0 0 0)')
+    // La palabra espera en sus 20 franjas: abajo, apagadas y con la luz recortada del todo.
+    const strips = wordStrips(container)
+    expect(strips).toHaveLength(WORD_STRIPS_WIDE)
+    for (const strip of strips) {
+      expect(strip.style.transform).toMatch(/translateY\(70%\)/)
+      expect(strip.style.opacity).toBe('0')
+      const lit = strip.querySelector<HTMLElement>('[data-wordmark-layer="lit"]')
+      expect(lit?.style.clipPath).toBe('inset(100% 0 0 0)')
+    }
   })
 
-  it.each([
-    { reduced: true, wide: true },
-    { reduced: false, wide: false },
-  ])(
-    'sin movimiento o en el celular: filas a la vista y la palabra iluminada y quieta (%o)',
-    (media) => {
-      mockMedia(media)
-      unregister = registerFooterStage()
-      const { container } = render(
-        <FooterView content={content} settings={settings} categories={categories} />,
-      )
+  it('las franjas son la misma palabra recortada de izquierda a derecha, decorativa en conjunto', () => {
+    mockMedia({ reduced: false, wide: true })
+    unregister = registerFooterStage()
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
 
-      for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
-      const lit = container.querySelector('[data-wordmark-layer="lit"]')
-      expect(lit).not.toHaveAttribute('style')
-      expect(lit?.parentElement).not.toHaveAttribute('style')
-    },
-  )
+    const strips = wordStrips(container)
+    expect(strips.map((strip) => strip.dataset.wordmarkStrip)).toEqual(
+      Array.from({ length: WORD_STRIPS_WIDE }, (_, index) => String(index)),
+    )
+    // La primera da el alto del marco y las demás van encima, todas con su tajada de la palabra.
+    expect(strips[0]).toHaveClass('relative')
+    for (const [index, strip] of strips.entries()) {
+      if (index > 0) expect(strip).toHaveClass('absolute', 'inset-0')
+      expect(strip.style.clipPath).toBe(wordStripClip(index, WORD_STRIPS_WIDE))
+      expect(strip.querySelectorAll('[data-wordmark-layer]')).toHaveLength(2)
+    }
+    // Una sola cosa decorativa: el marco entero oculto y ninguna etiqueta accesible adentro.
+    const frame = container.querySelector('[data-wordmark]')
+    expect(frame).toHaveAttribute('aria-hidden', 'true')
+    expect(frame?.querySelector('[aria-label], [role]')).toBeNull()
+  })
+
+  it('sin movimiento: filas a la vista y la palabra iluminada y quieta, sin franjas', () => {
+    mockMedia({ reduced: true, wide: true })
+    unregister = registerFooterStage()
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
+    const lit = container.querySelector('[data-wordmark-layer="lit"]')
+    expect(lit).not.toHaveAttribute('style')
+    expect(lit?.parentElement).not.toHaveAttribute('style')
+    expect(wordStrips(container)).toHaveLength(0)
+  })
+
+  it('en el celular: filas a la vista y la palabra sube en ola con 12 franjas', () => {
+    mockMedia({ reduced: false, wide: false })
+    unregister = registerFooterStage()
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    for (const row of rows(container)) expect(row).not.toHaveAttribute('style')
+    const strips = wordStrips(container)
+    expect(strips).toHaveLength(WORD_STRIPS_NARROW)
+    expect(strips.map((strip) => strip.style.clipPath)).toEqual(
+      Array.from({ length: WORD_STRIPS_NARROW }, (_, index) =>
+        wordStripClip(index, WORD_STRIPS_NARROW),
+      ),
+    )
+  })
 })
 
 describe('formatCuit y sellerLines', () => {

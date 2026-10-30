@@ -40,7 +40,7 @@ export function HomeManifesto({ data }: HomeManifestoProps): ReactNode {
         </Reveal>
         <ManifestoPhrase
           text={manifesto.text}
-          className="m-0 max-w-[23ch] text-[clamp(30px,4.6vw,64px)] leading-[1.12] font-medium tracking-[-0.028em]"
+          className="home-manifesto-phrase m-0 max-w-[23ch] text-[clamp(30px,4.6vw,64px)] leading-[1.12] font-medium tracking-[-0.028em]"
         />
         <Button asChild variant="ghost" className="home-manifesto-cta self-start">
           <Link href={asRoute('/nosotros')}>

@@ -234,13 +234,19 @@ describe('PinnedManifesto', () => {
     const { manifesto, band, kit, block } = stack
     // Una pantalla clavada: el Manifiesto llena lo que deja la banda, que va pegada abajo.
     expect(block).toHaveClass('home-pin', 'sticky', 'top-0', 'z-0', 'flex', 'flex-col', 'h-svh')
-    expect(block.style.opacity).toBe('1')
+    // Sin tapar todavía: nítida, sin filtro ni escala. Escala desde el borde de arriba: el bloque
+    // clavado no se corre mientras el kit lo tapa.
+    expect(block).toHaveClass('origin-top')
+    expect(block.style.filter).toBe('none')
+    expect(block.style.transform).toMatch(/^(none)?$/)
     expect(manifesto).toHaveClass('flex-1', 'min-h-0')
     expect(band.parentElement).toBe(block)
     expect(block.lastElementChild).toBe(band)
     expectPhotoBehind(stack)
     // El kit, opaco, sube por encima.
     expect(kit).toHaveClass('relative', 'z-10', 'bg-background')
+    // Con una sombra hacia arriba: el borde de arriba del kit no es recto y duro.
+    expect(kit.className).toMatch(/shadow-\[0_-/)
     expect(kit.parentElement).toBe(block.parentElement)
     expect(block.parentElement).toHaveClass('relative')
   })

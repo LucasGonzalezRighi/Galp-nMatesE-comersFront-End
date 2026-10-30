@@ -20,3 +20,19 @@ describe('home.css: los fondos del mate 3D', () => {
     expect(backdrop).not.toContain('scale')
   })
 })
+
+describe('home.css: el Manifiesto clavado', () => {
+  it('el link va en cobre claro solo en reposo: con mouse o foco el botón lo pone blanco (MR-16)', () => {
+    // Sin la regla suelta: ganaría sobre el `hover:text-[#fff]` del botón (3,8:1 sobre el verde).
+    expect(rule('.home-manifesto-cta')).toBe('')
+    expect(rule('.home-manifesto-cta:not(:hover):not(:focus-visible)')).toContain(
+      'color: var(--color-accent-300);',
+    )
+  })
+
+  it('la frase clavada se achica con el alto de la ventana para que entre sobre la banda', () => {
+    expect(rule('.home-pin .home-manifesto-phrase')).toContain(
+      'font-size: clamp(30px, min(4.6vw, 7.2vh), 64px);',
+    )
+  })
+})
