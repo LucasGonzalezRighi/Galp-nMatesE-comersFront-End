@@ -26,3 +26,47 @@
   max-width: var(--site-max);
   padding-inline: var(--site-gutter);
 }
+
+/*
+ * Cursor de matecito (Ruling MR-29, el del diseño original: `docs/design/galpon-tienda-v3/
+ * page-styles.css`), solo con puntero fino. Las reglas de cada elemento van en la capa `base`, así
+ * un cursor puesto a propósito (`cursor-zoom-in`, `cursor-not-allowed`) sigue mandando; la clase
+ * `cursor-pointer` sí pasa a ser el matecito que señala. El admin es otra app y no lo toma.
+ */
+@media (pointer: fine) {
+  @layer base {
+    body {
+      cursor:
+        url('/cursors/mate.png') 6 4,
+        auto;
+    }
+
+    a,
+    button,
+    label,
+    select,
+    summary,
+    [role='button'] {
+      cursor:
+        url('/cursors/mate-pointer.png') 6 4,
+        pointer;
+    }
+
+    input,
+    textarea,
+    [contenteditable] {
+      cursor: text;
+    }
+  }
+
+  .cursor-pointer {
+    cursor:
+      url('/cursors/mate-pointer.png') 6 4,
+      pointer;
+  }
+
+  :disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}

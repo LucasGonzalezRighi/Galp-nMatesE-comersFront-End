@@ -1,0 +1,190 @@
+/*
+ * Intro del inicio y telón entre páginas (Ruling MR-29). La capa es una sola: dos mitades
+ * verticales con fondo liso que, al final, se abren como un libro hacia los costados. Solo se
+ * animan `transform`, `opacity`, `filter` y el `stroke-dashoffset` de los trazos del logo.
+ * Los tiempos llegan en variables desde `IntroLayer` (`INTRO_TIMING`).
+ */
+
+/* La tapa que pinta el servidor en el inicio, antes de que hidrate la intro. Si el JS no llega,
+   se va sola a los 9 s para no dejar la página tapada. */
+.intro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--color-background);
+  animation: intro-cover-safety 300ms ease 9s forwards;
+}
+
+@keyframes intro-cover-safety {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  container-type: inline-size;
+  perspective: 1600px;
+  background: var(--color-background);
+}
+
+/* El telón baja desde arriba; la página de atrás se ve debajo de su borde. */
+.intro[data-phase='covering'] {
+  animation: intro-curtain var(--intro-cover-ms) var(--ease-main) both;
+}
+
+@keyframes intro-curtain {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+/* Abriéndose, la capa ya no tiene fondo propio ni capta clics: solo quedan las dos mitades. */
+.intro[data-phase='opening'] {
+  background: transparent;
+  pointer-events: none;
+}
+
+.intro-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* 1 px de más a la izquierda: las dos mitades dibujan el mismo logo, así el corte no deja una
+   línea en el medio del matecito. */
+.intro-half-left {
+  left: 0;
+  width: calc(50% + 1px);
+  transform-origin: left center;
+}
+
+.intro-half-right {
+  left: 50%;
+  right: 0;
+  transform-origin: right center;
+}
+
+/* Cada mitad lleva una cara del ancho de la capa: la de la derecha corrida, así su logo cae en
+   el mismo lugar que el de la izquierda. */
+.intro-face {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100cqw;
+  display: grid;
+  place-items: center;
+}
+
+.intro-half-right .intro-face {
+  left: -50cqw;
+}
+
+.intro[data-phase='opening'] .intro-half-left {
+  animation: intro-open-left var(--intro-open-ms) var(--ease-main) both;
+}
+
+.intro[data-phase='opening'] .intro-half-right {
+  animation: intro-open-right var(--intro-open-ms) var(--ease-main) both;
+}
+
+@keyframes intro-open-left {
+  to {
+    transform: translate3d(-100%, 0, 0) rotateY(18deg);
+    filter: blur(6px);
+  }
+}
+
+@keyframes intro-open-right {
+  to {
+    transform: translate3d(100%, 0, 0) rotateY(-18deg);
+    filter: blur(6px);
+  }
+}
+
+.intro-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* El logo: corrido para que el corte (entre la L y la P) quede en el medio; relleno y arriba,
+   sube 12 px. */
+.intro-logo {
+  width: clamp(240px, 70cqw, 620px);
+  height: auto;
+  overflow: visible;
+  translate: var(--intro-cut) 0;
+  transition: transform 600ms var(--ease-main);
+}
+
+.intro[data-logo='fill'] .intro-logo,
+.intro[data-logo='done'] .intro-logo {
+  transform: translateY(-12px);
+}
+
+.intro-fill {
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.intro[data-logo='fill'] .intro-fill,
+.intro[data-logo='done'] .intro-fill {
+  opacity: 1;
+}
+
+/* Hasta medir el largo de cada trazo no se muestran: sin `--len`, el contorno se vería entero. */
+.intro:not([data-measured]) .intro-strokes {
+  visibility: hidden;
+}
+
+.intro-strokes {
+  transition: opacity 600ms ease;
+}
+
+.intro[data-logo='fill'] .intro-strokes,
+.intro[data-logo='done'] .intro-strokes {
+  opacity: 0;
+}
+
+/* Un guion del largo del trazo, corrido entero: al volver a 0 el contorno se dibuja como a mano.
+   Puntas rectas: con puntas redondas, el guion de largo 0 dejaría un punto antes de arrancar. */
+.intro-stroke {
+  fill: none;
+  stroke: var(--color-cream);
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--len) var(--len);
+  stroke-dashoffset: var(--len);
+}
+
+.intro[data-logo='draw'] .intro-stroke {
+  animation: intro-draw var(--dur) var(--intro-ease-draw) var(--delay) both;
+}
+
+.intro[data-logo='fill'] .intro-stroke,
+.intro[data-logo='done'] .intro-stroke {
+  stroke-dashoffset: 0;
+}
+
+@keyframes intro-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Con menos movimiento no hay intro ni telón (la tapa del servidor tampoco se ve). */
+@media (prefers-reduced-motion: reduce) {
+  .intro,
+  .intro-cover {
+    display: none;
+  }
+}

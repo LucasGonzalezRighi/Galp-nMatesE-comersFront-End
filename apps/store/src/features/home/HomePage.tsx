@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { HomeIntro } from '../intro'
 import { FooterStage } from './FooterStage'
 import { getHomeData } from './home.data'
 import { HomeCollection } from './HomeCollection'
@@ -18,8 +19,9 @@ import './home.css'
  * agua (en escritorio, el mate 3D de tres paradas), colección horizontal, destacados, manifiesto
  * con las cifras abajo (en escritorio, una pantalla clavada sobre el yerbal), bloque del kit (que
  * sube por encima de esa pantalla) y reseñas (en escritorio, quietas mientras el pie sube por
- * encima). Así la página es estática y se regenera cuando el backend invalida las etiquetas de
- * caché.
+ * encima). Primero va la intro (`HomeIntro`, Ruling MR-29): el matecito y GALPÓN se dibujan y la
+ * pantalla se abre como un libro cada vez que se muestra el inicio. Así la página es estática y se
+ * regenera cuando el backend invalida las etiquetas de caché.
  *
  * @throws {ApiError} Si la API falla.
  */
@@ -28,6 +30,7 @@ export async function HomePage(): Promise<ReactNode> {
   const reviews = <HomeReviews data={data} />
   return (
     <main>
+      <HomeIntro />
       {/* La historia es un Client Component: recibe la portada ya dibujada y solo los datos que usa. */}
       <HomeStory
         hero={<HomeHero data={data} />}

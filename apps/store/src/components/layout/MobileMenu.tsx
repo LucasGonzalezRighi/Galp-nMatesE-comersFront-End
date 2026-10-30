@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { usePageTransition } from '../../features/intro'
 import { asRoute } from '../../lib/routes'
 import { Reveal } from '../motion'
 import { Dialog } from '../ui'
@@ -28,11 +29,13 @@ export interface MobileMenuProps {
  * Menú del celular (por debajo de 1040 px, spec 9.5): una capa que cubre la pantalla desde el
  * borde inferior del encabezado, con los seis links en grande y aparición escalonada de 50 ms. El
  * encabezado queda por encima y a la vista (el diálogo `full` va debajo de él). Es un diálogo
- * accesible: foco atrapado, Escape lo cierra y se bloquea el scroll de la página.
+ * accesible: foco atrapado, Escape lo cierra y se bloquea el scroll de la página. Tocar un link lo
+ * cierra y, con el proveedor de la transición, baja el telón antes de navegar (Ruling MR-29).
  *
  * @param props - Ver {@link MobileMenuProps}.
  */
 export function MobileMenu({ open, onClose, top }: MobileMenuProps): ReactNode {
+  const transition = usePageTransition()
   return (
     <Dialog
       open={open}
@@ -54,7 +57,10 @@ export function MobileMenu({ open, onClose, top }: MobileMenuProps): ReactNode {
             <Reveal key={item.key} as="li" kind="up" delay={index * STAGGER_MS}>
               <Link
                 href={asRoute(item.href)}
-                onClick={onClose}
+                onClick={(event) => {
+                  transition?.onNavClick(event, item.href)
+                  onClose()
+                }}
                 className="text-foreground block text-[34px] tracking-[-0.02em] no-underline"
               >
                 {item.menuLabel}
