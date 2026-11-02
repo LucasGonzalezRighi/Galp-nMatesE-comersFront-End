@@ -37,19 +37,61 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       await expect(page.locator(LAYER)).toBeAttached()
       await page.keyboard.press('Escape')
       await expect(page.locator(LAYER)).toHaveAttribute('data-phase', 'opening')
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 1500 })
+      // La apertura dura 1 s; con dos inicios en 3D a la vez el reloj de la página se atrasa.
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 3000 })
     })
 
     test('ir a la tienda baja el telón y después muestra la tienda', async ({ page, isMobile }) => {
-      await gotoStore(page, '/', { intro: 'keep' })
-      await page.keyboard.press('Escape')
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 1500 })
+      // Salta la intro como la rueda (antes que se monte la capa, una tecla no la alcanzaba y el
+      // clic del menú llegaba con la intro todavía en curso).
+      await gotoStore(page, '/')
 
       await clickShop(page, isMobile)
       await expect(page.locator(LAYER)).toHaveAttribute('data-mode', 'page')
       await expect(page).toHaveURL('/tienda')
       await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 3000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Todo el catálogo' })).toBeVisible()
+    })
+  })
+
+  test.describe('volver a Inicio (con movimiento)', () => {
+    test.use({ reducedMotion: 'no-preference' })
+
+    test('"Inicio" del menú dibuja la intro entera y después muestra la portada', async ({
+      page,
+      isMobile,
+    }) => {
+      await gotoStore(page, '/tienda')
+      if (isMobile) {
+        await page.getByRole('button', { name: 'Menú', exact: true }).click()
+        await page
+          .getByRole('dialog', { name: 'Menú' })
+          .getByRole('link', { name: 'Inicio' })
+          .click()
+      } else {
+        await page
+          .getByRole('navigation', { name: 'Principal' })
+          .getByRole('link', { name: 'Inicio' })
+          .click()
+      }
+      // El telón baja sin logo y la intro del inicio lo dibuja entero (Ruling MR-29).
+      await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
+      await expect(page).toHaveURL('/')
+      await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 7000 })
+      await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
+    })
+
+    test('el logo desde otra página también dibuja la intro antes de la portada', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/nosotros')
+      await page.getByRole('link', { name: 'Galpón — inicio' }).click()
+      await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
+      await expect(page).toHaveURL('/')
+      await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 7000 })
+      await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
     })
   })
 

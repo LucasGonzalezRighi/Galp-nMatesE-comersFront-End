@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { gotoStore, settleIntro, STORE_SCREENS } from '../support/store'
+import { gotoStore, INTRO_LAYER, settleIntro, STORE_SCREENS } from '../support/store'
 import { expect, test } from '../support/test'
 
 /**
@@ -56,6 +56,9 @@ test.describe('tienda: navegación', () => {
     await gotoStore(page, '/nosotros')
     await page.getByRole('link', { name: 'Galpón — inicio' }).click()
     await expect(page).toHaveURL('/')
+    // Al volver a Inicio se dibuja la intro entera (Ruling MR-29) y después queda la portada.
+    await expect(page.locator(`${INTRO_LAYER}[data-mode="intro"]`)).toBeAttached()
+    await settleIntro(page)
     await expect(
       page.getByRole('heading', { level: 1, name: /Encontrá\s*tu mate\./ }),
     ).toBeVisible()

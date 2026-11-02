@@ -191,8 +191,12 @@ test.describe('tienda: el mate 3D del inicio', () => {
       await expect(panels).toHaveCSS('opacity', '1')
       await expect(rail).toBeVisible()
       await expect(dive).toHaveCSS('opacity', '0')
-      // En el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl.
-      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.25)
+      // En el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl (2 px
+      // después del borde: el scroll redondea y justo en el borde puede quedar apenas antes).
+      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.2)
+      await page.evaluate(() => {
+        window.scrollBy(0, 2)
+      })
       await expect(panels).toHaveCSS('opacity', '0')
       await expect(rail).toBeHidden()
       // Sin fundido a negro: el escenario termina con la yerba a pantalla completa.
@@ -225,6 +229,29 @@ test.describe('tienda: el mate 3D del inicio', () => {
       await expect(page.locator('[data-collection-yerba]')).not.toHaveCSS('opacity', '0')
     })
 
+    test('mientras la colección sale de la yerba nunca queda más de un tercio de pantalla de fondo liso', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      // Arriba del título se ve la yerba o, a medida que se disuelve, el fondo liso: la parte de la
+      // pantalla que queda lisa es la de arriba del título por lo que la yerba ya se fue.
+      for (let entry = 0.05; entry <= 1.17; entry += 0.04) {
+        await scrollToEntry(page, entry)
+        const flat = await page.evaluate(async () => {
+          // Motion escribe los estilos pegados al scroll en el cuadro siguiente.
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          )
+          const title = document.querySelector('[data-entrance-title]')?.closest('h2')
+          const yerba = document.querySelector('[data-collection-yerba]')
+          if (!title || !yerba) return 1
+          const top = Math.min(Math.max(title.getBoundingClientRect().top, 0), window.innerHeight)
+          return (top / window.innerHeight) * (1 - Number(getComputedStyle(yerba).opacity))
+        })
+        expect(flat, `entrada ${entry.toFixed(2)}`).toBeLessThanOrEqual(1 / 3)
+      }
+    })
+
     test('el raíl no se ve con la colección en pantalla y la colección termina visible y sin transformaciones', async ({
       page,
     }) => {
@@ -235,8 +262,12 @@ test.describe('tienda: el mate 3D del inicio', () => {
       await expect(rail).toBeHidden()
       await scrollToEntry(page, 1)
       await expect(rail).toBeHidden()
-      // La yerba ya se disolvió; su fondo oscuro sigue tapando el 15 % del escenario que se va.
-      await expect(page.locator('[data-collection-yerba]')).toHaveCSS('opacity', '0')
+      // La yerba ya casi se disolvió (termina de irse con la colección arriba de todo); la capa
+      // sigue tapando el 15 % del escenario que se va.
+      const yerba = page.locator('[data-collection-yerba]')
+      await expect
+        .poll(() => yerba.evaluate((element) => Number(getComputedStyle(element).opacity)))
+        .toBeLessThan(0.3)
       await expect(cards).toHaveCount(7)
       for (const card of await cards.all()) {
         await expect(card).toHaveCSS('transform', 'none')
