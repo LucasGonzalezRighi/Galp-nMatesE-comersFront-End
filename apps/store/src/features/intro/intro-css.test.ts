@@ -40,7 +40,7 @@ describe('apertura de la intro y del telón (Ruling MR-31)', () => {
   it('al abrirse solo se anima `transform`: sin desenfoque, que perdía cuadros al final', () => {
     for (const side of ['left', 'right']) {
       const body = keyframes(`intro-open-${side}`)
-      expect(body).toMatch(/transform: translate3d\([-+]?100%, 0, 0\) rotateY\([-+]?18deg\);/)
+      expect(body).toMatch(/transform: translate3d\([-+]?135%, 0, 0\) rotateY\([-+]?18deg\);/)
       expect(body).not.toContain('filter')
       expect(body).not.toContain('blur')
     }

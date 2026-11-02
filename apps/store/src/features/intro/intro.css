@@ -96,7 +96,10 @@
 
 /* La apertura (Ruling MR-31): suave al arrancar, rápida en el medio y suave al llegar, sin
    quedarse quieta al final. Solo `transform` (sin desenfoque): dos mitades de media pantalla con
-   `filter` perdían cuadros justo al final. */
+   `filter` perdían cuadros justo al final.
+   Cada mitad se corre 135 % de su ancho, no 100 %: el giro hunde el borde de adentro y la
+   perspectiva lo acerca al centro, así que con 100 % quedaban ~60 px de cada mitad a la vista
+   (más en pantallas anchas) y la capa se iba de golpe. Con 135 % salen enteras hasta ~4000 px. */
 .intro[data-phase='opening'] .intro-half-left {
   animation: intro-open-left var(--intro-open-ms) var(--intro-ease-open) both;
 }
@@ -107,13 +110,13 @@
 
 @keyframes intro-open-left {
   to {
-    transform: translate3d(-100%, 0, 0) rotateY(18deg);
+    transform: translate3d(-135%, 0, 0) rotateY(18deg);
   }
 }
 
 @keyframes intro-open-right {
   to {
-    transform: translate3d(100%, 0, 0) rotateY(-18deg);
+    transform: translate3d(135%, 0, 0) rotateY(-18deg);
   }
 }
 
