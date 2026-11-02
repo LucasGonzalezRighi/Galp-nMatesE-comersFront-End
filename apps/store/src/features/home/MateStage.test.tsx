@@ -221,6 +221,23 @@ describe('MateStage', () => {
     expect(document.querySelector('[data-stage-fade]')).toBeNull()
   })
 
+  it('en el primer tercio de la zambullida se apaga la foto de la última parada: queda solo el mate 3D', async () => {
+    render(<MateStage data={data} />)
+    const photo = byData('data-backdrop="ritual"')
+    await moveTo(DIVE_FROM)
+    expect(photo.style.opacity).toBe('1')
+    await moveTo(DIVE_FROM + (1 - DIVE_FROM) / 6)
+    expect(Number(photo.style.opacity)).toBeGreaterThan(0)
+    expect(Number(photo.style.opacity)).toBeLessThan(1)
+    await moveTo(DIVE_FROM + (1 - DIVE_FROM) / 3)
+    expect(photo.style.opacity).toBe('0')
+    await moveTo(1)
+    expect(photo.style.opacity).toBe('0')
+    // De vuelta para arriba, la foto vuelve entera.
+    await moveTo(DIVE_FROM)
+    expect(photo.style.opacity).toBe('1')
+  })
+
   it('al final de la zambullida la yerba real tapa el lienzo y el lienzo deja de dibujarse', async () => {
     render(<MateStage data={data} />)
     const dive = byData('data-stage-dive')

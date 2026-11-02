@@ -45,6 +45,21 @@ const TEXT_OUT = DIVE_FROM + (1 - DIVE_FROM) * 0.2
  */
 const DIVE_LAYER: readonly [number, number] = [0.97, 0.995]
 
+/**
+ * Avance en que ya se apagó la foto de fondo de la última parada (la pava y el mate): el primer
+ * tercio de la zambullida, mientras el mate gira hasta mirar con la boca a la cámara. Así el aro
+ * del mate 3D no crece encima del mate de la foto: queda solo el mate 3D sobre el fondo oscuro.
+ */
+const BACKDROP_OUT = DIVE_FROM + (1 - DIVE_FROM) / 3
+
+/**
+ * Cuánto se ve la foto de fondo en la zambullida: entera hasta {@link DIVE_FROM} y nada desde
+ * {@link BACKDROP_OUT}, en línea recta (como el texto y el raíl).
+ */
+function diveBackdropShare(value: number): number {
+  return Math.min(1, Math.max(0, (BACKDROP_OUT - value) / (BACKDROP_OUT - DIVE_FROM)))
+}
+
 /** Desde qué avance la capa de yerba tapa entero al lienzo y el mate 3D deja de dibujarse. */
 const CANVAS_OFF = 0.999
 
@@ -73,10 +88,14 @@ interface StageBackdropProps {
  * El fondo de una parada: su foto a pantalla completa, nítida y apenas oscurecida por CSS
  * (`.home-backdrop` en `home.css`), con el encuadre de su parada (`framing`, fijo: el mate 3D no
  * tapa lo importante de la foto). Se ve entero durante su parada y aparece encima del anterior con
- * la curva del recorrido ({@link backdropOpacity}). Solo el primero carga con prioridad.
+ * la curva del recorrido ({@link backdropOpacity}); en el primer tercio de la zambullida se apaga
+ * ({@link BACKDROP_OUT}). Solo el primero carga con prioridad.
  */
 function StageBackdrop({ stop, index, current, progress }: StageBackdropProps): ReactNode {
-  const opacity = useTransform(progress, (value) => backdropOpacity(value, MATE_STOP_COUNT, index))
+  const opacity = useTransform(
+    progress,
+    (value) => backdropOpacity(value, MATE_STOP_COUNT, index) * diveBackdropShare(value),
+  )
   return (
     <m.div
       data-backdrop={stop.key}
@@ -252,9 +271,10 @@ export interface MateStageProps {
  * delante, el velo del color de fondo a la izquierda y los paneles de texto apilados, donde solo se
  * ve el de la parada actual (`StoryStop`); el raíl marca la actual y lleva a cualquiera; la pista
  * se esconde al empezar. Al final de la tercera parada viene la zambullida (Ruling MR-22): en su
- * primer 20 % se apagan el texto y el raíl; el mate gira hasta mirar con la boca a la cámara, va al
- * medio y crece hasta que la yerba llena la pantalla, y la yerba real del DOM ({@link YerbaDepth})
- * se funde con el lienzo: el escenario termina en la yerba, sin fundido a negro, y la colección
+ * primer 20 % se apagan el texto y el raíl, y en su primer tercio la foto de fondo; el mate gira
+ * hasta mirar con la boca a la cámara, va al medio y crece hasta que la yerba llena la pantalla, y
+ * la yerba real del DOM ({@link YerbaDepth}) se funde con el lienzo: el escenario termina en la
+ * yerba, sin fundido a negro, y la colección
  * arranca desde ahí (`CollectionEntrance`, que sabe del escenario por `registerMateStage`). Sin
  * WebGL, en lugar del lienzo va la foto del mate. Solo se animan `transform`, `opacity` y el lienzo.
  *
