@@ -128,6 +128,11 @@ const MOUTH_TURN = 86
  * por unidad de escala: la boca está 0,43 sobre el centro (1,01 − 0,58 en `scene/mate.ts`), con el
  * giro X de {@link MOUTH_TURN} asoma 0,43 · cos 86° = 0,03 y la media pantalla mide
  * tan 14° · 7 = 1,745 (la cámara de `scene.ts`).
+ *
+ * Copiados a mano, no importados (este módulo no carga la escena): 0,43 sale de `MOUTH_Y` (1,01)
+ * menos la bajada del cuerpo (`mate.position.y = -0.58`) de `scene/mate.ts`, y 1,745 de
+ * `tan(HALF_FOV) · CAMERA_Z` de `scene.ts`. Si cambia alguno de esos valores (la boca, el cuerpo o
+ * la cámara), hay que recalcularlos acá o la yerba se descentra en la zambullida.
  */
 const MOUTH_LIFT = (0.43 * Math.cos((MOUTH_TURN * Math.PI) / 180)) / 1.745
 

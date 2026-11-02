@@ -154,8 +154,14 @@ export function IntroLayer({ state, paths }: IntroLayerProps): ReactNode {
   )
 }
 
+/** Props de {@link PathDefs}. */
+interface PathDefsProps {
+  /** Los trazos del matecito y de la palabra. */
+  paths: LogoPaths
+}
+
 /** Los trazos (una sola vez, los usan las dos mitades) y la máscara del relleno hecha con ellos. */
-function PathDefs({ paths }: { paths: LogoPaths }): ReactNode {
+function PathDefs({ paths }: PathDefsProps): ReactNode {
   const fill = (parts: readonly LogoPart[]): ReactNode[] =>
     [...parts]
       .sort((a, b) => Number(a.hole) - Number(b.hole))
