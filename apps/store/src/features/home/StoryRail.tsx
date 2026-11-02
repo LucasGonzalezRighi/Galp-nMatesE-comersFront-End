@@ -52,7 +52,7 @@ export function StoryRail({ stops, current, onSelect }: StoryRailProps): ReactNo
               >
                 <span
                   className={cx(
-                    'ease-main bg-background/70 rounded-full px-2 py-[2px] text-[12px] whitespace-nowrap transition-[opacity,transform] duration-500 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none',
+                    'ease-main bg-background/70 rounded-full px-2 py-[2px] text-[12px] font-semibold whitespace-nowrap capitalize transition-[opacity,transform] duration-500 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none',
                     isCurrent
                       ? 'translate-x-2 opacity-0 xl:translate-x-0 xl:opacity-100'
                       : 'translate-x-2 opacity-0',
