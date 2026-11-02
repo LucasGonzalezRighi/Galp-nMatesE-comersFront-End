@@ -17,13 +17,16 @@ export const ENTRANCE_SHARE = 0.85
  */
 export const BRIDGE_START_SCALE = 1.15
 
-/** Tramo de la entrada en que la capa de yerba se aleja (escala) y se desenfoca. */
+/**
+ * Tramo del recorrido de la capa de yerba (de 0, la colección asoma abajo, a 1, llegó arriba de
+ * todo y la capa se esconde) en que se aleja (escala) y se desenfoca.
+ */
 const BRIDGE_SPAN = [0, 0.75] as const
 
 /**
- * Tramo de la entrada en que la capa de yerba se disuelve: recién cuando el título y las tarjetas
- * ya ocupan buena parte de la pantalla, así nunca queda más de un tercio de fondo liso arriba de la
- * colección mientras sube.
+ * Tramo del recorrido de la capa de yerba en que se disuelve: recién cuando el título y las
+ * tarjetas ya ocupan buena parte de la pantalla, y termina justo cuando la capa se esconde. Así
+ * nunca queda más de un tercio de fondo liso arriba de la colección mientras sube.
  */
 const BRIDGE_FADE_SPAN = [0.45, 1] as const
 
@@ -102,12 +105,13 @@ export function sineShare(progress: number, from: number, to: number): number {
 }
 
 /**
- * La capa de yerba (el adentro del mate) en un momento de la entrada: arranca entera y nítida,
- * como el último cuadro del escenario, se aleja (escala 1,15 → 1) y se desenfoca (0 → 10 px) en
- * los primeros tres cuartos de la entrada, y se disuelve desde el 45 % hasta el final, detrás del
+ * La capa de yerba (el adentro del mate) en un momento de su recorrido, más largo que la entrada:
+ * desde que la colección asoma abajo hasta que llega arriba de todo y la capa se esconde. Arranca
+ * entera y nítida, como el último cuadro del escenario, se aleja (escala 1,15 → 1) y se desenfoca
+ * (0 → 10 px) en los primeros tres cuartos, y se disuelve desde el 45 % hasta el final, detrás del
  * título y de las tarjetas que salen de la profundidad.
  *
- * @param progress - Avance de la entrada, de 0 a 1.
+ * @param progress - Avance del recorrido de la capa, de 0 a 1.
  * @returns El estilo de la capa.
  * @throws {RangeError} Si `progress` no es un número de 0 a 1.
  */

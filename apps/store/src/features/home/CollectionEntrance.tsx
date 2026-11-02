@@ -70,13 +70,15 @@ function DiveEntrance({ children }: ModeProps): ReactNode {
   const progress = useTransform(scrollYProgress, (value) =>
     Math.min(1, Math.max(0, value / ENTRANCE_SHARE)),
   )
-  // La capa de yerba se ve solo mientras el escenario se va: antes la tapa la del escenario.
+  // La capa de yerba se ve solo mientras el escenario se va: antes la tapa la del escenario. Se
+  // disuelve en todo ese tramo (no solo en la entrada), así termina de irse justo al esconderse.
   const visibility = useTransform(scrollYProgress, (value) =>
     value > 0 && value < 1 ? 'visible' : 'hidden',
   )
-  const transform = useTransform(progress, (value) => bridgeLook(value).transform)
-  const filter = useTransform(progress, (value) => bridgeLook(value).filter)
-  const opacity = useTransform(progress, (value) => bridgeLook(value).opacity)
+  const bridge = useTransform(scrollYProgress, (value) => Math.min(1, Math.max(0, value)))
+  const transform = useTransform(bridge, (value) => bridgeLook(value).transform)
+  const filter = useTransform(bridge, (value) => bridgeLook(value).filter)
+  const opacity = useTransform(bridge, (value) => bridgeLook(value).opacity)
   const context = useMemo<EntranceContextValue>(() => ({ progress }), [progress])
 
   return (
@@ -115,10 +117,11 @@ function DiveEntrance({ children }: ModeProps): ReactNode {
  * yerba en que terminó la zambullida se aleja (escala 1,15 → 1, desenfoque 0 → 10 px) mientras el
  * título sube con máscara ({@link EntranceTitle}) y las tarjetas salen de la profundidad una tras
  * otra ({@link EntranceCard}), y se disuelve (opacidad 1 → 0) detrás de ellos cuando ya ocupan la
- * pantalla: nunca queda más de un tercio de fondo liso. La entrada dura desde que la colección asoma
- * abajo hasta que llega al 15 % de arriba; después la pista horizontal sigue igual. Sin el mate 3D
- * (celular, ventanas bajas) entra con un fundido simple, y con `prefers-reduced-motion: reduce`
- * queda quieta. Solo se animan `transform`, `opacity` y `filter`.
+ * pantalla, hasta que la colección llega arriba: nunca queda más de un tercio de fondo liso. La
+ * entrada del título y las tarjetas dura desde que la colección asoma abajo hasta que llega al 15 %
+ * de arriba; después la pista horizontal sigue igual. Sin el mate 3D (celular, ventanas bajas)
+ * entra con un fundido simple, y con `prefers-reduced-motion: reduce` queda quieta. Solo se
+ * animan `transform`, `opacity` y `filter`.
  *
  * @param props - Ver {@link CollectionEntranceProps}.
  */

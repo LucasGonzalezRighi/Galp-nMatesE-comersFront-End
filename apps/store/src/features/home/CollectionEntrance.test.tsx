@@ -139,9 +139,11 @@ describe('CollectionEntrance', () => {
       await moveTo(0.4)
       expect(Number(yerba.style.opacity)).toBeGreaterThan(0.95)
       expect(yerba.style.filter).toMatch(/blur/)
-      // Se disuelve con la colección ya arriba.
-      await moveTo(0.65)
+      // Se disuelve con la colección ya arriba, hasta que la capa se esconde.
+      await moveTo(0.8)
       expect(Number(yerba.style.opacity)).toBeLessThan(0.6)
+      await moveTo(0.999)
+      expect(Number(yerba.style.opacity)).toBeLessThan(0.01)
     })
 
     it('la colección termina visible y sin transformaciones, y la capa de yerba ya no se ve', async () => {
