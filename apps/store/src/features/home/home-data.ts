@@ -16,7 +16,7 @@ import { resolveStoryProducts } from './story-products'
 export const FEATURED_LIMIT = 8
 
 /** Cuántas reseñas destacadas entran en el carrusel del cierre. */
-export const REVIEWS_LIMIT = 6
+export const REVIEWS_LIMIT = 10
 
 /** Lo que el servidor lee de la API para armar el inicio. */
 export interface HomeInput {

@@ -2,8 +2,8 @@ import type { Locator, Page } from '@playwright/test'
 import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
 
-/** Cuántas reseñas destacadas muestra el inicio: las tres del diseño y las dos nuevas. */
-const REVIEWS = 5
+/** Cuántas reseñas destacadas muestra el inicio: dos por cada parte del mate. */
+const REVIEWS = 10
 
 /**
  * Qué parte del alto de la palabra GALPÓN queda a la vista al final de la página: hasta la mitad
@@ -18,7 +18,7 @@ function reviewsStage(page: Page): Locator {
 
 /** La sección de las reseñas del inicio (la que el pie tapa al subir). */
 function reviewsSection(page: Page): Locator {
-  return page.locator('section:has([data-marquee])')
+  return page.locator('section:has([data-reviews-collage])')
 }
 
 /** El pie de página. */
@@ -97,30 +97,36 @@ test.describe('tienda: las reseñas del inicio y el pie que sube', () => {
     )
     test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' })
 
-    test('la cinta de reseñas va de borde a borde, se mueve sola y se pausa con el mouse encima', async ({
+    test('las reseñas se pegan sobre el mate: se arma el collage, cada nota tiene su hilo y el mouse ilumina su parte', async ({
       page,
     }) => {
       await gotoStore(page, '/')
       const section = reviewsSection(page)
       await section.scrollIntoViewIfNeeded()
-      const marquee = section.locator('[data-marquee]')
-      const track = marquee.locator('[data-marquee-track]')
+      const collage = section.locator('[data-reviews-collage]')
+      const notes = collage.getByRole('list', { name: 'Reseñas de clientes' }).getByRole('listitem')
 
-      // Las cinco reseñas, una vez para los lectores de pantalla (las copias del bucle se ocultan).
-      await expect(marquee.locator('ul:not([aria-hidden])').getByRole('listitem')).toHaveCount(
-        REVIEWS,
-      )
-      const box = await marquee.boundingBox()
-      expect(box?.x ?? 1).toBeLessThan(1)
-      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeGreaterThan(1439)
+      // Diez notas, cinco a cada lado del mate, y un hilo por nota cuando terminó de armarse.
+      await expect(notes).toHaveCount(REVIEWS)
+      await expect(collage).toHaveAttribute('data-assembled', 'true')
+      await expect(collage.locator('li[data-side="left"]')).toHaveCount(REVIEWS / 2)
+      await expect(collage.locator('svg line')).toHaveCount(REVIEWS)
 
-      const offset = async (): Promise<number> =>
-        await track.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m41)
-      const before = await offset()
-      await expect.poll(offset, { timeout: 5000 }).not.toBe(before)
+      // Las notas quedan dentro de la ventana, a los costados de la foto.
+      const photo = await collage.locator('[aria-hidden="true"]:has([data-cell])').boundingBox()
+      for (const box of await notes.evaluateAll((items) =>
+        items.map((item) => item.getBoundingClientRect().toJSON() as DOMRect),
+      )) {
+        expect(box.left).toBeGreaterThanOrEqual(0)
+        expect(box.right).toBeLessThanOrEqual(1440)
+        expect(
+          box.right <= (photo?.x ?? 0) + 24 ||
+            box.left >= (photo?.x ?? 0) + (photo?.width ?? 0) - 24,
+        ).toBe(true)
+      }
 
-      await marquee.hover()
-      await expect(marquee).toHaveAttribute('data-paused', 'true')
+      await collage.locator('li[data-note="pie"]').first().hover()
+      await expect(collage).toHaveAttribute('data-active-part', 'pie')
     })
 
     test('al bajar el pie sube por encima de las reseñas quietas y borrosas, y la página termina en GALPÓN cortada', async ({

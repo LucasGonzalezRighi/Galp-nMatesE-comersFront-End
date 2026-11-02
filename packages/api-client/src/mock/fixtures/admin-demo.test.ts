@@ -22,7 +22,7 @@ describe('datos de demostración del admin', () => {
     const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
     expect(db.orders).toEqual([])
     expect(db.messages).toEqual([])
-    expect(db.reviews).toHaveLength(15)
+    expect(db.reviews).toHaveLength(18)
   })
 
   it('rechaza un demo desconocido o una fecha inválida', () => {
@@ -165,7 +165,7 @@ describe('datos de demostración del admin', () => {
 
   it('siembra 5 reseñas nuevas sobre productos que existen: 4 pendientes y 1 oculta', () => {
     const db = demoDb()
-    const added = db.reviews.slice(15)
+    const added = db.reviews.slice(18)
     expect(added).toHaveLength(5)
     expect(added.map((review) => review.status).sort()).toEqual([
       'hidden',

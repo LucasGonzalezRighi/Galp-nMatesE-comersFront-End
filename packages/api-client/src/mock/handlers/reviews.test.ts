@@ -77,9 +77,9 @@ describe('GET /products/{slug}/reviews', () => {
 })
 
 describe('GET /reviews/featured', () => {
-  it('devuelve las 5 destacadas, cada una con el slug de su producto', async () => {
+  it('devuelve las 10 destacadas, cada una con el slug de su producto', async () => {
     const featured = await listFeaturedReviews(createMockApi().api)
-    expect(featured).toHaveLength(5)
+    expect(featured).toHaveLength(10)
     for (const item of featured) {
       expect(item.product.slug).toEqual(expect.any(String))
       expect(item.product.name).toEqual(expect.any(String))
@@ -94,7 +94,7 @@ describe('GET /reviews/featured', () => {
     if (hidden === undefined || camionero === undefined) throw new Error('Faltan datos')
     hidden.status = 'hidden'
     camionero.status = 'draft'
-    expect(await listFeaturedReviews(mock.api)).toHaveLength(3)
+    expect(await listFeaturedReviews(mock.api)).toHaveLength(7)
   })
 })
 

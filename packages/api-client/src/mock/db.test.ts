@@ -38,7 +38,7 @@ describe('createMockDb', () => {
     expect(db.products.every((product) => product.updatedAt === product.createdAt)).toBe(true)
     expect(db.categories).toHaveLength(6)
     expect(db.products).toHaveLength(27)
-    expect(db.reviews).toHaveLength(15)
+    expect(db.reviews).toHaveLength(18)
     expect(db.settings).toEqual(FIXTURE_SETTINGS)
     expect(db.content).toEqual(FIXTURE_CONTENT)
     expect(db.adminAccount).toEqual({ email: 'dueno@galpon.test', password: 'clave-de-prueba-1' })

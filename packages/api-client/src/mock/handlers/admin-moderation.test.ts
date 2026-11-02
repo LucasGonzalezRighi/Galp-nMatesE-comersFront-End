@@ -18,7 +18,7 @@ describe('GET /admin/reviews', () => {
   it('lista todas las reseñas de la más nueva a la más vieja, de a 20, con su producto', async () => {
     const mock = await createAdminDemoApi()
     const page = await listAdminReviews(mock.api)
-    expect(page).toMatchObject({ page: 1, pageSize: 20, total: 20 })
+    expect(page).toMatchObject({ page: 1, pageSize: 20, total: 23 })
     expect(page.items).toHaveLength(20)
     const times = page.items.map((review) => Date.parse(review.createdAt))
     expect([...times].sort((a, b) => b - a)).toEqual(times)

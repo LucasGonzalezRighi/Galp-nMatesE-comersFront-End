@@ -4,10 +4,13 @@ import type { MockReview } from '../types'
  * Las reseñas del diseño (`SEED`), todas aprobadas y de compra verificada.
  *
  * El mes del diseño pasa a una fecha completa: "Sep 2026" es `2026-09-15T15:00:00Z`, y lo mismo
- * con Ago, Jul y Jun. Las destacadas del inicio son la primera del Mate Imperial Premium, la del
- * Bombillón Premium Curvo y la del Camionero con Pelo, más dos de octubre que se sumaron al final:
- * la de Gianfranco Galimberti (4,5 estrellas, la media estrella del contrato) sobre el Mate Torpedo
- * Virola de Alpaca Cincelada y la de Lucas González Righi sobre el Bombillón 100% Alpaca.
+ * con Ago, Jul y Jun. Las destacadas del inicio son diez, dos por cada parte del mate que nombran
+ * (la virola, la bombilla, la boca, el cuero y el pie: el collage del inicio las pega ahí). Del
+ * diseño: la primera del Mate Imperial Premium, la del Bombillón Premium Curvo y las dos del
+ * Camionero con Pelo, más la primera del Torpedo Premium. Después se sumaron la de Gianfranco
+ * Galimberti (4,5 estrellas, la media estrella del contrato) sobre el Mate Torpedo Virola de Alpaca
+ * Cincelada, la de Lucas González Righi sobre el Bombillón 100% Alpaca y, al final, tres de
+ * mates que no tenían reseñas: el Imperial de Calabaza, el Imperial Criollo y el Coquito.
  */
 export const FIXTURE_REVIEWS: readonly MockReview[] = [
   {
@@ -51,7 +54,7 @@ export const FIXTURE_REVIEWS: readonly MockReview[] = [
     text: 'El cuero es muy prolijo y la base de alpaca pesa lo justo. Un clásico.',
     createdAt: '2026-09-15T15:00:00Z',
     status: 'approved',
-    featured: false,
+    featured: true,
     verifiedPurchase: true,
   },
   {
@@ -95,7 +98,7 @@ export const FIXTURE_REVIEWS: readonly MockReview[] = [
     text: 'Muy lindo, la costura cruzada es impecable.',
     createdAt: '2026-07-15T15:00:00Z',
     status: 'approved',
-    featured: false,
+    featured: true,
     verifiedPurchase: true,
   },
   {
@@ -158,7 +161,7 @@ export const FIXTURE_REVIEWS: readonly MockReview[] = [
     productId: 'prd-torpedo-borravino',
     authorName: 'Gianfranco Galimberti',
     rating: 4.5,
-    text: 'Está muy bueno: el mate llegó rápido y la terminación de la virola es impecable.',
+    text: 'Llegó a Rosario en dos días. La virola tiene el cincelado parejo, se nota que está hecha a mano.',
     createdAt: '2026-10-15T15:00:00Z',
     status: 'approved',
     featured: true,
@@ -169,8 +172,41 @@ export const FIXTURE_REVIEWS: readonly MockReview[] = [
     productId: 'prd-bombillon-100-alpaca',
     authorName: 'Lucas González Righi',
     rating: 5,
-    text: 'También lo recomiendo: el bombillón tira perfecto y la atención fue de diez.',
+    text: 'El bombillón tira parejo y no se tapa ni con yerba con mucho polvo. Antes de comprar me respondieron todas las dudas.',
     createdAt: '2026-10-15T15:00:00Z',
+    status: 'approved',
+    featured: true,
+    verifiedPurchase: true,
+  },
+  {
+    id: 'rev-imperial-calabaza-1',
+    productId: 'prd-imperial-calabaza',
+    authorName: 'Florencia T.',
+    rating: 5,
+    text: 'Las patitas no rayan el escritorio y el mate queda firme aunque lo apoye lleno. Lo uso todos los días en la oficina.',
+    createdAt: '2026-10-15T15:00:00Z',
+    status: 'approved',
+    featured: true,
+    verifiedPurchase: true,
+  },
+  {
+    id: 'rev-imperial-criollo-1',
+    productId: 'prd-imperial-criollo',
+    authorName: 'Martín Q.',
+    rating: 4.5,
+    text: 'Lo elegí por el pie con pelotitas y no me arrepiento: no se vuelca nunca. Tardó una semana en llegar a Neuquén.',
+    createdAt: '2026-09-15T15:00:00Z',
+    status: 'approved',
+    featured: true,
+    verifiedPurchase: true,
+  },
+  {
+    id: 'rev-coquito-criollo-1',
+    productId: 'prd-coquito-criollo',
+    authorName: 'Camila V.',
+    rating: 5,
+    text: 'Es chiquito pero la boca es cómoda para cebar. Lo curé con yerba usada dos días y el primer mate ya salió sin gusto amargo.',
+    createdAt: '2026-08-15T15:00:00Z',
     status: 'approved',
     featured: true,
     verifiedPurchase: true,

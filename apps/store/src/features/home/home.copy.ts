@@ -39,6 +39,10 @@ export const HOME_COPY = {
     bombilla: 'La bombilla',
     ritual: 'El agua',
   },
+  /** Reseñas: nombre accesible de la lista de notas. */
+  reviewsList: 'Reseñas de clientes',
+  /** Reseñas: marca de las reseñas de alguien que compró el producto. */
+  verifiedPurchase: 'Compra verificada',
 } as const
 
 /**
