@@ -112,9 +112,10 @@ function DiveEntrance({ children }: ModeProps): ReactNode {
 /**
  * La entrada de la colección del inicio (Ruling MR-22). Después del mate 3D (`MateStage` montado,
  * ver `useMateStagePresent`) la colección sale de adentro del mate, pegada al scroll: la capa de
- * yerba en que terminó la zambullida se aleja y se disuelve (escala 1,15 → 1, desenfoque 0 → 10 px,
- * opacidad 1 → 0), el título sube con máscara ({@link EntranceTitle}) y las tarjetas salen de la
- * profundidad una tras otra ({@link EntranceCard}). La entrada dura desde que la colección asoma
+ * yerba en que terminó la zambullida se aleja (escala 1,15 → 1, desenfoque 0 → 10 px) mientras el
+ * título sube con máscara ({@link EntranceTitle}) y las tarjetas salen de la profundidad una tras
+ * otra ({@link EntranceCard}), y se disuelve (opacidad 1 → 0) detrás de ellos cuando ya ocupan la
+ * pantalla: nunca queda más de un tercio de fondo liso. La entrada dura desde que la colección asoma
  * abajo hasta que llega al 15 % de arriba; después la pista horizontal sigue igual. Sin el mate 3D
  * (celular, ventanas bajas) entra con un fundido simple, y con `prefers-reduced-motion: reduce`
  * queda quieta. Solo se animan `transform`, `opacity` y `filter`.
@@ -149,7 +150,7 @@ function RisingLine({ progress, children }: EntranceContextValue & ModeProps): R
 
 /**
  * El título de la colección (`h2`). Después del mate 3D sube con máscara: su línea arranca debajo
- * del borde del título y llega a su lugar en la primera mitad de la entrada. El `h2` recorta lo que
+ * del borde del título y llega a su lugar en el primer cuarto de la entrada. El `h2` recorta lo que
  * asoma con un margen de 0,1 em arriba y abajo (los acentos y las patas de las letras no se cortan).
  *
  * @param props - Ver {@link EntranceTitleProps}.

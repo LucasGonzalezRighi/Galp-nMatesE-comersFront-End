@@ -17,23 +17,33 @@ export const ENTRANCE_SHARE = 0.85
  */
 export const BRIDGE_START_SCALE = 1.15
 
-/** Tramo de la entrada en que la capa de yerba se aleja y se disuelve. */
-const BRIDGE_SPAN = [0, 0.6] as const
+/** Tramo de la entrada en que la capa de yerba se aleja (escala) y se desenfoca. */
+const BRIDGE_SPAN = [0, 0.75] as const
 
-/** Tramo de la entrada en que el título sube con la máscara. */
-const TITLE_SPAN = [0.05, 0.45] as const
+/**
+ * Tramo de la entrada en que la capa de yerba se disuelve: recién cuando el título y las tarjetas
+ * ya ocupan buena parte de la pantalla, así nunca queda más de un tercio de fondo liso arriba de la
+ * colección mientras sube.
+ */
+const BRIDGE_FADE_SPAN = [0.45, 1] as const
 
-/** Avance de la entrada en que empieza a salir la primera tarjeta. */
-const CARD_START = 0.12
+/** Tramo de la entrada en que el título sube con la máscara: ya viene subiendo cuando asoma. */
+const TITLE_SPAN = [0, 0.25] as const
+
+/**
+ * Avance de la entrada en que empieza a salir la primera tarjeta: desde el principio, así la
+ * primera hilera ya viene saliendo de la profundidad cuando asoma abajo (cerca de 0,22).
+ */
+const CARD_START = 0
 
 /** Desfase entre una tarjeta y la siguiente, en avance de la entrada. */
 export const CARD_STAGGER = 0.08
 
 /**
  * Cuánto avance dura la salida de cada tarjeta: la séptima (seis líneas y "Ver todo el catálogo")
- * termina justo al final (0,12 + 6 · 0,08 + 0,4 = 1).
+ * termina justo al final (0 + 6 · 0,08 + 0,52 = 1).
  */
-const CARD_LENGTH = 0.4
+const CARD_LENGTH = 0.52
 
 /** Lo que la capa de yerba o una tarjeta muestran en un momento de la entrada. */
 export interface DepthLook {
@@ -93,8 +103,9 @@ export function sineShare(progress: number, from: number, to: number): number {
 
 /**
  * La capa de yerba (el adentro del mate) en un momento de la entrada: arranca entera y nítida,
- * como el último cuadro del escenario, y se aleja (escala 1,15 → 1), se desenfoca (0 → 10 px) y se
- * disuelve en el primer 60 % de la entrada.
+ * como el último cuadro del escenario, se aleja (escala 1,15 → 1) y se desenfoca (0 → 10 px) en
+ * los primeros tres cuartos de la entrada, y se disuelve desde el 45 % hasta el final, detrás del
+ * título y de las tarjetas que salen de la profundidad.
  *
  * @param progress - Avance de la entrada, de 0 a 1.
  * @returns El estilo de la capa.
@@ -103,16 +114,17 @@ export function sineShare(progress: number, from: number, to: number): number {
 export function bridgeLook(progress: number): DepthLook {
   assertProgress(progress)
   const share = sineShare(progress, BRIDGE_SPAN[0], BRIDGE_SPAN[1])
+  const fade = sineShare(progress, BRIDGE_FADE_SPAN[0], BRIDGE_FADE_SPAN[1])
   return {
     transform: `scale(${String(round(BRIDGE_START_SCALE - (BRIDGE_START_SCALE - 1) * share))})`,
     filter: share === 0 ? 'none' : `blur(${String(round(10 * share))}px)`,
-    opacity: round(1 - share),
+    opacity: round(1 - fade),
   }
 }
 
 /**
  * El título en un momento de la entrada: su línea sube desde abajo de la máscara (110 % de su alto)
- * hasta su lugar entre el 5 % y el 45 % de la entrada.
+ * hasta su lugar en el primer cuarto de la entrada.
  *
  * @param progress - Avance de la entrada, de 0 a 1.
  * @returns El estilo de la línea del título.

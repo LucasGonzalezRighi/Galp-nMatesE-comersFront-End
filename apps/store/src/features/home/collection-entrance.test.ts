@@ -33,11 +33,31 @@ describe('la entrada de la colección', () => {
 
   it('la capa de yerba arranca entera y nítida, se aleja (1,15 → 1), se desenfoca hasta 10 px y se disuelve', () => {
     expect(bridgeLook(0)).toEqual({ transform: 'scale(1.15)', filter: 'none', opacity: 1 })
-    const middle = bridgeLook(0.3)
+    // Se aleja y se desenfoca en los primeros tres cuartos; se disuelve recién con la colección arriba.
+    expect(bridgeLook(0.75)).toMatchObject({ transform: 'scale(1)', filter: 'blur(10px)' })
+    const middle = bridgeLook(0.6)
     expect(middle.opacity).toBeGreaterThan(0)
     expect(middle.opacity).toBeLessThan(1)
     expect(middle.filter).toMatch(/^blur\(\d+(\.\d+)?px\)$/)
     expect(bridgeLook(1)).toEqual({ transform: 'scale(1)', filter: 'blur(10px)', opacity: 0 })
+  })
+
+  it('nunca deja más de un tercio de pantalla de fondo liso: la yerba sigue detrás mientras la colección sube', () => {
+    // El borde de arriba de la colección está a 1 − 0,85 · avance pantallas de arriba y el título,
+    // hasta 0,1 pantalla más abajo. Arriba de eso se ve la yerba o, cuando se disuelve, el fondo liso.
+    const titleOffset = 0.1
+    for (let step = 0; step <= 100; step += 1) {
+      const progress = step / 100
+      const above = Math.min(1, 1 - ENTRANCE_SHARE * progress + titleOffset)
+      expect(above * (1 - bridgeLook(progress).opacity)).toBeLessThanOrEqual(1 / 3)
+    }
+  })
+
+  it('el título y la primera tarjeta ya vienen saliendo de la profundidad cuando asoman abajo', () => {
+    // El título asoma cerca de 0,1 de la entrada y la primera hilera cerca de 0,22.
+    const rise = Number(/translateY\((.+)%\)/.exec(titleLook(0.15).transform)?.[1] ?? 0)
+    expect(rise).toBeLessThan(50)
+    expect(cardLook(0.22, 0).opacity).toBeGreaterThan(0.3)
   })
 
   it('el título sube con máscara desde abajo y termina sin transformación', () => {

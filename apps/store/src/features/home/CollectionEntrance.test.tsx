@@ -135,9 +135,13 @@ describe('CollectionEntrance', () => {
       const yerba = byData('data-collection-yerba')
       expect(bridge.style.visibility).toBe('visible')
       expect(Number(yerba.style.opacity)).toBeGreaterThan(0.95)
+      // A mitad de la entrada la yerba sigue detrás del título y de las tarjetas: ya se alejó.
       await moveTo(0.4)
-      expect(Number(yerba.style.opacity)).toBeLessThan(0.6)
+      expect(Number(yerba.style.opacity)).toBeGreaterThan(0.95)
       expect(yerba.style.filter).toMatch(/blur/)
+      // Se disuelve con la colección ya arriba.
+      await moveTo(0.65)
+      expect(Number(yerba.style.opacity)).toBeLessThan(0.6)
     })
 
     it('la colección termina visible y sin transformaciones, y la capa de yerba ya no se ve', async () => {
