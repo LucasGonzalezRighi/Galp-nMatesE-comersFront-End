@@ -1,14 +1,15 @@
 'use client'
 
-import type { CSSProperties, MouseEvent, ReactNode } from 'react'
+import type { CSSProperties, MouseEvent, ReactNode, RefObject } from 'react'
 import { ArrowRightIcon } from '@phosphor-icons/react/ArrowRight'
 import { PlusIcon } from '@phosphor-icons/react/Plus'
 import { StarIcon } from '@phosphor-icons/react/Star'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { ProductSummary } from '@galpon/api-client'
 import { formatRating, remainingQuantityFor } from '@galpon/domain'
-import { FadeImage, Reveal, Tilt } from '../../components/motion'
+import { FadeImage, PAGE_COVERED_ATTRIBUTE, Reveal, Tilt } from '../../components/motion'
 import {
   IconButton,
   ImageWithPlaceholder,
@@ -30,6 +31,50 @@ const MAX_STAGGER_INDEX = 8
 
 /** Retraso entre una tarjeta y la siguiente al aparecer, en milisegundos. */
 const STAGGER_MS = 70
+
+/** Clase del elemento de afuera de la tarjeta (con su aparición o ya en su lugar). */
+const OUTER_CLASS = 'h-full min-w-0'
+
+/**
+ * Indica si la tarjeta se montó con el telón entre páginas tapando la pantalla (`<html>` con
+ * `data-page-covered`, Ruling MR-29) y quedó en pantalla: entonces se dibuja ya en su lugar, sin
+ * su aparición, y el telón se abre sobre la grilla entera y nítida. Las de debajo del pliegue
+ * siguen apareciendo al llegar a ellas. Se decide al montarse y antes del primer pintado; el HTML
+ * del servidor y la hidratación no cambian.
+ */
+function usePlacedUnderCurtain(ref: RefObject<HTMLElement | null>): boolean {
+  const [placed, setPlaced] = useState(false)
+  useLayoutEffect(() => {
+    if (!document.documentElement.hasAttribute(PAGE_COVERED_ATTRIBUTE)) return
+    const top = ref.current?.getBoundingClientRect().top
+    if (top !== undefined && top < window.innerHeight) setPlaced(true)
+  }, [ref])
+  return placed
+}
+
+/** Props de {@link CardEntrance}. */
+interface CardEntranceProps {
+  /** `true` si la tarjeta ya está en su lugar (ver {@link usePlacedUnderCurtain}). */
+  placed: boolean
+  /** Lugar de la tarjeta en la grilla: escalona la aparición. */
+  index: number
+  /** La tarjeta. */
+  children: ReactNode
+}
+
+/** El elemento de afuera de la tarjeta: con su aparición escalonada (`Reveal`) o ya en su lugar. */
+function CardEntrance({ placed, index, children }: CardEntranceProps): ReactNode {
+  if (placed) return <div className={OUTER_CLASS}>{children}</div>
+  return (
+    <Reveal
+      kind="up"
+      delay={Math.min(index, MAX_STAGGER_INDEX) * STAGGER_MS}
+      className={OUTER_CLASS}
+    >
+      {children}
+    </Reveal>
+  )
+}
 
 /** Fondo de la tarjeta: del `surface` teñido de cobre al `surface` liso. */
 const CARD_STYLE: CSSProperties = {
@@ -131,7 +176,9 @@ export interface ProductCardProps {
  * carrito. Con el mouse se inclina en 3D; con el mouse encima o el foco adentro sube 4 px, la foto
  * se acerca a 1,04, el nombre subraya desde la izquierda y la píldora "Ver detalle" sube; la píldora
  * y el "+" se llenan de gris (el "+" con el ícono que gira 90°) solo con el mouse o el foco encima
- * de cada uno (Ruling MR-24). La foto entra con un fundido al cargar (`FadeImage`).
+ * de cada uno (Ruling MR-24). La foto entra con un fundido al cargar (`FadeImage`). La tarjeta
+ * aparece al llegar a ella, escalonada; si se monta con el telón entre páginas tapando la pantalla
+ * y queda en pantalla, ya está dibujada en su lugar.
  *
  * @param props - Ver {@link ProductCardProps}.
  * @example
@@ -147,6 +194,8 @@ export function ProductCard({
 }: ProductCardProps): ReactNode {
   const router = useRouter()
   const { lines } = useCart()
+  const cardRef = useRef<HTMLDivElement>(null)
+  const placed = usePlacedUnderCurtain(cardRef)
   const href = asRoute(`/producto/${encodeURIComponent(product.slug)}`)
   const atCartLimit =
     product.isPurchasable && remainingQuantityFor(product.id, product.maxQuantity, lines) < 1
@@ -163,14 +212,11 @@ export function ProductCard({
   }
 
   return (
-    <Reveal
-      kind="up"
-      delay={Math.min(index, MAX_STAGGER_INDEX) * STAGGER_MS}
-      className="h-full min-w-0"
-    >
+    <CardEntrance placed={placed} index={index}>
       <Tilt className="h-full" style={{ transformStyle: 'preserve-3d' }}>
         {/* Clic con el mouse en cualquier parte; el teclado usa el enlace del nombre. */}
         <div
+          ref={cardRef}
           role="presentation"
           data-product-card=""
           className="group/card h-full cursor-pointer transform-3d"
@@ -283,6 +329,6 @@ export function ProductCard({
           </article>
         </div>
       </Tilt>
-    </Reveal>
+    </CardEntrance>
   )
 }

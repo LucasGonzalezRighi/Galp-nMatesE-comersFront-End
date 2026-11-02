@@ -5,6 +5,11 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProductSummary } from '@galpon/api-client'
+import { PAGE_COVERED_ATTRIBUTE } from '../../components/motion'
+import {
+  installIntersectionObserver,
+  mockReducedMotion,
+} from '../../components/motion/test/support'
 import { addKitToCart, clearCart, useCart } from '../cart'
 import { hideToast, Toaster } from '../toast'
 import { ProductCard } from './ProductCard'
@@ -324,5 +329,49 @@ describe('ProductCard: hover y foco', () => {
     const pillSweep = pill.querySelector('[data-button-sweep]')
     expect(pillSweep).toHaveClass('bg-neutral-600', 'group-hover/pill:[clip-path:inset(0)]')
     expect(pillSweep?.className).not.toMatch(/\/card:/)
+  })
+})
+
+describe('ProductCard: bajo el telón entre páginas (Ruling MR-29)', () => {
+  beforeEach(() => {
+    mockReducedMotion(false)
+    installIntersectionObserver()
+  })
+
+  afterEach(() => {
+    document.documentElement.removeAttribute(PAGE_COVERED_ATTRIBUTE)
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  /** El elemento de afuera de la tarjeta: el que hace (o no) la entrada propia. */
+  function outer(): HTMLElement {
+    const card = document.querySelector<HTMLElement>('[data-product-card]')
+    const element = card?.parentElement?.parentElement ?? null
+    if (element === null) throw new Error('Falta la tarjeta.')
+    return element
+  }
+
+  it('sin telón, la tarjeta entra con su propia aparición (parte oculta)', () => {
+    renderCard(mate)
+    expect(outer().style.opacity).toBe('0')
+  })
+
+  it('montada con el telón tapando, la tarjeta en pantalla ya está dibujada en su lugar', () => {
+    document.documentElement.setAttribute(PAGE_COVERED_ATTRIBUTE, '')
+    renderCard(mate)
+    expect(outer().style.opacity).toBe('')
+    expect(outer().style.transform).toBe('')
+    expect(outer().style.filter).toBe('')
+    expect(screen.getByRole('link', { name: 'Mate Imperial Premium' })).toBeVisible()
+  })
+
+  it('con el telón tapando, la que queda debajo del pliegue sigue entrando al llegar a ella', () => {
+    document.documentElement.setAttribute(PAGE_COVERED_ATTRIBUTE, '')
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: window.innerHeight + 200, width: 300, height: 500 }),
+    )
+    renderCard(mate)
+    expect(outer().style.opacity).toBe('0')
   })
 })
