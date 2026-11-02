@@ -1,0 +1,348 @@
+/*
+ * Estilos propios del inicio (los del diseño que no se arman con utilidades): alturas de las
+ * escenas con respaldo para navegadores sin `svh`, fondos de las escenas, línea entre productos,
+ * entrada del título de la portada, encuadre de la foto del mate, fondos del mate 3D (nítidos y
+ * apenas oscurecidos), relleno de los botones de la portada, palabra fantasma, entrada escalonada
+ * de las paradas del mate 3D, la línea de su pista, la altura del Manifiesto sobre el yerbal, el
+ * color de su link y la pantalla clavada del Manifiesto con la banda de cifras.
+ * Con `prefers-reduced-motion: reduce` nada se anima.
+ */
+
+/* Altura de la portada (la ventana menos el encabezado) y de las demás escenas. */
+.home-hero {
+  min-height: calc(100vh - 64px);
+  min-height: calc(100svh - 64px);
+}
+
+.home-scene {
+  min-height: 115vh;
+  min-height: 115svh;
+}
+
+/* Fondos de las escenas. */
+.home-bg-hero {
+  background:
+    radial-gradient(
+      900px 640px at 70% 50%,
+      color-mix(in srgb, var(--color-accent-800) 55%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      700px 500px at 0% 100%,
+      color-mix(in srgb, var(--color-accent-2-900) 70%, transparent),
+      transparent 70%
+    );
+}
+
+.home-bg-bombilla {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--color-section) 70%, transparent)
+  );
+}
+
+.home-bg-light {
+  background: radial-gradient(
+    900px 600px at 75% 50%,
+    var(--color-cream),
+    var(--color-neutral-100) 60%,
+    var(--color-neutral-200)
+  );
+}
+
+.home-bg-stats {
+  background:
+    radial-gradient(
+      900px 420px at 85% -40%,
+      color-mix(in srgb, var(--color-section-glow) 70%, transparent),
+      transparent 64%
+    ),
+    var(--color-section);
+}
+
+/* Línea que separa los productos de una escena: se desvanece en los 48 px de cada punta. */
+.home-row {
+  background: linear-gradient(
+      to right,
+      transparent,
+      var(--home-row-line) 48px,
+      var(--home-row-line) calc(100% - 48px),
+      transparent
+    )
+    no-repeat bottom / 100% 1px;
+}
+
+.home-row--dark {
+  --home-row-line: var(--color-neutral-800);
+}
+
+.home-row--light {
+  --home-row-line: rgb(26 18 16 / 0.16);
+}
+
+/*
+ * Entrada del título de la portada: cada línea sube desde una máscara. Es CSS puro (sin esperar a
+ * JavaScript) para que el título, que es lo primero que se ve, no demore su pintado.
+ */
+@keyframes home-rise {
+  from {
+    transform: translateY(108%);
+  }
+}
+
+.home-rise {
+  animation: home-rise 1000ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+/*
+ * La foto del mate (portada y respaldo del mate 3D sin WebGL): en el celular, centrada; desde
+ * 1024 px, con el encuadre de `MATE_PHOTO_FRAMING` (`--poster-anchor` y `--poster-zoom`), así el
+ * mate queda a la derecha del título.
+ */
+.home-hero-poster {
+  object-position: 50% 50%;
+}
+
+@media (min-width: 1024px) {
+  .home-hero-poster {
+    object-position: var(--poster-anchor, 50% 50%);
+    transform: scale(var(--poster-zoom, 1));
+    transform-origin: var(--poster-anchor, 50% 50%);
+  }
+}
+
+/*
+ * Fondos del mate 3D: la foto de cada parada nítida y apenas oscurecida, quieta (solo cambia la
+ * opacidad de su capa). La lectura del texto la dan los velos de `MateStage`, nunca un desenfoque.
+ */
+.home-backdrop {
+  filter: brightness(0.85) saturate(0.95);
+}
+
+/* Palabra gigante de fondo de la escena del bombillón, solo el contorno. */
+.home-ghost {
+  position: absolute;
+  top: 50%;
+  left: -2vw;
+  margin-top: -12vw;
+  font-size: 24vw;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--color-accent-300) 18%, transparent);
+  pointer-events: none;
+}
+
+/* Con scroll por línea de tiempo la palabra se desplaza apenas más lento que la página. */
+@supports (animation-timeline: view()) {
+  @keyframes home-ghost-drift {
+    from {
+      translate: 0 6vw;
+    }
+
+    to {
+      translate: 0 -6vw;
+    }
+  }
+
+  .home-ghost {
+    animation: home-ghost-drift linear both;
+    animation-timeline: view();
+  }
+}
+
+/*
+ * Paradas del mate 3D: el panel mide el alto de la ventana y no tiene scroll interno, así que
+ * el título, los espacios de la columna y las filas de productos escalan también con el alto (no
+ * solo con el ancho, como en las escenas apiladas). Con `svh` cuando el navegador lo entiende.
+ */
+.home-stop {
+  --story-title-lg: min(6.4vw, 8.5vh);
+  --story-title-lg: min(6.4vw, 8.5svh);
+  --story-title-md: min(3.6vw, 5vh);
+  --story-title-md: min(3.6vw, 5svh);
+  --story-gap: clamp(14px, 2.4vh, 24px);
+  --story-gap: clamp(14px, 2.4svh, 24px);
+  --story-row-pad: clamp(8px, 1.6vh, 14px);
+  --story-row-pad: clamp(8px, 1.6svh, 14px);
+}
+
+/*
+ * Entrada escalonada de las paradas del mate 3D: cada pieza de la columna (encabezado, rótulo,
+ * título, texto, productos, botón) espera transparente y 24 px más abajo; cuando su panel se
+ * vuelve el actual, sube y aparece 60 ms después de la anterior. Se anima `translate` (no
+ * `transform`) para no pisar el de los botones magnéticos ni el de los `Reveal` del primer panel.
+ */
+.home-stop-column > * {
+  opacity: 0;
+  translate: 0 24px;
+  transition:
+    opacity 700ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)),
+    translate 700ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.home-stop[data-current] .home-stop-column > * {
+  opacity: 1;
+  translate: none;
+  transition-duration: 1000ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(2) {
+  transition-delay: 60ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(3) {
+  transition-delay: 120ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(4) {
+  transition-delay: 180ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(5) {
+  transition-delay: 240ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(6) {
+  transition-delay: 300ms;
+}
+
+.home-stop[data-current] .home-stop-column > :nth-child(n + 7) {
+  transition-delay: 360ms;
+}
+
+/* Mate 3D: línea de la pista "Deslizá para recorrer", con un brillo que baja una y otra vez. */
+.home-hint-line {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 32px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentcolor 24%, transparent);
+}
+
+.home-hint-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentcolor;
+  animation: home-hint 2400ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+}
+
+@keyframes home-hint {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise,
+  .home-ghost,
+  .home-hint-line::after {
+    animation: none;
+  }
+
+  .home-stop-column > * {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
+}
+
+/*
+ * Manifiesto sobre el yerbal: la sección ocupa casi una pantalla (hasta 820 px) para que la foto
+ * entre con su zoom y su parallax; con respaldo para navegadores sin `svh`.
+ */
+.home-manifesto {
+  min-height: min(100vh, 820px);
+  min-height: min(100svh, 820px);
+}
+
+/*
+ * El link del Manifiesto va sobre la foto del yerbal: en cobre claro (`accent-300`) para que se lea
+ * a 4,5:1 o más contra el píxel más claro de su zona. La regla está fuera de las capas de Tailwind,
+ * así que gana sobre el `text-accent` del botón fantasma sin `!important`. Solo en reposo: con el
+ * mouse encima o el foco del teclado el botón se llena de verde y su texto tiene que ponerse blanco
+ * (`hover:text-[#fff]` y `focus-visible:text-[#fff]` de `Button`, Ruling MR-16); si esta regla
+ * también ganara ahí, el cobre claro (#e6bd91) quedaría sobre el verde (#516324) a 3,8:1.
+ */
+.home-manifesto-cta:not(:hover):not(:focus-visible) {
+  color: var(--color-accent-300);
+}
+
+/*
+ * La pantalla clavada del Manifiesto con la banda de cifras (`PinnedManifesto`, desde 1024 px y con
+ * movimiento): el Manifiesto llena el alto que deja la banda, con el texto centrado debajo del
+ * encabezado, y la banda, más baja, deja ver apenas el yerbal a través de su fondo.
+ */
+.home-pin .home-manifesto {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-block: 64px 16px;
+}
+
+/*
+ * La frase clavada también se achica con el alto de la ventana: la pantalla clavada mide una
+ * ventana, y la frase (5 renglones), el link y la banda de cifras (~180 px) no entran juntos en una
+ * laptop de 1366 × 768 (la ventana útil mide ~657). A 7,2 vh la letra baja de 64 px recién por
+ * debajo de 889 px de alto, así que en pantallas altas queda como siempre. Fuera de las capas de
+ * Tailwind, gana sobre el `text-[clamp(…)]` de la frase.
+ */
+.home-pin .home-manifesto-phrase {
+  font-size: clamp(30px, min(4.6vw, 7.2vh), 64px);
+}
+
+.home-pin .home-bg-stats {
+  padding-block: clamp(28px, 4.5vh, 56px);
+  background:
+    radial-gradient(
+      900px 420px at 85% -40%,
+      color-mix(in srgb, var(--color-section-glow) 70%, transparent),
+      transparent 64%
+    ),
+    color-mix(in srgb, var(--color-section) 88%, transparent);
+}
+
+/*
+ * La yerba vista desde adentro del mate (`YerbaDepth`, la zambullida del Ruling MR-22): el último
+ * cuadro del escenario del mate y el primero de la colección. La foto real de la yerba (la textura
+ * del mate 3D, ya en la caché) en mosaico de 190 vh (las hojas del tamaño con que se ven en el mate
+ * 3D al final de la zambullida), girada 0,5 rad como en la escena (así no se leen las rosetas del
+ * espejado) y multiplicada por un tostado (`#9a8960`) que la deja del tono de la yerba 3D bajo la
+ * luz del estudio (medido en las capturas a 1905 × 950: la montañita da rgb(114 89 46) y el hueco
+ * rgb(44 34 15); con el tinte gris de la escena se leía verdosa); encima, una viñeta oscura en los
+ * bordes, el borde del mate que ya salió del cuadro. Nada se anima acá: la capa que la contiene se
+ * mueve.
+ */
+.home-yerba-depth {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.home-yerba-depth-photo {
+  position: absolute;
+  inset: -50%;
+  background: url('/hero/3d/yerba-albedo.jpg') 37% 21% / 190vh repeat #9a8960;
+  background-blend-mode: multiply;
+  transform: rotate(-28.6deg);
+}
+
+.home-yerba-depth-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 75% 80% at 50% 50%,
+    transparent 40%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 78%,
+    color-mix(in srgb, var(--color-background) 92%, transparent) 100%
+  );
+}

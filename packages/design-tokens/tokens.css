@@ -1,0 +1,94 @@
+/*
+ * Tema de Tailwind v4 de Galpón Mates (sección 7 del spec). Los mismos valores están en
+ * src/tokens.ts; el test del paquete comprueba que no se desfasen. El bloque va con prettier-ignore
+ * para conservar las curvas y las sombras tal como las define el diseño (`.34`, sin espacios).
+ *
+ * El bloque es `static`: Tailwind emite todas las variables, no solo las que usan sus utilidades,
+ * porque la tienda lee colores con `var(--color-...)` desde estilos en línea (por ejemplo, el fondo
+ * de la cortina entre páginas).
+ */
+/* prettier-ignore */
+@theme static {
+  /* Borra la paleta por defecto de Tailwind: solo existen los colores del diseño. */
+  --color-*: initial;
+
+  --color-background: #1a1210;
+  --color-surface: #271b15;
+  --color-foreground: #f3ebe3;
+
+  --color-accent: #c0803f;
+  --color-accent-100: #fbf1e6;
+  --color-accent-200: #f3dcc2;
+  --color-accent-300: #e6bd91;
+  --color-accent-400: #d59d63;
+  --color-accent-500: #c0803f;
+  --color-accent-600: #9c6430;
+  --color-accent-700: #774a24;
+  --color-accent-800: #53331a;
+  --color-accent-900: #34200f;
+
+  --color-accent-2-100: #f1f5e1;
+  --color-accent-2-200: #dfe8bb;
+  --color-accent-2-300: #c5d68b;
+  --color-accent-2-400: #a8bf5f;
+  --color-accent-2-500: #8ba43f;
+  --color-accent-2-600: #6d8430;
+  --color-accent-2-700: #516324;
+  --color-accent-2-800: #384419;
+  --color-accent-2-900: #232b10;
+
+  --color-neutral-100: #f8f1ea;
+  --color-neutral-200: #ebe0d5;
+  --color-neutral-300: #d6c8ba;
+  --color-neutral-400: #b9a898;
+  --color-neutral-500: #998877;
+  --color-neutral-600: #7a6a5c;
+  --color-neutral-700: #5c4f45;
+  --color-neutral-800: #42382f;
+  --color-neutral-900: #2b241f;
+
+  --color-section: #3a2415;
+  --color-section-glow: #5e3c20;
+  --color-section-ghost: #7a5230;
+  --color-cream: #fffaf3;
+  --color-danger: oklch(0.76 0.12 25);
+  --color-danger-border: oklch(0.72 0.14 25);
+  --color-divider: color-mix(in srgb, #f3ebe3 15%, transparent);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-tag: 6px;
+
+  --shadow-sm: 0 0 0 1px #42382f;
+  --shadow-md: 0 0 0 1px #5c4f45, 0 6px 18px rgba(0,0,0,.55);
+  --shadow-lg: 0 0 0 1px #998877, 0 16px 40px rgba(0,0,0,.65);
+
+  --font-sans: var(--font-inter), 'Inter Variable', system-ui, sans-serif;
+
+  --text-body: 15px;
+  --text-body--line-height: 1.55;
+  --text-h1: 42px;
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h1--font-weight: 500;
+  --text-h2: 32px;
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h2--font-weight: 500;
+  --text-h3: 25px;
+  --text-h3--line-height: 1.12;
+  --text-h3--letter-spacing: -0.015em;
+  --text-h3--font-weight: 500;
+  --text-h4: 20px;
+  --text-h4--line-height: 1.12;
+  --text-h4--letter-spacing: -0.015em;
+  --text-h4--font-weight: 500;
+  --text-h5: 16px;
+  --text-h5--line-height: 1.12;
+  --text-h5--letter-spacing: -0.015em;
+  --text-h5--font-weight: 500;
+
+  --ease-main: cubic-bezier(.16,1,.3,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+}

@@ -1,0 +1,178 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import type {
+  SingleImageFieldProps,
+  SingleImageUploadState,
+  SingleImageValue,
+} from './SingleImageField'
+import { SingleImageField } from './SingleImageField'
+
+function renderField(props: Partial<SingleImageFieldProps> = {}) {
+  const handlers = {
+    onFiles: vi.fn(),
+    onCancel: vi.fn(),
+    onRetry: vi.fn(),
+    onRemove: vi.fn(),
+  }
+  const { container } = render(
+    <SingleImageField
+      label="Foto"
+      hint="JPG, PNG o WebP."
+      image={null}
+      upload={null}
+      altField={<input aria-label="Texto alternativo" />}
+      {...handlers}
+      {...props}
+    />,
+  )
+  return { ...handlers, container }
+}
+
+/** Una subida que falló, tapando a la foto guardada (si hay). */
+const FAILED_UPLOAD: SingleImageUploadState = {
+  previewUrl: 'blob:http://localhost/mock-5',
+  status: 'error',
+  progress: 0,
+  errorMessage: 'La subida tardó demasiado.',
+}
+
+/** El campo con estado, como lo usa un formulario: "Quitar foto" la borra y cancelar, la subida. */
+function StatefulField({ initial }: { initial: SingleImageValue | null }) {
+  const [image, setImage] = useState(initial)
+  const [upload, setUpload] = useState<SingleImageUploadState | null>(FAILED_UPLOAD)
+  return (
+    <SingleImageField
+      label="Foto"
+      image={image}
+      upload={upload}
+      altField={<input aria-label="Texto alternativo" />}
+      onFiles={vi.fn()}
+      onRetry={vi.fn()}
+      onCancel={() => {
+        setUpload(null)
+      }}
+      onRemove={() => {
+        setImage(null)
+      }}
+    />
+  )
+}
+
+/** El `input type="file"` oculto (no tiene nombre: se busca por selector). */
+function fileInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+  if (input === null) throw new Error('Falta el input de archivos.')
+  return input
+}
+
+describe('SingleImageField', () => {
+  it('sin foto muestra la zona para elegir una', () => {
+    renderField()
+
+    expect(screen.getByRole('group', { name: 'Foto' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('con foto muestra la miniatura, el texto alternativo y "Cambiar foto"', async () => {
+    const user = userEvent.setup()
+    const { onFiles, onRemove, container } = renderField({
+      image: { src: 'data:image/webp;base64,AAAA', alt: 'Socio en el galpón' },
+    })
+
+    expect(screen.getByRole('img', { name: 'Socio en el galpón' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Texto alternativo')).toBeInTheDocument()
+
+    const input = fileInput(container)
+    expect(input).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
+    expect(input).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByLabelText('Cambiar foto')).not.toBeInTheDocument()
+    const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
+    await user.upload(input, file)
+    expect(onFiles).toHaveBeenCalledWith([file])
+
+    await user.click(screen.getByRole('button', { name: 'Quitar foto' }))
+    expect(onRemove).toHaveBeenCalledTimes(1)
+  })
+
+  it('sin foto muestra el error de la última elección debajo de la zona', () => {
+    renderField({ error: 'mate.gif: Formato no admitido: usá JPG, PNG o WebP.' })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'mate.gif: Formato no admitido: usá JPG, PNG o WebP.',
+    )
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveAccessibleDescription(
+      'JPG, PNG o WebP. mate.gif: Formato no admitido: usá JPG, PNG o WebP.',
+    )
+  })
+
+  it('con foto muestra el error de la última elección junto a "Cambiar foto"', () => {
+    renderField({
+      image: { src: 'data:image/webp;base64,AAAA', alt: 'Socio en el galpón' },
+      error: 'grande.jpg: La foto pesa más de 10 MB.',
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('grande.jpg: La foto pesa más de 10 MB.')
+    expect(screen.getByRole('button', { name: 'Cambiar foto' })).toHaveAccessibleDescription(
+      'JPG, PNG o WebP. grande.jpg: La foto pesa más de 10 MB.',
+    )
+  })
+
+  it('mientras sube muestra la vista previa con el progreso y no deja cambiar la foto', async () => {
+    const user = userEvent.setup()
+    const { onCancel } = renderField({
+      image: { src: 'data:image/webp;base64,AAAA', alt: 'Anterior' },
+      upload: {
+        previewUrl: 'blob:http://localhost/mock-3',
+        status: 'uploading',
+        progress: 60,
+        errorMessage: null,
+      },
+    })
+
+    expect(screen.getByRole('progressbar', { name: 'Subiendo… 60 %' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cambiar foto' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('si la subida falla ofrece reintentar', async () => {
+    const user = userEvent.setup()
+    const { onRetry } = renderField({
+      upload: {
+        previewUrl: 'blob:http://localhost/mock-4',
+        status: 'error',
+        progress: 0,
+        errorMessage: 'La subida tardó demasiado.',
+      },
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('La subida tardó demasiado.')
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('al quitar una subida fallida el foco va a "Cambiar foto" y al quitar la foto, a elegir otra', async () => {
+    const user = userEvent.setup()
+    render(<StatefulField initial={{ src: 'data:image/webp;base64,AAAA', alt: 'Socio' }} />)
+
+    // La subida que falló se quita: vuelve la foto anterior y el foco no cae al body.
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+    expect(screen.getByRole('button', { name: 'Cambiar foto' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Quitar foto' }))
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveFocus()
+  })
+
+  it('al cancelar una subida sin foto anterior el foco va al botón para elegir una', async () => {
+    const user = userEvent.setup()
+    render(<StatefulField initial={null} />)
+
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+
+    expect(screen.getByRole('button', { name: 'Elegir archivo' })).toHaveFocus()
+  })
+})

@@ -4,17 +4,17 @@
 
 **Goal:** Dejar listo el workspace del front: reglas de negocio y validaciones probadas, tokens del diseño, el contrato OpenAPI completo, un cliente tipado con modo de prueba, y las dos apps arrancando contra la API simulada, con lint, tests, E2E y CI.
 
-**Architecture:** Workspace pnpm en la raíz del repo (`frontend/`) con cinco paquetes TypeScript sin paso de build (`config`, `design-tokens`, `domain`, `schemas`, `api-client`) que exportan su código fuente, y dos apps: `apps/store` (Next.js 16) y `apps/admin` (Vite 8). `docs/api/openapi.yaml` genera los tipos del cliente. El modo de prueba es un `fetch` en memoria. La tienda lo corre en su servidor (route handler + rewrite de mismo dominio). El admin lo corre en el navegador, persistido en `sessionStorage`.
+**Architecture:** Workspace npm (workspaces) en la raíz del repo (`frontend/`) con cinco paquetes TypeScript sin paso de build (`config`, `design-tokens`, `domain`, `schemas`, `api-client`) que exportan su código fuente, y dos apps: `apps/store` (Next.js 16) y `apps/admin` (Vite 8). `docs/api/openapi.yaml` genera los tipos del cliente. El modo de prueba es un `fetch` en memoria. La tienda lo corre en su servidor (route handler + rewrite de mismo dominio). El admin lo corre en el navegador, persistido en `sessionStorage`.
 
-**Tech Stack:** pnpm 12 (catálogo) · TypeScript 6.0.3 · Next.js 16.4.2 + React 19.3.1 · Vite 8.3.4 + TanStack Router/Query · Tailwind CSS 4.3.3 · Zod 4.6.7 · openapi-typescript 7.13 + openapi-fetch 0.17 · Vitest 5 · Playwright 1.64 · ESLint 9.39 + typescript-eslint 8.71 · lefthook 2.2
+**Tech Stack:** npm 10 (workspaces, versiones exactas centralizadas) · TypeScript 6.0.3 · Next.js 16.4.2 + React 19.3.1 · Vite 8.3.4 + TanStack Router/Query · Tailwind CSS 4.3.3 · Zod 4.6.7 · openapi-typescript 7.13 + openapi-fetch 0.17 · Vitest 5 · Playwright 1.64 · ESLint 9.39 + typescript-eslint 8.71 · lefthook 2.2
 
 **Spec:** `docs/superpowers/specs/2026-10-19-galpon-frontend-design.md`. Este plan cubre P1 (sección 21.1) e implementa las secciones 4–8, 12, 13, 15, 16 (CSP), 19 y 20 en lo que corresponde a fundaciones.
 
 ## Global Constraints
 
 - La raíz del repo git es la del workspace: `E-comers Marcos/frontend/`. **Solo commits locales**: nunca `git push` ni configurar remotos (D11). No tocar `../backend` ni `../database`.
-- Node local 22.20 (`engines.node: ">=22.12"`). `.nvmrc` y CI usan 24. `"packageManager": "pnpm@12.4.2"`.
-- Toda dependencia se declara con `catalog:` (o `workspace:*` para los paquetes propios), con las versiones del catálogo de la Task 1. No subir a TypeScript 7, ESLint 10 ni jsdom 30. Si se agrega una versión nueva, tiene que llevar más de 24 h publicada (`minimumReleaseAge` de pnpm).
+- Gestor de paquetes: **npm** con workspaces. Lucas instala con `npm i` y levanta todo con `npm run dev` desde `frontend/` (tienda en :3000 y admin en :5173). Node local 22.20 (`engines.node: ">=22.12"`, `engines.npm: ">=10"`); `.nvmrc` y CI usan 24.
+- Versiones **exactas** (sin `^` ni `~`) tomadas de `scripts/dependency-versions.json`, la fuente única de versiones; los paquetes propios se declaran con `"*"`. `npm run lint` corre `scripts/check-dependency-versions.mjs`, que falla si algún `package.json` se desvía. No subir a TypeScript 7, ESLint 10 ni jsdom 30. `openapi-typescript` no se instala: se ejecuta con `npx --yes openapi-typescript@7.13.0` (su peer pide TypeScript 5 y npm no admite ese conflicto).
 - TypeScript: `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `isolatedModules`, `skipLibCheck: true`. Sin `exactOptionalPropertyTypes`. TS 6 ya no incluye `@types/*` solo: cada tsconfig declara su `types`.
 - Prohibido: `any`, `@ts-ignore`, `@ts-expect-error` sin descripción, `console.*`, `!` (non-null), `dangerouslySetInnerHTML`, importar archivos internos de otra feature.
 - Identificadores y archivos en inglés. Textos de interfaz, mensajes de error y TSDoc en español. TSDoc en todo lo exportado.
@@ -34,6 +34,7 @@ Se aplican también al spec en la Task 17:
 4. **Login del admin.** `POST /admin/auth/login` devuelve `{ email, csrfToken, expiresAt }`. `GET /admin/auth/csrf` lo vuelve a entregar después de una recarga.
 5. **Typecheck en pre-push.** lefthook corre `typecheck` en `pre-push` (antes de que Lucas suba), no en `pre-commit`, para que los commits sigan siendo rápidos.
 6. **Export de fixtures.** La exportación a JSON para el seed se hace en la fase 2. En P1 los fixtures solo se garantizan serializables a JSON (hay un test).
+7. **npm en lugar de pnpm** (pedido de Lucas, 2026-10-20: va a instalar con `npm i` y levantar con `npm run dev`). npm workspaces; versiones exactas centralizadas en `scripts/dependency-versions.json` con un chequeo en `npm run lint`; `openapi-typescript` vía `npx`; `npm run dev` levanta tienda y admin juntos con `concurrently`. El spec ya está actualizado.
 
 ## Review Focus
 
@@ -48,120 +49,118 @@ Se aplican también al spec en la Task 17:
 ### Task 1: Workspace, toolchain y primer módulo de `domain` (dinero)
 
 **Files:**
-- Create: `package.json`, `pnpm-workspace.yaml`, `.nvmrc`, `.editorconfig`, `.gitattributes`, `.prettierignore`, `prettier.config.mjs`, `eslint.config.mjs`, `vitest.config.ts`, `tsconfig.json`, `lefthook.yml`
+- Create: `package.json`, `scripts/dependency-versions.json`, `scripts/check-dependency-versions.mjs`, `.nvmrc`, `.editorconfig`, `.gitattributes`, `.prettierignore`, `prettier.config.mjs`, `eslint.config.mjs`, `vitest.config.ts`, `tsconfig.json`, `lefthook.yml`
 - Modify: `.gitignore`
 - Create: `packages/config/{package.json, tsconfig.base.json, tsconfig.react.json, prettier.config.mjs, README.md}`
 - Create: `packages/domain/{package.json, tsconfig.json, README.md}`, `packages/domain/src/{index.ts, money.ts}`
-- Test: `packages/domain/src/money.test.ts`
+- Test: `packages/domain/src/money.test.ts`, `scripts/check-dependency-versions.test.mjs`
 
 **Interfaces:**
 - Consumes: nada.
 - Produces:
   - `@galpon/config/tsconfig.base.json` (libs ES2023, sin DOM, `types: []`), `@galpon/config/tsconfig.react.json` (extiende la base + `DOM`, `DOM.Iterable`, `jsx: "react-jsx"`), `@galpon/config/prettier`.
   - `@galpon/domain`: `type Pesos = number & { readonly __brand: 'Pesos' }`, `pesos(value: number): Pesos` (lanza `RangeError` si no es un entero seguro ≥ 0), `formatPesos(value: Pesos): string`, `formatDiscountPesos(value: Pesos): string`, `formatDiscountPercent(percent: number): string`, `sumPesos(values: readonly Pesos[]): Pesos`.
+  - `scripts/check-dependency-versions.mjs` exporta `findVersionProblems(manifests: { path: string; json: object }[], versions: Record<string, string>): string[]` y, ejecutado directo, revisa la raíz, `apps/*` y `packages/*`, imprime los problemas en español y sale con 1 si hay alguno.
   - Scripts raíz: `dev`, `dev:store`, `dev:admin`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:coverage`, `test:e2e`, `api:lint`, `api:generate`, `api:check`, `prepare`.
 
-- [ ] **Step 1: Crear `pnpm-workspace.yaml` exactamente así** (catálogo verificado el 2026-10-20, sin conflictos de peers):
+- [ ] **Step 1: Crear `scripts/dependency-versions.json` exactamente así** (versiones verificadas el 2026-10-20, sin conflictos de peers; `openapi-typescript` figura solo como referencia de la versión que usa `npx`):
 
-```yaml
-packages:
-  - 'apps/*'
-  - 'packages/*'
-
-catalog:
-  next: 16.4.2
-  react: 19.3.1
-  react-dom: 19.3.1
-  '@types/react': 19.3.0
-  '@types/react-dom': 19.3.0
-  typescript: 6.0.3
-  '@types/node': 22.20.5
-  tailwindcss: 4.3.3
-  '@tailwindcss/turbopack': 4.3.3
-  '@tailwindcss/vite': 4.3.3
-  vite: 8.3.4
-  '@vitejs/plugin-react': 6.1.2
-  '@tanstack/react-router': 1.170.45
-  '@tanstack/router-plugin': 1.168.47
-  '@tanstack/router-cli': 1.167.45
-  '@tanstack/react-query': 5.104.4
-  '@tanstack/react-table': 9.3.1
-  zustand: 5.0.15
-  zod: 4.6.7
-  react-hook-form: 7.90.0
-  '@hookform/resolvers': 5.9.2
-  openapi-fetch: 0.17.0
-  openapi-typescript: 7.13.0
-  motion: 14.4.0
-  three: 0.186.1
-  '@types/three': 0.186.0
-  '@mercadopago/sdk-js': 0.0.3
-  '@phosphor-icons/react': 2.1.10
-  '@fontsource-variable/inter': 5.3.0
-  radix-ui: 1.8.1
-  server-only: 0.0.1
-  vitest: 5.0.5
-  '@vitest/coverage-v8': 5.0.5
-  '@testing-library/react': 16.3.3
-  '@testing-library/dom': 10.4.2
-  '@testing-library/jest-dom': 7.0.1
-  '@testing-library/user-event': 14.6.8
-  jsdom: 29.1.1
-  '@playwright/test': 1.64.1
-  '@axe-core/playwright': 4.14.0
-  eslint: 9.39.5
-  '@eslint/js': 9.39.5
-  typescript-eslint: 8.71.2
-  eslint-plugin-boundaries: 7.2.0
-  eslint-import-resolver-typescript: 4.4.5
-  eslint-plugin-jsx-a11y: 6.10.2
-  eslint-plugin-react-hooks: 7.1.1
-  eslint-plugin-react-refresh: 0.5.7
-  '@next/eslint-plugin-next': 16.4.2
-  eslint-plugin-perfectionist: 5.12.1
-  eslint-config-prettier: 10.1.8
-  globals: 17.13.0
-  prettier: 3.9.10
-  prettier-plugin-tailwindcss: 0.8.1
-  lefthook: 2.2.2
-  '@redocly/cli': 2.65.0
-  yaml: 2.9.1
-
-peerDependencyRules:
-  allowedVersions:
-    'openapi-typescript>typescript': '6'
-
-allowBuilds:
-  lefthook: false
-  unrs-resolver: false
-  sharp: false
+```json
+{
+  "@axe-core/playwright": "4.14.0",
+  "@eslint/js": "9.39.5",
+  "@fontsource-variable/inter": "5.3.0",
+  "@hookform/resolvers": "5.9.2",
+  "@mercadopago/sdk-js": "0.0.3",
+  "@next/eslint-plugin-next": "16.4.2",
+  "@phosphor-icons/react": "2.1.10",
+  "@playwright/test": "1.64.1",
+  "@redocly/cli": "2.65.0",
+  "@tailwindcss/turbopack": "4.3.3",
+  "@tailwindcss/vite": "4.3.3",
+  "@tanstack/react-query": "5.104.4",
+  "@tanstack/react-router": "1.170.45",
+  "@tanstack/react-table": "9.3.1",
+  "@tanstack/router-cli": "1.167.45",
+  "@tanstack/router-plugin": "1.168.47",
+  "@testing-library/dom": "10.4.2",
+  "@testing-library/jest-dom": "7.0.1",
+  "@testing-library/react": "16.3.3",
+  "@testing-library/user-event": "14.6.8",
+  "@types/node": "22.20.5",
+  "@types/react": "19.3.0",
+  "@types/react-dom": "19.3.0",
+  "@types/three": "0.186.0",
+  "@vitejs/plugin-react": "6.1.2",
+  "@vitest/coverage-v8": "5.0.5",
+  "concurrently": "10.0.6",
+  "eslint": "9.39.5",
+  "eslint-config-prettier": "10.1.8",
+  "eslint-import-resolver-typescript": "4.4.5",
+  "eslint-plugin-boundaries": "7.2.0",
+  "eslint-plugin-jsx-a11y": "6.10.2",
+  "eslint-plugin-perfectionist": "5.12.1",
+  "eslint-plugin-react-hooks": "7.1.1",
+  "eslint-plugin-react-refresh": "0.5.7",
+  "globals": "17.13.0",
+  "jsdom": "29.1.1",
+  "lefthook": "2.2.2",
+  "motion": "14.4.0",
+  "next": "16.4.2",
+  "openapi-fetch": "0.17.0",
+  "openapi-typescript": "7.13.0",
+  "prettier": "3.9.10",
+  "prettier-plugin-tailwindcss": "0.8.1",
+  "radix-ui": "1.8.1",
+  "react": "19.3.1",
+  "react-dom": "19.3.1",
+  "react-hook-form": "7.90.0",
+  "server-only": "0.0.1",
+  "tailwindcss": "4.3.3",
+  "three": "0.186.1",
+  "typescript": "6.0.3",
+  "typescript-eslint": "8.71.2",
+  "vite": "8.3.4",
+  "vitest": "5.0.5",
+  "yaml": "2.9.1",
+  "zod": "4.6.7",
+  "zustand": "5.0.15"
+}
 ```
 
-- [ ] **Step 2: Crear el `package.json` raíz**: `"name": "galpon-frontend"`, `"private": true`, `"type": "module"`, `"packageManager": "pnpm@12.4.2"`, `"engines": { "node": ">=22.12" }`. Scripts:
+- [ ] **Step 2: Crear el `package.json` raíz**: `"name": "galpon-frontend"`, `"private": true`, `"type": "module"`, `"workspaces": ["apps/*", "packages/*"]`, `"engines": { "node": ">=22.12", "npm": ">=10" }` (sin `packageManager`). Scripts:
 
 | Script | Comando |
 |---|---|
-| `dev` | `pnpm --parallel --filter "./apps/*" dev` |
-| `dev:store` | `pnpm --filter @galpon/store dev` |
-| `dev:admin` | `pnpm --filter @galpon/admin dev` |
-| `build` | `pnpm --filter "./apps/*" build` |
-| `typecheck` | `pnpm -r --if-present typecheck && tsc --noEmit -p tsconfig.json` |
-| `lint` | `eslint .` |
+| `dev` | `concurrently -n tienda,admin -c yellow,cyan "npm:dev:store" "npm:dev:admin"` |
+| `dev:store` | `npm run dev -w @galpon/store` |
+| `dev:admin` | `npm run dev -w @galpon/admin` |
+| `build` | `npm run build -w @galpon/store -w @galpon/admin` |
+| `typecheck` | `npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.json` |
+| `lint` | `node scripts/check-dependency-versions.mjs && eslint .` |
 | `format` / `format:check` | `prettier --write .` / `prettier --check .` |
 | `test` / `test:coverage` | `vitest run` / `vitest run --coverage` |
 | `test:e2e` | `playwright test` |
 | `api:lint` | `redocly lint docs/api/openapi.yaml` |
-| `api:generate` / `api:check` | `pnpm --filter @galpon/api-client api:generate` / `… api:check` |
+| `api:generate` / `api:check` | `npm run api:generate -w @galpon/api-client` / `npm run api:check -w @galpon/api-client` |
 | `prepare` | `lefthook install` |
 
-devDependencies raíz (todas `catalog:`): `typescript`, `@types/node`, `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript`, `eslint-plugin-jsx-a11y`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `@next/eslint-plugin-next`, `eslint-plugin-perfectionist`, `eslint-config-prettier`, `globals`, `prettier`, `prettier-plugin-tailwindcss`, `vitest`, `@vitest/coverage-v8`, `vite`, `jsdom`, `@playwright/test`, `@axe-core/playwright`, `@redocly/cli`, `lefthook`, `yaml`. Además, `@galpon/config` con `workspace:*`.
+Los scripts que apuntan a `apps/*` o a `@galpon/api-client` funcionan recién cuando esos workspaces existen (Tasks 10, 14 y 15).
+
+devDependencies raíz, con la versión exacta de `scripts/dependency-versions.json`: `typescript`, `@types/node`, `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript`, `eslint-plugin-jsx-a11y`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `@next/eslint-plugin-next`, `eslint-plugin-perfectionist`, `eslint-config-prettier`, `globals`, `prettier`, `prettier-plugin-tailwindcss`, `vitest`, `@vitest/coverage-v8`, `vite`, `jsdom`, `@playwright/test`, `@axe-core/playwright`, `@redocly/cli`, `lefthook`, `yaml`, `concurrently`. Además, `"@galpon/config": "*"`.
+
+`scripts/check-dependency-versions.mjs` (JavaScript sin dependencias, con JSDoc):
+  - Para cada `package.json` de la raíz, `apps/*` y `packages/*`, revisa `dependencies`, `devDependencies` y `peerDependencies`.
+  - Un paquete `@galpon/*` tiene que declararse `"*"`.
+  - Cualquier otro paquete tiene que estar en `dependency-versions.json`. En `dependencies` y `devDependencies` su versión es exactamente la del JSON; en `peerDependencies`, `^` + esa versión.
+  - Mensajes: `apps/store/package.json: "next" declara "^16.4.2" y la versión fijada es "16.4.2"`, `…: "lodash" no está en scripts/dependency-versions.json`.
 
 - [ ] **Step 3: Archivos de entorno del repo**
   - `.nvmrc` → `24`.
   - `.editorconfig`: utf-8, LF, 2 espacios, newline final.
   - `.gitattributes`: `* text=auto eol=lf`; `*.png`, `*.jpg`, `*.woff2` e `*.ico` como `binary`.
   - Agregar a `.gitignore`: `next-env.d.ts`, `.vitest/`, `*.local` y `.env.local`.
-  - `.prettierignore`: `pnpm-lock.yaml`, `**/generated/**`, `**/routeTree.gen.ts`, `docs/design/**`, `coverage`, `.next`, `dist`, `playwright-report`, `test-results`.
+  - `.prettierignore`: `package-lock.json`, `**/generated/**`, `**/routeTree.gen.ts`, `docs/design/**`, `coverage`, `.next`, `dist`, `playwright-report`, `test-results`.
 
 - [ ] **Step 4: Paquete `packages/config`** (`"name": "@galpon/config"`, `exports` de los 3 archivos):
   - `tsconfig.base.json`: `target` y `lib` ES2023, `module: "ESNext"`, `moduleResolution: "bundler"`, `noEmit: true`, `resolveJsonModule`, `forceConsistentCasingInFileNames`, `types: []`, más las opciones de Global Constraints.
@@ -179,6 +178,7 @@ export default defineConfig({
   test: {
     projects: [
       { test: { name: 'packages', root: './packages', environment: 'node', include: ['*/src/**/*.test.ts'] } },
+      { test: { name: 'tooling', root: './scripts', environment: 'node', include: ['**/*.test.mjs'] } },
       // La Task 14 agrega el proyecto 'store' y la Task 15 el proyecto 'admin'.
     ],
     coverage: {
@@ -281,16 +281,16 @@ pre-commit:
   jobs:
     - name: prettier
       glob: '*.{ts,tsx,js,mjs,json,css,md,yaml,yml}'
-      run: pnpm exec prettier --write {staged_files}
+      run: npx prettier --write {staged_files}
       stage_fixed: true
     - name: eslint
       glob: '*.{ts,tsx,mjs}'
-      run: pnpm exec eslint --fix {staged_files}
+      run: npx eslint --fix {staged_files}
       stage_fixed: true
 pre-push:
   jobs:
     - name: typecheck
-      run: pnpm typecheck
+      run: npm run typecheck
 ```
 
 - [ ] **Step 9: Paquete `packages/domain`.** `package.json`: `"name": "@galpon/domain"`, `"type": "module"`, `"exports": { ".": "./src/index.ts" }`, `"scripts": { "typecheck": "tsc --noEmit" }`. `tsconfig.json`: extiende `@galpon/config/tsconfig.base.json` e incluye `src`. Escribir el README: propósito (reglas de negocio puras, sin dependencias) y lista de módulos.
@@ -325,22 +325,22 @@ describe('money', () => {
 ```
 
 - [ ] **Step 11: Instalar y comprobar que el test falla**
-  - Run: `pnpm install`. Expected: sin `ERR_PNPM_*` y sin líneas `unmet peer`. El hook queda instalado (existe `.git/hooks/pre-commit`).
-  - Run: `pnpm test`. Expected: FAIL en `money.test.ts` (no existe `./money`).
+  - Run: `npm install`. Expected: sin `ERR_PNPM_*` y sin líneas `unmet peer`. El hook queda instalado (existe `.git/hooks/pre-commit`).
+  - Run: `npm test`. Expected: FAIL en `money.test.ts` (no existe `./money`).
 
 - [ ] **Step 12: Implementar `money.ts`** con `new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })` antepuesto con `'$'`. Exportar todo desde `src/index.ts`. TSDoc en cada export.
 
 - [ ] **Step 13: Verificar toda la cadena**
-  - Run: `pnpm test` → PASS.
-  - Run: `pnpm lint` → 0 problemas.
-  - Run: `pnpm typecheck` → sin errores.
-  - Run: `git add --renormalize . && pnpm format:check` → todos los archivos formateados.
+  - Run: `npm test` → PASS.
+  - Run: `npm run lint` → 0 problemas.
+  - Run: `npm run typecheck` → sin errores.
+  - Run: `git add --renormalize . && npm run format:check` → todos los archivos formateados.
 
 - [ ] **Step 14: Commit**
 
 ```bash
 git add -A
-git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "chore: workspace npm, toolchain y módulo de dinero en domain" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -388,13 +388,13 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
     - si hay menos disponibles, devuelve los que hay.
   - `options`: `LEATHERS` y `FERRULES` con los valores exactos y en ese orden; `isLeather('Rosa')` → `false`.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/domain`. Expected: FAIL (los módulos no existen).
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/domain`. Expected: FAIL (los módulos no existen).
 
 - [ ] **Step 3: Implementar.**
   - `slugify` y `normalizeSearchText` usan `normalize('NFD')`, quitan `\p{Diacritic}` y pasan a minúsculas. `slugify` reemplaza `[^a-z0-9]+` por `-` y recorta los guiones de los extremos.
   - `sortProducts` copia el arreglo y usa un orden estable.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/domain` → PASS. Run: `pnpm lint && pnpm typecheck` → limpio.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/domain` → PASS. Run: `npm run lint && npm run typecheck` → limpio.
 
 - [ ] **Step 5: Commit** `feat(domain): reglas de catálogo, búsqueda, orden y relacionados`.
 
@@ -442,11 +442,11 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
   - `setCartLineQuantity(lines, key, 0)` quita la línea.
   - `missingKitGroups({ mate: 'x' })` → `['bombilla','yerba']`; `isKitComplete` con las tres piezas → `true`.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/domain`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/domain`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar.** El ahorro del kit se calcula **por kit** y después se multiplica por la cantidad.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/domain && pnpm lint && pnpm typecheck` → PASS / limpio.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/domain && npm run lint && npm run typecheck` → PASS / limpio.
 
 - [ ] **Step 5: Commit** `feat(domain): carrito, kit y totales del pedido`.
 
@@ -488,13 +488,13 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
   - `formatDateTime('2026-10-19T17:05:00Z')` → `'19/10/2026 14:05'`; `formatDate('2026-10-19T02:00:00Z')` → `'18/10/2026'`.
   - `isOrderNumber`: `'GLP-12345'` → `true`; `'GLP-1234'` y `'glp-12345'` → `false`.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/domain`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/domain`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar.**
   - Las fechas usan `Intl.DateTimeFormat('es-AR', { timeZone: AR_TIME_ZONE, … })` con `formatToParts`.
   - `formatMonthYear` toma el número de mes de esas partes y lo traduce con el arreglo del diseño: `['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']`.
 
-- [ ] **Step 4: Verificar con cobertura.** Run: `pnpm test:coverage`. Expected: PASS y se cumplen los umbrales de `packages/domain/src/**`. Completar el README de `domain` con la tabla de módulos.
+- [ ] **Step 4: Verificar con cobertura.** Run: `npm run test:coverage`. Expected: PASS y se cumplen los umbrales de `packages/domain/src/**`. Completar el README de `domain` con la tabla de módulos.
 
 - [ ] **Step 5: Commit** `feat(domain): envío, cuotas, impuestos, reseñas, fechas y estados de pedido`.
 
@@ -539,14 +539,14 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
   - **cardholder**: DNI inválido → "DNI inválido"; nombre vacío → "Como figura en la tarjeta".
   - **toFieldErrors** devuelve `{ 'address.street': 'Requerido', … }`.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/schemas`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/schemas`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar** con Zod 4:
   - Mensajes como string (`.min(2, MESSAGES.minLetters)`) o `{ error }`. No usar `message`: está deprecado.
   - Usar `z.email()` (no `z.string().email()`) y `.trim()`.
   - El teléfono se normaliza en un `.transform`: quitar todo lo que no sea dígito y después el prefijo `54` / `549`. El resultado tiene que tener 10 dígitos y no empezar con 0.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/schemas && pnpm lint && pnpm typecheck` → PASS.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/schemas && npm run lint && npm run typecheck` → PASS.
 
 - [ ] **Step 5: Commit** `feat(schemas): campos comunes y validaciones del checkout`.
 
@@ -589,13 +589,13 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
     - un `seller` con todo en `null` es válido
   - **despacho**: carrier `'A'` → error.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/schemas`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/schemas`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar.**
   - Dígito verificador del CUIT: pesos `[5,4,3,2,7,6,5,4,3,2]` sobre los primeros 10 dígitos, `v = 11 − (suma % 11)`; si `v` es 11 vale 0 y si es 10 el CUIT es inválido.
   - Las confirmaciones usan `.refine(…, { error, path })`.
 
-- [ ] **Step 4: Verificar con cobertura.** Run: `pnpm test:coverage`. Expected: PASS y se cumplen los umbrales de `packages/schemas/src/**`. El README de `schemas` lista los schemas y la convención de mensajes.
+- [ ] **Step 4: Verificar con cobertura.** Run: `npm run test:coverage`. Expected: PASS y se cumplen los umbrales de `packages/schemas/src/**`. El README de `schemas` lista los schemas y la convención de mensajes.
 
 - [ ] **Step 5: Commit** `feat(schemas): reseñas, contacto, arrepentimiento, cuenta y formularios del admin`.
 
@@ -629,7 +629,7 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
   - `tokens.leathersUi.Borravino === '#5d1f2d'`.
   - `tokens.leathers3d.Crudo === '#b88d5c'`.
 
-- [ ] **Step 2: Correr y ver que falla.** Run: `pnpm test -- packages/design-tokens`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que falla.** Run: `npm test -- packages/design-tokens`. Expected: FAIL.
 
 - [ ] **Step 3: Escribir `tokens.ts`, `tokens.css` y `base.css`.** Todos los valores salen de la sección 7 del spec.
   - `tokens.css` es un solo bloque `@theme` que arranca con `--color-*: initial;`, para borrar la paleta por defecto de Tailwind.
@@ -646,7 +646,7 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
     - las variables `--space-*`
   - README: cómo se importan desde Next y desde Vite, y por qué hay dos paletas de cuero.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/design-tokens && pnpm lint && pnpm typecheck` → PASS.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/design-tokens && npm run lint && npm run typecheck` → PASS.
 
 - [ ] **Step 5: Commit** `feat(design-tokens): tema de Tailwind v4 y estilos base del diseño`.
 
@@ -722,9 +722,9 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
 
 - [ ] **Step 2: Escribir `docs/api/openapi.yaml`** con todo lo anterior. Cada schema y propiedad lleva `description` en español. Los nulos se escriben con `type: [X, 'null']`. Las listas de enums son idénticas a las de `domain`.
 
-- [ ] **Step 3: Validar.** Run: `pnpm api:lint`. Expected: exit 0 y 0 errores.
+- [ ] **Step 3: Validar.** Run: `npm run api:lint`. Expected: exit 0 y 0 errores.
 
-- [ ] **Step 4: Escribir `docs/api/README.md`**: qué es el contrato, sus convenciones (sección 12 del spec), cómo se valida (`pnpm api:lint`) y se generan los tipos (`pnpm api:generate`), y la regla de cambiar el contrato en el repo del front y en el del back en el mismo cambio funcional.
+- [ ] **Step 4: Escribir `docs/api/README.md`**: qué es el contrato, sus convenciones (sección 12 del spec), cómo se valida (`npm run api:lint`) y se generan los tipos (`npm run api:generate`), y la regla de cambiar el contrato en el repo del front y en el del back en el mismo cambio funcional.
 
 - [ ] **Step 5: Commit** `docs(api): contrato OpenAPI — base y lecturas públicas`.
 
@@ -793,7 +793,7 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
 | `PATCH /me/addresses/{id}` · `DELETE /me/addresses/{id}` | `updateMyAddress` · `deleteMyAddress` | `customerSession` + `csrfToken` | `Address` · 204 | 401, 404, 422 |
 
 - [ ] **Step 1: Agregar al YAML los schemas y paths de esta tarea.** La `description` de cada pago explica la idempotencia, el "un intento activo por pedido" y que el estado definitivo llega por webhook (sección 14 del spec).
-- [ ] **Step 2: Validar.** Run: `pnpm api:lint`. Expected: exit 0 y 0 errores.
+- [ ] **Step 2: Validar.** Run: `npm run api:lint`. Expected: exit 0 y 0 errores.
 - [ ] **Step 3: Commit** `docs(api): contrato de carrito, pedidos, pagos, contacto, arrepentimiento y cuenta`.
 
 ---
@@ -821,7 +821,7 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
     - `ContactMessage { id, kind: 'contact'|'withdrawal', name, email, orderNumber, reason, message, code, createdAt, read }`, `ContactMessagePage`, `ContactMessageUpdate { read }`
   - `@galpon/api-client` (`package.json`):
     - `"exports": { ".": "./src/index.ts", "./react": "./src/react/index.ts", "./mock": "./src/mock/index.ts" }`
-    - scripts `api:generate` = `openapi-typescript ../../docs/api/openapi.yaml -o src/generated/schema.d.ts --root-types --root-types-no-schema-prefix --alphabetize`, `api:check` = lo mismo + `--check`, y `typecheck` = `tsc --noEmit`
+    - scripts `api:generate` = `npx --yes openapi-typescript@7.13.0 ../../docs/api/openapi.yaml -o src/generated/schema.d.ts --root-types --root-types-no-schema-prefix --alphabetize`, `api:check` = lo mismo + `--check`, y `typecheck` = `tsc --noEmit`
     - dependencias `openapi-fetch`, `@galpon/domain`, `@galpon/schemas`, `zod`; peerDependencies `react` y `@tanstack/react-query`
     - `tsconfig.json`: extiende `tsconfig.react.json`
 - **Paths del admin** (todos con seguridad `adminSession`; los que no son `GET` llevan además `csrfToken`, salvo el login):
@@ -848,8 +848,8 @@ git commit -m "chore: workspace pnpm, toolchain y módulo de dinero en domain" -
 | `GET /admin/reviews` (`status`, `page`) · `PATCH /admin/reviews/{id}` | `listAdminReviews` · `updateAdminReview` | `AdminReviewPage` · `AdminReview` |
 | `GET /admin/messages` (`kind`, `read`, `page`) · `PATCH /admin/messages/{id}` | `listAdminMessages` · `updateAdminMessage` | `ContactMessagePage` · `ContactMessage` |
 
-- [ ] **Step 1: Agregar al YAML los schemas y paths del admin.** Run: `pnpm api:lint`. Expected: 0 errores.
-- [ ] **Step 2: Crear el paquete `api-client` y generar los tipos.** Run: `pnpm install && pnpm api:generate`. Expected: se crea `src/generated/schema.d.ts`, que exporta `paths`, `components`, `operations` y los tipos raíz (`Category`, `ProductSummary`, `Order`…).
+- [ ] **Step 1: Agregar al YAML los schemas y paths del admin.** Run: `npm run api:lint`. Expected: 0 errores.
+- [ ] **Step 2: Crear el paquete `api-client` y generar los tipos.** Run: `npm install && npm run api:generate`. Expected: se crea `src/generated/schema.d.ts`, que exporta `paths`, `components`, `operations` y los tipos raíz (`Category`, `ProductSummary`, `Order`…).
 - [ ] **Step 3: Escribir `src/contract-alignment.ts`.** Son solo aserciones de tipos, sin código en runtime:
 
 ```ts
@@ -875,7 +875,7 @@ export type ContractAlignment = [
 ]
 ```
 
-- [ ] **Step 4: Verificar.** Run: `pnpm api:check && pnpm typecheck`. Expected: los dos sin errores. Para confirmar que la aserción funciona, cambiar a mano un valor de un enum del YAML, regenerar, ver que `typecheck` falla y revertir el cambio.
+- [ ] **Step 4: Verificar.** Run: `npm run api:check && npm run typecheck`. Expected: los dos sin errores. Para confirmar que la aserción funciona, cambiar a mano un valor de un enum del YAML, regenerar, ver que `typecheck` falla y revertir el cambio.
 - [ ] **Step 5: Commit** `feat(api-client): contrato del admin, tipos generados y alineación con domain`.
 
 ---
@@ -931,11 +931,11 @@ export type ContractAlignment = [
   - `useApiClient` sin provider tira "useApiClient necesita <ApiClientProvider>".
   - `publicSettingsQuery(api).queryKey` es igual a `queryKeys.publicSettings()`.
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/api-client`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/api-client`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar.** Los middlewares usan `client.use()` de openapi-fetch. El `fetch` personalizado se pasa en `createClient({ fetch })` y recibe un `Request`. El `baseUrl` siempre es absoluto, porque en Node uno relativo falla.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/api-client && pnpm lint && pnpm typecheck` → PASS. En el README de `api-client` documentar el cliente, los errores, los servicios y los hooks.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/api-client && npm run lint && npm run typecheck` → PASS. En el README de `api-client` documentar el cliente, los errores, los servicios y los hooks.
 
 - [ ] **Step 5: Commit** `feat(api-client): cliente tipado, errores, servicios y hooks de consulta`.
 
@@ -1005,11 +1005,11 @@ export type ContractAlignment = [
     - con un almacenamiento cuyo `getItem` tira → `isPersistent: false` y la base funciona igual (Review Focus 4)
     - `safeSessionStorage()` devuelve `null` cuando `setItem` tira
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/api-client`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/api-client`. Expected: FAIL.
 
 - [ ] **Step 3: Escribir los fixtures, `db.ts` y `storage.ts`.** Si el almacenamiento falla, no se loguea nada (`console` está prohibido): se informa por `isPersistent`.
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/api-client && pnpm lint && pnpm typecheck` → PASS.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/api-client && npm run lint && npm run typecheck` → PASS.
 
 - [ ] **Step 5: Commit** `feat(api-client): fixtures del diseño y base simulada`.
 
@@ -1101,14 +1101,14 @@ export type ContractAlignment = [
     - el conjunto de `(método, path)` del contrato es exactamente `IMPLEMENTED_ROUTES ∪ PENDING_OPERATIONS`
     - los dos conjuntos son disjuntos y no hay rutas que no estén en el contrato
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- packages/api-client`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- packages/api-client`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar.** Toda operación del contrato que no esté en `IMPLEMENTED_ROUTES` va a `PENDING_OPERATIONS` con su plan:
   - P2: reseñas, contacto y arrepentimiento
   - P3: carrito, envío, pedidos, pagos, webhooks y cuenta
   - P4: el resto del admin
 
-- [ ] **Step 4: Verificar.** Run: `pnpm test -- packages/api-client && pnpm lint && pnpm typecheck` → PASS. Agregar al README de `api-client` la sección "Modo de prueba": rutas implementadas, pendientes y latencia.
+- [ ] **Step 4: Verificar.** Run: `npm test -- packages/api-client && npm run lint && npm run typecheck` → PASS. Agregar al README de `api-client` la sección "Modo de prueba": rutas implementadas, pendientes y latencia.
 
 - [ ] **Step 5: Commit** `feat(api-client): API simulada con router, fetch en memoria y handlers de P1`.
 
@@ -1213,21 +1213,21 @@ export type ContractAlignment = [
     - `revalidationProfileFor('content:home')` → `'max'`; `('products')` → `{ expire: 0 }`
     - el patrón rechaza `'../x'`
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- apps/store`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- apps/store`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar los archivos de la lista** con las decisiones anteriores. Escribir `.env.example` con cada variable y su explicación, y el README de la tienda (scripts, modo de prueba, cómo se pasa a vivo).
 
-- [ ] **Step 4: Tests y tipos.** Run: `pnpm install && pnpm test -- apps/store && pnpm --filter @galpon/store typecheck && pnpm lint` → PASS.
+- [ ] **Step 4: Tests y tipos.** Run: `npm install && npm test -- apps/store && npm run typecheck -w @galpon/store && npm run lint` → PASS.
 
 - [ ] **Step 5: Build y prueba manual**
-  - Run: `pnpm --filter @galpon/store build`. Expected: éxito, y la salida incluye "Cache Components enabled".
-  - Run: `pnpm --filter @galpon/store start` en segundo plano. Después:
+  - Run: `npm run build -w @galpon/store`. Expected: éxito, y la salida incluye "Cache Components enabled".
+  - Run: `npm run start -w @galpon/store` en segundo plano. Después:
     - `curl -s localhost:3000/api/v1/categories` → JSON con 6 líneas
     - `curl -sI localhost:3000/` → incluye `content-security-policy`
     - `curl -s localhost:3000/` → contiene "Imperiales" y "Yerbas"
   - Abrir `http://localhost:3000` y ver "Descuento del kit: 10%".
 
-- [ ] **Step 6: Configuración inválida.** Run: `API_MODE=live pnpm --filter @galpon/store build`. Expected: falla con "API_BASE_URL es obligatoria cuando API_MODE=live".
+- [ ] **Step 6: Configuración inválida.** Run: `API_MODE=live npm run build -w @galpon/store`. Expected: falla con "API_BASE_URL es obligatoria cuando API_MODE=live".
 
 - [ ] **Step 7: Commit** `feat(store): esqueleto de la tienda Next.js conectado al modo de prueba`.
 
@@ -1301,13 +1301,13 @@ export type ContractAlignment = [
     - contraseña incorrecta muestra la alerta (`role="alert"`) "Email o contraseña incorrectos"
     - credenciales correctas llaman a `onSuccess` con el email
 
-- [ ] **Step 2: Correr y ver que fallan.** Run: `pnpm test -- apps/admin`. Expected: FAIL.
+- [ ] **Step 2: Correr y ver que fallan.** Run: `npm test -- apps/admin`. Expected: FAIL.
 
 - [ ] **Step 3: Implementar** los archivos de la lista con las decisiones anteriores. `src/test/setup.ts` hace `import '@testing-library/jest-dom/vitest'`. Escribir el `.env.example` y el README (scripts, modo de prueba, credenciales de prueba, CSP).
 
 - [ ] **Step 4: Verificar**
-  - Run: `pnpm install && pnpm test -- apps/admin && pnpm --filter @galpon/admin typecheck && pnpm lint` → PASS.
-  - Run: `pnpm --filter @galpon/admin build && pnpm --filter @galpon/admin preview` y abrir `http://localhost:5173`:
+  - Run: `npm install && npm test -- apps/admin && npm run typecheck -w @galpon/admin && npm run lint` → PASS.
+  - Run: `npm run build -w @galpon/admin && npm run preview -w @galpon/admin` y abrir `http://localhost:5173`:
     - redirige a `/login`
     - con las credenciales de prueba muestra "Hola, admin@galponmates.com.ar" y "Productos cargados: 27"
     - al recargar sigue con la sesión; "Cerrar sesión" vuelve a `/login`
@@ -1334,18 +1334,17 @@ export type ContractAlignment = [
     - `store-mobile` (`Pixel 7`)
     - `admin-desktop` (`Desktop Chrome`, `baseURL: 'http://localhost:5173'`, `testMatch: /admin\/.*\.spec\.ts/`)
   - `webServer`:
-    - `{ command: 'pnpm --filter @galpon/store start', url: 'http://localhost:3000', reuseExistingServer: !process.env.CI, timeout: 120_000 }`
-    - `{ command: 'pnpm --filter @galpon/admin preview', url: 'http://localhost:5173', … }`
-  - Las dos apps se compilan antes (`pnpm build`).
+    - `{ command: 'npm run start -w @galpon/store', url: 'http://localhost:3000', reuseExistingServer: !process.env.CI, timeout: 120_000 }`
+    - `{ command: 'npm run preview -w @galpon/admin', url: 'http://localhost:5173', … }`
+  - Las dos apps se compilan antes (`npm run build`).
 - **CI** (`.github/workflows/ci.yml`; la raíz del repo es la del workspace, así que no hace falta `working-directory`):
   - `on: push (main) + pull_request`, con `concurrency` y cancelación de la corrida anterior.
   - **Job `checks`** (`ubuntu-latest`), pasos en orden:
     1. `actions/checkout@v7`
-    2. `pnpm/action-setup@v6`, sin `version`: usa `packageManager`
-    3. `actions/setup-node@v7` con `node-version: 24` y `cache: pnpm`
-    4. `pnpm install --frozen-lockfile`
-    5. `pnpm api:lint`, `pnpm api:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage`
-  - **Job `e2e`** (`needs: checks`): el mismo setup, después `pnpm exec playwright install --with-deps chromium`, `pnpm build` y `pnpm test:e2e`. Por último, `actions/upload-artifact@v7` del `playwright-report/` con `if: ${{ !cancelled() }}` y `retention-days: 7`.
+    2. `actions/setup-node@v7` con `node-version: 24` y `cache: npm`
+    3. `npm ci`
+    4. `npm run api:lint`, `npm run api:check`, `npm run lint`, `npm run typecheck`, `npm run test:coverage`
+  - **Job `e2e`** (`needs: checks`): el mismo setup, después `npx playwright install --with-deps chromium`, `npm run build` y `npm run test:e2e`. Por último, `actions/upload-artifact@v7` del `playwright-report/` con `if: ${{ !cancelled() }}` y `retention-days: 7`.
 
 - [ ] **Step 1: Escribir los E2E** (todos importan `test` de `e2e/support/test.ts`)
   - **`store/smoke.spec.ts`**:
@@ -1360,7 +1359,7 @@ export type ContractAlignment = [
     - `page.reload()` mantiene la sesión
     - "Cerrar sesión" vuelve a `/login`
 
-- [ ] **Step 2: Correr.** Run: `pnpm build && pnpm exec playwright install chromium && pnpm test:e2e`. Expected: PASS en los 3 proyectos y ninguna violación de CSP.
+- [ ] **Step 2: Correr.** Run: `npm run build && npx playwright install chromium && npm run test:e2e`. Expected: PASS en los 3 proyectos y ninguna violación de CSP.
 
 - [ ] **Step 3: Escribir `.github/workflows/ci.yml`** con las decisiones anteriores. Verificar que el YAML es válido parseándolo: `node -e "require('yaml').parse(require('fs').readFileSync('.github/workflows/ci.yml','utf8'))"` termina con exit 0. No hay que pushear: el CI corre cuando Lucas suba el repo.
 
@@ -1380,11 +1379,11 @@ export type ContractAlignment = [
 
 - [ ] **Step 1: README raíz**
   - qué es el repo y dónde están los otros dos repos
-  - requisitos: Node ≥ 22.12 (se recomienda 24) y pnpm 12.4.2
-  - levantar todo en modo de prueba en 3 comandos (`pnpm install`, `pnpm dev`, abrir `http://localhost:3000` y `http://localhost:5173` con las credenciales de prueba)
+  - requisitos: Node ≥ 22.12 (se recomienda 24) y npm ≥ 10
+  - levantar todo en modo de prueba en 3 comandos (`npm install`, `npm run dev`, abrir `http://localhost:3000` y `http://localhost:5173` con las credenciales de prueba)
   - tabla de scripts y mapa de carpetas (sección 4 del spec)
   - cómo pasar a vivo (link a la sección 13.4 del spec)
-  - cómo agregar una dependencia (catálogo; con más de 24 h publicada)
+  - cómo agregar una dependencia (se fija la versión exacta en `scripts/dependency-versions.json` y se usa la misma en el `package.json`)
   - convenciones (link a la sección 6 del spec)
   - "los push los hace Lucas"
 
@@ -1397,17 +1396,17 @@ export type ContractAlignment = [
     - 0004: los dos modos de MP, Secure Fields, 3-D Secure, idempotencia, un intento activo, los estados normalizados y la API de MP que se elige en la fase 2 (queda en estado "Aceptada; la API concreta se fija en la fase 2")
     - 0005: Cloudinary con subida firmada directa por XHR
     - 0006: pesos enteros (D1)
-    - 0007: TS 6.0.3 y ESLint 9.39, sin `exactOptionalPropertyTypes`, jsdom 29 y la regla de las 24 h de pnpm
+    - 0007: TS 6.0.3 y ESLint 9.39, sin `exactOptionalPropertyTypes`, jsdom 29, npm workspaces con versiones exactas centralizadas y `openapi-typescript` vía `npx`
   - `docs/adr/README.md` es el índice con una línea por ADR.
 
 - [ ] **Step 3: Ajustar el spec** con los "Refinamientos del spec" de este plan:
   - sección 12: rutas de contenido separadas, slug canónico con 200, `ProductTabs.descriptionNote`, respuesta del login del admin
   - sección 13.1: el export de fixtures pasa a la fase 2
   - sección 20: typecheck en `pre-push`
-  - sección 5: versiones fijadas (`@hookform/resolvers` 5.9.2, jsdom 29.1.1, TanStack Table 9)
+  - sección 5: npm workspaces (pedido de Lucas: `npm i` y `npm run dev`), versiones exactas en `scripts/dependency-versions.json` y versiones fijadas (`@hookform/resolvers` 5.9.2, jsdom 29.1.1, TanStack Table 9)
 
 - [ ] **Step 4: Verificación final de P1**
-  - Run: `pnpm format:check && pnpm api:lint && pnpm api:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:e2e`. Expected: todo en verde.
+  - Run: `npm run format:check && npm run api:lint && npm run api:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e`. Expected: todo en verde.
   - Comprobar el criterio de "listo" de P1: las dos apps arrancan en modo de prueba, CI escrito, y `domain` y `schemas` con sus umbrales de cobertura cumplidos.
 
 - [ ] **Step 5: Commit** `docs: README, ADRs y ajustes del spec al cerrar P1`.

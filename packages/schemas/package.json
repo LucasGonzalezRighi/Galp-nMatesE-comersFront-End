@@ -1,0 +1,16 @@
+{
+  "name": "@galpon/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@galpon/domain": "*",
+    "zod": "4.6.7"
+  }
+}

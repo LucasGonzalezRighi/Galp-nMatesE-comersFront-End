@@ -1,0 +1,136 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useRef, useState } from 'react'
+import { describe, expect, it } from 'vitest'
+import { Dialog } from './Dialog'
+
+function Harness() {
+  const [open, setOpen] = useState(true)
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      title="Nueva línea"
+      description="Completá los datos."
+      size="lg"
+      footer={<button type="button">Guardar</button>}
+    >
+      <p>Contenido</p>
+    </Dialog>
+  )
+}
+
+describe('Dialog', () => {
+  it('muestra título, descripción, contenido y pie con el ancho del tamaño', async () => {
+    render(<Harness />)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Nueva línea' })
+    expect(dialog).toHaveAccessibleDescription('Completá los datos.')
+    expect(dialog).toHaveClass('max-w-[720px]', 'bg-surface', 'shadow-lg', 'rounded-lg')
+    expect(screen.getByText('Contenido')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
+  })
+
+  it('"Cerrar" cierra el diálogo', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    await user.click(await screen.findByRole('button', { name: 'Cerrar' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('el foco arranca en el primer campo del cuerpo y "Cerrar" va último, arriba a la derecha', async () => {
+    render(
+      <Dialog
+        open
+        onOpenChange={() => undefined}
+        title="Nueva línea"
+        footer={<button type="button">Guardar</button>}
+      >
+        <input aria-label="Nombre" />
+      </Dialog>,
+    )
+
+    const input = await screen.findByRole('textbox', { name: 'Nombre' })
+    await waitFor(() => {
+      expect(input).toHaveFocus()
+    })
+    const close = screen.getByRole('button', { name: 'Cerrar' })
+    expect(screen.getByRole('dialog').lastElementChild).toBe(close)
+    expect(close).toHaveClass('absolute', 'top-4', 'right-4', 'lg:top-6', 'lg:right-6')
+  })
+
+  it('al cerrarse devuelve el foco al elemento que lo tenía al abrirse', async () => {
+    const user = userEvent.setup()
+    function WithOpener() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Nueva línea
+          </button>
+          <Dialog open={open} onOpenChange={setOpen} title="Nueva línea de mates">
+            <input aria-label="Nombre" />
+          </Dialog>
+        </>
+      )
+    }
+    render(<WithOpener />)
+
+    await user.click(screen.getByRole('button', { name: 'Nueva línea' }))
+    await screen.findByRole('dialog', { name: 'Nueva línea de mates' })
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // El foco vuelve un cuadro después (por si otro código ya lo movió).
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Nueva línea' })).toHaveFocus()
+    })
+  })
+
+  it('con returnFocusTo, al cerrarse el foco va al elemento que devuelve', async () => {
+    const user = userEvent.setup()
+    function WithTarget() {
+      const [open, setOpen] = useState(false)
+      const headingRef = useRef<HTMLHeadingElement>(null)
+      return (
+        <>
+          <h1 ref={headingRef} tabIndex={-1}>
+            Pedido GLP-09001
+          </h1>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true)
+            }}
+          >
+            Marcar como despachado
+          </button>
+          <Dialog
+            open={open}
+            onOpenChange={setOpen}
+            title="Despachar el pedido"
+            returnFocusTo={() => headingRef.current}
+          >
+            <input aria-label="Empresa" />
+          </Dialog>
+        </>
+      )
+    }
+    render(<WithTarget />)
+
+    await user.click(screen.getByRole('button', { name: 'Marcar como despachado' }))
+    await screen.findByRole('dialog', { name: 'Despachar el pedido' })
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    })
+  })
+})

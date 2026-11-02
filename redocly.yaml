@@ -1,0 +1,4 @@
+# Reglas del lint del contrato (npm run api:lint).
+# Sin ninguna regla apagada: si una regla molesta, se arregla el YAML.
+extends:
+  - recommended

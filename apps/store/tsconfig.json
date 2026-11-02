@@ -1,0 +1,15 @@
+{
+  "extends": "@galpon/config/tsconfig.react.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "src"
+  ]
+}
