@@ -62,7 +62,7 @@ export interface PageTransitionProviderProps {
  *   anima. Mientras hay capa, `<html>` lleva `data-page-covered` y la entrada de página
  *   (`PageEnter`) no se suma: el telón se abre sobre la página nueva ya nítida.
  * - **Intro:** la arranca el inicio al montarse (`startIntro`): espera los trazos, traza el
- *   matecito y GALPÓN (3,4 s), rellena (0,6 s) y se abre (1 s). Un clic, una tecla o la rueda
+ *   matecito y GALPÓN (3,4 s), rellena (0,6 s) y se abre (1,5 s). Un clic, una tecla o la rueda
  *   saltan a la apertura. Mientras dura, los `main` quedan `inert`, un texto para lectores dice
  *   que se está cargando y, al terminar, el foco vuelve adonde estaba.
  *

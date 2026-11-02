@@ -1,7 +1,7 @@
 /*
  * Intro del inicio y telón entre páginas (Ruling MR-29). La capa es una sola: dos mitades
  * verticales con fondo liso que, al final, se abren como un libro hacia los costados. Solo se
- * animan `transform`, `opacity`, `filter` y el `stroke-dashoffset` de los trazos del logo.
+ * animan `transform`, `opacity` y el `stroke-dashoffset` de los trazos del logo.
  * Los tiempos llegan en variables desde `IntroLayer` (`INTRO_TIMING`).
  */
 
@@ -57,6 +57,13 @@
   background: var(--color-background);
 }
 
+/* Con el logo relleno o hecho (el telón lo trae hecho desde que baja), las mitades pasan a su
+   propia capa antes de abrirse: si no, el primer cuadro de la apertura tardaba ~120 ms en
+   rasterizarlas y se notaba el tirón. */
+.intro:is([data-logo='fill'], [data-logo='done']) .intro-half {
+  will-change: transform;
+}
+
 /* 1 px de más a la izquierda: las dos mitades dibujan el mismo logo, así el corte no deja una
    línea en el medio del matecito. */
 .intro-half-left {
@@ -87,25 +94,26 @@
   left: -50cqw;
 }
 
+/* La apertura (Ruling MR-31): suave al arrancar, rápida en el medio y suave al llegar, sin
+   quedarse quieta al final. Solo `transform` (sin desenfoque): dos mitades de media pantalla con
+   `filter` perdían cuadros justo al final. */
 .intro[data-phase='opening'] .intro-half-left {
-  animation: intro-open-left var(--intro-open-ms) var(--ease-main) both;
+  animation: intro-open-left var(--intro-open-ms) var(--intro-ease-open) both;
 }
 
 .intro[data-phase='opening'] .intro-half-right {
-  animation: intro-open-right var(--intro-open-ms) var(--ease-main) both;
+  animation: intro-open-right var(--intro-open-ms) var(--intro-ease-open) both;
 }
 
 @keyframes intro-open-left {
   to {
     transform: translate3d(-100%, 0, 0) rotateY(18deg);
-    filter: blur(6px);
   }
 }
 
 @keyframes intro-open-right {
   to {
     transform: translate3d(100%, 0, 0) rotateY(-18deg);
-    filter: blur(6px);
   }
 }
 

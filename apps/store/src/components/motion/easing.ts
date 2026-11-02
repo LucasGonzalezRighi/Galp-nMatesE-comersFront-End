@@ -42,3 +42,9 @@ export const EASE_CURTAIN: Bezier = [0.7, 0, 0.3, 1]
 
 /** Curva con que se dibuja el check, tomada del diseño (aún no es un token). */
 export const EASE_DRAW: Bezier = [0.65, 0, 0.35, 1]
+
+/**
+ * Curva con que se abren la intro y el telón (Ruling MR-31): arranca suave, acelera en el medio
+ * y llega frenando suave, sin quedarse quieta al final como lo hace {@link EASE_MAIN}.
+ */
+export const EASE_OPEN: Bezier = [0.65, 0, 0.35, 1]

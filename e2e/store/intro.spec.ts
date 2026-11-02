@@ -22,12 +22,12 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
   test.describe('con movimiento', () => {
     test.use({ reducedMotion: 'no-preference' })
 
-    test('la intro tapa el inicio, se abre en 5 s y deja ver la portada', async ({ page }) => {
+    test('la intro tapa el inicio, se abre en 5,5 s y deja ver la portada', async ({ page }) => {
       await gotoStore(page, '/', { intro: 'keep' })
       await expect(page.locator(LAYER)).toBeAttached()
       await expect(page.locator(LAYER)).toHaveAttribute('data-mode', 'intro')
-      // 5 s de guion, más la hidratación y la carga de los trazos.
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 7000 })
+      // 5,5 s de guion, más la hidratación y la carga de los trazos.
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
       await expect(page.locator('main').first()).not.toHaveAttribute('inert')
     })
@@ -37,8 +37,8 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       await expect(page.locator(LAYER)).toBeAttached()
       await page.keyboard.press('Escape')
       await expect(page.locator(LAYER)).toHaveAttribute('data-phase', 'opening')
-      // La apertura dura 1 s; con dos inicios en 3D a la vez el reloj de la página se atrasa.
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 3000 })
+      // La apertura dura 1,5 s; con dos inicios en 3D a la vez el reloj de la página se atrasa.
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 4500 })
     })
 
     test('ir a la tienda baja el telón y después muestra la tienda', async ({ page, isMobile }) => {
@@ -78,7 +78,7 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
       await expect(page).toHaveURL('/')
       await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 7000 })
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
     })
 
@@ -90,7 +90,7 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
       await expect(page).toHaveURL('/')
       await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 7000 })
+      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
     })
   })

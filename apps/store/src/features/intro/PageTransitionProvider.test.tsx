@@ -76,7 +76,7 @@ function Home(): ReactNode {
 }
 
 describe('intro del inicio', () => {
-  it('tapa el inicio, traza, rellena, se abre como un libro y se desmonta en 5 s', async () => {
+  it('tapa el inicio, traza, rellena, se abre como un libro y se desmonta en 5,5 s', async () => {
     goTo('/')
     render(
       <PageTransitionProvider>
