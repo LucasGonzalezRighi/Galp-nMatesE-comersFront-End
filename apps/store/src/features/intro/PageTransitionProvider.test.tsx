@@ -244,6 +244,29 @@ describe('telón entre páginas', () => {
     expect(nav.push).toHaveBeenCalledTimes(1)
   })
 
+  it('mientras el telón baja, un segundo clic se traga: no navega ni corta la bajada', () => {
+    goTo('/')
+    render(<Site page={<main>Inicio</main>} />)
+    fireEvent.click(screen.getByRole('link', { name: 'Tienda' }))
+    expect(layer()).toHaveAttribute('data-phase', 'covering')
+
+    // El doble clic en el mismo link y un clic en otro, con el telón a medio bajar. El `body`
+    // escucha después que React y antes que la prueba frene la navegación real.
+    const prevented: boolean[] = []
+    const record = (event: Event): void => {
+      prevented.push(event.defaultPrevented)
+    }
+    document.body.addEventListener('click', record)
+    fireEvent.click(screen.getByRole('link', { name: 'Tienda' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Nosotros' }))
+    document.body.removeEventListener('click', record)
+    expect(prevented).toEqual([true, true])
+    expect(layer()).toHaveAttribute('data-phase', 'covering')
+    advance(INTRO_TIMING.coverMs)
+    expect(nav.push).toHaveBeenCalledTimes(1)
+    expect(nav.push).toHaveBeenCalledWith('/tienda')
+  })
+
   it('precarga las imágenes del logo del telón cuando la página queda libre', () => {
     const requested: string[] = []
     class FakeImage {

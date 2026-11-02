@@ -57,8 +57,9 @@ export interface PageTransitionProviderProps {
  *   celular) baja el telón con el logo (450 ms), navega con la pantalla tapada (`router.push`) y,
  *   cuando cambia el `pathname`, se abre como un libro (650 ms). Hacia el inicio baja sin logo:
  *   la intro del inicio lo dibuja entero antes de abrirse. Un clic en la página actual, un clic
- *   modificado, con menos movimiento o mientras otra capa se abre navegan como siempre; el botón
- *   Atrás no anima. Mientras hay capa, `<html>` lleva `data-page-covered` y la entrada de página
+ *   modificado, con menos movimiento o mientras otra capa se abre navegan como siempre; mientras
+ *   el telón baja, un segundo clic se traga (un doble clic no corta la bajada); el botón Atrás no
+ *   anima. Mientras hay capa, `<html>` lleva `data-page-covered` y la entrada de página
  *   (`PageEnter`) no se suma: el telón se abre sobre la página nueva ya nítida.
  * - **Intro:** la arranca el inicio al montarse (`startIntro`): espera los trazos, traza el
  *   matecito y GALPÓN (3,4 s), rellena (0,6 s) y se abre (1 s). Un clic, una tecla o la rueda
@@ -82,9 +83,14 @@ export function PageTransitionProvider({ children }: PageTransitionProviderProps
     () => ({
       onNavClick: (event, href) => {
         if (!isPlainClick(event) || prefersReducedMotion()) return
+        // Con otra capa abriéndose (el telón o la intro) el link navega como siempre; mientras el
+        // telón baja (o la intro dibuja) el clic se traga: un doble clic no corta la bajada.
+        if (phaseRef.current === 'opening') return
+        if (phaseRef.current !== 'idle') {
+          event.preventDefault()
+          return
+        }
         if (window.location.pathname === href) return
-        // Con otra capa en curso (el telón o la intro abriéndose) el link navega como siempre.
-        if (phaseRef.current !== 'idle') return
         event.preventDefault()
         // Valida la ruta antes de bajar el telón (lanza `RangeError` si no es interna).
         asRoute(href)
