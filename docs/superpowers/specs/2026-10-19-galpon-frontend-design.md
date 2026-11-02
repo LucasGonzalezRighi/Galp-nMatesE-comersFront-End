@@ -772,7 +772,7 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 **Etapa 2**
 
 - Escena 3D del Mate Imperial Premium con three.js (2026-10-29, `features/home/mate3d`): porta `docs/design/galpon-tienda-v3/mate3d-scene.js` con cuero negro fijo y el paquete real de Canarias, y se arma con el scroll en las tres paradas del inicio (`mateStateAt` sobre el avance del `ScrollStage`; keyframes tipados como tuplas). Desde "el mate 3D realista" (2026-10-29) la escena está partida en módulos (`mate3d/scene/`) y es realista: el mate se inclina para recibir la yerba, la yerba es un campo de alturas con la foto real (montañita con pared y hueco), caen hojas y polvo del paquete, y el termo sirve un chorro con refracción que salpica y deja charco y vapor. three se descarga al entrar en pantalla en un chunk aparte y se pausa fuera de ella; foto del mate si no hay WebGL; no se monta con menos movimiento, en el celular ni en el servidor.
-- Cursor propio (`cursor-default.png`, `cursor-pointer.png`) y brillo que sigue al mouse.
+- Cursor de matecito (2026-10-30, Ruling MR-29): `public/cursors/mate.png` para la página y `mate-pointer.png` para links y botones, solo con puntero fino. Queda pendiente el brillo que sigue al mouse.
 - Muestras de cuero que cambian de nombre con el scroll (la escena "Elegí el cuero." hoy no se muestra en el inicio).
 
 ## 18. Accesibilidad y rendimiento
@@ -815,7 +815,7 @@ Cada plan tiene su propio documento, sus tareas y su criterio de "listo"; termin
 | **P2 · Tienda pública** | Layout (barra superior, header, menú, pie, toast), `components/ui`, Inicio (sin 3D), Tienda, Producto, Reseñas, Búsqueda, Carrito, Kit, Nosotros, Preguntas, Contacto, Arrepentimiento, Legales, SEO, animaciones de la etapa 1 | Lista de control visual de esas pantallas aprobada; E2E de navegación, carrito, kit, búsqueda, contacto y arrepentimiento |
 | **P3 · Checkout y cuenta** | Checkout de 3 pasos, cotización, pedidos, simulador de MP, tarjeta con Secure Fields y campos simulados, 3-D Secure, resultado, pedido de invitado, cuenta de cliente | E2E de todos los caminos de compra en verde |
 | **P4 · Dashboard** | Sesión, resumen, productos con fotos, líneas, pedidos, contenido, ajustes, reseñas, mensajes | E2E del admin en verde; lista de control del admin |
-| **P5 · Etapa 2 y cierre** | Cursor y brillo, Lighthouse, accesibilidad, revisión visual final, README finales (la escena 3D ya está) | Objetivos de la sección 18 cumplidos |
+| **P5 · Etapa 2 y cierre** | Brillo, Lighthouse, accesibilidad, revisión visual final, README finales (la escena 3D, la intro y el cursor ya están) | Objetivos de la sección 18 cumplidos |
 
 ### 21.2 Lista de control visual
 
