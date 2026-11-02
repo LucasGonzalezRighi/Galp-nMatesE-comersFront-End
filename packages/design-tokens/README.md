@@ -17,9 +17,9 @@ Tokens de diseño de Galpón Mates (sección 7 del spec): el tema de Tailwind v4
 @import '@galpon/design-tokens/base.css';
 ```
 
-La fuente llega con `next/font` (`Inter({ variable: '--font-inter' })`), con la clase en `<html>`.
+La fuente llega con `next/font/local` (`localFont({ variable: '--font-manrope' })`), con la clase en `<html>`.
 
-**Vite (dashboard)**, en `src/index.css`, con la misma pila de imports. La fuente sale de `@fontsource-variable/inter` (`import '@fontsource-variable/inter'` en `main.tsx`); `base.css` ya define `--font-inter: 'Inter Variable'` para ese caso.
+**Vite (dashboard)**, en `src/index.css`, con la misma pila de imports. La fuente sale de `@fontsource-variable/manrope` (`import '@fontsource-variable/manrope'` en `main.tsx`); `base.css` ya define `--font-manrope: 'Manrope Variable'` para ese caso.
 
 Desde TypeScript: `import { tokens, cssVariables } from '@galpon/design-tokens'`.
 

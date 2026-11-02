@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* Fuente por defecto para el dashboard (Vite); en la tienda la pisa la variable de next/font. */
-    --font-inter: 'Inter Variable';
+    --font-manrope: 'Manrope Variable';
 
     /* Espacios del diseño (2,8 px por paso). No reemplazan la escala de Tailwind. */
     --space-1: 2.8px;

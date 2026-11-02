@@ -7,7 +7,7 @@ import { CartDrawer, CartHydrator } from '@/features/cart'
 import { PageTransitionProvider } from '@/features/intro'
 import { SearchModal } from '@/features/search'
 import { Toaster } from '@/features/toast'
-import { inter } from '../fonts'
+import { manrope } from '../fonts'
 import '../globals.css'
 import { Providers } from '../providers'
 import { PAGE_BACKGROUND, SITE_METADATA, SITE_VIEWPORT } from '../site-shell'
@@ -36,7 +36,7 @@ interface RootLayoutProps {
  */
 export default function RootLayout({ children }: RootLayoutProps): ReactNode {
   return (
-    <html lang="es-AR" className={inter.variable}>
+    <html lang="es-AR" className={manrope.variable}>
       <body>
         <Providers>
           <PageTransitionProvider>

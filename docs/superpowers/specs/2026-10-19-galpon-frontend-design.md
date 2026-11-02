@@ -137,7 +137,7 @@ Versiones estables verificadas el 2026-10-20. Se fijan **exactas** en `scripts/d
 | Pagos | `@mercadopago/sdk-js` (carga MercadoPago.js v2: Secure Fields + Core Methods) |
 | Imágenes | `next/image` con loader de Cloudinary; subida firmada directa en el admin |
 | Íconos | `@phosphor-icons/react` (el diseño usa Phosphor) |
-| Tipografía | Inter: `next/font` en la tienda, `@fontsource-variable/inter` en el admin |
+| Tipografía | Manrope: `next/font/local` en la tienda, `@fontsource-variable/manrope` en el admin |
 | Tests | Vitest 5 + Testing Library + jsdom **29.1.1** (no 30: pide Node ≥ 22.22 y Lucas usa 22.20) + Playwright 1.6x + `@axe-core/playwright` |
 | Calidad | ESLint **9.39** (no 10: jsx-a11y, eslint-config-next y eslint-plugin-import no lo soportan todavía) + typescript-eslint `strictTypeChecked` + jsx-a11y + boundaries + react-hooks; Prettier; lefthook |
 
@@ -183,7 +183,7 @@ features/cart/
 | Sombras | `sm 0 0 0 1px #42382f` · `md 0 0 0 1px #5c4f45, 0 6px 18px rgba(0,0,0,.55)` · `lg 0 0 0 1px #998877, 0 16px 40px rgba(0,0,0,.65)` |
 | Radios | `sm 4px` · `md 8px` · `lg 14px` · tag `6px` |
 | Espacios | `1: 2.8px` `2: 5.6px` `3: 8.4px` `4: 11.2px` `6: 16.8px` `8: 22.4px` |
-| Tipografía | Inter. Cuerpo 15px / 1.55. Títulos peso 500, interlineado 1.12, `letter-spacing -0.015em`: h1 42 · h2 32 · h3 25 · h4 20 · h5 16 px. Botones e inputs 14px; labels 12px; segmentados 13px; tags 11px |
+| Tipografía | Manrope. Cuerpo 15px / 1.55. Títulos peso 500, interlineado 1.12, `letter-spacing -0.015em`: h1 42 · h2 32 · h3 25 · h4 20 · h5 16 px. Botones e inputs 14px; labels 12px; segmentados 13px; tags 11px |
 | Foco y selección | `:focus-visible` contorno 2px `accent`, separación 2px · selección `accent` al 30% |
 | Cueros (interfaz) | Negro `#221f22` · Marrón `#6b4532` · Crudo `#d7c29e` · Borravino `#5d1f2d` |
 | Cueros (ficha del producto; el mate 3D del inicio es negro fijo) | `#3a2016 #6b3c22 #b88d5c #5a1c26` (más saturados para la iluminación; se mantienen las dos paletas) |

@@ -64,7 +64,7 @@
   --shadow-md: 0 0 0 1px #5c4f45, 0 6px 18px rgba(0,0,0,.55);
   --shadow-lg: 0 0 0 1px #998877, 0 16px 40px rgba(0,0,0,.65);
 
-  --font-sans: var(--font-inter), 'Inter Variable', system-ui, sans-serif;
+  --font-sans: var(--font-manrope), 'Manrope Variable', system-ui, sans-serif;
 
   --text-body: 15px;
   --text-body--line-height: 1.55;

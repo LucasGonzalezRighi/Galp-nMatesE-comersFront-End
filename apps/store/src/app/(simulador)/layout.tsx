@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import { cx } from '@/components/ui/cx'
-import { inter } from '../fonts'
+import { manrope } from '../fonts'
 import '../globals.css'
 import { Providers } from '../providers'
 import { PAGE_BACKGROUND, SITE_METADATA, SITE_VIEWPORT } from '../site-shell'
@@ -28,7 +28,7 @@ interface SimulatorRootLayoutProps {
  */
 export default function SimulatorRootLayout({ children }: SimulatorRootLayoutProps): ReactNode {
   return (
-    <html lang="es-AR" className={inter.variable}>
+    <html lang="es-AR" className={manrope.variable}>
       <body>
         <Providers>
           <div className={cx('relative min-h-screen overflow-x-clip text-pretty', PAGE_BACKGROUND)}>

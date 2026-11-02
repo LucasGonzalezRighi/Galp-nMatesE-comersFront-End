@@ -145,4 +145,4 @@ src/
 └─ instrumentation.ts   Valida el entorno al arrancar el servidor
 ```
 
-La tipografía (Inter) sale de `@fontsource-variable/inter` con `next/font/local`, así el build no necesita red.
+La tipografía (Manrope) sale de `@fontsource-variable/manrope` con `next/font/local`, así el build no necesita red.

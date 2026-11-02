@@ -89,7 +89,7 @@ export const tokens = {
     8: '22.4px',
   },
   typography: {
-    fontFamily: "var(--font-inter), 'Inter Variable', system-ui, sans-serif",
+    fontFamily: "var(--font-manrope), 'Manrope Variable', system-ui, sans-serif",
     body: { size: '15px', lineHeight: '1.55' },
     heading: {
       lineHeight: '1.12',

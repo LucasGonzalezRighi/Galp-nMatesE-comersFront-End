@@ -61,7 +61,7 @@ describe('base.css', () => {
   })
 
   it('trae una fuente por defecto para las apps que no usan next/font', () => {
-    expect(css.get('--font-inter')).toBe("'Inter Variable'")
+    expect(css.get('--font-manrope')).toBe("'Manrope Variable'")
   })
 })
 
