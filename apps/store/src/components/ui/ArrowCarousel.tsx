@@ -48,6 +48,16 @@ const SETTLE_MS = 120
 const ARROW_ICON_SIZE = 15
 
 /**
+ * La grilla de la sección: el margen del sitio son dos columnas de relleno a los lados del título y
+ * de los controles. `--site-inset` lleva un `100%`: como ancho de columna se mide contra toda la
+ * sección, igual que el relleno de la fila (`col-span-full`); como `padding` del título o de los
+ * controles se mediría contra el área de su columna y, desde más de 1920 px, quedarían más afuera
+ * que la primera tarjeta.
+ */
+const SECTION_CLASS =
+  'grid grid-cols-[var(--site-inset)_minmax(0,1fr)_var(--site-inset)] gap-y-4 md:grid-cols-[var(--site-inset)_minmax(0,1fr)_auto_var(--site-inset)] md:gap-y-6'
+
+/**
  * La fila: scroll lateral nativo con imán de a una tarjeta (el dedo y el trackpad funcionan
  * solos; la rueda vertical baja la página), el margen del sitio a los lados y sin barra. El
  * relleno de 16 px arriba y abajo deja lugar a la tarjeta que sube o se inclina con el mouse y al
@@ -132,8 +142,9 @@ function ArrowButton({ direction, label, controls, onPress }: ArrowButtonProps):
  * de nombre.
  *
  * Desde 768 px las flechas y el contador van a la derecha de `header`; más angosto, abajo de la
- * fila. El título, los controles y la fila respetan el margen del sitio (`--site-inset`), así que
- * el carrusel va a todo el ancho, sin `site-container` alrededor. No sabe nada de lo que muestra.
+ * fila. El título, los controles y la fila respetan el margen del sitio (`--site-inset`) y
+ * arrancan en la misma x a cualquier ancho de pantalla, así que el carrusel va a todo el ancho, sin
+ * `site-container` alrededor. No sabe nada de lo que muestra.
  *
  * @param props - Ver {@link ArrowCarouselProps}.
  * @throws {RangeError} Si no hay tarjetas o algún texto está vacío.
@@ -220,16 +231,11 @@ export function ArrowCarousel({
   }
 
   return (
-    <section
-      aria-label={label}
-      className="grid grid-cols-[minmax(0,1fr)] gap-y-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-y-6"
-    >
+    <section aria-label={label} className={SECTION_CLASS}>
       {header !== undefined && (
-        <div className="min-w-0 px-(--site-inset) md:col-start-1 md:row-start-1 md:self-end md:pr-0">
-          {header}
-        </div>
+        <div className="col-start-2 min-w-0 md:row-start-1 md:self-end">{header}</div>
       )}
-      <div className="order-last flex items-center justify-between gap-5 px-(--site-inset) md:order-none md:col-start-2 md:row-start-1 md:justify-end md:self-end md:pl-6">
+      <div className="order-last col-start-2 flex items-center justify-between gap-5 md:order-none md:col-start-3 md:row-start-1 md:justify-end md:self-end md:pl-6">
         <p
           aria-hidden="true"
           className="text-[13px] tracking-[0.04em] text-neutral-300 tabular-nums"
