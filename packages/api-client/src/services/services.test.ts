@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiClient } from '../client'
+import type { ComboInput } from '../generated/schema'
 import {
   adminLogin,
   adminLogout,
+  createAdminCombo,
   createReview,
+  deleteAdminCombo,
   getAboutContent,
   getAdminCsrfToken,
   getAdminSession,
@@ -14,15 +17,19 @@ import {
   getProduct,
   getProductTabsContent,
   getPublicSettings,
+  listAdminCombos,
   listAdminProducts,
   listAllProducts,
   listCategories,
+  listCombos,
   listFeaturedReviews,
   listProductReviews,
   listProducts,
   listRelatedProducts,
+  reorderAdminCombos,
   requestWithdrawal,
   sendContactMessage,
+  updateAdminCombo,
 } from '.'
 import { createApiClient } from '../client'
 import { createFakeFetch, jsonResponse, problemResponse } from '../test/fake-fetch'
@@ -53,6 +60,8 @@ interface ReadCase {
 
 const readCases: ReadCase[] = [
   { name: 'listCategories', run: (api) => listCategories(api), path: '/api/v1/categories' },
+  { name: 'listCombos', run: (api) => listCombos(api), path: '/api/v1/combos' },
+  { name: 'listAdminCombos', run: (api) => listAdminCombos(api), path: '/api/v1/admin/combos' },
   {
     name: 'getProduct',
     run: (api) => getProduct(api, 'mate-uno'),
@@ -346,6 +355,68 @@ describe('admin', () => {
     const { api, requests } = setup()
     await listAdminProducts(api)
     expect(onlyRequest(requests).query).toEqual({})
+  })
+
+  describe('combos', () => {
+    const input: ComboInput = {
+      name: 'Dúo Imperial',
+      description: '',
+      productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+      priceArs: 61999,
+      status: 'published',
+    }
+
+    it('createAdminCombo manda POST con el combo y devuelve el creado', async () => {
+      const { api, requests } = setup()
+      await expect(createAdminCombo(api, input)).resolves.toEqual(BODY)
+      const sent = onlyRequest(requests)
+      expect(sent.request.method).toBe('POST')
+      expect(sent.path).toBe('/api/v1/admin/combos')
+      await expect(sent.request.json()).resolves.toEqual(input)
+    })
+
+    it('updateAdminCombo manda PATCH con el combo completo', async () => {
+      const { api, requests } = setup()
+      await expect(updateAdminCombo(api, 'cmb-duo-imperial', input)).resolves.toEqual(BODY)
+      const sent = onlyRequest(requests)
+      expect(sent.request.method).toBe('PATCH')
+      expect(sent.path).toBe('/api/v1/admin/combos/cmb-duo-imperial')
+      await expect(sent.request.json()).resolves.toEqual(input)
+    })
+
+    it('deleteAdminCombo manda DELETE y con 204 resuelve undefined', async () => {
+      const { fetch, requests } = createFakeFetch(() => new Response(null, { status: 204 }))
+      const api = createApiClient({ baseUrl: 'http://x/api/v1', fetch })
+      await expect(deleteAdminCombo(api, 'cmb-duo-imperial')).resolves.toBeUndefined()
+      const sent = onlyRequest(requests)
+      expect(sent.request.method).toBe('DELETE')
+      expect(sent.path).toBe('/api/v1/admin/combos/cmb-duo-imperial')
+    })
+
+    it('reorderAdminCombos manda PUT con los ids en el orden nuevo', async () => {
+      const { fetch, requests } = createFakeFetch(() => new Response(null, { status: 204 }))
+      const api = createApiClient({ baseUrl: 'http://x/api/v1', fetch })
+      await expect(reorderAdminCombos(api, ['cmb-b', 'cmb-a'])).resolves.toBeUndefined()
+      const sent = onlyRequest(requests)
+      expect(sent.request.method).toBe('PUT')
+      expect(sent.path).toBe('/api/v1/admin/combos/order')
+      await expect(sent.request.json()).resolves.toEqual({ ids: ['cmb-b', 'cmb-a'] })
+    })
+
+    it('rechaza un identificador que no sirve para la ruta sin ir a la red', async () => {
+      const { api, requests } = setup()
+      const message =
+        'El identificador del combo tiene que tener letras, números o guiones, hasta 80 caracteres'
+      await expect(updateAdminCombo(api, '../x', input)).rejects.toThrow(new RangeError(message))
+      await expect(deleteAdminCombo(api, '')).rejects.toThrow(new RangeError(message))
+      await expect(reorderAdminCombos(api, ['cmb-a', 'a b'])).rejects.toThrow(
+        new RangeError(message),
+      )
+      await expect(reorderAdminCombos(api, [])).rejects.toThrow(
+        new RangeError('El orden necesita al menos un combo'),
+      )
+      expect(requests).toHaveLength(0)
+    })
   })
 })
 

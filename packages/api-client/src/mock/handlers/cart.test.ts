@@ -184,3 +184,163 @@ describe('POST /shipping/quote', () => {
     ).rejects.toMatchObject({ status: 422, fieldErrors: { method: expect.any(String) as unknown } })
   })
 })
+
+describe('POST /cart/quote con combos', () => {
+  /** "Dúo Imperial": Mate Imperial Premium ($39.999) + Bombillón Premium Curvo ($28.999), a $61.999. */
+  const DUO: CartItemInput = {
+    type: 'combo',
+    comboId: 'cmb-duo-imperial',
+    quantity: 2,
+    options: { leather: 'Marrón', ferrule: 'Acero' },
+  }
+
+  /** "Bombilla y yerba": sin mate, a $34.999. */
+  const NO_MATE: CartItemInput = {
+    type: 'combo',
+    comboId: 'cmb-bombilla-y-yerba',
+    quantity: 1,
+    options: null,
+  }
+
+  function product(mock: ReturnType<typeof createCheckoutApi>, id: string) {
+    const found = mock.db.products.find((candidate) => candidate.id === id)
+    if (found === undefined) throw new Error(`Falta el fixture ${id}`)
+    return found
+  }
+
+  it('"Dúo Imperial" × 2 cotiza lista 68.998, ahorro 13.998 y total 123.998, con su clave y su detalle', async () => {
+    const mock = createCheckoutApi()
+    const quote = await quoteCart(mock.api, { items: [DUO] })
+    expect(quote).toEqual({
+      lines: [
+        {
+          key: 'combo:cmb-duo-imperial:Marrón:Acero',
+          type: 'combo',
+          name: 'Dúo Imperial',
+          detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+          unitPriceArs: 68998,
+          netUnitPriceArs: netPrice(pesos(61999), 21),
+          kitSavingsArs: 13998,
+          totalArs: 123998,
+          maxQuantity: 12,
+          issue: null,
+        },
+      ],
+      itemsGrossArs: 137996,
+      kitSavingsArs: 13998,
+      subtotalArs: 123998,
+      netSubtotalArs: netPrice(pesos(123998), 21),
+    })
+  })
+
+  it('un combo sin mate no pide opciones y las ignora si vienen', async () => {
+    const mock = createCheckoutApi()
+    const quote = await quoteCart(mock.api, {
+      items: [NO_MATE, { ...NO_MATE, options: { leather: 'Negro', ferrule: 'Acero' } }],
+    })
+    expect(quote.lines.map((line) => [line.key, line.detail, line.totalArs])).toEqual([
+      [
+        'combo:cmb-bombilla-y-yerba:-:-',
+        'Bombillón 100% Alpaca + Yerba Canarias Té y Jengibre 1 kg',
+        34999,
+      ],
+      [
+        'combo:cmb-bombilla-y-yerba:-:-',
+        'Bombillón 100% Alpaca + Yerba Canarias Té y Jengibre 1 kg',
+        34999,
+      ],
+    ])
+  })
+
+  it('si las piezas bajan y suman menos que el combo, cobra el combo sin ahorro', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-bombillon-premium-curvo').priceArs = 15000
+    const quote = await quoteCart(mock.api, { items: [{ ...DUO, expectedUnitPriceArs: 61999 }] })
+    expect(quote.lines[0]).toMatchObject({
+      unitPriceArs: 61999,
+      kitSavingsArs: 0,
+      totalArs: 123998,
+      issue: null,
+    })
+  })
+
+  it('el combo dado de baja, en borrador o con una pieza que no se vende queda unavailable', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-yerba-serena').status = 'draft'
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { ...NO_MATE, comboId: 'cmb-no-existe' },
+        { ...NO_MATE, comboId: 'cmb-galleta-y-canarias', options: null },
+        { ...DUO, comboId: 'cmb-torpedo-completo', quantity: 1 },
+      ],
+    })
+    expect(quote.lines.map((line) => [line.name, line.issue, line.totalArs])).toEqual([
+      ['Combo no disponible', 'unavailable', 0],
+      ['Galleta y Canarias', 'unavailable', 0],
+      ['Torpedo completo', 'unavailable', 0],
+    ])
+    expect(quote.subtotalArs).toBe(0)
+  })
+
+  it('una pieza sin stock deja el combo sold_out', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-bombillon-premium-curvo').stock = 0
+    const quote = await quoteCart(mock.api, { items: [DUO] })
+    expect(quote.lines[0]).toMatchObject({ issue: 'sold_out', maxQuantity: 0, totalArs: 0 })
+  })
+
+  it('el stock de cada pieza se comparte con los productos sueltos, los kits y otros combos', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-imperial-premium').stock = 5
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { ...MATE, quantity: 2 },
+        { ...KIT, quantity: 1 },
+        DUO,
+        { ...DUO, options: { leather: 'Negro', ferrule: 'Alpaca lisa' } },
+      ],
+    })
+    expect(quote.lines.map((line) => [line.issue, line.maxQuantity])).toEqual([
+      [null, 5],
+      [null, 3],
+      [null, 2],
+      ['sold_out', 0],
+    ])
+  })
+
+  it('reduce la cantidad si no alcanza el stock de una pieza', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-bombillon-premium-curvo').stock = 1
+    const quote = await quoteCart(mock.api, { items: [DUO] })
+    expect(quote.lines[0]).toMatchObject({
+      issue: 'quantity_reduced',
+      maxQuantity: 1,
+      unitPriceArs: 68998,
+      kitSavingsArs: 6999,
+      totalArs: 61999,
+    })
+  })
+
+  it('price_changed compara con el precio del combo, no con la suma de las piezas', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-imperial-premium').priceArs = 41999
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { ...DUO, expectedUnitPriceArs: 61999 },
+        { ...NO_MATE, expectedUnitPriceArs: 30000 },
+      ],
+    })
+    expect(quote.lines.map((line) => line.issue)).toEqual([null, 'price_changed'])
+    expect(quote.lines[0]).toMatchObject({ unitPriceArs: 70998, kitSavingsArs: 17998 })
+  })
+
+  it('responde 422 si un combo con mate llega sin cuero ni virola', async () => {
+    const mock = createCheckoutApi()
+    await expect(
+      quoteCart(mock.api, { items: [MATE, { ...DUO, options: null }] }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { 'items.1.options': 'Elegí el cuero y la virola del mate.' },
+    })
+  })
+})

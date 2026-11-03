@@ -11,6 +11,7 @@ import { createFakeFetch, jsonResponse } from '../test/fake-fetch'
 import { ApiClientProvider, useApiClient } from './ApiClientProvider'
 import {
   adminCategoriesQuery,
+  adminCombosQuery,
   adminContentQuery,
   adminCsrfQuery,
   adminDashboardQuery,
@@ -24,6 +25,7 @@ import {
   adminSessionQuery,
   adminSettingsQuery,
   cartQuoteQuery,
+  combosQuery,
   customerCsrfQuery,
   installmentsQuery,
   meQuery,
@@ -69,6 +71,8 @@ describe('queryKeys', () => {
     expect(queryKeys.publicSettings()).toEqual(['settings', 'public'])
     expect(queryKeys.adminSession()).toEqual(['admin', 'session'])
     expect(queryKeys.adminCsrf()).toEqual(['admin', 'csrf'])
+    expect(queryKeys.combos()).toEqual(['combos'])
+    expect(queryKeys.adminCombos()).toEqual(['admin', 'combos'])
     expect(queryKeys.adminProducts({ status: 'draft', page: 2 })).toEqual([
       'admin',
       'products',
@@ -87,6 +91,7 @@ describe('queryOptions', () => {
     const { api } = setup()
     expect(adminSessionQuery(api).queryKey).toEqual(queryKeys.adminSession())
     expect(adminCsrfQuery(api).queryKey).toEqual(queryKeys.adminCsrf())
+    expect(combosQuery(api).queryKey).toEqual(queryKeys.combos())
     expect(adminProductsQuery(api, { q: 'bombillon' }).queryKey).toEqual(
       queryKeys.adminProducts({ q: 'bombillon' }),
     )
@@ -98,6 +103,7 @@ describe('queryOptions', () => {
       (client, api) => client.query(publicSettingsQuery(api)),
       '/settings/public',
     ],
+    ['combosQuery', (client, api) => client.query(combosQuery(api)), '/combos'],
     ['adminSessionQuery', (client, api) => client.query(adminSessionQuery(api)), '/admin/auth/me'],
     ['adminCsrfQuery', (client, api) => client.query(adminCsrfQuery(api)), '/admin/auth/csrf'],
     [
@@ -213,6 +219,12 @@ describe('consultas del admin', () => {
       (client, api) => client.query(adminCategoriesQuery(api)),
       '/admin/categories',
       [...queryKeys.adminCategories()],
+    ],
+    [
+      'adminCombosQuery',
+      (client, api) => client.query(adminCombosQuery(api)),
+      '/admin/combos',
+      [...queryKeys.adminCombos()],
     ],
     [
       'adminOrdersQuery',

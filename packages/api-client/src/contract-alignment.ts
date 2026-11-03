@@ -16,7 +16,7 @@ type S = components['schemas']
 /**
  * Comprueba en compilación que los enums del contrato OpenAPI son idénticos a los de
  * `@galpon/domain` (y el motivo de contacto, a los de `@galpon/schemas`), incluidos los destinos
- * de un pedido que ofrece el admin y los usos de una foto.
+ * de un pedido que ofrece el admin, los usos de una foto y los estados de un combo.
  *
  * Solo hay aserciones de tipos, sin código en tiempo de ejecución: si alguien cambia un valor de
  * un lado y no del otro, `npm run typecheck` falla en la línea del enum que se desfasó.
@@ -24,6 +24,7 @@ type S = components['schemas']
 export type ContractAlignment = [
   Assert<Equals<S['ProductGroup'], Domain.ProductGroup>>,
   Assert<Equals<S['ProductStatus'], Domain.ProductStatus>>,
+  Assert<Equals<S['ComboStatus'], Domain.ComboStatus>>,
   Assert<Equals<S['Leather'], Domain.Leather>>,
   Assert<Equals<S['Ferrule'], Domain.Ferrule>>,
   Assert<Equals<S['ProductSortOrder'], Domain.ProductSortOrder>>,

@@ -25,7 +25,7 @@ servers:
     description: Producción
 tags:
   - name: catalog
-    description: Líneas de producto, catálogo y fichas de producto.
+    description: Líneas de producto, catálogo, combos y fichas de producto.
   - name: reviews
     description: Reseñas de los productos.
   - name: content
@@ -64,6 +64,33 @@ paths:
                 description: Líneas ordenadas por `position`.
                 items:
                   $ref: '#/components/schemas/Category'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /combos:
+    get:
+      operationId: listCombos
+      tags: [catalog]
+      summary: Listar los combos a la venta
+      description: >-
+        Devuelve los combos publicados cuyas piezas están todas publicadas y con precio,
+        ordenados por `position`. Un combo con alguna pieza sin stock viene igual, con `isSoldOut`
+        verdadero e `isPurchasable` falso, para que la tienda lo muestre "Sin stock". Los
+        borradores y los combos con una pieza en borrador, archivada o "a consultar" no vienen.
+        Los datos derivados (`listPriceArs`, `savingsArs`, `maxQuantity`...) salen de los precios
+        y del stock vigentes de las piezas.
+      security: []
+      responses:
+        '200':
+          description: Combos a la venta.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Combos ordenados por `position`.
+                items:
+                  $ref: '#/components/schemas/Combo'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -1842,6 +1869,168 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/ServerError'
+  /admin/combos:
+    get:
+      operationId: listAdminCombos
+      tags: [admin]
+      summary: Listar los combos del dashboard
+      description: >-
+        Devuelve todos los combos, borradores y publicados, ordenados por `position`, con los
+        datos vigentes de sus piezas: así el dashboard avisa si un combo se quedó sin ahorro
+        (`savingsArs` 0) o tiene una pieza que no se puede vender (`items[].isPurchasable`).
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Combos.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Combos ordenados por `position`.
+                items:
+                  $ref: '#/components/schemas/Combo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: createAdminCombo
+      tags: [admin]
+      summary: Crear un combo
+      description: >-
+        Crea un combo al final del listado. Además de las reglas de `ComboInput`, responde `422`
+        si un producto no existe o no está publicado con precio, si dos productos son del mismo
+        grupo o si el precio no es menor que la suma de los productos (ver `ComboInput`). Avisa a
+        la tienda que cambiaron los combos (etiqueta de caché `combos`).
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComboInput'
+      responses:
+        '201':
+          description: Combo creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Combo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/combos/order:
+    put:
+      operationId: reorderAdminCombos
+      tags: [admin]
+      summary: Reordenar los combos
+      description: >-
+        Fija el orden del listado: `ids` tiene que traer todos los combos, una vez cada uno, en
+        el orden nuevo (si no, `422` en `ids` con "El orden tiene que tener todos los combos, una
+        vez cada uno."). `position` pasa a ser el lugar de cada uno, empezando en 1. La tienda
+        muestra los combos en este orden.
+      security:
+        - adminSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComboOrderInput'
+      responses:
+        '204':
+          description: Orden guardado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/combos/{id}:
+    patch:
+      operationId: updateAdminCombo
+      tags: [admin]
+      summary: Modificar un combo
+      description: >-
+        Reemplaza los datos editables del combo: el cuerpo lleva el combo completo y se valida
+        igual que al crearlo. Conserva su `position`. Las líneas de carrito con este combo
+        siguen siendo la misma línea (la clave no lleva las piezas) y se cotizan con la
+        composición y el precio nuevos.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminComboId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComboInput'
+      responses:
+        '200':
+          description: Combo modificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Combo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteAdminCombo
+      tags: [admin]
+      summary: Borrar un combo
+      description: >-
+        Borra el combo y renumera los demás. Los pedidos que lo compraron no cambian (guardan su
+        copia en `OrderLine`); los carritos que todavía lo tienen cotizan esa línea como
+        `unavailable`.
+      security:
+        - adminSession: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/AdminComboId'
+      responses:
+        '204':
+          description: Combo borrado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /admin/media/signature:
     post:
       operationId: createMediaSignature
@@ -2697,6 +2886,16 @@ components:
         minLength: 1
         maxLength: 80
       example: cat-imperiales
+    AdminComboId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de un combo.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+      example: cmb-duo-imperial
     ReviewId:
       name: id
       in: path
@@ -2936,7 +3135,10 @@ components:
           example: stock
         productId:
           type: [string, 'null']
-          description: Producto afectado, o `null` si el cambio no es de un producto (envío o descuento).
+          description: >-
+            Producto afectado, o `null` si el cambio no es de un producto (envío, descuento, el
+            precio de un combo o un combo que ya no está a la venta). En un combo con una pieza
+            sin stock o dada de baja, es esa pieza.
           example: prd-camionero-pelo
         message:
           type: string
@@ -2952,7 +3154,7 @@ components:
       type: integer
       description: >-
         Monto en pesos argentinos que resulta de sumar o multiplicar otros (el total de una línea,
-        el precio de lista de un kit, que suma tres piezas, el subtotal o el total del pedido):
+        el precio de lista de un kit o de un combo, que suma sus piezas, el subtotal o el total del pedido):
         entero, no negativo y de hasta 2.147.483.647, el máximo de un entero de 32 bits. El precio
         de un producto o de una pieza usa `Pesos`, con tope menor.
       minimum: 0
@@ -3054,6 +3256,170 @@ components:
           description: Cantidad de productos publicados de la línea.
           minimum: 0
           example: 4
+    ComboStatus:
+      type: string
+      description: >-
+        Estado de un combo. `draft` es un borrador que la tienda no ve y `published` está a la
+        venta (si sus piezas se pueden vender).
+      enum: [draft, published]
+      example: published
+    ComboItem:
+      type: object
+      description: Producto fijo de un combo, con sus datos vigentes.
+      required: [productId, slug, name, group, unitPriceArs, isPurchasable, maxQuantity, image]
+      properties:
+        productId:
+          type: string
+          description: Identificador del producto.
+          example: prd-imperial-premium
+        slug:
+          type: string
+          description: Slug actual del producto, para enlazar a su ficha.
+          example: mate-imperial-premium
+        name:
+          type: string
+          description: Nombre del producto.
+          example: Mate Imperial Premium
+        group:
+          $ref: '#/components/schemas/ProductGroup'
+        unitPriceArs:
+          description: >-
+            Precio de lista vigente del producto, o `null` si quedó "a consultar" (entonces el
+            combo no se puede comprar).
+          $ref: '#/components/schemas/NullablePesos'
+        isPurchasable:
+          type: boolean
+          description: Si el producto se puede vender ahora, es decir si está publicado, tiene precio y hay stock.
+          example: true
+        maxQuantity:
+          type: integer
+          description: >-
+            Unidades de este producto que se pueden pedir de una vez: el menor entre 20 y su stock
+            disponible (el stock menos lo que reservan los pedidos que esperan el pago); 0 si no
+            hay.
+          minimum: 0
+          maximum: 20
+          example: 12
+        image:
+          description: Foto principal del producto, o `null` si todavía no tiene.
+          oneOf:
+            - $ref: '#/components/schemas/Image'
+            - type: 'null'
+    Combo:
+      type: object
+      description: >-
+        Combo de 2 o 3 productos fijos, de grupos distintos (a lo sumo un mate, una bombilla y una
+        yerba), con un precio final que carga el dashboard. No es el kit: no tiene porcentaje de
+        descuento ni se arma. El cliente solo elige el cuero y la virola si el combo lleva un
+        mate (todos los de `Leather` y `Ferrule`; la tienda arranca en Negro y Alpaca cincelada).
+        No tiene foto propia (la tienda compone las fotos de las piezas) ni slug. `listPriceArs`,
+        `savingsArs`, `isPurchasable`, `isSoldOut` y `maxQuantity` se calculan al responder con
+        los precios y el stock vigentes de las piezas.
+      required:
+        - id
+        - name
+        - description
+        - items
+        - priceArs
+        - netPriceArs
+        - listPriceArs
+        - savingsArs
+        - isPurchasable
+        - isSoldOut
+        - maxQuantity
+        - status
+        - position
+      properties:
+        id:
+          type: string
+          description: Identificador del combo.
+          example: cmb-duo-imperial
+        name:
+          type: string
+          description: Nombre del combo.
+          example: Dúo Imperial
+        description:
+          type: string
+          description: Texto corto del combo; puede ser vacío.
+          example: El imperial de ceremonia con el bombillón curvo de pico de bronce.
+        items:
+          type: array
+          description: Los productos del combo, en el orden en que los cargó el dashboard.
+          minItems: 2
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/ComboItem'
+        priceArs:
+          description: Precio final del combo, con impuestos incluidos. Es lo que paga el cliente por cada combo.
+          $ref: '#/components/schemas/Pesos'
+        netPriceArs:
+          description: >-
+            Precio sin impuestos nacionales (Ley 27.743) de `priceArs`, con la alícuota de los
+            ajustes, o `null` si `PublicSettings.priceDisplay.showNetPrice` está apagado.
+          $ref: '#/components/schemas/NullablePesos'
+        listPriceArs:
+          description: Suma de los precios de lista vigentes de las piezas que tienen precio.
+          $ref: '#/components/schemas/TotalArs'
+        savingsArs:
+          description: >-
+            Ahorro de un combo frente a comprar las piezas sueltas, `max(0, listPriceArs −
+            priceArs)`. Es 0 si las piezas bajaron de precio y ya suman menos que el combo.
+          $ref: '#/components/schemas/TotalArs'
+        isPurchasable:
+          type: boolean
+          description: >-
+            Si se puede agregar al carrito: el combo está publicado y cada pieza se puede vender
+            (`items[].isPurchasable`).
+          example: true
+        isSoldOut:
+          type: boolean
+          description: Si alguna pieza se quedó sin stock disponible.
+          example: false
+        maxQuantity:
+          type: integer
+          description: >-
+            Combos que se pueden pedir de una vez: el menor `maxQuantity` de sus piezas, o 0 si el
+            combo no se puede comprar.
+          minimum: 0
+          maximum: 20
+          example: 12
+        status:
+          $ref: '#/components/schemas/ComboStatus'
+        position:
+          type: integer
+          description: Lugar del combo en el listado, empezando en 1.
+          minimum: 1
+          example: 1
+      example:
+        id: cmb-duo-imperial
+        name: Dúo Imperial
+        description: El imperial de ceremonia con el bombillón curvo de pico de bronce.
+        items:
+          - productId: prd-imperial-premium
+            slug: mate-imperial-premium
+            name: Mate Imperial Premium
+            group: mate
+            unitPriceArs: 39999
+            isPurchasable: true
+            maxQuantity: 12
+            image: null
+          - productId: prd-bombillon-premium-curvo
+            slug: bombillon-premium-curvo
+            name: Bombillón Premium Curvo
+            group: bombilla
+            unitPriceArs: 28999
+            isPurchasable: true
+            maxQuantity: 12
+            image: null
+        priceArs: 61999
+        netPriceArs: 51239
+        listPriceArs: 68998
+        savingsArs: 6999
+        isPurchasable: true
+        isSoldOut: false
+        maxQuantity: 12
+        status: published
+        position: 1
     Rating:
       type: object
       description: Calificación de un producto, calculada sobre sus reseñas aprobadas.
@@ -4157,8 +4523,11 @@ components:
       example: Pedido
     LineType:
       type: string
-      description: Tipo de línea del carrito o del pedido. `product` es un producto suelto y `kit` es un kit de mate, bombilla y yerba con descuento.
-      enum: [product, kit]
+      description: >-
+        Tipo de línea del carrito o del pedido. `product` es un producto suelto, `kit` es un kit
+        de mate, bombilla y yerba con descuento y `combo` es un combo de productos fijos con
+        precio final (`Combo`).
+      enum: [product, kit, combo]
       example: product
     Email:
       type: string
@@ -4292,16 +4661,75 @@ components:
             solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea
             sale con `quantity_reduced` y `POST /orders` responde `stock_changed`.
           $ref: '#/components/schemas/TotalArs'
+    ComboCartItemInput:
+      type: object
+      description: >-
+        Combo en el carrito. Solo lleva el combo: el back usa sus piezas y su precio vigentes.
+        Cotización de la línea (también en `POST /orders`), en este orden:
+        1) si el combo no existe o no está publicado, `unavailable` con `name` "Combo no
+        disponible" o el nombre del combo;
+        2) si alguna pieza no existe, no está publicada o no tiene precio, `unavailable`;
+        3) si el combo lleva mate y falta `options`, `422` en `items.N.options` ("Elegí el cuero
+        y la virola del mate.");
+        4) el stock de cada pieza se comparte con las demás líneas del carrito (sueltas, kits y
+        otros combos, en orden): sin lugar, `sold_out`; con menos que lo pedido,
+        `quantity_reduced` con esa cantidad;
+        5) con `q` combos, `suma` = los precios de lista vigentes de las piezas y `precio` =
+        `Combo.priceArs`: `unitPriceArs = max(suma, precio)`,
+        `kitSavingsArs = (unitPriceArs − precio) × q` y `totalArs = precio × q`, así
+        `totalArs = unitPriceArs × q − kitSavingsArs` y el ahorro nunca es negativo;
+        6) `price_changed` si `expectedUnitPriceArs` vino y no es `Combo.priceArs`.
+        La línea se llama como el combo y su `detail` son las piezas unidas con " + " y, si hay
+        mate, " · Cuero negro · Alpaca cincelada". En el pedido la línea guarda las piezas en
+        `kitItems` y la reserva suma cada pieza.
+      required: [type, comboId, quantity, options]
+      properties:
+        type:
+          type: string
+          const: combo
+          description: Discriminador; en un combo vale `combo`.
+          example: combo
+        comboId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Identificador del combo.
+          example: cmb-duo-imperial
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Cantidad de combos, de 1 a 20 (y no más que el stock de cada pieza).
+          example: 1
+        options:
+          description: >-
+            Cuero y virola del mate del combo; `null` si el combo no lleva mate (en un combo sin
+            mate se ignoran).
+          oneOf:
+            - $ref: '#/components/schemas/CartItemOptions'
+            - type: 'null'
+        expectedUnitPriceArs:
+          description: >-
+            Precio final por combo (`Combo.priceArs`) que la tienda tenía cotizado. Es opcional: si
+            viene y no coincide, la línea de `POST /cart/quote` sale con `issue` `price_changed` y
+            `POST /orders` responde `409` con `type` `price_changed`. Un cambio de precio de las
+            piezas no lo dispara, porque el combo cuesta lo mismo. Si a la vez bajó el stock, gana
+            el stock.
+          $ref: '#/components/schemas/Pesos'
     CartItemInput:
-      description: Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto o un kit.
+      description: >-
+        Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto, un
+        kit o un combo.
       oneOf:
         - $ref: '#/components/schemas/ProductCartItemInput'
         - $ref: '#/components/schemas/KitCartItemInput'
+        - $ref: '#/components/schemas/ComboCartItemInput'
       discriminator:
         propertyName: type
         mapping:
           product: '#/components/schemas/ProductCartItemInput'
           kit: '#/components/schemas/KitCartItemInput'
+          combo: '#/components/schemas/ComboCartItemInput'
     CartQuoteInput:
       type: object
       description: Carrito a cotizar.
@@ -4326,7 +4754,8 @@ components:
       type: object
       description: >-
         Línea cotizada. `unitPriceArs` es el precio de lista de una unidad (en un kit, la suma de
-        las tres piezas), `kitSavingsArs` es el ahorro de toda la línea y
+        las tres piezas; en un combo, la suma de sus piezas o el precio del combo si es mayor),
+        `kitSavingsArs` es el ahorro de toda la línea y
         `totalArs = unitPriceArs × cantidad − kitSavingsArs`. Las líneas `unavailable` y
         `sold_out` tienen todos sus importes en 0 y no suman a los totales.
       required:
@@ -4345,29 +4774,36 @@ components:
           type: string
           description: >-
             Clave de la línea, igual a la que arma la tienda: `product:{productId}:{cuero}:{virola}`
-            (con `-` si no hay opciones) o `kit:{mateId}:{bombillaId}:{yerbaId}:{cuero}`.
+            (con `-` si no hay opciones), `kit:{mateId}:{bombillaId}:{yerbaId}:{cuero}` o
+            `combo:{comboId}:{cuero}:{virola}` (con `-` si el combo no lleva mate; no incluye las
+            piezas, así la línea sigue siendo la misma si el dashboard cambia la composición).
           example: product:prd-imperial-premium:Negro:Alpaca cincelada
         type:
           $ref: '#/components/schemas/LineType'
         name:
           type: string
-          description: Nombre de la línea, es decir el del producto o "Kit".
+          description: Nombre de la línea, es decir el del producto, "Kit" o el nombre del combo.
           example: Mate Imperial Premium
         detail:
           type: string
-          description: Texto secundario de la línea, con las opciones elegidas; vacío si no hay.
+          description: >-
+            Texto secundario de la línea, con las opciones elegidas (en un kit o un combo, además
+            las piezas unidas con " + "); vacío si no hay.
           example: Cuero Negro · Virola Alpaca cincelada
         unitPriceArs:
-          description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
+          description: >-
+            Precio de lista de una unidad (en un kit, la suma de las tres piezas; en un combo,
+            `max(suma de las piezas, Combo.priceArs)`).
           $ref: '#/components/schemas/TotalArs'
         netUnitPriceArs:
           description: >-
             Precio sin impuestos nacionales (Ley 27.743) de una unidad, calculado por el back con
             la alícuota configurada en los ajustes sobre el precio de venta efectivo por unidad,
             es decir `(unitPriceArs × cantidad − kitSavingsArs) / cantidad`, que es lo mismo que
-            `totalArs / cantidad` (la división es exacta porque el ahorro por kit es proporcional
-            a la cantidad). En un kit con descuento es el neto de lo que paga el cliente y no el
-            del precio de lista; en los productos sueltos coincide con el neto de `unitPriceArs`.
+            `totalArs / cantidad` (la división es exacta porque el ahorro por kit o por combo es
+            proporcional a la cantidad). En un kit con descuento es el neto de lo que paga el
+            cliente y no el del precio de lista (en un combo, el neto de `Combo.priceArs`); en los
+            productos sueltos coincide con el neto de `unitPriceArs`.
             Sirve para mostrar "Precio sin impuestos nacionales" también en los kits, junto a
             `totalArs`, sin que la tienda lo recalcule. Vale `null` si
             `PublicSettings.priceDisplay.showNetPrice` está apagado; en las líneas `unavailable`
@@ -4376,7 +4812,7 @@ components:
             - $ref: '#/components/schemas/TotalArs'
             - type: 'null'
         kitSavingsArs:
-          description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
+          description: Ahorro por kit o por combo de toda la línea; 0 en los productos sueltos.
           $ref: '#/components/schemas/TotalArs'
         totalArs:
           description: Importe de la línea, ya sin el ahorro.
@@ -4390,7 +4826,8 @@ components:
         issue:
           description: >-
             Problema de la línea, o `null` si está bien. `unavailable`: el producto ya no está
-            publicado o no tiene precio. `sold_out`: no queda stock. `quantity_reduced`: había
+            publicado o no tiene precio (en un combo, el combo no existe o no está publicado, o
+            alguna pieza no está a la venta). `sold_out`: no queda stock. `quantity_reduced`: había
             menos stock que lo pedido y la línea se cotizó con `maxQuantity` unidades.
             `price_changed`: el precio cambió respecto de `expectedUnitPriceArs`, que la tienda
             mandó en la línea, y los importes ya son los vigentes.
@@ -4413,10 +4850,10 @@ components:
           description: Suma de los precios de lista de todas las líneas.
           $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
-          description: Suma de los ahorros por kit.
+          description: Suma de los ahorros por kit y por combo.
           $ref: '#/components/schemas/TotalArs'
         subtotalArs:
-          description: Importe de las líneas sin envío, es decir el bruto menos el ahorro por kit.
+          description: Importe de las líneas sin envío, es decir el bruto menos los ahorros por kit y por combo.
           $ref: '#/components/schemas/TotalArs'
         netSubtotalArs:
           description: >-
@@ -4652,7 +5089,7 @@ components:
           $ref: '#/components/schemas/LineType'
         name:
           type: string
-          description: Nombre de la línea, es decir el del producto o "Kit".
+          description: Nombre de la línea, es decir el del producto, "Kit" o el nombre del combo.
           example: Mate Imperial Premium
         detail:
           type: string
@@ -4665,31 +5102,38 @@ components:
           maximum: 20
           example: 1
         unitPriceArs:
-          description: Precio de lista de una unidad (en un kit, la suma de las tres piezas).
+          description: >-
+            Precio de lista de una unidad (en un kit, la suma de las tres piezas; en un combo,
+            `max(suma de las piezas, precio del combo)`).
           $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
-          description: Ahorro por kit de toda la línea; 0 en los productos sueltos.
+          description: Ahorro por kit o por combo de toda la línea; 0 en los productos sueltos.
           $ref: '#/components/schemas/TotalArs'
         totalArs:
           description: Importe de la línea, ya sin el ahorro.
           $ref: '#/components/schemas/TotalArs'
         productSlug:
           type: [string, 'null']
-          description: Slug del producto al comprar, o `null` en un kit.
+          description: Slug del producto al comprar, o `null` en un kit o un combo.
           example: mate-imperial-premium
         options:
-          description: Cuero y virola de un mate o, en un kit, el cuero y la virola fija del kit. `null` en los demás productos.
+          description: >-
+            Cuero y virola de un mate; en un kit, el cuero y la virola fija del kit; en un combo
+            con mate, el cuero y la virola elegidos. `null` en los demás productos y en los combos
+            sin mate.
           oneOf:
             - $ref: '#/components/schemas/CartItemOptions'
             - type: 'null'
         kitItems:
           type: [array, 'null']
-          description: Las tres piezas de un kit (mate, bombilla y yerba), o `null` si no es un kit.
-          minItems: 3
+          description: >-
+            Las piezas de un kit (mate, bombilla y yerba, 3) o de un combo (2 o 3, en el orden del
+            combo), o `null` si la línea es un producto suelto.
+          minItems: 2
           maxItems: 3
           items:
             type: object
-            description: Pieza de un kit, con su precio de lista.
+            description: Pieza de un kit o de un combo, con su precio de lista.
             required: [slug, name, unitPriceArs]
             properties:
               slug:
@@ -4820,7 +5264,7 @@ components:
           description: Suma de los precios de lista de todas las líneas.
           $ref: '#/components/schemas/TotalArs'
         kitSavingsArs:
-          description: Suma de los ahorros por kit.
+          description: Suma de los ahorros por kit y por combo.
           $ref: '#/components/schemas/TotalArs'
         subtotalArs:
           description: Importe de las líneas sin envío.
@@ -4942,7 +5386,7 @@ components:
           $ref: '#/components/schemas/TotalArs'
         itemCount:
           type: integer
-          description: Cantidad de unidades del pedido, es decir la suma de las cantidades de sus líneas (un kit cuenta como una).
+          description: Cantidad de unidades del pedido, es decir la suma de las cantidades de sus líneas (un kit o un combo cuenta como una).
           minimum: 1
           example: 2
     OrderSummaryPage:
@@ -5762,6 +6206,70 @@ components:
             minLength: 1
             maxLength: 80
           example: [cat-imperiales, cat-torpedos]
+    ComboInput:
+      type: object
+      description: >-
+        Combo que guarda el dashboard. Las reglas de forma son las de `comboFormSchema` de
+        `@galpon/schemas`. `position` y los datos derivados los calcula el back. Además, con la
+        base, el back responde `422`: primero `productIds.N` "Elegí un producto publicado y con
+        precio" por cada producto que no existe, no está publicado o es "a consultar"; si todos
+        sirven, `productIds` "Elegí productos de grupos distintos" si dos son del mismo grupo (un
+        combo lleva a lo sumo un mate, una bombilla y una yerba) y, a la vez, `priceArs` "El
+        precio del combo tiene que ser menor que la suma de los productos ($68.998)" si
+        `priceArs` no es menor que la suma vigente de sus precios de lista (escrita con el formato
+        de la tienda). Los `code` de esos errores son `product_unavailable`, `duplicate_group` y
+        `price_not_below_sum`. Las reglas valen también para los borradores.
+      required: [name, description, productIds, priceArs, status]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 80
+          description: Nombre del combo, de 3 a 80 caracteres (se recorta).
+          example: Dúo Imperial
+        description:
+          type: string
+          maxLength: 300
+          description: Texto corto del combo, de hasta 300 caracteres (se recorta). Puede ser vacío.
+          example: El imperial de ceremonia con el bombillón curvo de pico de bronce.
+        productIds:
+          type: array
+          description: >-
+            Productos del combo, de 2 a 3 y sin repetir, en el orden en que se muestran. Tienen
+            que ser de grupos distintos.
+          minItems: 2
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          example: [prd-imperial-premium, prd-bombillon-premium-curvo]
+        priceArs:
+          type: integer
+          minimum: 1
+          maximum: 99999999
+          description: >-
+            Precio final del combo en pesos, de 1 a 99.999.999. Tiene que ser menor que la suma de
+            los precios de lista de los productos.
+          example: 61999
+        status:
+          $ref: '#/components/schemas/ComboStatus'
+    ComboOrderInput:
+      type: object
+      description: Orden nuevo de los combos.
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          description: Identificadores de todos los combos, una vez cada uno, en el orden en que se muestran.
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          example: [cmb-duo-imperial, cmb-camionero-y-canarias]
     MediaSignatureInput:
       type: object
       description: Pedido de firma para subir una foto.

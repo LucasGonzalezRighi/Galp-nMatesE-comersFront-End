@@ -1,7 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { AdminOrderTarget, MediaPurpose } from '@galpon/domain'
+import type { AdminOrderTarget, ComboStatus, MediaPurpose } from '@galpon/domain'
 import {
   ADMIN_ORDER_TARGETS,
+  COMBO_STATUSES,
   MAX_KIT_DISCOUNT_PERCENT,
   MEDIA_PURPOSES,
   PRODUCT_GROUPS,
@@ -9,6 +10,7 @@ import {
 } from '@galpon/domain'
 import type {
   CategoryForm,
+  ComboForm,
   MediaSignatureForm,
   OrderStatusChangeForm,
   ProductForm,
@@ -21,6 +23,8 @@ import {
   adminReviewUpdateSchema,
   categoryFormSchema,
   categoryOrderSchema,
+  comboFormSchema,
+  comboOrderSchema,
   cuitSchema,
   dispatchSchema,
   imageFormSchema,
@@ -31,6 +35,7 @@ import {
   settingsFormSchema,
   slugSchema,
 } from './admin'
+import { MESSAGES } from './messages'
 import { issuesOf, messagesOf } from './test/helpers'
 
 const SLUG = 'Solo minúsculas, números y guiones'
@@ -863,6 +868,149 @@ describe('categoryOrderSchema', () => {
     expect(issuesOf(categoryOrderSchema, { ids: ['cat-imperiales', id] })).toEqual([
       { path: ['ids', 1], message },
     ])
+  })
+})
+
+describe('comboFormSchema', () => {
+  const validCombo = {
+    name: 'Dúo Imperial',
+    description: 'El imperial de ceremonia con el bombillón curvo.',
+    productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+    priceArs: 61999,
+    status: 'published',
+  }
+  const ITEMS = 'Cargá de 2 a 3 productos'
+  const PRICE = 'Ingresá un precio en pesos mayor a 0'
+
+  it('recorta los textos y los identificadores', () => {
+    expect(
+      comboFormSchema.parse({
+        ...validCombo,
+        name: ' Dúo Imperial ',
+        description: ' El imperial de ceremonia con el bombillón curvo. ',
+        productIds: [' prd-imperial-premium ', 'prd-bombillon-premium-curvo'],
+      }),
+    ).toEqual(validCombo)
+  })
+
+  it('acepta un combo sin descripción y con tres productos', () => {
+    expect(
+      comboFormSchema.parse({
+        ...validCombo,
+        description: '',
+        productIds: ['prd-torpedo-borravino', 'prd-bombillon-100-alpaca', 'prd-yerba-serena'],
+      }),
+    ).toMatchObject({ description: '', productIds: { length: 3 } })
+  })
+
+  it.each([
+    ['', 'Requerido'],
+    ['Dú', 'Mínimo 3 caracteres'],
+    ['a'.repeat(81), 'Máximo 80 caracteres'],
+  ])('rechaza el nombre %j', (name, message) => {
+    expect(issuesOf(comboFormSchema, { ...validCombo, name })).toEqual([
+      { path: ['name'], message },
+    ])
+  })
+
+  it('acepta una descripción de hasta 300 caracteres y rechaza una más', () => {
+    expect(comboFormSchema.safeParse({ ...validCombo, description: 'a'.repeat(300) }).success).toBe(
+      true,
+    )
+    expect(issuesOf(comboFormSchema, { ...validCombo, description: 'a'.repeat(301) })).toEqual([
+      { path: ['description'], message: 'Máximo 300 caracteres' },
+    ])
+  })
+
+  it.each([[['prd-imperial-premium']], [['prd-a', 'prd-b', 'prd-c', 'prd-d']], [[]]])(
+    'rechaza %j: un combo lleva de 2 a 3 productos',
+    (productIds) => {
+      expect(issuesOf(comboFormSchema, { ...validCombo, productIds })).toEqual([
+        { path: ['productIds'], message: ITEMS },
+      ])
+    },
+  )
+
+  it('rechaza un producto repetido, aunque tenga espacios', () => {
+    expect(
+      issuesOf(comboFormSchema, {
+        ...validCombo,
+        productIds: ['prd-imperial-premium', ' prd-imperial-premium'],
+      }),
+    ).toEqual([{ path: ['productIds'], message: 'Cada producto tiene que aparecer una sola vez' }])
+  })
+
+  it('un producto sin elegir da "Requerido" en su lugar', () => {
+    expect(
+      issuesOf(comboFormSchema, { ...validCombo, productIds: ['prd-imperial-premium', ' '] }),
+    ).toEqual([{ path: ['productIds', 1], message: 'Requerido' }])
+  })
+
+  it.each([
+    [0, PRICE],
+    [-1, PRICE],
+    [10.5, PRICE],
+    [null, PRICE],
+    ['61999', PRICE],
+    [100_000_000, 'El precio no puede superar los $99.999.999'],
+  ])('rechaza el precio %j', (priceArs, message) => {
+    expect(issuesOf(comboFormSchema, { ...validCombo, priceArs })).toEqual([
+      { path: ['priceArs'], message },
+    ])
+  })
+
+  it('acepta un precio de hasta $99.999.999', () => {
+    expect(comboFormSchema.parse({ ...validCombo, priceArs: 99_999_999 }).priceArs).toBe(99_999_999)
+  })
+
+  it.each(COMBO_STATUSES)('acepta el estado %j', (status) => {
+    expect(comboFormSchema.parse({ ...validCombo, status }).status).toBe(status)
+  })
+
+  it.each(['archived', '', undefined])('rechaza el estado %j', (status) => {
+    expect(issuesOf(comboFormSchema, { ...validCombo, status })).toEqual([
+      { path: ['status'], message: 'Elegí un estado' },
+    ])
+  })
+
+  it('tiene los tipos del formulario', () => {
+    expectTypeOf<ComboForm['status']>().toEqualTypeOf<ComboStatus>()
+    expectTypeOf<ComboForm['productIds']>().toEqualTypeOf<string[]>()
+    expectTypeOf<ComboForm['priceArs']>().toEqualTypeOf<number>()
+  })
+})
+
+describe('comboOrderSchema', () => {
+  it('acepta los combos en el orden nuevo y recorta cada identificador', () => {
+    expect(comboOrderSchema.parse({ ids: [' cmb-b ', 'cmb-a'] })).toEqual({
+      ids: ['cmb-b', 'cmb-a'],
+    })
+  })
+
+  it('una lista vacía da "Requerido"', () => {
+    expect(issuesOf(comboOrderSchema, { ids: [] })).toEqual([
+      { path: ['ids'], message: 'Requerido' },
+    ])
+  })
+
+  it('un combo repetido da el error en la lista', () => {
+    expect(issuesOf(comboOrderSchema, { ids: ['cmb-a', 'cmb-b', 'cmb-a'] })).toEqual([
+      { path: ['ids'], message: 'Cada combo tiene que aparecer una sola vez' },
+    ])
+  })
+})
+
+describe('mensajes de los combos que valida el servidor', () => {
+  it('nombran el problema y la suma de los productos con el formato de la tienda', () => {
+    expect(MESSAGES.comboProductUnavailable).toBe('Elegí un producto publicado y con precio')
+    expect(MESSAGES.comboDistinctGroups).toBe('Elegí productos de grupos distintos')
+    expect(MESSAGES.comboPriceNotBelowSum(68998)).toBe(
+      'El precio del combo tiene que ser menor que la suma de los productos ($68.998)',
+    )
+  })
+
+  it('rechaza una suma que no es un monto en pesos', () => {
+    expect(() => MESSAGES.comboPriceNotBelowSum(1.5)).toThrow(RangeError)
   })
 })
 

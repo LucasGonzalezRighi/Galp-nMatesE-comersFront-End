@@ -1,5 +1,6 @@
 export { FIXTURE_ADMIN_DEMO, seedAdminDemo } from './admin-demo'
 export { FIXTURE_CATEGORIES } from './categories'
+export { FIXTURE_COMBOS } from './combos'
 export { FIXTURE_CONTENT } from './content'
 export { FIXTURE_PRODUCTS } from './products'
 export { FIXTURE_REVIEWS } from './reviews'

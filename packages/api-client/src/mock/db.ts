@@ -1,6 +1,7 @@
 import type { MockDb } from './types'
 import {
   FIXTURE_CATEGORIES,
+  FIXTURE_COMBOS,
   FIXTURE_CONTENT,
   FIXTURE_PRODUCTS,
   FIXTURE_REVIEWS,
@@ -9,7 +10,7 @@ import {
 } from './fixtures'
 
 /** Versión actual del formato de la base simulada. */
-export const MOCK_DB_VERSION = 3
+export const MOCK_DB_VERSION = 4
 
 /** Datos de demostración que se pueden sembrar: hoy solo los del admin. */
 export type MockDemo = 'admin'
@@ -79,6 +80,7 @@ export function createMockDb(options: MockDbOptions): MockDb {
     version: MOCK_DB_VERSION,
     categories: structuredClone([...FIXTURE_CATEGORIES]),
     products: structuredClone([...FIXTURE_PRODUCTS]),
+    combos: structuredClone([...FIXTURE_COMBOS]),
     reviews: structuredClone([...FIXTURE_REVIEWS]),
     content: structuredClone(FIXTURE_CONTENT),
     settings: structuredClone(FIXTURE_SETTINGS),

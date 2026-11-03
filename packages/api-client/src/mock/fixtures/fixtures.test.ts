@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { slugify } from '@galpon/domain'
-import { imageFormSchema, settingsFormSchema } from '@galpon/schemas'
+import { hasDistinctGroups, slugify } from '@galpon/domain'
+import { comboFormSchema, imageFormSchema, settingsFormSchema } from '@galpon/schemas'
 import {
   FIXTURE_CATEGORIES,
+  FIXTURE_COMBOS,
   FIXTURE_CONTENT,
   FIXTURE_PRODUCTS,
   FIXTURE_REVIEWS,
@@ -312,10 +313,76 @@ describe('fixtures del diseño: contenido y ajustes', () => {
   })
 })
 
+describe('fixtures del diseño: combos', () => {
+  const products = new Map(FIXTURE_PRODUCTS.map((product) => [product.id, product]))
+  const groups = new Map(FIXTURE_CATEGORIES.map((category) => [category.id, category.group]))
+
+  it('son los 4 publicados del diseño y el borrador "Galleta y Canarias", por posición', () => {
+    expect(
+      FIXTURE_COMBOS.map((combo) => [combo.id, combo.name, combo.priceArs, combo.status]),
+    ).toEqual([
+      ['cmb-duo-imperial', 'Dúo Imperial', 61999, 'published'],
+      ['cmb-camionero-y-canarias', 'Camionero y Canarias', 31499, 'published'],
+      ['cmb-torpedo-completo', 'Torpedo completo', 67999, 'published'],
+      ['cmb-bombilla-y-yerba', 'Bombilla y yerba', 34999, 'published'],
+      ['cmb-galleta-y-canarias', 'Galleta y Canarias', 33999, 'draft'],
+    ])
+    expect(FIXTURE_COMBOS.map((combo) => combo.position)).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('llevan las piezas del diseño', () => {
+    expect(FIXTURE_COMBOS.map((combo) => combo.productIds)).toEqual([
+      ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+      ['prd-camionero-aluminio', 'prd-yerba-canarias'],
+      ['prd-torpedo-borravino', 'prd-bombillon-100-alpaca', 'prd-yerba-serena'],
+      ['prd-bombillon-100-alpaca', 'prd-yerba-jengibre'],
+      ['prd-galleta', 'prd-yerba-canarias'],
+    ])
+  })
+
+  it('cada combo pasa comboFormSchema y sus piezas son productos publicados, con precio y de grupos distintos', () => {
+    for (const combo of FIXTURE_COMBOS) {
+      const form = {
+        name: combo.name,
+        description: combo.description,
+        productIds: combo.productIds,
+        priceArs: combo.priceArs,
+        status: combo.status,
+      }
+      expect(comboFormSchema.parse(form), combo.id).toEqual(form)
+      const pieces = combo.productIds.flatMap((id) => {
+        const piece = products.get(id)
+        return piece === undefined ? [] : [piece]
+      })
+      expect(pieces, combo.id).toHaveLength(combo.productIds.length)
+      expect(pieces.every((piece) => piece.status === 'published' && piece.priceArs !== null)).toBe(
+        true,
+      )
+      const pieceGroups = pieces.flatMap((piece) => {
+        const group = groups.get(piece.categoryId)
+        return group === undefined ? [] : [group]
+      })
+      expect(pieceGroups, combo.id).toHaveLength(pieces.length)
+      expect(hasDistinctGroups(pieceGroups), combo.id).toBe(true)
+    }
+  })
+
+  it('el precio de cada combo es menor que la suma de sus piezas', () => {
+    for (const combo of FIXTURE_COMBOS) {
+      const sum = combo.productIds.reduce(
+        (total, id) => total + (products.get(id)?.priceArs ?? 0),
+        0,
+      )
+      expect(combo.priceArs, combo.id).toBeLessThan(sum)
+    }
+  })
+})
+
 describe('fixtures del diseño: serialización', () => {
   it('son serializables a JSON sin perder nada', () => {
     const fixtures = {
       categories: FIXTURE_CATEGORIES,
+      combos: FIXTURE_COMBOS,
       products: FIXTURE_PRODUCTS,
       reviews: FIXTURE_REVIEWS,
       content: FIXTURE_CONTENT,

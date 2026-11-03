@@ -3,6 +3,7 @@ import type {
   Address,
   AdminSettings,
   CardPaymentResult,
+  ComboStatus,
   ContactMessageKind,
   ContactReason,
   Customer,
@@ -40,6 +41,27 @@ export interface MockCategory {
   position: number
   /** Foto de la línea, o `null` si todavía no tiene. */
   image: Image | null
+}
+
+/**
+ * Combo de la base simulada: los productos fijos y el precio final. Los datos derivados (suma,
+ * ahorro, stock) se calculan al responder con `toCombo`.
+ */
+export interface MockCombo {
+  /** Identificador del combo, por ejemplo `cmb-duo-imperial`. */
+  id: string
+  /** Nombre del combo. */
+  name: string
+  /** Texto corto del combo; puede ser vacío. */
+  description: string
+  /** Ids de los productos del combo (2 o 3, de grupos distintos), en el orden en que se muestran. */
+  productIds: string[]
+  /** Precio final del combo, en pesos enteros. */
+  priceArs: number
+  /** Borrador o publicado. */
+  status: ComboStatus
+  /** Lugar del combo en el listado, empezando en 1. */
+  position: number
 }
 
 /** Producto de la base simulada. */
@@ -304,11 +326,13 @@ export interface MockCustomerSession {
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
-  version: 3
+  version: 4
   /** Líneas de productos. */
   categories: MockCategory[]
   /** Productos. */
   products: MockProduct[]
+  /** Combos de productos fijos con precio final, borradores y publicados. */
+  combos: MockCombo[]
   /** Reseñas de todos los estados. */
   reviews: MockReview[]
   /** Textos editables. */

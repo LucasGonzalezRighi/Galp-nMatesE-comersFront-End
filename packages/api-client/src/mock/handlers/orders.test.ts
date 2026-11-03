@@ -263,3 +263,94 @@ describe('GET /orders/{number}', () => {
     expect(again.status).toBe(201)
   })
 })
+
+describe('POST /orders con combos', () => {
+  const DUO = {
+    type: 'combo',
+    comboId: 'cmb-duo-imperial',
+    quantity: 2,
+    options: { leather: 'Marrón', ferrule: 'Acero' },
+    expectedUnitPriceArs: 61999,
+  } satisfies CartItemInput
+
+  it('guarda la línea del combo con sus piezas en kitItems, el ahorro y la reserva de cada pieza', async () => {
+    const mock = createCheckoutApi()
+    const { order } = await placeOrder(mock, {
+      shipping: { method: 'pickup', address: null },
+      items: [DUO],
+      expectedTotalArs: 123998,
+    })
+    expect(order.lines).toEqual([
+      {
+        type: 'combo',
+        name: 'Dúo Imperial',
+        detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+        quantity: 2,
+        unitPriceArs: 68998,
+        kitSavingsArs: 13998,
+        totalArs: 123998,
+        productSlug: null,
+        options: { leather: 'Marrón', ferrule: 'Acero' },
+        kitItems: [
+          { slug: 'mate-imperial-premium', name: 'Mate Imperial Premium', unitPriceArs: 39999 },
+          { slug: 'bombillon-premium-curvo', name: 'Bombillón Premium Curvo', unitPriceArs: 28999 },
+        ],
+      },
+    ])
+    expect(order).toMatchObject({
+      itemsGrossArs: 137996,
+      kitSavingsArs: 13998,
+      subtotalArs: 123998,
+      totalArs: 123998,
+    })
+    expect(mock.db.orders.at(-1)?.reservation).toEqual([
+      { productId: 'prd-imperial-premium', quantity: 2 },
+      { productId: 'prd-bombillon-premium-curvo', quantity: 2 },
+    ])
+  })
+
+  it('un combo sin mate guarda options en null', async () => {
+    const mock = createCheckoutApi()
+    const { order } = await placeOrder(mock, {
+      shipping: { method: 'pickup', address: null },
+      items: [{ type: 'combo', comboId: 'cmb-bombilla-y-yerba', quantity: 1, options: null }],
+      expectedTotalArs: 34999,
+    })
+    expect(order.lines[0]).toMatchObject({ type: 'combo', options: null, productSlug: null })
+    expect(order.lines[0]?.kitItems).toHaveLength(2)
+  })
+
+  it('si cambió el precio del combo responde 409 price_changed con su nombre y su precio', async () => {
+    const mock = createCheckoutApi()
+    const response = await postOrder(
+      mock,
+      orderInput({ items: [{ ...DUO, expectedUnitPriceArs: 59999 }], expectedTotalArs: 130498 }),
+    )
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toMatchObject({
+      type: 'price_changed',
+      changes: [
+        {
+          kind: 'price',
+          productId: null,
+          message: 'Dúo Imperial cambió de precio: ahora cuesta $61.999.',
+        },
+      ],
+    })
+  })
+
+  it('si el combo ya no está publicado responde 409 stock_changed con su nombre', async () => {
+    const mock = createCheckoutApi()
+    const combo = mock.db.combos.find((candidate) => candidate.id === 'cmb-duo-imperial')
+    if (combo === undefined) throw new Error('Falta el fixture')
+    combo.status = 'draft'
+    const response = await postOrder(mock, orderInput({ items: [DUO], expectedTotalArs: 130498 }))
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toMatchObject({
+      type: 'stock_changed',
+      changes: [
+        { kind: 'unavailable', productId: null, message: 'Dúo Imperial ya no está disponible.' },
+      ],
+    })
+  })
+})

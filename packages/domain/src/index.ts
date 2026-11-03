@@ -5,6 +5,7 @@
  */
 export * from './admin-orders'
 export * from './cart'
+export * from './combo'
 export * from './catalog'
 export * from './dates'
 export * from './installments'

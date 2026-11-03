@@ -112,4 +112,18 @@ describe('cobertura del contrato', () => {
       expect(implemented).toContain(operation)
     }
   })
+
+  it('atiende los combos de la tienda y del dashboard', () => {
+    for (const operation of [
+      'GET /combos',
+      'GET /admin/combos',
+      'POST /admin/combos',
+      'PUT /admin/combos/order',
+      'PATCH /admin/combos/{id}',
+      'DELETE /admin/combos/{id}',
+    ]) {
+      expect(implemented).toContain(operation)
+      expect(pending).not.toContain(operation)
+    }
+  })
 })

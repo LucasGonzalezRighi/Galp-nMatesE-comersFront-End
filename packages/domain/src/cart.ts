@@ -50,6 +50,28 @@ export function cartLineKey(line: CartLine): string {
 }
 
 /**
+ * Deriva la clave de una línea de combo, la misma que devuelve el back en `CartQuoteLine.key`.
+ *
+ * No lleva las piezas: si el dashboard cambia la composición del combo, la línea sigue siendo la
+ * misma.
+ *
+ * @param comboId - Id del combo.
+ * @param options - Cuero y virola del mate del combo, o `null` si el combo no lleva mate.
+ * @returns `combo:{id}:{cuero|-}:{virola|-}`.
+ * @throws {RangeError} Si el id del combo está vacío.
+ * @example
+ * comboLineKey('cmb-duo-imperial', { leather: 'Negro', ferrule: 'Acero' }) // "combo:cmb-duo-imperial:Negro:Acero"
+ * comboLineKey('cmb-bombilla-y-yerba', null) // "combo:cmb-bombilla-y-yerba:-:-"
+ */
+export function comboLineKey(
+  comboId: string,
+  options: { leather: Leather; ferrule: Ferrule } | null,
+): string {
+  if (comboId.trim() === '') throw new RangeError('El id del combo no puede estar vacío.')
+  return `combo:${comboId}:${options?.leather ?? '-'}:${options?.ferrule ?? '-'}`
+}
+
+/**
  * Agrega una línea al carrito; si ya hay una con la misma clave, suma las cantidades.
  *
  * @param lines - Líneas actuales (no se modifican).

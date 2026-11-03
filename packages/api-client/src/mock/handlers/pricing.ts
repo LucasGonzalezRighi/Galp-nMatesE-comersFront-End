@@ -3,6 +3,8 @@ import type { CartLine, LineAmounts, ProductGroup } from '@galpon/domain'
 import {
   cartLineKey,
   cartTotals,
+  comboLineAmounts,
+  comboLineKey,
   FERRULES,
   formatPesos,
   KIT_FERRULE,
@@ -32,6 +34,12 @@ const KIT_NAME = 'Kit'
 /** Nombre de una línea cuyo producto ya no existe. */
 const MISSING_PRODUCT_NAME = 'Producto no disponible'
 
+/** Nombre de una línea cuyo combo ya no existe. */
+const MISSING_COMBO_NAME = 'Combo no disponible'
+
+/** Error de un mate (suelto o dentro de un combo) que llega sin cuero ni virola. */
+const MISSING_OPTIONS_MESSAGE = 'Elegí el cuero y la virola del mate.'
+
 /** Identificador de un producto en el carrito. */
 const idSchema = z.string().min(1).max(80)
 
@@ -46,8 +54,9 @@ const quantitySchema = z
 
 /**
  * Precio de lista por unidad que la tienda tenía cotizado (`expectedUnitPriceArs` del contrato):
- * si viene, una diferencia se avisa con `price_changed`. Un producto suelto usa el tope de
- * `Pesos` y un kit el de `TotalArs` (suma de las tres piezas), como en el contrato.
+ * si viene, una diferencia se avisa con `price_changed`. Un producto suelto y un combo (su precio
+ * final) usan el tope de `Pesos` y un kit el de `TotalArs` (suma de las tres piezas), como en el
+ * contrato.
  */
 const expectedPesosSchema = z.int().min(0).max(99_999_999).optional()
 const expectedTotalSchema = z.int().min(0).max(2_147_483_647).optional()
@@ -76,6 +85,13 @@ const cartItemSchema = z.discriminatedUnion('type', [
     quantity: quantitySchema,
     expectedUnitPriceArs: expectedTotalSchema,
   }),
+  z.object({
+    type: z.literal('combo'),
+    comboId: idSchema,
+    quantity: quantitySchema,
+    options: optionsSchema.optional(),
+    expectedUnitPriceArs: expectedPesosSchema,
+  }),
 ])
 
 /** Líneas del carrito: de 1 a 50, como en el contrato. */
@@ -87,6 +103,12 @@ export const cartItemsSchema = z
 /** Línea del carrito ya validada. */
 export type CartItem = z.output<typeof cartItemSchema>
 
+/** Línea de combo ya validada. */
+type ComboItem = Extract<CartItem, { type: 'combo' }>
+
+/** Línea de un producto suelto o de un kit ya validada. */
+type ProductOrKitItem = Exclude<CartItem, { type: 'combo' }>
+
 /** Línea cotizada, con lo que hace falta para armar el pedido y los avisos de cambios. */
 export interface PricedLine {
   /** La línea como se devuelve en la cotización. */
@@ -95,10 +117,19 @@ export interface PricedLine {
   amounts: LineAmounts | null
   /** La línea del pedido, o `null` si no se puede comprar. */
   orderLine: OrderLine | null
-  /** Producto que explica el problema de la línea (la pieza agotada de un kit), o `null`. */
+  /**
+   * Producto que explica el problema de la línea (la pieza agotada de un kit o de un combo), o
+   * `null` si el problema no es de un producto (un combo dado de baja o con otro precio).
+   */
   productId: string | null
-  /** Nombre del producto que explica el problema, para los avisos. */
+  /** Nombre del producto (o del combo) que explica el problema, para los avisos. */
   productName: string
+  /**
+   * Precio por unidad que se compara con `expectedUnitPriceArs` y que nombra el aviso de cambio de
+   * precio: el de lista en un producto o un kit y el precio final en un combo; 0 si la línea no se
+   * puede comprar.
+   */
+  quotedPriceArs: number
 }
 
 /** Cotización entera del carrito. */
@@ -132,8 +163,14 @@ export function availableStock(db: MockDb, product: MockProduct, now: Date): num
   return Math.max(0, product.stock - reserved)
 }
 
-/** Grupo de un producto según su línea. */
-function groupOf(db: MockDb, product: MockProduct): ProductGroup | undefined {
+/**
+ * Grupo de un producto según su línea.
+ *
+ * @param db - Base simulada.
+ * @param product - Producto.
+ * @returns El grupo, o `undefined` si la línea del producto no existe.
+ */
+export function groupOf(db: MockDb, product: MockProduct): ProductGroup | undefined {
   return db.categories.find((category) => category.id === product.categoryId)?.group
 }
 
@@ -156,7 +193,11 @@ function leatherLabel(leather: string): string {
 }
 
 /** Línea del carrito del dominio, con la cantidad indicada. */
-function toCartLine(item: CartItem, options: ItemOptions | undefined, quantity: number): CartLine {
+function toCartLine(
+  item: ProductOrKitItem,
+  options: ItemOptions | undefined,
+  quantity: number,
+): CartLine {
   if (item.type === 'kit') {
     const { mateId, bombillaId, yerbaId, leather } = item
     return { type: 'kit', mateId, bombillaId, yerbaId, leather, quantity }
@@ -186,18 +227,144 @@ function blockedLine(
   }
 }
 
+/** Lo que comparte la cotización de cada línea: el stock ya tomado y los errores por campo. */
+interface PricingState {
+  /** Líneas ya aceptadas (las piezas de un combo entran como productos sueltos), en orden. */
+  accepted: CartLine[]
+  /** Errores por campo que hacen fallar la cotización con `422`. */
+  errors: FieldError[]
+  /** Momento del pedido (para no vender stock reservado). */
+  now: Date
+}
+
+/**
+ * Cotiza una línea de combo con las reglas de `ComboCartItemInput` del contrato: combo dado de
+ * baja o con una pieza que no se vende, `unavailable`; mate sin cuero ni virola, error en
+ * `items.N.options`; stock compartido con las demás líneas; importes de `comboLineAmounts` y
+ * `price_changed` contra el precio del combo.
+ *
+ * @param db - Base simulada.
+ * @param item - Línea de combo validada.
+ * @param index - Lugar de la línea en el carrito, para el error por campo.
+ * @param state - Stock ya tomado y errores de la cotización (se modifican).
+ */
+function priceComboItem(
+  db: MockDb,
+  item: ComboItem,
+  index: number,
+  state: PricingState,
+): PricedLine {
+  const { vatRatePercent } = db.settings
+  const showNetPrice = db.settings.priceDisplay.showNetPrice
+  const combo = db.combos.find((candidate) => candidate.id === item.comboId)
+  const found = (combo?.productIds ?? []).map((id) =>
+    db.products.find((product) => product.id === id),
+  )
+  const hasMate = found.some((product) => product !== undefined && groupOf(db, product) === 'mate')
+  // Sin el combo no se sabe si lleva mate: la clave conserva lo que mandó la tienda.
+  const options = combo === undefined || hasMate ? item.options : undefined
+  const name = combo?.name ?? MISSING_COMBO_NAME
+  const pieceNames = found.map((product) => product?.name ?? MISSING_PRODUCT_NAME).join(' + ')
+  const base = {
+    key: comboLineKey(item.comboId, options ?? null),
+    type: 'combo' as const,
+    name,
+    detail:
+      options === undefined || pieceNames === ''
+        ? pieceNames
+        : `${pieceNames} · ${leatherLabel(options.leather)} · ${options.ferrule}`,
+  }
+  const blocked = (issue: 'sold_out' | 'unavailable', productId: string | null): PricedLine => ({
+    quote: blockedLine(base, issue, showNetPrice),
+    amounts: null,
+    orderLine: null,
+    productId,
+    productName: name,
+    quotedPriceArs: 0,
+  })
+
+  if (combo?.status !== 'published') return blocked('unavailable', null)
+  const missing = found.findIndex((product) => !sellable(db, product, undefined))
+  if (missing !== -1) return blocked('unavailable', combo.productIds[missing] ?? null)
+  const pieces = found.filter((product): product is MockProduct & { priceArs: number } =>
+    sellable(db, product, undefined),
+  )
+  if (hasMate && options === undefined) {
+    state.errors.push({
+      field: `items.${String(index)}.options`,
+      code: 'required',
+      message: MISSING_OPTIONS_MESSAGE,
+    })
+  }
+
+  const rooms = pieces.map((product) =>
+    remainingQuantityFor(product.id, availableStock(db, product, state.now), state.accepted),
+  )
+  const room = Math.min(...rooms)
+  const limiting = pieces[rooms.indexOf(room)]
+  if (room === 0) return blocked('sold_out', limiting?.id ?? null)
+
+  const quantity = Math.min(item.quantity, room)
+  const priceArs = pesos(combo.priceArs)
+  const amounts = comboLineAmounts(
+    pieces.map((product) => pesos(product.priceArs)),
+    priceArs,
+    quantity,
+  )
+  const unitPriceArs = amounts.grossArs / quantity
+  const reduced = quantity < item.quantity
+  const priceChanged =
+    item.expectedUnitPriceArs !== undefined && item.expectedUnitPriceArs !== combo.priceArs
+  for (const product of pieces) {
+    state.accepted.push({ type: 'product', productId: product.id, quantity })
+  }
+
+  return {
+    quote: {
+      ...base,
+      unitPriceArs,
+      netUnitPriceArs: showNetPrice ? netPrice(priceArs, vatRatePercent) : null,
+      kitSavingsArs: amounts.savingsArs,
+      totalArs: amounts.totalArs,
+      maxQuantity: room,
+      issue: reduced ? 'quantity_reduced' : priceChanged ? 'price_changed' : null,
+    },
+    amounts,
+    orderLine: {
+      type: 'combo',
+      name,
+      detail: base.detail,
+      quantity,
+      unitPriceArs,
+      kitSavingsArs: amounts.savingsArs,
+      totalArs: amounts.totalArs,
+      productSlug: null,
+      options: options ?? null,
+      kitItems: pieces.map((product) => ({
+        slug: product.slug,
+        name: product.name,
+        unitPriceArs: product.priceArs,
+      })),
+    },
+    productId: reduced ? (limiting?.id ?? null) : null,
+    productName: name,
+    quotedPriceArs: combo.priceArs,
+  }
+}
+
 /**
  * Cotiza el carrito con los precios, el descuento del kit y el stock disponible de la base.
  *
  * Usa las reglas de `@galpon/domain`: el tope por producto vale para todas las líneas (sueltas y
- * dentro de kits), en orden, y los importes salen de `productLineAmounts`, `kitLineAmounts` y
- * `cartTotals`. Una línea con problemas no hace fallar la cotización: se informa en `issue`.
+ * dentro de kits y combos), en orden, y los importes salen de `productLineAmounts`,
+ * `kitLineAmounts`, `comboLineAmounts` y `cartTotals`. Una línea con problemas no hace fallar
+ * la cotización: se informa en `issue`.
  *
  * @param db - Base simulada.
  * @param items - Líneas del carrito, ya validadas con {@link cartItemsSchema}.
  * @param now - Momento del pedido (para no vender stock reservado).
  * @returns La cotización, los datos de cada línea y lo que se reservaría.
- * @throws {ResponseError} Con `422` si un mate llega sin cuero ni virola.
+ * @throws {ResponseError} Con `422` si un mate (suelto o en un combo) llega sin cuero ni virola.
  */
 export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): PricedCart {
   const { kitDiscountPercent, vatRatePercent } = db.settings
@@ -207,6 +374,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
   const findProduct = (id: string) => db.products.find((product) => product.id === id)
 
   const lines = items.map((item, index): PricedLine => {
+    if (item.type === 'combo') return priceComboItem(db, item, index, { accepted, errors, now })
     const pieces: readonly (readonly [string, ProductGroup | undefined])[] =
       item.type === 'kit'
         ? [
@@ -227,7 +395,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
       errors.push({
         field: `items.${String(index)}.options`,
         code: 'required',
-        message: 'Elegí el cuero y la virola del mate.',
+        message: MISSING_OPTIONS_MESSAGE,
       })
     }
     const base = {
@@ -250,6 +418,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
         orderLine: null,
         productId: pieces[missing]?.[0] ?? null,
         productName: found[missing]?.name ?? base.name,
+        quotedPriceArs: 0,
       }
     }
     const sellableProducts = products.filter((product) => product !== undefined)
@@ -268,6 +437,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
         amounts: null,
         orderLine: null,
         ...limitingInfo,
+        quotedPriceArs: 0,
       }
     }
 
@@ -318,6 +488,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
             : null,
       },
       ...limitingInfo,
+      quotedPriceArs: unitPriceArs,
     }
   })
 
@@ -380,13 +551,13 @@ export function stockChanges(lines: readonly PricedLine[]): ChangeNotice[] {
  * @param lines - Líneas cotizadas.
  */
 export function priceChanges(lines: readonly PricedLine[]): ChangeNotice[] {
-  return lines.flatMap(({ quote, productId }): ChangeNotice[] =>
+  return lines.flatMap(({ quote, productId, quotedPriceArs }): ChangeNotice[] =>
     quote.issue === 'price_changed'
       ? [
           {
             kind: 'price',
             productId,
-            message: `${quote.name} cambió de precio: ahora cuesta ${formatPesos(pesos(quote.unitPriceArs))}.`,
+            message: `${quote.name} cambió de precio: ahora cuesta ${formatPesos(pesos(quotedPriceArs))}.`,
           },
         ]
       : [],

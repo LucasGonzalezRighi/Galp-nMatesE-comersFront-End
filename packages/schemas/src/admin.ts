@@ -2,6 +2,9 @@ import { z } from 'zod'
 import type { ProductStatus, ShippingMethod } from '@galpon/domain'
 import {
   ADMIN_ORDER_TARGETS,
+  COMBO_MAX_ITEMS,
+  COMBO_MIN_ITEMS,
+  COMBO_STATUSES,
   MAX_IMAGES,
   MAX_KIT_DISCOUNT_PERCENT,
   MEDIA_PURPOSES,
@@ -357,6 +360,63 @@ export type CategoryOrderFormInput = z.input<typeof categoryOrderSchema>
 
 /** Orden de las líneas ya normalizado. */
 export type CategoryOrderForm = z.output<typeof categoryOrderSchema>
+
+/** Mensaje de un combo que no tiene de 2 a 3 productos. */
+const COMBO_ITEMS_MESSAGE = MESSAGES.itemsBetween(COMBO_MIN_ITEMS, COMBO_MAX_ITEMS, 'productos')
+
+/**
+ * Formulario de combo del dashboard.
+ *
+ * - `name` (3 a 80) y `description` (hasta 300, puede estar vacía), recortados.
+ * - `productIds`: de 2 a 3 productos, sin repetir, en el orden en que se muestran.
+ * - `priceArs`: precio final, entero de 1 a 99.999.999 pesos (un combo no queda "a consultar").
+ * - `status`: borrador o publicado.
+ *
+ * Lo que necesita la base lo valida el servidor con los mensajes de `MESSAGES`: que cada producto
+ * esté publicado y con precio (`comboProductUnavailable`), que sean de grupos distintos
+ * (`comboDistinctGroups`) y que el precio sea menor que la suma (`comboPriceNotBelowSum`).
+ */
+export const comboFormSchema = z.object({
+  name: requiredText(3, 80),
+  description: z.string({ error: MESSAGES.required }).trim().max(300, MESSAGES.max(300)),
+  productIds: z
+    .array(requiredText(1, 80), { error: COMBO_ITEMS_MESSAGE })
+    .min(COMBO_MIN_ITEMS, COMBO_ITEMS_MESSAGE)
+    .max(COMBO_MAX_ITEMS, COMBO_ITEMS_MESSAGE)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      error: MESSAGES.duplicateComboProducts,
+    }),
+  priceArs: z
+    .int({ error: MESSAGES.invalidComboPrice })
+    .positive(MESSAGES.invalidComboPrice)
+    .max(MAX_PESOS, MESSAGES.priceTooHigh),
+  status: z.enum(COMBO_STATUSES, { error: MESSAGES.invalidProductStatus }),
+})
+
+/** Combo como lo arma el formulario, antes de normalizarlo. */
+export type ComboFormInput = z.input<typeof comboFormSchema>
+
+/** Combo ya normalizado. */
+export type ComboForm = z.output<typeof comboFormSchema>
+
+/**
+ * Orden nuevo de los combos: `ids` trae uno o más combos, cada uno una sola vez (recortados, de
+ * hasta 80 caracteres). Que estén todos lo controla el servidor.
+ */
+export const comboOrderSchema = z.object({
+  ids: z
+    .array(requiredText(1, 80))
+    .min(1, MESSAGES.required)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      error: MESSAGES.duplicateComboIds,
+    }),
+})
+
+/** Orden de los combos como lo arma el dashboard. */
+export type ComboOrderFormInput = z.input<typeof comboOrderSchema>
+
+/** Orden de los combos ya normalizado. */
+export type ComboOrderForm = z.output<typeof comboOrderSchema>
 
 /** Pedido de firma para subir una foto: el uso, que define la carpeta de Cloudinary. */
 export const mediaSignatureSchema = z.object({

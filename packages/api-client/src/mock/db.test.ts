@@ -33,11 +33,12 @@ afterEach(() => {
 describe('createMockDb', () => {
   it('siembra los fixtures, la cuenta del admin y las listas vacías', () => {
     const db = createMockDb(OPTIONS)
-    expect(db.version).toBe(3)
+    expect(db.version).toBe(4)
     expect(db.media).toEqual({})
     expect(db.products.every((product) => product.updatedAt === product.createdAt)).toBe(true)
     expect(db.categories).toHaveLength(6)
     expect(db.products).toHaveLength(27)
+    expect(db.combos).toHaveLength(5)
     expect(db.reviews).toHaveLength(18)
     expect(db.settings).toEqual(FIXTURE_SETTINGS)
     expect(db.content).toEqual(FIXTURE_CONTENT)
@@ -168,7 +169,7 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), version: 0, products: [] }))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.isPersistent).toBe(true)
-    expect(handle.db.version).toBe(3)
+    expect(handle.db.version).toBe(4)
     expect(handle.db.products).toHaveLength(27)
   })
 
@@ -179,6 +180,23 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify(previous))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.db).toEqual(createMockDb(OPTIONS))
+  })
+
+  it('con una base guardada de la versión 3 (sin combos) vuelve a sembrar los datos', () => {
+    const { storage } = memoryStorage()
+    const previous: Record<string, unknown> = { ...createMockDb(OPTIONS), version: 3 }
+    delete previous.combos
+    storage.setItem(KEY, JSON.stringify(previous))
+    const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    expect(handle.db).toEqual(createMockDb(OPTIONS))
+    expect(handle.db.combos).toHaveLength(5)
+  })
+
+  it('con combos que no son una lista vuelve a sembrar los datos', () => {
+    const { storage } = memoryStorage()
+    storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), combos: null }))
+    const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
+    expect(handle.db.combos).toHaveLength(5)
   })
 
   it('recupera las fotos simuladas guardadas', () => {

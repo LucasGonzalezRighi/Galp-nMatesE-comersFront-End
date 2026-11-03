@@ -19,6 +19,8 @@ import type {
 export const queryKeys = {
   /** Líneas de producto. */
   categories: () => ['categories'] as const,
+  /** Combos a la venta (la tienda los usa para conciliar el carrito). */
+  combos: () => ['combos'] as const,
   /** Ajustes públicos de la tienda. */
   publicSettings: () => ['settings', 'public'] as const,
   /** Sesión del dashboard. */
@@ -35,6 +37,8 @@ export const queryKeys = {
   adminProduct: (id: string) => ['admin', 'products', 'detail', id] as const,
   /** Líneas de producto del dashboard. */
   adminCategories: () => ['admin', 'categories'] as const,
+  /** Combos del dashboard, borradores y publicados. */
+  adminCombos: () => ['admin', 'combos'] as const,
   /** Todo lo de pedidos del dashboard: el prefijo de los listados y los detalles. */
   adminOrdersAll: () => ['admin', 'orders'] as const,
   /** Una página del listado de pedidos, según los filtros. */

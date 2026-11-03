@@ -89,6 +89,7 @@ function isMockDb(value: unknown): value is MockDb {
     [
       'categories',
       'products',
+      'combos',
       'reviews',
       'orders',
       'messages',

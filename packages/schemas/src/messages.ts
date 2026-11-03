@@ -1,3 +1,5 @@
+import { formatPesos, pesos } from '@galpon/domain'
+
 /**
  * Textos de error de los formularios, los de la sección 15 del spec.
  *
@@ -100,6 +102,28 @@ export const MESSAGES = {
   invalidProductStatus: 'Elegí un estado',
   /** Orden de líneas con una línea repetida. */
   duplicateCategoryIds: 'Cada línea tiene que aparecer una sola vez',
+  /** Precio de un combo que no es un entero mayor a 0 (un combo no puede quedar "a consultar"). */
+  invalidComboPrice: 'Ingresá un precio en pesos mayor a 0',
+  /** Combo con un producto repetido. */
+  duplicateComboProducts: 'Cada producto tiene que aparecer una sola vez',
+  /** Orden de combos con un combo repetido. */
+  duplicateComboIds: 'Cada combo tiene que aparecer una sola vez',
+  /**
+   * Producto de un combo que no existe, no está publicado o es "a consultar". Lo valida el
+   * servidor (necesita la base), en `productIds.N`.
+   */
+  comboProductUnavailable: 'Elegí un producto publicado y con precio',
+  /** Combo con dos productos del mismo grupo. Lo valida el servidor, en `productIds`. */
+  comboDistinctGroups: 'Elegí productos de grupos distintos',
+  /**
+   * Precio de un combo que no es menor que la suma de sus productos. Lo valida el servidor, en
+   * `priceArs`; el dashboard puede mostrarlo antes con la suma que ya conoce.
+   *
+   * @param sumArs - Suma de los precios de lista vigentes de los productos, en pesos enteros.
+   * @throws {RangeError} Si la suma no es un entero de pesos mayor o igual a 0.
+   */
+  comboPriceNotBelowSum: (sumArs: number) =>
+    `El precio del combo tiene que ser menor que la suma de los productos (${formatPesos(pesos(sumArs))})`,
   /** Uso de una foto que no es producto, línea, socio ni sitio. */
   invalidMediaPurpose: 'Elegí para qué es la foto',
   /** Estado nuevo de un pedido que no es uno de los que ofrece el admin. */

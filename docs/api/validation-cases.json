@@ -6530,6 +6530,399 @@
       }
     },
     {
+      "field": "Admin · combo: nombre",
+      "name": "Admin · combo: nombre: recortado",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "  Dúo Imperial  ",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true,
+      "output": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      }
+    },
+    {
+      "field": "Admin · combo: nombre",
+      "name": "Admin · combo: nombre: de 80 caracteres",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: nombre",
+      "name": "Admin · combo: nombre: vacío",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "   ",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "name": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · combo: nombre",
+      "name": "Admin · combo: nombre: de 2 letras",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dú",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "name": "Mínimo 3 caracteres"
+      }
+    },
+    {
+      "field": "Admin · combo: nombre",
+      "name": "Admin · combo: nombre: de 81 caracteres",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "name": "Máximo 80 caracteres"
+      }
+    },
+    {
+      "field": "Admin · combo: descripción",
+      "name": "Admin · combo: descripción: vacía",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: descripción",
+      "name": "Admin · combo: descripción: de 300 caracteres",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: descripción",
+      "name": "Admin · combo: descripción: de 301 caracteres",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "description": "Máximo 300 caracteres"
+      }
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: dos productos, recortados",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": [" prd-imperial-premium ", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true,
+      "output": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      }
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: tres productos",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-torpedo-borravino", "prd-bombillon-100-alpaca", "prd-yerba-serena"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: un solo producto",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "productIds": "Cargá de 2 a 3 productos"
+      }
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: cuatro productos",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": [
+          "prd-imperial-premium",
+          "prd-bombillon-premium-curvo",
+          "prd-yerba-canarias",
+          "prd-yerba-serena"
+        ],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "productIds": "Cargá de 2 a 3 productos"
+      }
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: un producto repetido",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-imperial-premium"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "productIds": "Cada producto tiene que aparecer una sola vez"
+      }
+    },
+    {
+      "field": "Admin · combo: productos",
+      "name": "Admin · combo: productos: un producto sin elegir",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", " "],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "productIds.1": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: de $61.999",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: de $99.999.999, el máximo",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 99999999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: en 0",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 0,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "priceArs": "Ingresá un precio en pesos mayor a 0"
+      }
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: con decimales",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 10.5,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "priceArs": "Ingresá un precio en pesos mayor a 0"
+      }
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: sin precio",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": null,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "priceArs": "Ingresá un precio en pesos mayor a 0"
+      }
+    },
+    {
+      "field": "Admin · combo: precio",
+      "name": "Admin · combo: precio: de $100.000.000",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 100000000,
+        "status": "published"
+      },
+      "valid": false,
+      "errors": {
+        "priceArs": "El precio no puede superar los $99.999.999"
+      }
+    },
+    {
+      "field": "Admin · combo: estado",
+      "name": "Admin · combo: estado: borrador",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "draft"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: estado",
+      "name": "Admin · combo: estado: publicado",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "published"
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · combo: estado",
+      "name": "Admin · combo: estado: archivado",
+      "schema": "comboFormSchema",
+      "input": {
+        "name": "Dúo Imperial",
+        "description": "El imperial de ceremonia con el bombillón curvo de pico de bronce.",
+        "productIds": ["prd-imperial-premium", "prd-bombillon-premium-curvo"],
+        "priceArs": 61999,
+        "status": "archived"
+      },
+      "valid": false,
+      "errors": {
+        "status": "Elegí un estado"
+      }
+    },
+    {
+      "field": "Admin · orden de combos",
+      "name": "Admin · orden de combos: todos los combos, recortados",
+      "schema": "comboOrderSchema",
+      "input": {
+        "ids": [" cmb-camionero-y-canarias ", "cmb-duo-imperial"]
+      },
+      "valid": true,
+      "output": {
+        "ids": ["cmb-camionero-y-canarias", "cmb-duo-imperial"]
+      }
+    },
+    {
+      "field": "Admin · orden de combos",
+      "name": "Admin · orden de combos: sin ningún combo",
+      "schema": "comboOrderSchema",
+      "input": {
+        "ids": []
+      },
+      "valid": false,
+      "errors": {
+        "ids": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · orden de combos",
+      "name": "Admin · orden de combos: con un combo repetido",
+      "schema": "comboOrderSchema",
+      "input": {
+        "ids": ["cmb-duo-imperial", "cmb-torpedo-completo", "cmb-duo-imperial"]
+      },
+      "valid": false,
+      "errors": {
+        "ids": "Cada combo tiene que aparecer una sola vez"
+      }
+    },
+    {
       "field": "Admin · firma de foto",
       "name": "Admin · firma de foto: para un producto",
       "schema": "mediaSignatureSchema",

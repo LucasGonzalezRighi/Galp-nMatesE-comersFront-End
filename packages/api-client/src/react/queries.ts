@@ -32,11 +32,13 @@ import {
   getOrder,
   getPublicSettings,
   listAdminCategories,
+  listAdminCombos,
   listAdminMessages,
   listAdminOrders,
   listAdminProducts,
   listAdminReviews,
   listMyAddresses,
+  listCombos,
   listMyOrders,
   quoteCart,
 } from '../services'
@@ -70,6 +72,19 @@ export function publicSettingsQuery(api: ApiClient) {
   return queryOptions({
     queryKey: queryKeys.publicSettings(),
     queryFn: () => getPublicSettings(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de los combos a la venta, por posición (los agotados vienen con `isSoldOut`).
+ *
+ * @param api - Cliente de la API.
+ */
+export function combosQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.combos(),
+    queryFn: () => listCombos(api),
     retry: shouldRetryQuery,
   })
 }
@@ -150,6 +165,19 @@ export function adminCategoriesQuery(api: ApiClient) {
   return queryOptions({
     queryKey: queryKeys.adminCategories(),
     queryFn: () => listAdminCategories(api),
+    retry: shouldRetryQuery,
+  })
+}
+
+/**
+ * Consulta de todos los combos del dashboard, por posición, con los datos vigentes de sus piezas.
+ *
+ * @param api - Cliente de la API.
+ */
+export function adminCombosQuery(api: ApiClient) {
+  return queryOptions({
+    queryKey: queryKeys.adminCombos(),
+    queryFn: () => listAdminCombos(api),
     retry: shouldRetryQuery,
   })
 }

@@ -1,6 +1,7 @@
 import type { Pesos, ProductSortOrder } from '@galpon/domain'
 import {
   averageRating,
+  comboSavings,
   FERRULES,
   formatProductCode,
   isPurchasable,
@@ -9,11 +10,14 @@ import {
   netPrice,
   pesos,
   sortProducts,
+  sumPesos,
 } from '@galpon/domain'
 import type {
   AdminProduct,
   AdminSettings,
   Category,
+  Combo,
+  ComboItem,
   Image,
   ImageInput,
   ProductDetail,
@@ -21,8 +25,9 @@ import type {
   PublicSettings,
   Review,
 } from '../generated/schema'
-import type { MockCategory, MockDb, MockProduct, MockReview } from './types'
+import type { MockCategory, MockCombo, MockDb, MockProduct, MockReview } from './types'
 import { FIXTURE_CATEGORIES, FIXTURE_CONTENT, FIXTURE_PRODUCTS } from './fixtures'
+import { availableStock } from './handlers/pricing'
 import { ResponseError, validationProblem } from './http'
 
 /**
@@ -155,6 +160,75 @@ export function toProductSummary(product: MockProduct, db: MockDb): ProductSumma
     featured: product.featured,
     mainImage: product.images[0] ?? null,
     rating: { average: averageRating(ratings), count: ratings.length },
+  }
+}
+
+/**
+ * Arma una pieza de un combo con los datos vigentes del producto: precio, si se vende y cuántas
+ * unidades quedan sin reservar.
+ *
+ * @param product - Producto de la base.
+ * @param db - Base simulada.
+ * @param now - Momento del pedido (para no contar el stock reservado).
+ */
+function toComboItem(product: MockProduct, db: MockDb, now: Date): ComboItem {
+  const stock = availableStock(db, product, now)
+  return {
+    productId: product.id,
+    slug: product.slug,
+    name: product.name,
+    group: categoryOf(product, db).group,
+    unitPriceArs: product.priceArs,
+    isPurchasable: isPurchasable({
+      status: product.status,
+      priceArs: toPesos(product.priceArs),
+      stock,
+    }),
+    maxQuantity: maxQuantity(stock),
+    image: product.images[0] ?? null,
+  }
+}
+
+/**
+ * Arma un combo como lo devuelve la API, con lo que se calcula de sus piezas vigentes: la suma de
+ * los precios de lista, el ahorro (nunca negativo), si se puede comprar, si alguna pieza se agotó y
+ * cuántos combos se pueden pedir.
+ *
+ * Una pieza que ya no existe no aparece en `items` y deja el combo sin poder comprarse.
+ *
+ * @param combo - Combo de la base.
+ * @param db - Base simulada.
+ * @param now - Momento del pedido (para no contar el stock reservado).
+ */
+export function toCombo(combo: MockCombo, db: MockDb, now: Date): Combo {
+  const items = combo.productIds.flatMap((id) => {
+    const product = db.products.find((candidate) => candidate.id === id)
+    return product === undefined ? [] : [toComboItem(product, db, now)]
+  })
+  const priceArs = pesos(combo.priceArs)
+  const listPriceArs = sumPesos(
+    items.flatMap((item) => (item.unitPriceArs === null ? [] : [pesos(item.unitPriceArs)])),
+  )
+  const isComboPurchasable =
+    combo.status === 'published' &&
+    items.length === combo.productIds.length &&
+    items.every((item) => item.isPurchasable)
+  return {
+    id: combo.id,
+    name: combo.name,
+    description: combo.description,
+    items,
+    priceArs: combo.priceArs,
+    netPriceArs: db.settings.priceDisplay.showNetPrice
+      ? netPrice(priceArs, db.settings.vatRatePercent)
+      : null,
+    listPriceArs,
+    savingsArs: comboSavings(listPriceArs, priceArs),
+    isPurchasable: isComboPurchasable,
+    isSoldOut: items.some((item) => item.maxQuantity === 0),
+    maxQuantity: isComboPurchasable ? Math.min(...items.map((item) => item.maxQuantity)) : 0,
+    status: combo.status,
+    position: combo.position,
   }
 }
 
