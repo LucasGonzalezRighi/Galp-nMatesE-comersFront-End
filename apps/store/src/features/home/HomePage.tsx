@@ -3,6 +3,7 @@ import { HomeIntro } from '../intro'
 import { FooterStage } from './FooterStage'
 import { getHomeData } from './home.data'
 import { HomeCollection } from './HomeCollection'
+import { HomeCombos } from './HomeCombos'
 import { HomeFeatured } from './HomeFeatured'
 import { HomeKit } from './HomeKit'
 import { HomeManifesto } from './HomeManifesto'
@@ -15,7 +16,7 @@ import './home.css'
 /**
  * Inicio de la tienda (Server Component, spec 9.5): lee todo en el servidor con lecturas
  * cacheadas (`getHomeData`) y arma las secciones en orden: la portada (en escritorio con movimiento,
- * el mate 3D de tres paradas; si no, el hero carrusel del v4), colección, destacados, manifiesto
+ * el mate 3D de tres paradas; si no, el hero carrusel del v4), colección, combos (si hay), destacados, manifiesto
  * con las cifras abajo (en escritorio, una pantalla clavada sobre el yerbal), bloque del kit (que
  * sube por encima de esa pantalla) y reseñas (en escritorio, quietas mientras el pie sube por
  * encima). Primero va la intro (`HomeIntro`, Ruling MR-29): el matecito y GALPÓN se dibujan y la
@@ -41,6 +42,7 @@ export async function HomePage(): Promise<ReactNode> {
         }}
       />
       <HomeCollection data={data} />
+      <HomeCombos combos={data.combos} settings={data.settings} />
       <HomeFeatured data={data} />
       <PinnedManifesto
         manifesto={<HomeManifesto data={data} />}

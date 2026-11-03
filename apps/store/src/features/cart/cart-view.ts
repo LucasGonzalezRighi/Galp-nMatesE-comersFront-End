@@ -22,11 +22,17 @@ export interface CartLineView {
   key: string
   /** La línea guardada. */
   line: CartLine
-  /** Nombre del producto, o "Kit ronda completa". */
+  /** Nombre del producto o del combo, o "Kit ronda completa". */
   name: string
-  /** Detalle de una línea: cuero y virola de un mate, o las tres piezas de un kit. Vacío si no hay. */
+  /**
+   * Detalle de una línea: cuero y virola de un mate, las tres piezas de un kit, o las piezas de un
+   * combo con el cuero y la virola de su mate. Vacío si no hay.
+   */
   detail: string
-  /** Foto del producto, o `null` (un kit no tiene foto propia; un producto puede no tenerla). */
+  /**
+   * Foto del producto (en un combo, la de su primera pieza), o `null` (un kit no tiene foto propia;
+   * un producto puede no tenerla).
+   */
   image: { url: string; alt: string } | null
   /** Cantidad de la línea; si la cotización la bajó por stock (`quantity_reduced`), la cotizada. */
   quantity: number
@@ -38,9 +44,9 @@ export interface CartLineView {
   issue: CartLineIssue | null
   /** Aviso de la línea para el cliente (menos stock o cambio de precio), o `null` si no hay. */
   notice: string | null
-  /** Importe de la línea ya sin el ahorro por kit; `null` si no está `ready`. */
+  /** Importe de la línea ya sin el ahorro del kit o del combo; `null` si no está `ready`. */
   totalArs: number | null
-  /** Ahorro por kit de toda la línea; 0 en un producto suelto o si no está `ready`. */
+  /** Ahorro del kit o del combo de toda la línea; 0 en un producto suelto o si no está `ready`. */
   kitSavingsArs: number
   /**
    * "Precio sin impuestos nacionales" de una unidad (Ley 27.743, spec 14.5), tal como lo calcula el
@@ -54,9 +60,9 @@ export interface CartLineView {
 export interface CartViewTotals {
   /** Suma de los precios de lista de las líneas. */
   itemsGrossArs: number
-  /** Suma de los ahorros por kit. */
+  /** Suma de los ahorros de los kits y los combos. */
   kitSavingsArs: number
-  /** Importe de las líneas: el bruto menos el ahorro por kit. */
+  /** Importe de las líneas: el bruto menos el ahorro de los kits y los combos. */
   subtotalArs: number
   /**
    * "Precio sin impuestos nacionales" del subtotal, tal como lo calcula el back: puede diferir unos
@@ -71,7 +77,7 @@ export interface CartView {
   lines: CartLineView[]
   /** Totales de la cotización (cero hasta que llega). */
   totals: CartViewTotals
-  /** Unidades del carrito (cada kit cuenta como una). */
+  /** Unidades del carrito (cada kit o combo cuenta como una). */
   count: number
   /** Si se puede finalizar la compra: hay líneas y todas están `ready`. */
   canCheckout: boolean
@@ -111,7 +117,7 @@ function issueNotice(issue: CartLineIssue | null, name: string, quantity: number
 
 /**
  * Cantidad máxima de una línea según el stock del catálogo, contando cada producto en todas las
- * líneas (sueltas y dentro de kits). `null` si no se conoce alguno de sus productos.
+ * líneas (sueltas y dentro de kits y combos). `null` si no se conoce alguno de sus productos.
  */
 function catalogMaxQuantity(
   line: CartLine,
@@ -135,7 +141,7 @@ function buildLineView(
   lines: readonly CartLine[],
 ): CartLineView {
   const product = line.type === 'product' ? byId.get(line.productId) : undefined
-  const image = product?.mainImage
+  const image = (line.type === 'combo' ? byId.get(line.productIds[0] ?? '') : product)?.mainImage
   const base = {
     key: cartLineKey(line),
     line,
@@ -149,6 +155,7 @@ function buildLineView(
   if (quoted === undefined) {
     return {
       ...base,
+      // El nombre de un combo llega con la cotización: el carrito guarda solo su id.
       name: line.type === 'kit' ? CART_COPY.kitName : (product?.name ?? CART_COPY.loadingLine),
       detail: '',
       quantity: line.quantity,
@@ -198,7 +205,7 @@ function viewTotals(quote: CartQuote | null): CartViewTotals {
 
 /**
  * Junta las líneas guardadas con su cotización y arma lo que dibuja el panel. Todos los importes,
- * los ahorros por kit, los precios sin impuestos y los problemas de cada línea vienen de la
+ * los ahorros de kits y combos, los precios sin impuestos y los problemas de cada línea vienen de la
  * cotización de la API (`POST /cart/quote`): acá no se calcula ningún precio. Cada línea se une a
  * su cotizada por clave (`cartLineKey`); una que la cotización todavía no trae está `loading`.
  *

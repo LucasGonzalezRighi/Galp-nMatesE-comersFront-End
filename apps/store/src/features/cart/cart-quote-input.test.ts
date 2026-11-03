@@ -93,3 +93,39 @@ describe('buildCartQuoteInput', () => {
     expect(() => buildCartQuoteInput([{ ...yerbaLine, quantity: 0 }])).toThrow(RangeError)
   })
 })
+
+describe('buildCartQuoteInput con combos', () => {
+  const comboLine: CartLine = {
+    type: 'combo',
+    comboId: 'cmb-duo-imperial',
+    productIds: ['m1', 'b1'],
+    options: { leather: 'Marrón', ferrule: 'Acero' },
+    quantity: 2,
+  }
+  const comboWithoutMate: CartLine = {
+    type: 'combo',
+    comboId: 'cmb-bombilla-y-yerba',
+    productIds: ['b1', 'y1'],
+    quantity: 1,
+  }
+
+  it('manda el combo, la cantidad y las opciones (null sin mate), sin las piezas', () => {
+    expect(buildCartQuoteInput([comboLine, comboWithoutMate]).items).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-duo-imperial',
+        quantity: 2,
+        options: { leather: 'Marrón', ferrule: 'Acero' },
+      },
+      { type: 'combo', comboId: 'cmb-bombilla-y-yerba', quantity: 1, options: null },
+    ])
+  })
+
+  it('el precio esperado es el precio final del combo que se vio, no la suma de sus piezas', () => {
+    const input = buildCartQuoteInput([comboLine, comboWithoutMate, mateLine], {
+      prices: { 'cmb-duo-imperial': 61999, m1: 39999, b1: 28999, y1: 9999 },
+    })
+
+    expect(input.items.map((item) => item.expectedUnitPriceArs)).toEqual([61999, undefined, 39999])
+  })
+})

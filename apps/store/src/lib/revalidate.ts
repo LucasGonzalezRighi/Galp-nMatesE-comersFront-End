@@ -2,10 +2,10 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 
 /**
  * Etiquetas de caché que el backend puede pedir regenerar: `products`, `categories`, `settings`,
- * `product:{slug}`, `reviews:{slug}` y `content:{página}`.
+ * `combos`, `product:{slug}`, `reviews:{slug}` y `content:{página}`.
  */
 export const REVALIDATE_TAG_PATTERN =
-  /^(products|categories|settings|product:[a-z0-9-]+|reviews:[a-z0-9-]+|content:[a-z-]+)$/
+  /^(products|categories|settings|combos|product:[a-z0-9-]+|reviews:[a-z0-9-]+|content:[a-z-]+)$/
 
 /** SHA-256 del texto: dos huellas del mismo largo se pueden comparar en tiempo constante. */
 function fingerprint(value: string): Buffer {
@@ -33,8 +33,8 @@ export function isValidRevalidateSecret(provided: string | null, expected: strin
 
 /**
  * Perfil con el que se regenera una etiqueta: el contenido editable (`content:*`) pasa a
- * `'max'` (se sirve lo anterior mientras se regenera); precios, stock, productos, líneas y
- * ajustes vencen al instante, así el próximo visitante ya ve el dato nuevo.
+ * `'max'` (se sirve lo anterior mientras se regenera); precios, stock, productos, líneas, combos
+ * y ajustes vencen al instante, así el próximo visitante ya ve el dato nuevo.
  *
  * @param tag - Una etiqueta que cumpla {@link REVALIDATE_TAG_PATTERN}.
  * @returns El segundo argumento de `revalidateTag`.

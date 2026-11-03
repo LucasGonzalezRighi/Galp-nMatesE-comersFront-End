@@ -5,18 +5,19 @@ import type { SeenValues } from './reconcile'
 import { lineProductIds } from './cart-lines'
 
 /**
- * Precio de lista por unidad que el carrito ya tenía de una línea: el del producto, o la suma de
- * las tres piezas en un kit (sin el descuento). Si falta el precio de alguna pieza, `undefined`.
+ * Precio por unidad que el carrito ya tenía de una línea: el del producto, la suma de las tres
+ * piezas en un kit (sin el descuento) o el precio final de un combo (guardado con el id del combo).
+ * Si falta alguno de esos precios, `undefined`.
  *
  * @param line - Línea del carrito.
- * @param prices - Últimos precios vistos, por id de producto.
+ * @param prices - Últimos precios vistos, por id de producto o de combo.
  */
 function expectedUnitPrice(
   line: CartLine,
   prices: Readonly<Record<string, number>>,
 ): number | undefined {
   let total = 0
-  for (const id of lineProductIds(line)) {
+  for (const id of line.type === 'combo' ? [line.comboId] : lineProductIds(line)) {
     const price = Object.hasOwn(prices, id) ? prices[id] : undefined
     if (price === undefined || !Number.isInteger(price) || price < 0) return undefined
     total += price
@@ -27,10 +28,12 @@ function expectedUnitPrice(
 /**
  * Arma el cuerpo de `POST /cart/quote` (y las líneas de `POST /orders`) desde el carrito guardado.
  *
- * Cada línea trae `expectedUnitPriceArs` con el precio que el carrito ya tenía (el del producto o,
- * en un kit, la suma de sus tres piezas), así un cambio de precio llega como `price_changed` y no
- * recién como `total_changed` al crear el pedido. Si no se conoce el precio de alguna línea, esa
- * línea no lo manda. Los productos que no son mates llevan `options: null`, como pide el contrato.
+ * Cada línea trae `expectedUnitPriceArs` con el precio que el carrito ya tenía (el del producto, en
+ * un kit la suma de sus tres piezas y en un combo su precio final), así un cambio de precio llega
+ * como `price_changed` y no recién como `total_changed` al crear el pedido. Si no se conoce el
+ * precio de alguna línea, esa línea no lo manda. Los productos que no son mates y los combos sin
+ * mate llevan `options: null`, como pide el contrato; un combo manda solo su id (el back usa sus
+ * piezas vigentes).
  *
  * @param lines - Líneas del carrito, en el orden en que se guardaron (no se modifican).
  * @param seen - Lo último que se vio del catálogo (`seen` del store del carrito); sin esto no se
@@ -49,16 +52,27 @@ export function buildCartQuoteInput(
     assertValidQuantity(line.quantity)
     const expected = seen === undefined ? undefined : expectedUnitPrice(line, seen.prices)
     const price = expected === undefined ? {} : { expectedUnitPriceArs: expected }
-    if (line.type === 'kit') {
-      const { mateId, bombillaId, yerbaId, leather, quantity } = line
-      return { type: 'kit', mateId, bombillaId, yerbaId, leather, quantity, ...price }
-    }
-    return {
-      type: 'product',
-      productId: line.productId,
-      quantity: line.quantity,
-      options: line.options ?? null,
-      ...price,
+    switch (line.type) {
+      case 'kit': {
+        const { mateId, bombillaId, yerbaId, leather, quantity } = line
+        return { type: 'kit', mateId, bombillaId, yerbaId, leather, quantity, ...price }
+      }
+      case 'combo':
+        return {
+          type: 'combo',
+          comboId: line.comboId,
+          quantity: line.quantity,
+          options: line.options ?? null,
+          ...price,
+        }
+      case 'product':
+        return {
+          type: 'product',
+          productId: line.productId,
+          quantity: line.quantity,
+          options: line.options ?? null,
+          ...price,
+        }
     }
   })
   return { items }

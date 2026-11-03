@@ -171,7 +171,7 @@ describe('CartDrawer', () => {
     )
   })
 
-  it('muestra el kit con su ahorro, el "Ahorro por kit" y el subtotal con el descuento de domain', async () => {
+  it('muestra el kit con su ahorro, el "Ahorro" y el subtotal con el descuento de domain', async () => {
     const { api } = createTestApi()
     useCartStore.setState({
       lines: [
@@ -199,9 +199,41 @@ describe('CartDrawer', () => {
     ).toBeVisible()
     // Suma de las tres piezas: $78.997; 10 % de descuento: $7.900 de ahorro.
     expect(within(dialog).getByText('Ahorrás $7.900')).toBeVisible()
-    expect(within(dialog).getByText('Ahorro por kit')).toBeVisible()
+    expect(within(dialog).getByText('Ahorro')).toBeVisible()
     expect(within(dialog).getByText('−$7.900')).toBeVisible()
     expect(within(dialog).getAllByText('$71.097')).toHaveLength(2)
+  })
+
+  it('muestra el combo con su nombre, sus piezas, el cuero y la virola, y su ahorro', async () => {
+    const { api } = createTestApi()
+    useCartStore.setState({
+      lines: [
+        {
+          type: 'combo',
+          comboId: 'cmb-duo-imperial',
+          productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+          options: { leather: 'Marrón', ferrule: 'Acero' },
+          quantity: 1,
+        },
+      ],
+      hasHydrated: true,
+    })
+    renderCart(api)
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Abrir carrito/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText('Dúo Imperial')).toBeVisible()
+    expect(
+      within(dialog).getByText(
+        'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+      ),
+    ).toBeVisible()
+    // Las piezas suman $68.998 y el combo cuesta $61.999.
+    expect(within(dialog).getByText('Ahorrás $6.999')).toBeVisible()
+    expect(within(dialog).getByText('Ahorro')).toBeVisible()
+    expect(within(dialog).getByText('−$6.999')).toBeVisible()
+    expect(within(dialog).getAllByText('$61.999')).toHaveLength(2)
   })
 
   it('muestra "Precio sin impuestos nacionales" en cada línea (también en el kit, con "c/u" si hay más de una unidad) y bajo el subtotal, y se apaga con el ajuste', async () => {

@@ -50,7 +50,7 @@ function EmptyCart(): ReactNode {
 
 /**
  * Panel lateral del carrito (spec 9.4 y 9.5), un `Dialog` pegado a la derecha que se desliza en
- * 650 ms. Muestra "Carrito (N)", las líneas con su importe, el "Ahorro por kit" (informativo), el
+ * 650 ms. Muestra "Carrito (N)", las líneas con su importe, el "Ahorro" de los kits y los combos (informativo), el
  * "Subtotal" (con su "Precio sin impuestos nacionales" si el ajuste está activo) y "El envío se
  * calcula en el checkout.", con "Finalizar compra" (lleva a `/checkout` y se deshabilita si hay
  * líneas sin stock o sin datos, o mientras se actualiza la cotización) y "Seguir comprando". Vacío

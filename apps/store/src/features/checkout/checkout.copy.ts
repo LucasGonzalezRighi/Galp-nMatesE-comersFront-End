@@ -71,7 +71,7 @@ export const CHECKOUT_COPY = {
   viewCart: 'Ver carrito',
   /** Resumen lateral "Tu pedido". */
   summaryTitle: 'Tu pedido',
-  kitSavings: 'Ahorro por kit',
+  kitSavings: 'Ahorro',
   subtotal: 'Subtotal',
   shipping: 'Envío',
   shippingPending: 'Se calcula en el paso 2',

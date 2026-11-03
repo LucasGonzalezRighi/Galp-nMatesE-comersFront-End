@@ -4,6 +4,16 @@ import { parseCartLines } from './cart-lines'
 import { buildCartView } from './cart-view'
 import { cartQuote, quoteLine, summary } from './test/support'
 
+/** Combo "Dúo Imperial": el mate `m1` y la bombilla `b1`, con cuero marrón y virola Acero. */
+const comboLine: CartLine = {
+  type: 'combo',
+  comboId: 'cmb-duo-imperial',
+  productIds: ['m1', 'b1'],
+  options: { leather: 'Marrón', ferrule: 'Acero' },
+  quantity: 1,
+}
+const comboKey = 'combo:cmb-duo-imperial:Marrón:Acero'
+
 const mate = summary({ id: 'm1', name: 'Mate Imperial Premium', priceArs: 39999 })
 const bombilla = summary({
   id: 'b1',
@@ -284,6 +294,60 @@ describe('buildCartView', () => {
   })
 })
 
+describe('buildCartView con combos', () => {
+  const comboQuoteLine = quoteLine({
+    key: comboKey,
+    type: 'combo',
+    name: 'Dúo Imperial',
+    detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+    unitPriceArs: 68998,
+    kitSavingsArs: 6999,
+    totalArs: 61999,
+    netUnitPriceArs: null,
+  })
+
+  it('la línea se llama como el combo, lista sus piezas y su ahorro, y usa la foto de la primera pieza', () => {
+    const photo = { url: '/m1.jpg', alt: 'Mate', publicId: 'm1', width: 800, height: 1000 }
+    const view = buildCartView({
+      lines: [comboLine],
+      quote: cartQuote([comboQuoteLine]),
+      products: [{ ...mate, mainImage: photo }, bombilla],
+    })
+
+    expect(view.lines[0]).toMatchObject({
+      key: comboKey,
+      name: 'Dúo Imperial',
+      detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+      image: { url: '/m1.jpg', alt: 'Mate' },
+      status: 'ready',
+      totalArs: 61999,
+      kitSavingsArs: 6999,
+    })
+    expect(view.totals.kitSavingsArs).toBe(6999)
+    expect(view.count).toBe(1)
+  })
+
+  it('el máximo del combo cuenta sus piezas en todas las líneas', () => {
+    const view = buildCartView({
+      lines: [{ ...mateLine, quantity: 2 }, comboLine],
+      quote: cartQuote([
+        { ...mateQuoteLine, maxQuantity: 5 },
+        { ...comboQuoteLine, maxQuantity: 5 },
+      ]),
+      products: [{ ...mate, maxQuantity: 4 }, bombilla],
+    })
+
+    // El mate ya está 3 veces (2 sueltos y 1 en el combo): queda 1 de 4.
+    expect(view.lines[1]?.maxQuantity).toBe(2)
+  })
+
+  it('sin cotización el combo está "loading" y todavía no tiene nombre', () => {
+    const view = buildCartView({ lines: [comboLine], quote: null, products: [mate, bombilla] })
+
+    expect(view.lines[0]).toMatchObject({ status: 'loading', name: 'Cargando…', detail: '' })
+  })
+})
+
 describe('parseCartLines', () => {
   it('lee líneas válidas y suma las repetidas', () => {
     expect(parseCartLines([mateLine, mateLine, kitLine])).toEqual([
@@ -305,6 +369,22 @@ describe('parseCartLines', () => {
 
   it('una línea mala no vacía el carrito', () => {
     expect(parseCartLines([{ type: 'regalo' }, mateLine])).toEqual([mateLine])
+  })
+
+  it('lee una línea de combo con sus piezas y suma las repetidas', () => {
+    expect(parseCartLines([comboLine, comboLine])).toEqual([{ ...comboLine, quantity: 2 }])
+    const withoutMate = { type: 'combo', comboId: 'c2', productIds: ['b1', 'y1'], quantity: 1 }
+    expect(parseCartLines([withoutMate])).toEqual([withoutMate])
+  })
+
+  it.each([
+    ['tiene una sola pieza', { ...comboLine, productIds: ['m1'] }],
+    ['tiene cuatro piezas', { ...comboLine, productIds: ['m1', 'b1', 'y1', 'z1'] }],
+    ['repite una pieza', { ...comboLine, productIds: ['m1', 'm1'] }],
+    ['no tiene el id del combo', { ...comboLine, comboId: '' }],
+    ['la virola no existe', { ...comboLine, options: { leather: 'Negro', ferrule: 'Oro' } }],
+  ])('descarta una línea de combo que %s', (_motivo, value) => {
+    expect(parseCartLines([value])).toEqual([])
   })
 
   it('lee como máximo 50 líneas', () => {

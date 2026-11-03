@@ -3,6 +3,8 @@ import type {
   ApiFetch,
   CartQuote,
   CartQuoteLine,
+  Combo,
+  ComboItem,
   ProductSummary,
 } from '@galpon/api-client'
 import type { MockDb } from '@galpon/api-client/mock'
@@ -32,6 +34,56 @@ export function summary(overrides: Partial<ProductSummary> & { id: string }): Pr
     priceArs: 10000,
     rating: { average: 0, count: 0 },
     slug: overrides.id,
+    ...overrides,
+  }
+}
+
+/**
+ * Pieza de un combo para los tests: un mate de $10.000 con stock 10, a la venta.
+ *
+ * @param overrides - Campos que cambian; `productId` es obligatorio.
+ */
+export function comboItem(overrides: Partial<ComboItem> & { productId: string }): ComboItem {
+  return {
+    group: 'mate',
+    image: null,
+    isPurchasable: true,
+    maxQuantity: 10,
+    name: `Producto ${overrides.productId}`,
+    slug: overrides.productId,
+    unitPriceArs: 10000,
+    ...overrides,
+  }
+}
+
+/**
+ * Combo publicado para los tests, como "Dúo Imperial": el mate `m1` ($39.999) y la bombilla `b1`
+ * ($28.999) por $61.999, con stock 10 en cada pieza.
+ *
+ * @param overrides - Campos que cambian; `id` es obligatorio.
+ */
+export function comboOf(overrides: Partial<Combo> & { id: string }): Combo {
+  return {
+    description: '',
+    isPurchasable: true,
+    isSoldOut: false,
+    items: [
+      comboItem({ productId: 'm1', name: 'Mate Imperial Premium', unitPriceArs: 39999 }),
+      comboItem({
+        productId: 'b1',
+        name: 'Bombillón Premium Curvo',
+        group: 'bombilla',
+        unitPriceArs: 28999,
+      }),
+    ],
+    listPriceArs: 68998,
+    maxQuantity: 10,
+    name: `Combo ${overrides.id}`,
+    netPriceArs: null,
+    position: 1,
+    priceArs: 61999,
+    savingsArs: 6999,
+    status: 'published',
     ...overrides,
   }
 }

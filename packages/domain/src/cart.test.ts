@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { KitCartLine, ProductCartLine } from './cart'
+import type { ComboCartLine, KitCartLine, ProductCartLine } from './cart'
 import type { Leather } from './options'
 import {
   addCartLine,
@@ -30,6 +30,22 @@ function kitLine(quantity = 1, leather: Leather = 'Negro'): KitCartLine {
   return { type: 'kit', mateId: 'm', bombillaId: 'b', yerbaId: 'y', leather, quantity }
 }
 
+/** Combo "c" con el mate 'm' y la bombilla 'b', con el cuero pedido y la virola Acero. */
+function comboLine(quantity = 1, leather: Leather = 'Negro'): ComboCartLine {
+  return {
+    type: 'combo',
+    comboId: 'c',
+    productIds: ['m', 'b'],
+    options: { leather, ferrule: 'Acero' },
+    quantity,
+  }
+}
+
+/** Combo "cy" sin mate: la bombilla 'b' y la yerba 'y', sin opciones. */
+function comboWithoutMate(quantity = 1): ComboCartLine {
+  return { type: 'combo', comboId: 'cy', productIds: ['b', 'y'], quantity }
+}
+
 describe('cartLineKey', () => {
   it('arma la clave de un producto con sus opciones', () => {
     expect(cartLineKey(mateLine(1, 'Borravino'))).toBe('product:m:Borravino:Alpaca cincelada')
@@ -43,6 +59,14 @@ describe('cartLineKey', () => {
   it('no depende de la cantidad', () => {
     expect(cartLineKey(mateLine(1))).toBe(cartLineKey(mateLine(7)))
     expect(cartLineKey(kitLine(1))).toBe(cartLineKey(kitLine(3)))
+    expect(cartLineKey(comboLine(1))).toBe(cartLineKey(comboLine(4)))
+  })
+  it('arma la clave de un combo con su id, el cuero y la virola, sin las piezas', () => {
+    expect(cartLineKey(comboLine(1, 'Marrón'))).toBe('combo:c:Marrón:Acero')
+    expect(cartLineKey({ ...comboLine(), productIds: ['m', 'y'] })).toBe('combo:c:Negro:Acero')
+  })
+  it('usa guiones en un combo sin mate', () => {
+    expect(cartLineKey(comboWithoutMate())).toBe('combo:cy:-:-')
   })
 })
 
@@ -61,6 +85,10 @@ describe('addCartLine', () => {
   })
   it('suma dos kits idénticos en una sola línea', () => {
     expect(addCartLine([kitLine(1)], kitLine(2))).toEqual([kitLine(3)])
+  })
+  it('suma dos combos con el mismo cuero y deja aparte el que tiene otro', () => {
+    const lines = addCartLine(addCartLine([comboLine(1)], comboLine(1)), comboLine(1, 'Crudo'))
+    expect(lines).toEqual([comboLine(2), comboLine(1, 'Crudo')])
   })
   it('conserva el orden: suma en el lugar de la línea existente y agrega al final lo nuevo', () => {
     const lines = addCartLine([mateLine(1), bombillaLine(1)], mateLine(1))
@@ -152,6 +180,12 @@ describe('quantityByProduct', () => {
     const totals = quantityByProduct([mateLine(1, 'Negro'), mateLine(2, 'Crudo')])
     expect(totals.get('m')).toBe(3)
   })
+  it('cuenta cada pieza de un combo una vez por cada combo, junto con las sueltas y los kits', () => {
+    const totals = quantityByProduct([mateLine(1), kitLine(1), comboLine(2), comboWithoutMate(3)])
+    expect(totals.get('m')).toBe(4)
+    expect(totals.get('b')).toBe(6)
+    expect(totals.get('y')).toBe(4)
+  })
   it('no incluye los productos que no están en el carrito', () => {
     expect(quantityByProduct([]).size).toBe(0)
     expect(quantityByProduct([bombillaLine()]).has('m')).toBe(false)
@@ -161,6 +195,10 @@ describe('quantityByProduct', () => {
 describe('remainingQuantityFor', () => {
   it('descuenta del stock lo que ya hay sumando líneas sueltas y kits', () => {
     expect(remainingQuantityFor('m', 3, [mateLine(1), kitLine(1)])).toBe(1)
+  })
+  it('descuenta también las piezas de los combos', () => {
+    expect(remainingQuantityFor('b', 5, [bombillaLine(1), comboLine(2)])).toBe(2)
+    expect(remainingQuantityFor('m', 2, [comboLine(2)])).toBe(0)
   })
   it('con stock 50 y el carrito vacío, el tope es 20', () => {
     expect(remainingQuantityFor('m', 50, [])).toBe(20)

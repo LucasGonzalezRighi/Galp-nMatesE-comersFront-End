@@ -72,7 +72,7 @@ export const RESULT_COPY = {
   summary: {
     title: 'Tu pedido',
     subtotal: 'Subtotal',
-    kitSavings: 'Ahorro por kit',
+    kitSavings: 'Ahorro',
     free: 'Gratis',
     total: 'Total',
     payment: 'Pago',

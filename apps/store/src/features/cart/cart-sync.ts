@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { ApiClient } from '@galpon/api-client'
-import { publicSettingsQuery, shouldRetryQuery } from '@galpon/api-client/react'
+import { combosQuery, publicSettingsQuery, shouldRetryQuery } from '@galpon/api-client/react'
 import { showToast } from '../toast'
 import { cartProductIds } from './cart-lines'
 import { describeCartNotices } from './cart-notices'
@@ -14,8 +14,9 @@ const MAX_ATTEMPTS = 3
 
 /**
  * Concilia el carrito guardado con el catálogo actual (spec 9.4): trae los productos con
- * `GET /products?ids=`, aplica `reconcileCart`, guarda el resultado y avisa de los cambios con un
- * aviso. Se usa al hidratar, al abrir el panel y al entrar al checkout.
+ * `GET /products?ids=` (y, si hay combos en el carrito, los combos a la venta con `GET /combos`),
+ * aplica `reconcileCart`, guarda el resultado y avisa de los cambios con un aviso. Se usa al
+ * hidratar, al abrir el panel y al entrar al checkout.
  *
  * Los datos quedan en la caché de TanStack Query con la misma clave que usa el panel, así este
  * lo dibuja sin pedirlos de nuevo. Un error de red o del servidor se reintenta solo (dos veces);
@@ -37,16 +38,22 @@ export async function syncCart(api: ApiClient, queryClient: QueryClient): Promis
         staleTime: 0,
         retry: shouldRetryQuery,
       })
-      const hasKit = useCartStore.getState().lines.some((line) => line.type === 'kit')
+      const current = useCartStore.getState().lines
+      const hasKit = current.some((line) => line.type === 'kit')
+      const hasCombo = current.some((line) => line.type === 'combo')
       const settings = hasKit
         ? await queryClient.query({ ...publicSettingsQuery(api), staleTime: 0 })
         : null
+      const combos = hasCombo
+        ? await queryClient.query({ ...combosQuery(api), staleTime: 0 })
+        : undefined
 
       const { lines, seen, replaceLines } = useCartStore.getState()
       if (cartProductIds(lines).join(',') !== requested.join(',')) continue
       const result = reconcileCart({
         lines,
         products,
+        ...(combos === undefined ? {} : { combos }),
         seen,
         kitDiscountPercent: settings?.kitDiscountPercent ?? null,
       })

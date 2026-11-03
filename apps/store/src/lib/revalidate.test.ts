@@ -40,12 +40,16 @@ describe('revalidationProfileFor', () => {
     expect(revalidationProfileFor('content:home')).toBe('max')
   })
 
-  it.each(['products', 'categories', 'settings', 'product:mate-imperial', 'reviews:mate-imperial'])(
-    '"%s" vence al instante',
-    (tag) => {
-      expect(revalidationProfileFor(tag)).toEqual({ expire: 0 })
-    },
-  )
+  it.each([
+    'products',
+    'categories',
+    'settings',
+    'combos',
+    'product:mate-imperial',
+    'reviews:mate-imperial',
+  ])('"%s" vence al instante', (tag) => {
+    expect(revalidationProfileFor(tag)).toEqual({ expire: 0 })
+  })
 
   it('rechaza una etiqueta que no es válida', () => {
     expect(() => revalidationProfileFor('../x')).toThrow(RangeError)
@@ -78,6 +82,7 @@ describe('REVALIDATE_TAG_PATTERN', () => {
     'products',
     'categories',
     'settings',
+    'combos',
     'product:mate-imperial-premium',
     'reviews:bombillon-curvo',
     'content:product-tabs',

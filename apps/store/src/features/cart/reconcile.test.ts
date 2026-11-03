@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { CartLine } from '@galpon/domain'
 import { describeCartNotices } from './cart-notices'
 import { EMPTY_SEEN, parseSeenValues, reconcileCart } from './reconcile'
-import { summary } from './test/support'
+import { comboItem, comboOf, summary } from './test/support'
 
 const mate = summary({ id: 'm1', name: 'Mate Uno', group: 'mate', priceArs: 40000, maxQuantity: 5 })
 const bombilla = summary({ id: 'b1', name: 'Bombilla Uno', group: 'bombilla', priceArs: 26000 })
@@ -206,6 +206,137 @@ describe('reconcileCart: el stock vale para el producto en todas las líneas', (
     })
 
     expect(result.lines).toEqual([kitLine, { ...mateLine, quantity: 5 }])
+  })
+})
+
+describe('reconcileCart con combos', () => {
+  /** "Dúo Imperial": el mate m1 (stock 5) y la bombilla b1, guardado con las piezas que tenía. */
+  const duo = comboOf({
+    id: 'cmb-duo',
+    name: 'Dúo Imperial',
+    items: [
+      comboItem({ productId: 'm1', name: 'Mate Uno', maxQuantity: 5 }),
+      comboItem({ productId: 'b1', name: 'Bombilla Uno', group: 'bombilla' }),
+    ],
+  })
+  const comboLine: CartLine = {
+    type: 'combo',
+    comboId: 'cmb-duo',
+    productIds: ['m1', 'b1'],
+    options: { leather: 'Negro', ferrule: 'Acero' },
+    quantity: 1,
+  }
+
+  it('un combo que ya no viene en la lista de combos se quita y se avisa', () => {
+    const result = reconcileCart({
+      lines: [mateLine, comboLine],
+      products: [mate, bombilla],
+      combos: [],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([mateLine])
+    expect(result.notices).toEqual([{ kind: 'removed', count: 1 }])
+  })
+
+  it('un combo que ya no se puede comprar (y no es por stock) se quita', () => {
+    const result = reconcileCart({
+      lines: [comboLine],
+      products: [mate, bombilla],
+      combos: [{ ...duo, isPurchasable: false }],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([])
+    expect(result.notices).toEqual([{ kind: 'removed', count: 1 }])
+  })
+
+  it('un combo sin stock se queda, sin cambios ni avisos', () => {
+    const soldOut = {
+      ...duo,
+      isPurchasable: false,
+      isSoldOut: true,
+      items: duo.items.map((item) => ({ ...item, maxQuantity: 0, isPurchasable: false })),
+    }
+    const result = reconcileCart({
+      lines: [comboLine],
+      products: [],
+      combos: [soldOut],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([comboLine])
+    expect(result.notices).toEqual([])
+  })
+
+  it('refresca las piezas del combo con las que informa la API', () => {
+    const changed = {
+      ...duo,
+      items: [...duo.items, comboItem({ productId: 'y1', name: 'Yerba Uno', group: 'yerba' })],
+    }
+    const result = reconcileCart({
+      lines: [comboLine],
+      products: [mate, bombilla],
+      combos: [changed],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([{ ...comboLine, productIds: ['m1', 'b1', 'y1'] }])
+  })
+
+  it('cambió el precio del combo: se avisa con su nombre y se recuerda el precio nuevo', () => {
+    const first = reconcileCart({
+      lines: [comboLine],
+      products: [mate, bombilla],
+      combos: [duo],
+      seen: { prices: { 'cmb-duo': 59999 }, kitDiscountPercent: null },
+      kitDiscountPercent: null,
+    })
+    expect(first.notices).toEqual([{ kind: 'price-changed', name: 'Dúo Imperial' }])
+    expect(first.seen.prices).toEqual({ 'cmb-duo': 61999 })
+
+    const second = reconcileCart({
+      lines: first.lines,
+      products: [mate, bombilla],
+      combos: [duo],
+      seen: first.seen,
+      kitDiscountPercent: null,
+    })
+    expect(second.notices).toEqual([])
+  })
+
+  it('el combo comparte el stock con las líneas sueltas: se baja y se avisa con el nombre del combo', () => {
+    const result = reconcileCart({
+      lines: [
+        { ...mateLine, quantity: 3 },
+        { ...comboLine, quantity: 4 },
+      ],
+      products: [mate, bombilla],
+      combos: [duo],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    // El mate tiene 5: 3 sueltos y quedan 2 para el combo.
+    expect(result.lines[1]).toMatchObject({ type: 'combo', quantity: 2 })
+    expect(result.notices).toEqual([{ kind: 'reduced', name: 'Dúo Imperial', quantity: 2 }])
+  })
+
+  it('sin la lista de combos (no se consultó), la línea de combo queda como estaba', () => {
+    const result = reconcileCart({
+      lines: [comboLine],
+      products: [],
+      seen: { prices: { 'cmb-duo': 61999 }, kitDiscountPercent: null },
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([comboLine])
+    expect(result.seen.prices).toEqual({ 'cmb-duo': 61999 })
+    expect(result.notices).toEqual([])
   })
 })
 

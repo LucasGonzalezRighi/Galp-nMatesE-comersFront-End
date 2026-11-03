@@ -3,7 +3,7 @@ import { assertValidQuantity, maxQuantity } from './catalog'
 
 /** Línea del carrito de un producto suelto. Solo los mates llevan `options`. */
 export interface ProductCartLine {
-  /** Distingue la línea de un producto suelto de la de un kit. */
+  /** Distingue la línea de un producto suelto de la de un kit o un combo. */
   type: 'product'
   /** Id del producto. */
   productId: string
@@ -15,7 +15,7 @@ export interface ProductCartLine {
 
 /** Línea del carrito de un kit: un mate, una bombilla y una yerba con un cuero. */
 export interface KitCartLine {
-  /** Distingue la línea de un kit de la de un producto suelto. */
+  /** Distingue la línea de un kit de la de un producto suelto o un combo. */
   type: 'kit'
   /** Id del mate del kit. */
   mateId: string
@@ -29,8 +29,26 @@ export interface KitCartLine {
   quantity: number
 }
 
+/**
+ * Línea del carrito de un combo: 2 o 3 productos fijos que arma el dashboard, con precio final.
+ * La línea se identifica por el combo y las opciones del mate (ver {@link comboLineKey}); las
+ * piezas se guardan solo para contar el stock que usa en el carrito.
+ */
+export interface ComboCartLine {
+  /** Distingue la línea de un combo de la de un producto suelto o un kit. */
+  type: 'combo'
+  /** Id del combo. */
+  comboId: string
+  /** Ids de las piezas del combo, en su orden (de 2 a 3), según lo último que informó la API. */
+  productIds: readonly string[]
+  /** Cuero y virola del mate del combo; existe solo si el combo lleva mate. */
+  options?: { leather: Leather; ferrule: Ferrule }
+  /** Cantidad de combos (no de piezas): cada combo trae una unidad de cada pieza. */
+  quantity: number
+}
+
 /** Línea del carrito. Solo guarda ids y cantidades; precios y stock se resuelven aparte. */
-export type CartLine = ProductCartLine | KitCartLine
+export type CartLine = ProductCartLine | KitCartLine | ComboCartLine
 
 /**
  * Deriva la clave de una línea a partir de su contenido (no de la cantidad).
@@ -38,15 +56,21 @@ export type CartLine = ProductCartLine | KitCartLine
  * Dos líneas con la misma clave son la misma línea: así se suman en vez de repetirse.
  *
  * @param line - Línea del carrito.
- * @returns `product:{id}:{cuero|-}:{virola|-}` o `kit:{mate}:{bombilla}:{yerba}:{cuero}`.
+ * @returns `product:{id}:{cuero|-}:{virola|-}`, `kit:{mate}:{bombilla}:{yerba}:{cuero}` o
+ *   `combo:{id}:{cuero|-}:{virola|-}` (sin las piezas, ver {@link comboLineKey}).
+ * @throws {RangeError} Si la línea es de un combo con el id vacío.
  * @example
  * cartLineKey({ type: 'product', productId: 'b1', quantity: 2 }) // "product:b1:-:-"
  */
 export function cartLineKey(line: CartLine): string {
-  if (line.type === 'kit') {
-    return `kit:${line.mateId}:${line.bombillaId}:${line.yerbaId}:${line.leather}`
+  switch (line.type) {
+    case 'kit':
+      return `kit:${line.mateId}:${line.bombillaId}:${line.yerbaId}:${line.leather}`
+    case 'combo':
+      return comboLineKey(line.comboId, line.options ?? null)
+    case 'product':
+      return `product:${line.productId}:${line.options?.leather ?? '-'}:${line.options?.ferrule ?? '-'}`
   }
-  return `product:${line.productId}:${line.options?.leather ?? '-'}:${line.options?.ferrule ?? '-'}`
 }
 
 /**
@@ -127,8 +151,9 @@ export function removeCartLine(lines: readonly CartLine[], key: string): CartLin
 /**
  * Cuenta cuántas unidades de cada producto hay en el carrito.
  *
- * Suma las líneas sueltas y las piezas de los kits (cada kit aporta su cantidad a sus tres piezas),
- * porque el tope de compra y el stock valen para el producto en **todas** las líneas.
+ * Suma las líneas sueltas y las piezas de los kits y de los combos (cada kit o combo aporta su
+ * cantidad a cada una de sus piezas), porque el tope de compra y el stock valen para el producto en
+ * **todas** las líneas.
  *
  * @param lines - Líneas del carrito.
  * @returns Unidades por id de producto; los productos que no están no aparecen.
@@ -139,12 +164,17 @@ export function quantityByProduct(lines: readonly CartLine[]): ReadonlyMap<strin
     counts.set(productId, (counts.get(productId) ?? 0) + quantity)
   }
   for (const line of lines) {
-    if (line.type === 'kit') {
-      add(line.mateId, line.quantity)
-      add(line.bombillaId, line.quantity)
-      add(line.yerbaId, line.quantity)
-    } else {
-      add(line.productId, line.quantity)
+    switch (line.type) {
+      case 'kit':
+        add(line.mateId, line.quantity)
+        add(line.bombillaId, line.quantity)
+        add(line.yerbaId, line.quantity)
+        break
+      case 'combo':
+        for (const productId of line.productIds) add(productId, line.quantity)
+        break
+      case 'product':
+        add(line.productId, line.quantity)
     }
   }
   return counts
@@ -155,7 +185,7 @@ export function quantityByProduct(lines: readonly CartLine[]): ReadonlyMap<strin
  *
  * @param productId - Producto a revisar.
  * @param stock - Unidades disponibles del producto.
- * @param lines - Líneas del carrito (se cuentan sueltas y dentro de kits).
+ * @param lines - Líneas del carrito (se cuentan sueltas y dentro de kits y combos).
  * @returns El tope de compra (`min(20, stock)`) menos lo que ya hay; nunca negativo.
  * @example
  * remainingQuantityFor('m', 50, []) // 20

@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApiClient } from '@galpon/api-client'
 import { hideToast, Toaster } from '../toast'
 import {
+  addComboToCart,
   addKitToCart,
   addProductToCart,
   closeCart,
   KIT_CART_OPEN_DELAY_MS,
   openCart,
+  type AddComboInput,
   type AddKitInput,
   type AddProductInput,
   type AddToCartResult,
@@ -24,7 +26,7 @@ import {
   useCartStore,
 } from './cart.store'
 import { EMPTY_SEEN } from './reconcile'
-import { createTestApi } from './test/support'
+import { comboItem, comboOf, createTestApi } from './test/support'
 
 const mate: CartableProduct = {
   id: 'm1',
@@ -64,6 +66,16 @@ function addKit(input: AddKitInput): AddToCartResult {
     result = addKitToCart(input)
   })
   if (result === undefined) throw new Error('addKitToCart no devolvió nada')
+  return result
+}
+
+/** Agrega un combo dentro de `act`. */
+function addCombo(input: AddComboInput): AddToCartResult {
+  let result: AddToCartResult | undefined
+  act(() => {
+    result = addComboToCart(input)
+  })
+  if (result === undefined) throw new Error('addComboToCart no devolvió nada')
   return result
 }
 
@@ -261,6 +273,124 @@ describe('addKitToCart', () => {
   })
 })
 
+describe('addComboToCart', () => {
+  /** "Dúo Imperial": el mate m1 y la bombilla b1 (stock 5 cada uno). */
+  const duo = comboOf({
+    id: 'cmb-duo',
+    name: 'Dúo Imperial',
+    items: [
+      comboItem({ productId: 'm1', name: 'Mate Imperial Premium', maxQuantity: 5 }),
+      comboItem({ productId: 'b1', name: 'Bombillón Curvo', group: 'bombilla', maxQuantity: 5 }),
+    ],
+  })
+  /** Combo sin mate: la bombilla b1 y la yerba y1. */
+  const withoutMate = comboOf({
+    id: 'cmb-by',
+    name: 'Bombilla y yerba',
+    priceArs: 34999,
+    items: [
+      comboItem({ productId: 'b1', group: 'bombilla', maxQuantity: 5 }),
+      comboItem({ productId: 'y1', group: 'yerba', maxQuantity: 5 }),
+    ],
+  })
+
+  it('suma el combo con sus piezas y Negro + Alpaca cincelada, avisa con el nombre y no abre el carrito', () => {
+    vi.useFakeTimers()
+
+    const result = addCombo({ combo: duo })
+
+    expect(result).toEqual({ status: 'added', quantity: 1 })
+    expect(cart().lines).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-duo',
+        productIds: ['m1', 'b1'],
+        options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+        quantity: 1,
+      },
+    ])
+    expect(announced()).toHaveTextContent('Combo agregado al carrito. Dúo Imperial')
+    // Recuerda el precio final del combo (no el de las piezas) para avisar si cambia.
+    expect(cart().seen.prices).toEqual({ 'cmb-duo': 61999 })
+    act(() => {
+      vi.advanceTimersByTime(KIT_CART_OPEN_DELAY_MS * 2)
+    })
+    expect(cart().isOpen).toBe(false)
+  })
+
+  it('usa el cuero y la virola elegidos y suma los combos iguales', () => {
+    const options = { leather: 'Marrón', ferrule: 'Acero' } as const
+    addCombo({ combo: duo, options })
+    addCombo({ combo: duo, options })
+    addCombo({ combo: duo })
+
+    expect(cart().lines.map((line) => line.quantity)).toEqual([2, 1])
+    expect(cart().lines[0]).toMatchObject({ options })
+  })
+
+  it('un combo sin mate no lleva opciones aunque se pasen', () => {
+    addCombo({ combo: withoutMate, options: { leather: 'Crudo', ferrule: 'Acero' } })
+
+    expect(cart().lines).toEqual([
+      { type: 'combo', comboId: 'cmb-by', productIds: ['b1', 'y1'], quantity: 1 },
+    ])
+  })
+
+  it('el tope vale para cada pieza en todas las líneas: sueltas, kits y otros combos', () => {
+    add({ product: { ...bombilla, maxQuantity: 5 }, quantity: 3 })
+    addCombo({ combo: duo })
+
+    const result = addCombo({ combo: withoutMate })
+    expect(result).toEqual({ status: 'added', quantity: 1 })
+    expect(addCombo({ combo: duo })).toEqual({ status: 'limit' })
+    expect(announced()).toHaveTextContent('Ya tenés el máximo disponible. Dúo Imperial')
+  })
+
+  it('un combo que no se puede comprar no se agrega', () => {
+    const result = addCombo({ combo: { ...duo, isPurchasable: false } })
+
+    expect(result).toEqual({ status: 'unavailable' })
+    expect(cart().lines).toEqual([])
+  })
+
+  it('valida el combo y las opciones', () => {
+    const [mateItem, bombillaItem] = duo.items
+    if (mateItem === undefined || bombillaItem === undefined) throw new Error('Faltan piezas.')
+    const invalid: AddComboInput[] = [
+      { combo: { ...duo, id: ' ' } },
+      { combo: { ...duo, name: '' } },
+      { combo: { ...duo, items: [mateItem] } },
+      { combo: { ...duo, items: [mateItem, bombillaItem, { ...bombillaItem, productId: 'b2' }] } },
+      { combo: { ...duo, items: [mateItem, { ...mateItem, productId: 'm2' }] } },
+      { combo: { ...duo, priceArs: 0 } },
+      { combo: duo, options: { leather: 'Rosa' as 'Negro', ferrule: 'Acero' } },
+    ]
+    for (const input of invalid) {
+      expect(() => addComboToCart(input)).toThrow(RangeError)
+    }
+    expect(cart().lines).toEqual([])
+  })
+
+  it('se guarda con sus piezas y sobrevive a recargar (Review Focus 4)', () => {
+    addCombo({ combo: duo, options: { leather: 'Marrón', ferrule: 'Acero' } })
+    const stored = localStorage.getItem(CART_STORAGE_KEY)
+    useCartStore.setState({ lines: [], seen: EMPTY_SEEN, hasHydrated: false })
+    localStorage.setItem(CART_STORAGE_KEY, stored ?? '')
+
+    ensureCartHydrated()
+
+    expect(cart().lines).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-duo',
+        productIds: ['m1', 'b1'],
+        options: { leather: 'Marrón', ferrule: 'Acero' },
+        quantity: 1,
+      },
+    ])
+  })
+})
+
 describe('openCart y closeCart', () => {
   it('abrir el carrito oculta el aviso y lo marca como hidratado', () => {
     add({ product: mate })
@@ -426,6 +556,45 @@ describe('syncCart con datos viejos en localStorage (Review Focus 1)', () => {
 
     expect(fetch).not.toHaveBeenCalled()
     expect(announced()).toBeEmptyDOMElement()
+  })
+
+  it('concilia los combos con GET /combos: quita el borrador, refresca las piezas y avisa el precio', async () => {
+    const { api } = createTestApi()
+    useCartStore.setState({
+      lines: [
+        {
+          type: 'combo',
+          comboId: 'cmb-duo-imperial',
+          productIds: ['prd-imperial-premium', 'prd-yerba-canarias'],
+          options: { leather: 'Negro', ferrule: 'Acero' },
+          quantity: 1,
+        },
+        {
+          type: 'combo',
+          comboId: 'cmb-galleta-y-canarias',
+          productIds: ['prd-galleta', 'prd-yerba-canarias'],
+          options: { leather: 'Negro', ferrule: 'Acero' },
+          quantity: 1,
+        },
+      ],
+      seen: { prices: { 'cmb-duo-imperial': 59999 }, kitDiscountPercent: null },
+    })
+
+    await sync(api)
+
+    expect(cart().lines).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-duo-imperial',
+        productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+        options: { leather: 'Negro', ferrule: 'Acero' },
+        quantity: 1,
+      },
+    ])
+    expect(cart().seen.prices).toEqual({ 'cmb-duo-imperial': 61999 })
+    expect(announced()).toHaveTextContent(
+      'Actualizamos tu carrito. Quitamos un producto que ya no está disponible · y 1 cambio más',
+    )
   })
 
   it('un carrito con un kit toma el descuento actual y lo recuerda', async () => {

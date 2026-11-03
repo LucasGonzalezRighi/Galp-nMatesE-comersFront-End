@@ -1,5 +1,6 @@
 import type {
   Category,
+  Combo,
   FeaturedReview,
   HomeContent,
   ProductSummary,
@@ -19,6 +20,9 @@ export const FEATURED_LIMIT = 8
 /** Cuántas reseñas destacadas entran en el carrusel del cierre. */
 export const REVIEWS_LIMIT = 10
 
+/** Cuántos combos muestra la sección de combos (Ruling IC-12). */
+export const COMBOS_LIMIT = 6
+
 /** Lo que el servidor lee de la API para armar el inicio. */
 export interface HomeInput {
   /** Textos editables del inicio. */
@@ -31,6 +35,11 @@ export interface HomeInput {
   settings: PublicSettings
   /** Reseñas destacadas, de la más nueva a la más vieja. */
   reviews: readonly FeaturedReview[]
+  /**
+   * Combos a la venta (`GET /combos`). Sin ellos (o si no se pudieron leer) la sección de combos no
+   * se dibuja: un error al leerlos no rompe el inicio.
+   */
+  combos?: readonly Combo[]
 }
 
 /** Todo lo que necesitan las secciones del inicio, ya resuelto. */
@@ -45,6 +54,8 @@ export interface HomeData {
   featured: ProductSummary[]
   /** Reseñas destacadas que muestra el cierre. */
   reviews: FeaturedReview[]
+  /** Combos de la sección de combos, por posición (como mucho {@link COMBOS_LIMIT}). */
+  combos: Combo[]
   /** Productos de las escenas de la historia, con respaldo si alguno no se puede comprar. */
   story: StoryProducts
   /** Las piezas de la portada del v4 donde no hay mate 3D (Ruling IC-7, ver `heroSlides`). */
@@ -57,7 +68,7 @@ export interface HomeData {
 
 /**
  * Arma los datos del inicio a partir de lo que devuelve la API: filtra y ordena las líneas,
- * recorta los destacados y las reseñas, resuelve los productos de la historia y las piezas de la
+ * recorta los destacados, los combos y las reseñas, resuelve los productos de la historia y las piezas de la
  * portada del v4, y calcula las cifras y el descuento del kit. No recalcula precios ni stock: usa
  * lo que informa la API.
  *
@@ -66,7 +77,7 @@ export interface HomeData {
  * @throws {RangeError} Si el descuento del kit o la cantidad de productos de una línea no son válidos.
  */
 export function buildHomeData(input: HomeInput): HomeData {
-  const { content, products, categories, settings, reviews } = input
+  const { content, products, categories, settings, reviews, combos = [] } = input
   const discount = settings.kitDiscountPercent
   const featured = products.filter((product) => product.featured).slice(0, FEATURED_LIMIT)
   const story = resolveStoryProducts(content.storyProducts, products)
@@ -78,6 +89,7 @@ export function buildHomeData(input: HomeInput): HomeData {
       .toSorted((a, b) => a.position - b.position),
     featured,
     reviews: reviews.slice(0, REVIEWS_LIMIT),
+    combos: combos.toSorted((a, b) => a.position - b.position).slice(0, COMBOS_LIMIT),
     story,
     heroSlides: heroSlides(story, featured),
     stats: computeHomeStats(products, categories),

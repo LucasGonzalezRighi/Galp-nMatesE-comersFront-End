@@ -17,6 +17,20 @@ export const HOME_COPY = {
     previous: 'Línea anterior',
     next: 'Línea siguiente',
   },
+  /** Combos (Ruling IC-12): título y bajada fijos (no son contenido editable) y el carrusel. */
+  combos: {
+    title: 'Combos listos para cebar',
+    text: 'Mate y bombilla, o mate y yerba, elegidos para ir juntos y a precio cerrado. Si el combo trae mate, el cuero y la virola los elegís vos.',
+    carousel: {
+      /** Nombre accesible de la región. */
+      label: 'Combos',
+      /** Qué es cada tarjeta para el lector de pantalla. */
+      item: 'combo',
+      /** Flechas. */
+      previous: 'Combo anterior',
+      next: 'Combo siguiente',
+    },
+  },
   /** Destacados: link a la tienda. */
   viewShop: 'Ver toda la tienda',
   /** Cifras: rótulos de las cuatro cifras. */

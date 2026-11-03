@@ -131,7 +131,7 @@ export const ACCOUNT_COPY = {
     pickup: 'Retirás en persona; te avisamos por email cuando esté listo.',
     lines: 'Productos',
     itemsGross: 'Precio de lista',
-    kitSavings: 'Ahorro por kit',
+    kitSavings: 'Ahorro',
     subtotal: 'Subtotal',
     shippingCost: 'Envío',
     free: 'Gratis',

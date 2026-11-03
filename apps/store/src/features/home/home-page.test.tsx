@@ -22,11 +22,18 @@ vi.mock('next/navigation', () => ({
   useRouter: (): { push: (href: string) => void } => ({ push: vi.fn() }),
 }))
 
-/** La lectura del servidor se reemplaza por los datos del catálogo de fábrica. */
+/** La lectura del servidor se reemplaza por los datos del catálogo de fábrica, con sus combos. */
 vi.mock('./home.data', async () => {
   const { buildHomeData: build } = await import('./home-data')
   const { loadFixtureCatalog: load } = await import('./test/fixture-catalog')
-  const data = build(await load())
+  const { createApiClient, listCombos } = await import('@galpon/api-client')
+  const mock = await import('@galpon/api-client/mock')
+  const db = mock.createMockDb(mock.DEFAULT_MOCK_DB_OPTIONS)
+  const fetch = mock.createMockFetch({ getDb: () => db, latencyMs: 0 })
+  const combos = await listCombos(
+    createApiClient({ baseUrl: 'http://localhost/api/mock/v1', fetch }),
+  )
+  const data = build({ ...(await load()), combos })
   return { getHomeData: (): Promise<HomeData> => Promise.resolve(data) }
 })
 
@@ -64,6 +71,7 @@ describe('HomePage', () => {
     const order = [
       'Encontrá', // portada: el carrusel del v4 (sin las escenas de la bombilla y del agua)
       'Seis líneas para cada ronda', // colección
+      'Combos listos para cebar', // combos (Ruling IC-12)
       'Los más elegidos de la ronda', // destacados
       'Un mate no se compra', // manifiesto
       'Piezas en catálogo', // cifras
@@ -145,6 +153,27 @@ describe('HomePage', () => {
     expect(screen.getAllByText('Ver detalle')).toHaveLength(data.featured.length)
     expect(
       screen.getByRole('button', { name: 'Agregar Mate Imperial Premium al carrito' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('HomePage: combos', () => {
+  it('la sección de combos va entre las líneas y los destacados, con los combos de fábrica', async () => {
+    renderSection(await HomePage())
+    const title = screen.getByRole('heading', { level: 2, name: 'Combos listos para cebar' })
+    const collection = screen.getByRole('heading', {
+      level: 2,
+      name: 'Seis líneas para cada ronda',
+    })
+    const featured = screen.getByRole('heading', { level: 2, name: 'Los más elegidos de la ronda' })
+    expect(
+      collection.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(title.compareDocumentPosition(featured) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const region = screen.getByRole('region', { name: 'Combos' })
+    expect(within(region).getAllByRole('article')).toHaveLength(4)
+    expect(
+      within(region).getByRole('button', { name: 'Agregar combo Dúo Imperial al carrito' }),
     ).toBeInTheDocument()
   })
 })

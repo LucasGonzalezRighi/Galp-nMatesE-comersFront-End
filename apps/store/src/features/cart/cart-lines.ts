@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import type { CartLine } from '@galpon/domain'
-import { addCartLine, FERRULES, LEATHERS, MAX_QUANTITY_PER_PRODUCT } from '@galpon/domain'
+import {
+  addCartLine,
+  COMBO_MAX_ITEMS,
+  COMBO_MIN_ITEMS,
+  FERRULES,
+  LEATHERS,
+  MAX_QUANTITY_PER_PRODUCT,
+} from '@galpon/domain'
 
 /** Máximo de líneas distintas que se leen de `localStorage`: un carrito real no se acerca. */
 export const MAX_CART_LINES = 50
@@ -11,12 +18,15 @@ const quantitySchema = z.int().min(1).max(MAX_QUANTITY_PER_PRODUCT)
 /** Identificador de producto guardado: texto no vacío y acotado. */
 const idSchema = z.string().min(1).max(100)
 
+/** Cuero y virola de un mate, como se guardan. */
+const optionsSchema = z.object({ leather: z.enum(LEATHERS), ferrule: z.enum(FERRULES) })
+
 /** Línea de un producto suelto, como se guarda. */
 const productLineSchema = z.object({
   type: z.literal('product'),
   productId: idSchema,
   quantity: quantitySchema,
-  options: z.object({ leather: z.enum(LEATHERS), ferrule: z.enum(FERRULES) }).optional(),
+  options: optionsSchema.optional(),
 })
 
 /** Línea de un kit, como se guarda. */
@@ -29,8 +39,25 @@ const kitLineSchema = z.object({
   quantity: quantitySchema,
 })
 
+/** Línea de un combo, como se guarda: sus piezas (de 2 a 3, sin repetir) sirven para el stock. */
+const comboLineSchema = z.object({
+  type: z.literal('combo'),
+  comboId: idSchema,
+  productIds: z
+    .array(idSchema)
+    .min(COMBO_MIN_ITEMS)
+    .max(COMBO_MAX_ITEMS)
+    .refine((ids) => new Set(ids).size === ids.length),
+  options: optionsSchema.optional(),
+  quantity: quantitySchema,
+})
+
 /** Cualquier línea del carrito, discriminada por `type`. */
-const cartLineSchema = z.discriminatedUnion('type', [productLineSchema, kitLineSchema])
+const cartLineSchema = z.discriminatedUnion('type', [
+  productLineSchema,
+  kitLineSchema,
+  comboLineSchema,
+])
 
 /**
  * Lee las líneas del carrito que se guardaron en `localStorage`, que pueden ser viejas, de otra
@@ -52,12 +79,19 @@ export function parseCartLines(value: unknown): CartLine[] {
 
 /**
  * Ids de los productos que usa una línea: uno si es suelta, tres (mate, bombilla y yerba) si es
- * un kit.
+ * un kit y sus piezas (de 2 a 3) si es un combo.
  *
  * @param line - Línea del carrito.
  */
 export function lineProductIds(line: CartLine): string[] {
-  return line.type === 'kit' ? [line.mateId, line.bombillaId, line.yerbaId] : [line.productId]
+  switch (line.type) {
+    case 'kit':
+      return [line.mateId, line.bombillaId, line.yerbaId]
+    case 'combo':
+      return [...line.productIds]
+    case 'product':
+      return [line.productId]
+  }
 }
 
 /**
@@ -71,7 +105,7 @@ export function cartProductIds(lines: readonly CartLine[]): string[] {
 }
 
 /**
- * Cantidad de unidades del carrito (cada kit cuenta como uno), la que muestra el contador.
+ * Cantidad de unidades del carrito (cada kit o combo cuenta como uno), la que muestra el contador.
  *
  * @param lines - Líneas del carrito.
  */

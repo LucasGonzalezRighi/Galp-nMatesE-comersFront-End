@@ -1,8 +1,12 @@
 import type { Ferrule, Leather, ProductGroup } from '@galpon/domain'
 import {
   assertValidQuantity,
+  COMBO_MAX_ITEMS,
+  COMBO_MIN_ITEMS,
+  comboHasMate,
   DEFAULT_FERRULE,
   DEFAULT_LEATHER,
+  hasDistinctGroups,
   isFerrule,
   isLeather,
   MAX_KIT_DISCOUNT_PERCENT,
@@ -62,6 +66,40 @@ export interface AddKitInput {
   leather: Leather
   /** Descuento actual del kit (para el aviso); un entero entre 0 y 30. */
   discountPercent: number
+  /** Punto del clic, para el vuelo al carrito. */
+  origin?: FlyOrigin
+}
+
+/** Lo que necesita el carrito de una pieza de un combo (un `ComboItem` de la API sirve tal cual). */
+export interface CartableComboItem {
+  /** Id del producto. */
+  productId: string
+  /** Grupo del producto: si hay un mate, el combo lleva cuero y virola. */
+  group: ProductGroup
+  /** Máximo que se puede pedir de la pieza: el menor entre 20 y su stock disponible (0 sin stock). */
+  maxQuantity: number
+}
+
+/** Lo que necesita el carrito de un combo (un `Combo` de la API sirve tal cual). */
+export interface CartableCombo {
+  /** Id del combo. */
+  id: string
+  /** Nombre, para el aviso. */
+  name: string
+  /** Precio final del combo, que se recuerda para avisar si cambia. */
+  priceArs: number
+  /** Si se puede agregar al carrito (publicado y con todas sus piezas a la venta y con stock). */
+  isPurchasable: boolean
+  /** Las piezas, de 2 a 3 y de grupos distintos. */
+  items: readonly CartableComboItem[]
+}
+
+/** Datos de {@link addComboToCart}. */
+export interface AddComboInput {
+  /** Combo a agregar. */
+  combo: CartableCombo
+  /** Cuero y virola del mate del combo; por omisión Negro y Alpaca cincelada. Sin mate se ignoran. */
+  options?: { leather: Leather; ferrule: Ferrule }
   /** Punto del clic, para el vuelo al carrito. */
   origin?: FlyOrigin
 }
@@ -223,5 +261,80 @@ export function addKitToCart({
   })
   flyToCart(origin)
   setTimeout(openCart, KIT_CART_OPEN_DELAY_MS)
+  return { status: 'added', quantity: 1 }
+}
+
+/**
+ * Valida el combo y las opciones que pide {@link addComboToCart}.
+ *
+ * @throws {RangeError} Si faltan el id o el nombre, si no tiene de 2 a 3 piezas de grupos
+ *   distintos, si el precio no es un entero mayor a 0 o si el cuero o la virola no existen.
+ */
+function assertComboInput({ combo, options }: AddComboInput): void {
+  if (combo.id.trim() === '' || combo.name.trim() === '') {
+    throw new RangeError('El combo tiene que tener id y nombre.')
+  }
+  const groups = combo.items.map((item) => item.group)
+  if (groups.length < COMBO_MIN_ITEMS || groups.length > COMBO_MAX_ITEMS) {
+    throw new RangeError(
+      `El combo "${combo.name}" tiene que tener de ${String(COMBO_MIN_ITEMS)} a ${String(COMBO_MAX_ITEMS)} piezas.`,
+    )
+  }
+  if (!hasDistinctGroups(groups)) {
+    throw new RangeError(`Las piezas del combo "${combo.name}" tienen que ser de grupos distintos.`)
+  }
+  if (!Number.isInteger(combo.priceArs) || combo.priceArs < 1) {
+    throw new RangeError(
+      `El precio del combo tiene que ser un entero mayor a 0; se recibió ${String(combo.priceArs)}.`,
+    )
+  }
+  if (options !== undefined && (!isLeather(options.leather) || !isFerrule(options.ferrule))) {
+    throw new RangeError('El cuero o la virola elegidos no existen.')
+  }
+}
+
+/**
+ * Agrega un combo al carrito (Ruling IC-12): una línea con el combo, sus piezas (para el tope) y,
+ * si lleva mate, el cuero y la virola (por omisión Negro y Alpaca cincelada). Respeta el tope de
+ * compra de cada pieza contando todas las líneas (sueltas, kits y otros combos), así un doble clic
+ * rápido nunca lo supera; muestra el aviso "Combo agregado al carrito" con el nombre y el botón
+ * "Ver carrito" y lanza el vuelo, sin abrir el carrito. Recuerda el precio final del combo para
+ * avisar si cambia.
+ *
+ * @param input - Ver {@link AddComboInput}.
+ * @returns Qué pasó: ver {@link AddToCartResult}.
+ * @throws {RangeError} Si el combo o las opciones no son válidos (ver los motivos en el mensaje).
+ * @example
+ * addComboToCart({ combo, options: { leather, ferrule }, origin: clickOrigin(event) })
+ */
+export function addComboToCart(input: AddComboInput): AddToCartResult {
+  assertComboInput(input)
+  const { combo, options, origin } = input
+  if (!combo.isPurchasable) return { status: 'unavailable' }
+
+  ensureCartHydrated()
+  const { lines, addLine } = useCartStore.getState()
+  if (
+    combo.items.some((item) => remainingQuantityFor(item.productId, item.maxQuantity, lines) < 1)
+  ) {
+    showToast({ title: CART_COPY.limitReached, subtitle: combo.name, action: VIEW_CART_ACTION })
+    return { status: 'limit' }
+  }
+
+  const withMate = comboHasMate(combo.items.map((item) => item.group))
+  addLine(
+    {
+      type: 'combo',
+      comboId: combo.id,
+      productIds: combo.items.map((item) => item.productId),
+      ...(withMate
+        ? { options: options ?? { leather: DEFAULT_LEATHER, ferrule: DEFAULT_FERRULE } }
+        : null),
+      quantity: 1,
+    },
+    { prices: { [combo.id]: combo.priceArs } },
+  )
+  showToast({ title: CART_COPY.comboAdded, subtitle: combo.name, action: VIEW_CART_ACTION })
+  flyToCart(origin)
   return { status: 'added', quantity: 1 }
 }

@@ -29,7 +29,10 @@ export interface CartLineItemProps {
   line: CartLineView
 }
 
-/** Foto de la línea (72 por 88 px): la del producto, el marco punteado o, en un kit, el logo sobre un brillo. */
+/**
+ * Foto de la línea (72 por 88 px): la del producto (en un combo, la de su primera pieza), el marco
+ * punteado o, en un kit, el logo sobre un brillo.
+ */
 function LineImage({ line }: CartLineItemProps): ReactNode {
   return (
     <div
@@ -59,7 +62,7 @@ function LineImage({ line }: CartLineItemProps): ReactNode {
 }
 
 /**
- * Una línea del panel del carrito (spec 9.5): foto, nombre, detalle, "Ahorrás $…" en los kits,
+ * Una línea del panel del carrito (spec 9.5): foto, nombre, detalle, "Ahorrás $…" en los kits y combos,
  * "Precio sin impuestos nacionales" por unidad (con "c/u" si hay más de una; también en los kits)
  * si el ajuste está activo, el aviso de la cotización (menos stock o cambio de precio), cantidad
  * ("−" en 1 quita la línea), botón de quitar y total de la línea. Una línea sin stock muestra

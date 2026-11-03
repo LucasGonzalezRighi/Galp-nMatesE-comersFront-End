@@ -12,7 +12,7 @@ export const CART_COPY = {
   removeLine: 'Quitar',
   /** Nombre de la línea de un kit. */
   kitName: 'Kit ronda completa',
-  /** Prefijo del ahorro de la línea de un kit ("Ahorrás $7.900"). */
+  /** Prefijo del ahorro de la línea de un kit o de un combo ("Ahorrás $7.900"). */
   youSave: 'Ahorrás',
   /** Etiqueta de una línea cuyo producto se quedó sin stock. */
   soldOut: 'Sin stock',
@@ -22,8 +22,8 @@ export const CART_COPY = {
   perUnit: 'c/u',
   /** Nombre de una línea cuyos datos todavía no llegaron. */
   loadingLine: 'Cargando…',
-  /** Resumen: ahorro de los kits (informativo). */
-  kitSavings: 'Ahorro por kit',
+  /** Resumen: ahorro de los kits y los combos (informativo, Ruling IC-12). */
+  kitSavings: 'Ahorro',
   /** Resumen: subtotal. */
   subtotal: 'Subtotal',
   /** Aclaración bajo el subtotal. */
@@ -46,6 +46,8 @@ export const CART_COPY = {
   added: 'Agregado al carrito',
   /** Aviso al agregar un kit. */
   kitAdded: 'Kit agregado al carrito',
+  /** Aviso al agregar un combo; el subtítulo es el nombre del combo. */
+  comboAdded: 'Combo agregado al carrito',
   /** Aviso cuando ya no se puede sumar otra unidad. */
   limitReached: 'Ya tenés el máximo disponible',
   /** Aviso cuando ya no se puede sumar otro kit. */
@@ -90,9 +92,9 @@ export function quantityReducedNotice(name: string, quantity: number): string {
 }
 
 /**
- * Aviso de que cambió el precio de un producto del carrito.
+ * Aviso de que cambió el precio de un producto o de un combo del carrito.
  *
- * @param name - Nombre del producto.
+ * @param name - Nombre del producto o del combo.
  * @returns "Cambió el precio de Mate Galleta".
  */
 export function priceChangedNotice(name: string): string {
