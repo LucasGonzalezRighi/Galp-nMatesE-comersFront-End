@@ -100,8 +100,8 @@ test.describe('tienda: compra de invitado con tarjeta', () => {
     const dialog = page.getByRole('dialog', { name: 'Verificá tu compra con tu banco' })
     await expect(dialog).toBeVisible()
     const challenge = dialog.frameLocator('iframe[title="Verificación de tu banco"]')
-    // El simulador usa el layout pelado: dentro del iframe no están la barra de arrepentimiento,
-    // el carrito ni el pie de la tienda (el simulador tiene su propio encabezado, como MP).
+    // El simulador usa el layout pelado: dentro del iframe no están el carrito ni el pie de la
+    // tienda con su "Botón de arrepentimiento" (el simulador tiene su propio encabezado, como MP).
     await expect(challenge.getByRole('button', { name: 'Confirmar' })).toBeVisible()
     await expect(challenge.getByRole('link', { name: 'Botón de arrepentimiento' })).toHaveCount(0)
     await expect(challenge.getByRole('button', { name: /^Abrir carrito/ })).toHaveCount(0)

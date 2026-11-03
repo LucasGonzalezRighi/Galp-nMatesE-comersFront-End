@@ -20,7 +20,7 @@ export interface MobileMenuProps {
   onClose: () => void
   /**
    * Dónde empieza el panel, en píxeles desde el borde superior de la ventana: el borde inferior
-   * del encabezado (64 px; la barra de arrepentimiento va debajo y el menú la tapa).
+   * del encabezado (64 px).
    */
   top: number
 }

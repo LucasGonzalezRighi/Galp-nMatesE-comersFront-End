@@ -1,6 +1,6 @@
 /**
  * Estructura común de las páginas de la tienda (spec 9.2 y 9.5): encabezado con navegación y
- * carrito, la barra de arrepentimiento debajo (Lucas, 2026-10-29), menú del celular y pie de página.
+ * carrito, menú del celular y pie de página (con el "Botón de arrepentimiento", Ruling IC-1).
  *
  * El buscador se abre con `openSearch` (ver `search-trigger.ts`): la feature de búsqueda lo
  * escucha con `useSearchOpen`, y así el layout no depende de ella.
@@ -19,5 +19,4 @@ export { MobileMenu } from './MobileMenu'
 export { activeNavKey, NAV_ITEMS } from './nav'
 export { NavLinks, NavLinksList } from './NavLinks'
 export { closeSearch, openSearch, useSearchOpen } from './search-trigger'
-export { TopBar } from './TopBar'
 export { Wordmark } from './Wordmark'

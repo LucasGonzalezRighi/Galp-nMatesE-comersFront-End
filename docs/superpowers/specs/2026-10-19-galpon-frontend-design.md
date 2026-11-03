@@ -56,7 +56,7 @@ Construir el e-commerce de **Galpón Mates** (mates, bombillones y yerba con env
 | D6 | El kit en armado **no se guarda** al cerrar la pestaña (como el diseño) | Fiel al diseño; el carrito sí se guarda |
 | D7 | Reseñas con **moderación** y etiqueta "Compra verificada" solo si el back lo verifica | El diseño muestra la etiqueta en todas; sin verificar sería engañoso |
 | D8 | **Sin analítica ni cookies de terceros** en la fase 1 | Se evalúa con el deploy |
-| D9 | **Botón de arrepentimiento visible desde el primer acceso** en una barra fina debajo del encabezado (2026-10-29: antes iba arriba de todo), además del pie | Lo exige la Disposición 954/2025; el diseño solo lo tiene en el pie |
+| D9 | **Botón de arrepentimiento solo en el pie** (Lucas, 2026-11-03: solo en el pie, decidido con el aviso de la norma; antes iba en una barra fina debajo del encabezado, 2026-10-29, y antes arriba de todo) | La Disposición 954/2025 lo pide a simple vista y en el primer acceso; a Lucas se le avisó y eligió sacar la barra (Ruling IC-1). Como el diseño, queda en el pie |
 | D10 | Plan de implementación partido en **5 planes** (sección 21) | El alcance completo no entra en un solo plan verificable |
 | D11 | **Repos de GitHub separados**: `LucasGonzalezRighi/Galp-nMatesE-comersFront-End` (carpeta `frontend/`) y `LucasGonzalezRighi/Galp-nMatesE-comersBack-end` (carpeta `backend/`; la base de datos vive dentro del repo del back). Lucas hace los push; acá solo se hacen commits locales | Pedido de Lucas (2026-10-20) |
 
@@ -263,7 +263,7 @@ apps/store/src/
 │  ├─ ui/                      Button, IconButton, Input, Textarea, Select, Field, Segmented, Tag,
 │  │                           Stars, Price, NetPrice, InstallmentsNote, QuantityStepper, Swatch,
 │  │                           ImageWithPlaceholder, Spinner, Dialog
-│  ├─ layout/                  TopBar (arrepentimiento), Header, Nav, MobileMenu, Footer, Toast
+│  ├─ layout/                  Header, Nav, MobileMenu, Footer (con el arrepentimiento), Toast
 │  └─ motion/                  Ver sección 17
 ├─ lib/
 │  ├─ api.server.ts            Cliente para Server Components (mock en proceso o API_BASE_URL)
@@ -306,7 +306,7 @@ apps/store/src/
 
 ### 9.5 Pantallas
 
-**Barra superior** (nueva, D9): fina, en todas las páginas, con el link "Botón de arrepentimiento" visible sin scroll en escritorio y celular.
+**Sin barra superior** (D9): la barra fina del "Botón de arrepentimiento" debajo del encabezado se sacó el 2026-11-03 (Lucas, 2026-11-03: solo en el pie, decidido con el aviso de la norma); el link queda en el pie.
 
 **Header**: logo; 6 links (Inicio, Tienda, Armá tu kit, Nosotros, Preguntas, Contacto) desde 1040 px; "Tienda" queda activo también en la ficha de producto; búsqueda; carrito con contador que rebota al agregar; hamburguesa debajo de 1040 px. Fondo de vidrio al pasar los 8 px de scroll y barra de progreso de scroll (todo el sitio).
 
@@ -323,7 +323,7 @@ apps/store/src/
 - Hero "Encontrá tu mate." con "Ver la tienda" y "Armá tu kit" (tag con el descuento "−10%").
 - Historia (2026-10-29, "el mate 3D"): **después de la portada, el inicio muestra solo dos escenas: "Alpaca y bronce." (2 bombillones) y "Agua a 75 °C." (4 pasos del ritual)**; las otras cuatro ("Tres piezas. Una ronda.", "Calabaza curada. Virola de alpaca.", "Para cada cebada." y "Elegí el cuero.") siguen editables en el admin, pero no se muestran. **Desde 1024 px de ancho y 700 px de alto, sin `prefers-reduced-motion` y con WebGL, la portada y esas dos escenas son tres paradas de una sección fija** (`MateStage` sobre `ScrollStage`, `(3 + 1) × 100svh`; cada parada se queda quieta el 55 % de su tramo): 1 · "El mate" (el texto de la portada, con el único `h1`; el mate se inclina unos 55° a la izquierda, el paquete de Canarias vuelca y la yerba se junta contra la pared baja), 2 · "La bombilla" (el mate de pie y de frente, en el lugar de la portada: la montañita a la izquierda con su pared recta, que asoma sobre la virola, y el hueco a la derecha, donde la bombilla se calza apoyada en la virola; 2026-10-29, "ajustes de Lucas") y 3 · "El agua" (el pico del termo entra arriba a la derecha y un chorro fino y transparente cae en el hueco: la yerba se humedece, queda un charco y sube el vapor; 2026-10-29, "el mate 3D realista"). Detrás, la foto de cada parada nítida y apenas oscurecida con fundido cruzado, con el velo del lado del texto; delante, el Mate Imperial Premium en 3D (cuero negro, virola de alpaca cincelada, pies de bronce), el raíl con "El mate", "La bombilla" y "El agua" (`aria-current`) y la pista "Deslizá para recorrer". Al final de la tercera parada el mate se va, el escenario se funde a negro y entra la colección. Sin WebGL, en lugar del mate 3D va la foto del mate. **El servidor, el celular, las ventanas bajas y menos movimiento dibujan la portada con la foto del mate y las dos escenas apiladas.**
 - Los productos de las escenas se eligen en `HomeContent.storyProducts` (de las que se muestran, solo "Alpaca y bronce." lista productos); si uno no es comprable se usa el siguiente comprable de su grupo.
-- Colección en scroll horizontal fijo con las líneas y tarjeta final "Ver todo el catálogo · N piezas".
+- Colección "Seis líneas para cada ronda" en un carrusel con flechas (`ArrowCarousel`, Ruling IC-9, 2026-11-03): la página no se clava (la rueda baja la página); la fila tiene scroll lateral nativo con imán (con el dedo se desliza) y dos flechas redondas que la corren de a una tarjeta y dan la vuelta, con el contador "01 / 07"; desde 768 px las flechas van a la derecha del título y más angosto, abajo de la fila. Las líneas y la tarjeta final "Ver todo el catálogo · N piezas".
 - Destacados (productos `featured`), manifiesto que se ilumina por palabra, 4 cifras animadas, bloque "Armá tu kit" con la cantidad de opciones por grupo, 5 reseñas destacadas (con producto y link) en una cinta continua de borde a borde que se pausa con el mouse o el foco (Ruling MR-12).
 - **Cifras**: se calculan del catálogo publicado — piezas (27), líneas (6), opciones por grupo en el kit (solo comprables). Son texto editable: provincias con envío (24) y socios (2). El texto del paso 1 del kit ("N mates entre…") usa la cantidad de mates comprables.
 
@@ -360,7 +360,7 @@ apps/store/src/
 
 Por la **Disposición 954/2025** de la Subsecretaría de Defensa del Consumidor y Lealtad Comercial (BO 04/09/2025, deroga las Res. 316/2018 y 424/2020):
 
-- El link "Botón de arrepentimiento" está **a simple vista, en lugar destacado y en el primer acceso**: la barra fina debajo del encabezado + pie.
+- El link "Botón de arrepentimiento" va en el pie, en la columna Ayuda y destacado (Lucas, 2026-11-03: solo en el pie, decidido con el aviso de la norma, que lo pide a simple vista y en el primer acceso; D9).
 - **No se exige registración ni trámites adicionales**: `/arrepentimiento` pide nombre, email usado en la compra y, opcionalmente, n° de pedido y comentario.
 - Al enviar se muestra el **código de identificación del trámite** que devuelve la API, y (fase 2) se manda por email dentro de las 24 h.
 - La solicitud aparece en el dashboard en Mensajes, destacada con su código.
@@ -758,7 +758,7 @@ Componentes en `components/motion/` (tienda), configurables, documentados y redu
 | Texto que se ilumina por palabra con el scroll | `ScrubText` | Manifiesto, Nosotros |
 | Flotación suave | `Float` | Ilustraciones, kit |
 | Producto que vuela al carrito + rebote del contador | `FlyToCart` | Agregar al carrito |
-| Colección horizontal fija con progreso | `HorizontalScroll` | Inicio |
+| Carrusel con flechas: la fila se corre de a una tarjeta (suave; sin animar con menos movimiento), las flechas se corren 3 px con el hover | `ArrowCarousel` (`components/ui`) | Inicio (colección) |
 | Reaparición escalonada de la grilla (45 ms por tarjeta) | `GridReplay` | Tienda |
 | Fundido al cambiar de pestaña | `TabFade` | Producto |
 | Punto que late | `Ping` | Stock |

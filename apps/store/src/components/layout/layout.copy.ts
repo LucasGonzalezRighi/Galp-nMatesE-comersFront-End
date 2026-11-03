@@ -1,6 +1,6 @@
 /** Microtextos del encabezado, el menú y el pie, tal como están en el diseño y en el spec (9.5). */
 export const LAYOUT_COPY = {
-  /** Barra superior: el link del botón de arrepentimiento (Disp. 954/2025, spec 9.6). */
+  /** Pie: el link del botón de arrepentimiento (Disp. 954/2025, spec 9.6; Ruling IC-1). */
   withdrawal: 'Botón de arrepentimiento',
   /** Nombre accesible del logo, que lleva al inicio. */
   homeLink: 'Galpón — inicio',

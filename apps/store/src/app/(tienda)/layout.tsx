@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
-import { Footer, Header, TopBar } from '@/components/layout'
+import { Footer, Header } from '@/components/layout'
 import { PageEnter } from '@/components/motion'
 import { cx } from '@/components/ui/cx'
 import { CartDrawer, CartHydrator } from '@/features/cart'
@@ -26,10 +26,10 @@ interface RootLayoutProps {
 
 /**
  * Root layout de la tienda, el grupo `(tienda)` (spec 9.5): idioma, tipografía, proveedores
- * del cliente, encabezado, la barra de arrepentimiento debajo (Lucas, 2026-10-29), la página (que
- * entra con `PageEnter`), pie, panel del carrito, avisos e hidratación del carrito. Todo va dentro
- * de `PageTransitionProvider` (Ruling MR-29): la intro del inicio y el telón que baja al cambiar de
- * sección desde el menú y se abre como un libro.
+ * del cliente, encabezado, la página (que entra con `PageEnter`), pie (con el "Botón de
+ * arrepentimiento": sin barra arriba desde el 2026-11-03, Ruling IC-1), panel del carrito, avisos
+ * e hidratación del carrito. Todo va dentro de `PageTransitionProvider` (Ruling MR-29): la intro
+ * del inicio y el telón que baja al cambiar de sección desde el menú y se abre como un libro.
  * El simulador de Mercado Pago tiene su propio root layout, sin nada de esto (`(simulador)`).
  *
  * @param props - Ver {@link RootLayoutProps}.
@@ -44,7 +44,6 @@ export default function RootLayout({ children }: RootLayoutProps): ReactNode {
               className={cx('relative min-h-screen overflow-x-clip text-pretty', PAGE_BACKGROUND)}
             >
               <Header />
-              <TopBar />
               <PageEnter>{children}</PageEnter>
               <Footer />
             </div>

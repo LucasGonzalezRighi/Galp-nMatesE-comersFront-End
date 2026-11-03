@@ -14,6 +14,8 @@ export const UI_COPY = {
   remove: 'Quitar',
   /** Complemento del nombre accesible de las estrellas ("4,7" + "de 5"). */
   outOfFive: 'de 5',
+  /** Lo que va entre la posición y el total de un carrusel ("3 de 7", `positionLabel`). */
+  positionOf: 'de',
 } as const
 
 /** Piezas de la leyenda de cuotas (spec 14.4): "o 3 cuotas sin interés de $13.333 · CFT … (TEA …)". */

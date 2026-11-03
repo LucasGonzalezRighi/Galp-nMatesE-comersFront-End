@@ -9,7 +9,6 @@ import { registerHeaderHideZone } from '../motion/header-hide-zone'
 import { mockReducedMotion } from '../motion/test/support'
 import { Header } from './Header'
 import { closeSearch, useSearchOpen } from './search-trigger'
-import { TopBar } from './TopBar'
 
 /** Ruta simulada: cada prueba la cambia antes de dibujar. */
 const route = vi.hoisted(() => ({ pathname: '/' }))
@@ -438,16 +437,5 @@ describe('el logo GALPÓN', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }), { ctrlKey: true })
 
     expect(scroll).not.toHaveBeenCalled()
-  })
-})
-
-describe('TopBar', () => {
-  it('muestra el link del botón de arrepentimiento', () => {
-    render(<TopBar />)
-
-    expect(screen.getByRole('link', { name: 'Botón de arrepentimiento' })).toHaveAttribute(
-      'href',
-      '/arrepentimiento',
-    )
   })
 })

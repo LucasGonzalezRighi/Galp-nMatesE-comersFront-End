@@ -14,16 +14,6 @@ export type { FloatProps } from './Float'
 export { GridReplay } from './GridReplay'
 export type { GridReplayProps } from './GridReplay'
 export { registerHeaderHideZone, useHeaderHideZone, useHeaderMayHide } from './header-hide-zone'
-export {
-  HorizontalScroll,
-  horizontalScrollTarget,
-  HorizontalScrollProgress,
-} from './HorizontalScroll'
-export type {
-  HorizontalScrollProgressProps,
-  HorizontalScrollProps,
-  HorizontalScrollTargetInput,
-} from './HorizontalScroll'
 export { Magnetic } from './Magnetic'
 export type { MagneticProps } from './Magnetic'
 export { MouseParallax } from './MouseParallax'

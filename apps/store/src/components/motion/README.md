@@ -26,7 +26,6 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
 | `MouseParallax`            | Parallax con el mouse                                                                    | `strength` (30; negativo invierte)                                                       |
 | `DrawCheck`                | Check que se dibuja                                                                      | `size`, `color`, `label`                                                                 |
 | `Shake`                    | Temblor de un campo con error; `shake()` por `ref`                                       | `ref`                                                                                    |
-| `HorizontalScroll`         | Sección fija con la pista de tarjetas que avanza con el scroll                           | `header`, `HorizontalScrollProgress`                                                     |
 | `ScrollStage`              | Escenario fijo a la altura de la ventana; `useScrollStage()` da avance y `scrollToStop`  | `stops`, `label`                                                                         |
 | `useScrollTopOnStep(step)` | Sube suavemente al cambiar de paso (kit, checkout)                                       | `step`                                                                                   |
 | `useMediaQuery(query)`     | Si se cumple una consulta de medios (`false` en el servidor y al hidratar)               | `query`                                                                                  |

@@ -79,10 +79,9 @@ const GLASS_LINE: CSSProperties = {
  * Ruling MR-20), al bajar más de 80 px se desliza hacia arriba (`translateY(-100%)`, 300 ms) y
  * vuelve apenas se sube ({@link useScrollDirection}); desde la colección en adelante, en las demás
  * páginas, con menos movimiento, arriba de todo, con el menú abierto o con el foco adentro siempre
- * se ve, bajes o subas. La barra "Botón de arrepentimiento" no se pega: sigue en el flujo. En el
- * inicio, el logo no navega: sube todo con scroll suave (sin animar con menos movimiento) y lleva el
- * foco al principio (Ruling MR-17); el mate 3D vuelve a la portada solo, porque su avance sale del
- * scroll. En otra página lleva al inicio como cualquier link.
+ * se ve, bajes o subas. En el inicio, el logo no navega: sube todo con scroll suave (sin animar
+ * con menos movimiento) y lleva el foco al principio (Ruling MR-17); el mate 3D vuelve a la portada
+ * solo, porque su avance sale del scroll. En otra página lleva al inicio como cualquier link.
  */
 export function Header(): ReactNode {
   const scrolled = useScrolled()
@@ -110,8 +109,8 @@ export function Header(): ReactNode {
 
   const toggleMenu = (): void => {
     if (!menuOpen) {
-      // El menú empieza donde termina el encabezado (tapa la barra de arrepentimiento, que va
-      // debajo). Si todavía está volviendo a bajar, se toma su alto entero.
+      // El menú empieza donde termina el encabezado. Si todavía está volviendo a bajar, se toma su
+      // alto entero.
       const box = headerRef.current?.getBoundingClientRect()
       setMenuTop(box === undefined ? HEADER_HEIGHT_PX : Math.max(box.bottom, box.height))
     }

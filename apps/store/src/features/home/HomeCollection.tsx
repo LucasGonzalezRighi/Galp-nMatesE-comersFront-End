@@ -4,20 +4,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Category } from '@galpon/api-client'
 import type { HomeData } from './home-data'
-import { Float, HorizontalScroll, Tilt } from '../../components/motion'
-import { ImageWithPlaceholder } from '../../components/ui'
+import { Float, Tilt } from '../../components/motion'
+import { ArrowCarousel, ImageWithPlaceholder } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
 import { CollectionEntrance, EntranceCard, EntranceTitle } from './CollectionEntrance'
-import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
+import { HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY, linePhotoPlaceholder, piecesLabel } from './home.copy'
 
-/**
- * Margen de la pista: el de `--site-inset` (`globals.css`), así la primera tarjeta arranca donde
- * arrancan el título y el contenido del contenedor, a cualquier ancho de pantalla.
- */
-const TRACK_STYLE: CSSProperties = { padding: '0 var(--site-inset)' }
-
-/** Medidas de las tarjetas de la pista, como el diseño: no más de 440 px de ancho ni 500 de alto. */
+/** Medidas de las tarjetas de la fila, como el diseño: no más de 440 px de ancho ni 500 de alto. */
 const CARD_SIZE = 'h-[min(56vh,500px)] flex-none'
 
 /** La foto se corre en sentido contrario al mouse (`--px`/`--py` los publica `Tilt`). */
@@ -111,13 +105,14 @@ export interface HomeCollectionProps {
 }
 
 /**
- * Colección en scroll horizontal (spec 9.5): la sección queda fija y las líneas de producto
- * pasan de lado a lado con el scroll (sin rótulo ni números: Ruling MR-23) y, al final, la tarjeta
- * "Ver todo el catálogo · N piezas". Después del mate 3D sale de adentro del mate: la yerba en que
- * termina la zambullida se disuelve, el título sube con máscara y las tarjetas salen de la
- * profundidad una tras otra (`CollectionEntrance`, Ruling MR-22); sin el mate 3D entra con un
- * fundido. Con `prefers-reduced-motion: reduce` es una fila con scroll propio, quieta. No se dibuja
- * si no hay líneas con piezas.
+ * Colección "Seis líneas para cada ronda" (spec 9.5): un carrusel con flechas (`ArrowCarousel`,
+ * Ruling IC-9) con las líneas de producto (sin rótulo ni números en las tarjetas: Ruling MR-23) y,
+ * al final, la tarjeta "Ver todo el catálogo · N piezas". La página no se clava: la rueda baja la
+ * página, las flechas corren la fila de a una tarjeta y dan la vuelta, y con el dedo se desliza.
+ * Después del mate 3D sale de adentro del mate: la yerba en que termina la zambullida se disuelve,
+ * el título sube con máscara y las tarjetas salen de la profundidad una tras otra
+ * (`CollectionEntrance`, Ruling MR-22); sin el mate 3D entra con un fundido y con
+ * `prefers-reduced-motion: reduce` queda quieta. No se dibuja si no hay líneas con piezas.
  *
  * @param props - Ver {@link HomeCollectionProps}.
  */
@@ -125,47 +120,49 @@ export function HomeCollection({ data }: HomeCollectionProps): ReactNode {
   const { lines, stats } = data
   if (lines.length === 0) return null
   const { collection } = data.content
+  const copy = HOME_COPY.collectionCarousel
   return (
     <CollectionEntrance>
-      <HorizontalScroll
-        trackStyle={TRACK_STYLE}
-        header={
-          <div className={HOME_CONTAINER}>
-            <EntranceTitle className={HOME_SECTION_TITLE}>{collection.title}</EntranceTitle>
-          </div>
-        }
-      >
-        {lines.map((line, index) => (
-          <EntranceCard key={line.id} index={index}>
-            <LineCard line={line} />
+      <div className="pt-[clamp(80px,10vw,140px)] pb-[clamp(16px,3vw,40px)]">
+        <ArrowCarousel
+          label={copy.label}
+          itemLabel={copy.item}
+          prevLabel={copy.previous}
+          nextLabel={copy.next}
+          header={<EntranceTitle className={HOME_SECTION_TITLE}>{collection.title}</EntranceTitle>}
+        >
+          {lines.map((line, index) => (
+            <EntranceCard key={line.id} index={index}>
+              <LineCard line={line} />
+            </EntranceCard>
+          ))}
+          <EntranceCard index={lines.length}>
+            <div className="relative h-[min(56vh,500px)] w-[min(60vw,300px)] flex-none">
+              <Link
+                href={asRoute('/tienda')}
+                className="text-foreground flex size-full flex-col justify-end gap-3 rounded-[14px] bg-[radial-gradient(320px_260px_at_30%_20%,color-mix(in_srgb,var(--color-accent-800)_70%,transparent),transparent_70%)] p-6 no-underline shadow-[inset_0_0_0_1px_var(--color-neutral-800)]"
+              >
+                <Float className="mb-auto">
+                  <Image
+                    src="/brand/galpon-mark.png"
+                    alt=""
+                    width={58}
+                    height={77}
+                    className="h-auto w-[58px]"
+                  />
+                </Float>
+                <span className="text-[28px] leading-[1.1] tracking-[-0.02em]">
+                  {HOME_COPY.viewCatalog}
+                </span>
+                <span className="text-accent-300 inline-flex items-center gap-2 text-[13px]">
+                  {piecesLabel(stats.pieces)}
+                  <ArrowRightIcon size={14} aria-hidden="true" />
+                </span>
+              </Link>
+            </div>
           </EntranceCard>
-        ))}
-        <EntranceCard index={lines.length}>
-          <div className="relative h-[min(56vh,500px)] w-[min(60vw,300px)] flex-none">
-            <Link
-              href={asRoute('/tienda')}
-              className="text-foreground flex size-full flex-col justify-end gap-3 rounded-[14px] bg-[radial-gradient(320px_260px_at_30%_20%,color-mix(in_srgb,var(--color-accent-800)_70%,transparent),transparent_70%)] p-6 no-underline shadow-[inset_0_0_0_1px_var(--color-neutral-800)]"
-            >
-              <Float className="mb-auto">
-                <Image
-                  src="/brand/galpon-mark.png"
-                  alt=""
-                  width={58}
-                  height={77}
-                  className="h-auto w-[58px]"
-                />
-              </Float>
-              <span className="text-[28px] leading-[1.1] tracking-[-0.02em]">
-                {HOME_COPY.viewCatalog}
-              </span>
-              <span className="text-accent-300 inline-flex items-center gap-2 text-[13px]">
-                {piecesLabel(stats.pieces)}
-                <ArrowRightIcon size={14} aria-hidden="true" />
-              </span>
-            </Link>
-          </div>
-        </EntranceCard>
-      </HorizontalScroll>
+        </ArrowCarousel>
+      </div>
     </CollectionEntrance>
   )
 }

@@ -3,11 +3,6 @@ import { act, fireEvent, render, renderHook, screen } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest'
 import { DrawCheck } from './DrawCheck'
 import { Float } from './Float'
-import {
-  HorizontalScroll,
-  HorizontalScrollProgress,
-  horizontalScrollTarget,
-} from './HorizontalScroll'
 import { MouseParallax } from './MouseParallax'
 import { Ping } from './Ping'
 import { cleanUpAfterEach, mockReducedMotion } from './test/support'
@@ -71,50 +66,6 @@ describe('Float, Ping, DrawCheck y MouseParallax', () => {
     expect(() => Ping({ size: -1 })).toThrow(RangeError)
     expect(() => DrawCheck({ size: -2 })).toThrow(RangeError)
     expect(() => MouseParallax({ strength: Number.POSITIVE_INFINITY })).toThrow(/finito/)
-  })
-})
-
-describe('HorizontalScroll', () => {
-  it('con movimiento fija la sección y reparte el scroll entre las tarjetas', () => {
-    mockReducedMotion(false)
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe = vi.fn()
-        unobserve = vi.fn()
-        disconnect = vi.fn()
-      },
-    )
-    const { container } = render(
-      <HorizontalScroll header={<HorizontalScrollProgress />}>
-        <article>Tarjeta 1</article>
-        <article>Tarjeta 2</article>
-      </HorizontalScroll>,
-    )
-    expect(screen.getByText('Tarjeta 1')).toBeVisible()
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull()
-    expect(container.querySelector('section > div')).toHaveStyle({ position: 'sticky' })
-  })
-
-  it('con prefers-reduced-motion queda una fila con scroll propio y sin barra', () => {
-    mockReducedMotion(true)
-    const { container } = render(
-      <HorizontalScroll header={<HorizontalScrollProgress />}>
-        <article>Tarjeta 1</article>
-      </HorizontalScroll>,
-    )
-    expect(screen.getByText('Tarjeta 1')).toBeVisible()
-    expect(container.querySelector('[aria-hidden="true"]')).toBeNull()
-    expect(container.querySelector('section > div')).toHaveStyle({ overflowX: 'auto' })
-  })
-
-  it('horizontalScrollTarget lleva el scroll hasta el punto donde aparece el ítem', () => {
-    const base = { gutter: 64, distance: 1000, sectionTop: 500, scrollSpan: 2000 }
-    expect(horizontalScrollTarget({ ...base, itemLeft: 64 })).toBe(500)
-    expect(horizontalScrollTarget({ ...base, itemLeft: 564 })).toBe(1500)
-    expect(horizontalScrollTarget({ ...base, itemLeft: 9999 })).toBe(2500)
-    expect(horizontalScrollTarget({ ...base, distance: 0, itemLeft: 300 })).toBe(500)
-    expect(() => horizontalScrollTarget({ ...base, itemLeft: Number.NaN })).toThrow(RangeError)
   })
 })
 

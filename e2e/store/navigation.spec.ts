@@ -64,11 +64,15 @@ test.describe('tienda: navegación', () => {
     ).toBeVisible()
   })
 
-  test('la barra superior de arrepentimiento está a la vista y lleva a la página', async ({
+  test('el link del botón de arrepentimiento va en el pie y lleva a la página (Ruling IC-1)', async ({
     page,
   }) => {
     await gotoStore(page, '/')
-    const link = page.getByRole('link', { name: 'Botón de arrepentimiento' }).first()
+    // Arriba ya no hay barra: el link queda solo en el pie (Lucas, 2026-11-03).
+    const name = 'Botón de arrepentimiento'
+    await expect(page.getByRole('banner').getByRole('link', { name })).toHaveCount(0)
+    const link = page.getByRole('contentinfo').getByRole('link', { name })
+    await link.scrollIntoViewIfNeeded()
     await expect(link).toBeInViewport()
     await link.click()
     await expect(page).toHaveURL('/arrepentimiento')

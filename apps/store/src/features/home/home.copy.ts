@@ -9,6 +9,16 @@ export const HOME_COPY = {
   /** Colección: link de cada tarjeta y de la tarjeta final. */
   viewLine: 'Ver línea',
   viewCatalog: 'Ver todo el catálogo',
+  /** Colección: el carrusel con flechas (Ruling IC-9). */
+  collectionCarousel: {
+    /** Nombre accesible de la región. */
+    label: 'Líneas de producto',
+    /** Qué es cada tarjeta para el lector de pantalla. */
+    item: 'línea',
+    /** Flechas. */
+    previous: 'Línea anterior',
+    next: 'Línea siguiente',
+  },
   /** Destacados: link a la tienda. */
   viewShop: 'Ver toda la tienda',
   /** Cifras: rótulos de las cuatro cifras. */

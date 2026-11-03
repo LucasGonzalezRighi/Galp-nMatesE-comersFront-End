@@ -4,6 +4,9 @@
  *
  * @packageDocumentation
  */
+export type { CarouselDirection } from './arrow-carousel'
+export type { ArrowCarouselProps } from './ArrowCarousel'
+export { ArrowCarousel } from './ArrowCarousel'
 export type { ButtonProps, ButtonSize, ButtonVariant } from './Button'
 export { Button } from './Button'
 export type { DialogPlacement, DialogProps } from './Dialog'
