@@ -62,8 +62,7 @@ describe('HomePage', () => {
     renderSection(await HomePage())
     const text = document.body.textContent
     const order = [
-      'Encontrá', // portada
-      'Alpaca', // historia: la bombilla y el agua
+      'Encontrá', // portada: el carrusel del v4 (sin las escenas de la bombilla y del agua)
       'Seis líneas para cada ronda', // colección
       'Los más elegidos de la ronda', // destacados
       'Un mate no se compra', // manifiesto
@@ -109,19 +108,22 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { level: 2, name: collection.title })).toBeInTheDocument()
   })
 
-  it('la portada tiene de fondo el cuadro del mate, sin la foto flotante del producto', async () => {
+  it('la portada es el carrusel del v4 con las cinco piezas, sin el cuadro del mate ni escenas apiladas', async () => {
     const data = await homeData()
     renderSection(await HomePage())
-    const hero = document.querySelector<HTMLElement>('.home-hero')
-    const images = Array.from(hero?.querySelectorAll('img') ?? [])
-    const sources = images.map((image) => decodeURIComponent(image.getAttribute('src') ?? ''))
-    expect(sources.some((source) => source.includes('/hero/world/pieces.jpg'))).toBe(true)
-    // El cuadro es decorativo y la foto del mate de la portada (`StoryVisual`) ya no está.
-    expect(images.every((image) => image.getAttribute('alt') === '')).toBe(true)
-    const productPhoto = data.story.hero?.mainImage?.url ?? '(sin foto)'
-    expect(sources.some((source) => source.includes(productPhoto))).toBe(false)
-    // Con menos movimiento no caen hojas ni sube vapor.
-    expect(hero?.querySelector('[data-world-life]')).toBeNull()
+    const hero = document.querySelector<HTMLElement>('[data-hero-carousel]')
+    expect(hero).not.toBeNull()
+    expect(hero?.querySelectorAll('[data-hero-card]')).toHaveLength(data.heroSlides.length)
+    const sources = Array.from(hero?.querySelectorAll('img') ?? []).map((image) =>
+      decodeURIComponent(image.getAttribute('src') ?? ''),
+    )
+    expect(sources.some((source) => source.includes('/hero/world/pieces.jpg'))).toBe(false)
+    expect(document.querySelector('.home-hero')).toBeNull()
+    expect(document.querySelector('.home-scene')).toBeNull()
+    // La pieza actual es la primera, y su nombre es el único h2 de la portada que se lee.
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Mate Imperial Premium' }),
+    ).toBeInTheDocument()
   })
 
   it('la portada lleva a la tienda y al kit, con el descuento del kit', async () => {
@@ -137,15 +139,13 @@ describe('HomePage', () => {
     expect(screen.getByText('Foto · Torpedos')).toBeInTheDocument()
   })
 
-  it('los destacados usan la tarjeta de producto y las escenas ofrecen agregar al carrito', async () => {
+  it('los destacados usan la tarjeta de producto y la portada ofrece agregar la pieza actual', async () => {
     const data = await homeData()
     renderSection(await HomePage())
     expect(screen.getAllByText('Ver detalle')).toHaveLength(data.featured.length)
-    const storyList = screen.getAllByRole('list', { name: 'Productos de la escena' })
-    expect(storyList.length).toBeGreaterThanOrEqual(1)
     expect(
-      screen.getAllByRole('button', { name: /^Agregar .+ al carrito$/ }).length,
-    ).toBeGreaterThan(0)
+      screen.getByRole('button', { name: 'Agregar Mate Imperial Premium al carrito' }),
+    ).toBeInTheDocument()
   })
 })
 

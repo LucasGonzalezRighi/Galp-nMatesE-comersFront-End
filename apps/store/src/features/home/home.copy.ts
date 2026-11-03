@@ -4,8 +4,6 @@ import { pluralize } from '@galpon/domain'
 export const HOME_COPY = {
   /** Píldora de la portada: la marca, antes del texto corto del contenido. */
   brand: 'Galpón Mates',
-  /** Palabra gigante de fondo de la escena del bombillón. */
-  ghostWord: 'Bombilla',
   /** Colección: link de cada tarjeta y de la tarjeta final. */
   viewLine: 'Ver línea',
   viewCatalog: 'Ver todo el catálogo',
@@ -48,6 +46,22 @@ export const HOME_COPY = {
     hero: 'El mate',
     bombilla: 'La bombilla',
     ritual: 'El agua',
+  },
+  /** La portada del v4 donde no hay mate 3D (Ruling IC-8): la pila de piezas con flechas. */
+  heroCarousel: {
+    /** Palabra gigante de contorno detrás de la pila, según el grupo de la pieza actual. */
+    words: { mate: 'Mates', bombilla: 'Bombillas', yerba: 'Yerba' },
+    /** Botón que suma la pieza actual al carrito. */
+    add: 'Agregar',
+    /** Link a la ficha de la pieza actual. */
+    view: 'Ver pieza',
+    /** Flechas. */
+    previous: 'Pieza anterior',
+    next: 'Pieza siguiente',
+    /** Nombre accesible de los puntos (uno por pieza, con su nombre). */
+    dots: 'Elegir pieza',
+    /** Nombre accesible de la pila de tarjetas. */
+    stack: 'Piezas de la portada',
   },
   /** Reseñas: nombre accesible de la lista de notas. */
   reviewsList: 'Reseñas de clientes',
@@ -167,4 +181,39 @@ export function stopCounter(position: number, total: number): string {
  */
 export function stopHeading(position: number, total: number, name: string): string {
   return `${stopCounter(position, total)} · ${name}`
+}
+
+/**
+ * Nombre accesible del link "Ver pieza" de la portada del v4.
+ *
+ * @param name - Nombre de la pieza.
+ * @returns Por ejemplo `Ver pieza: Mate Imperial Premium`.
+ */
+export function heroViewLabel(name: string): string {
+  return `${HOME_COPY.heroCarousel.view}: ${name}`
+}
+
+/**
+ * Lo que se anuncia al cambiar de pieza en la portada del v4 (solo cambia con las flechas, los
+ * puntos o el dedo: no hay avance solo).
+ *
+ * @param name - Nombre de la pieza actual.
+ * @param position - Posición de la pieza, un entero de 1 a `total`.
+ * @param total - Cantidad de piezas, un entero mayor o igual a 1.
+ * @returns Por ejemplo `Bombillón Premium Curvo, pieza 2 de 5`.
+ * @throws {RangeError} Si `position` no es un entero de 1 a `total` o `total` no es un entero mayor o igual a 1.
+ */
+export function heroSlideAnnouncement(name: string, position: number, total: number): string {
+  if (
+    !Number.isInteger(total) ||
+    total < 1 ||
+    !Number.isInteger(position) ||
+    position < 1 ||
+    position > total
+  ) {
+    throw new RangeError(
+      `La pieza tiene que ser un entero de 1 a la cantidad de piezas; se recibió ${String(position)} de ${String(total)}.`,
+    )
+  }
+  return `${name}, pieza ${String(position)} de ${String(total)}`
 }

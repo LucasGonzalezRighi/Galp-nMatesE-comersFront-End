@@ -9,6 +9,7 @@ import type { ProductGroup } from '@galpon/domain'
 import { formatDiscountPercent } from '@galpon/domain'
 import type { HomeStats } from './home-stats'
 import type { StoryProducts } from './story-products'
+import { heroSlides } from './hero-carousel'
 import { computeHomeStats } from './home-stats'
 import { resolveStoryProducts } from './story-products'
 
@@ -46,6 +47,8 @@ export interface HomeData {
   reviews: FeaturedReview[]
   /** Productos de las escenas de la historia, con respaldo si alguno no se puede comprar. */
   story: StoryProducts
+  /** Las piezas de la portada del v4 donde no hay mate 3D (Ruling IC-7, ver `heroSlides`). */
+  heroSlides: ProductSummary[]
   /** Cifras del catálogo. */
   stats: HomeStats
   /** Descuento del kit para mostrar ("−10%"), o `null` si el kit no tiene descuento. */
@@ -54,8 +57,9 @@ export interface HomeData {
 
 /**
  * Arma los datos del inicio a partir de lo que devuelve la API: filtra y ordena las líneas,
- * recorta los destacados y las reseñas, resuelve los productos de la historia y calcula las
- * cifras y el descuento del kit. No recalcula precios ni stock: usa lo que informa la API.
+ * recorta los destacados y las reseñas, resuelve los productos de la historia y las piezas de la
+ * portada del v4, y calcula las cifras y el descuento del kit. No recalcula precios ni stock: usa
+ * lo que informa la API.
  *
  * @param input - Ver {@link HomeInput}.
  * @returns Ver {@link HomeData}.
@@ -64,15 +68,18 @@ export interface HomeData {
 export function buildHomeData(input: HomeInput): HomeData {
   const { content, products, categories, settings, reviews } = input
   const discount = settings.kitDiscountPercent
+  const featured = products.filter((product) => product.featured).slice(0, FEATURED_LIMIT)
+  const story = resolveStoryProducts(content.storyProducts, products)
   return {
     content,
     settings,
     lines: categories
       .filter((category) => category.productCount > 0)
       .toSorted((a, b) => a.position - b.position),
-    featured: products.filter((product) => product.featured).slice(0, FEATURED_LIMIT),
+    featured,
     reviews: reviews.slice(0, REVIEWS_LIMIT),
-    story: resolveStoryProducts(content.storyProducts, products),
+    story,
+    heroSlides: heroSlides(story, featured),
     stats: computeHomeStats(products, categories),
     kitDiscountLabel: discount > 0 ? formatDiscountPercent(discount) : null,
   }

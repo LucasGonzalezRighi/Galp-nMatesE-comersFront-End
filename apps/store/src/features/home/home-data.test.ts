@@ -12,6 +12,9 @@ describe('buildHomeData', () => {
     expect(data.lines.map((line) => line.position)).toEqual([1, 2, 3, 4, 5, 6])
     expect(data.stats.pieces).toBe(27)
     expect(data.story.hero?.slug).toBe('mate-imperial-premium')
+    // La portada del v4 arranca por el mismo mate y tiene sus cinco piezas (Ruling IC-7).
+    expect(data.heroSlides).toHaveLength(5)
+    expect(data.heroSlides[0]).toBe(data.story.hero)
     expect(data.kitDiscountLabel).toBe('−10%')
     expect(data.reviews.length).toBeGreaterThan(0)
     expect(data.reviews.length).toBeLessThanOrEqual(REVIEWS_LIMIT)

@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HomeData } from './home-data'
 import { cleanUpAfterEach, installIntersectionObserver } from '../../components/motion/test/support'
 import { buildHomeData } from './home-data'
-import { HomeHero } from './HomeHero'
 import { HomeStory } from './HomeStory'
 import { loadFixtureCatalog } from './test/fixture-catalog'
 
@@ -59,7 +58,7 @@ beforeEach(async () => {
 
 /** El inicio hasta la colección, como lo arma `HomePage`. */
 function story(): ReactNode {
-  return <HomeStory hero={<HomeHero data={data} />} data={data} />
+  return <HomeStory data={data} slides={data.heroSlides} />
 }
 
 /** Nombre accesible de la sección del mate. */
@@ -68,31 +67,47 @@ const STAGE = { name: 'El mate' } as const
 /** Nombre accesible del raíl. */
 const RAIL = { name: 'Paradas del mate' } as const
 
-/** Los títulos de las escenas apiladas. */
-const STACKED_TITLES = ['Alpacay bronce.', 'Agua a 75 °C.Nunca hervida.']
+/** El carrusel del v4, si está. */
+function carousel(): Element | null {
+  return document.querySelector('[data-hero-carousel]')
+}
 
-/** Los títulos de nivel 2 que hay en la página. */
-function sceneTitles(): (string | null)[] {
-  return screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)
+/** Ninguna escena apilada (la bombilla y el agua de antes) queda en la página. */
+function expectNoStackedScenes(): void {
+  expect(document.querySelector('.home-scene')).toBeNull()
+  expect(document.querySelector('.home-hero')).toBeNull()
+  expect(screen.queryByText('Alpaca')).toBeNull()
 }
 
 describe('HomeStory', () => {
-  it('en el servidor dibuja la portada y las dos escenas apiladas aunque la ventana sea ancha', () => {
+  it('en el servidor dibuja el carrusel del v4 aunque la ventana sea ancha, sin escenas ni lienzo', () => {
     mockWindow({ wide: true, reduced: false })
     const html = renderToString(story())
-    expect(html).toContain('home-hero')
-    expect(html.match(/home-scene/g)).toHaveLength(2)
+    expect(html).toContain('data-hero-carousel')
+    expect(html).not.toContain('home-scene')
     expect(html).not.toContain('aria-label="El mate"')
     expect(html).not.toContain('<canvas')
   })
 
-  it('desde 1024 × 700 y con movimiento, el cliente monta el mate 3D sin repetir la portada', () => {
+  it('desde 1024 × 700 y con movimiento, el cliente monta el mate 3D en lugar del carrusel', async () => {
     mockWindow({ wide: true, reduced: false })
     render(story())
-    expect(screen.getByRole('region', STAGE)).toBeInTheDocument()
-    expect(document.querySelector('.home-hero')).toBeNull()
+    expect(await screen.findByRole('region', STAGE)).toBeInTheDocument()
+    expect(carousel()).toBeNull()
     expect(document.querySelector('.home-scene')).toBeNull()
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  })
+
+  it('mientras baja el código del mate 3D no se ve el carrusel: queda un lugar vacío del alto del escenario', async () => {
+    mockWindow({ wide: true, reduced: false })
+    // Un `HomeStory` recién importado: su mate 3D todavía no bajó (las pruebas anteriores ya lo cargaron).
+    vi.resetModules()
+    const { HomeStory: FreshStory } = await import('./HomeStory')
+    render(<FreshStory data={data} slides={data.heroSlides} />)
+    expect(carousel()).toBeNull()
+    expect(document.querySelector('[data-stage-pending]')).toHaveStyle({ height: '400svh' })
+    expect(await screen.findByRole('region', STAGE)).toBeInTheDocument()
+    expect(document.querySelector('[data-stage-pending]')).toBeNull()
   })
 
   it('al hidratar el HTML del servidor pasa al mate 3D sin diferencias de hidratación', async () => {
@@ -105,41 +120,43 @@ describe('HomeStory', () => {
       hydrateRoot(container, story())
       await Promise.resolve()
     })
-    expect(screen.getByRole('region', STAGE)).toBeInTheDocument()
+    expect(await screen.findByRole('region', STAGE)).toBeInTheDocument()
+    expect(carousel()).toBeNull()
     expect(errors).not.toHaveBeenCalled()
     container.remove()
   })
 
-  it('por debajo de 1024 px quedan la portada y las dos escenas apiladas, sin raíl', () => {
+  it('por debajo de 1024 px queda el carrusel, sin raíl ni escenas apiladas', () => {
     mockWindow({ wide: false, reduced: false })
     render(story())
+    expect(carousel()).not.toBeNull()
     expect(screen.queryByRole('region', STAGE)).toBeNull()
     expect(screen.queryByRole('navigation', RAIL)).toBeNull()
-    expect(document.querySelector('.home-hero')).not.toBeNull()
-    expect(sceneTitles()).toEqual(STACKED_TITLES)
+    expectNoStackedScenes()
   })
 
-  it('con ancho de escritorio pero menos de 700 px de alto quedan las escenas apiladas', () => {
+  it('con ancho de escritorio pero menos de 700 px de alto queda el carrusel', () => {
     mockWindow({ wide: true, reduced: false, tall: false })
     render(story())
+    expect(carousel()).not.toBeNull()
     expect(screen.queryByRole('region', STAGE)).toBeNull()
-    expect(sceneTitles()).toEqual(STACKED_TITLES)
   })
 
-  it('con prefers-reduced-motion quedan las escenas apiladas aunque la ventana sea ancha', () => {
+  it('con prefers-reduced-motion queda el carrusel aunque la ventana sea ancha', () => {
     mockWindow({ wide: true, reduced: true })
     render(story())
+    expect(carousel()).not.toBeNull()
     expect(screen.queryByRole('region', STAGE)).toBeNull()
     expect(document.querySelector('canvas')).toBeNull()
-    expect(sceneTitles()).toEqual(STACKED_TITLES)
   })
 
-  it('si al contenido le falta una de las dos escenas, el escritorio también las apila', () => {
+  it('si al contenido le falta una de las dos escenas, el escritorio también muestra el carrusel', () => {
     mockWindow({ wide: true, reduced: false })
     const scenes = data.content.scenes.filter((scene) => scene.key !== 'ritual')
     data = { ...data, content: { ...data.content, scenes } }
     render(story())
+    expect(carousel()).not.toBeNull()
     expect(screen.queryByRole('region', STAGE)).toBeNull()
-    expect(sceneTitles()).toEqual(['Alpacay bronce.'])
+    expectNoStackedScenes()
   })
 })

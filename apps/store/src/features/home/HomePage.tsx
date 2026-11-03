@@ -4,7 +4,6 @@ import { FooterStage } from './FooterStage'
 import { getHomeData } from './home.data'
 import { HomeCollection } from './HomeCollection'
 import { HomeFeatured } from './HomeFeatured'
-import { HomeHero } from './HomeHero'
 import { HomeKit } from './HomeKit'
 import { HomeManifesto } from './HomeManifesto'
 import { HomeReviews } from './HomeReviews'
@@ -15,8 +14,8 @@ import './home.css'
 
 /**
  * Inicio de la tienda (Server Component, spec 9.5): lee todo en el servidor con lecturas
- * cacheadas (`getHomeData`) y arma las secciones en orden: portada y escenas de la bombilla y del
- * agua (en escritorio, el mate 3D de tres paradas), colección horizontal, destacados, manifiesto
+ * cacheadas (`getHomeData`) y arma las secciones en orden: la portada (en escritorio con movimiento,
+ * el mate 3D de tres paradas; si no, el hero carrusel del v4), colección, destacados, manifiesto
  * con las cifras abajo (en escritorio, una pantalla clavada sobre el yerbal), bloque del kit (que
  * sube por encima de esa pantalla) y reseñas (en escritorio, quietas mientras el pie sube por
  * encima). Primero va la intro (`HomeIntro`, Ruling MR-29): el matecito y GALPÓN se dibujan y la
@@ -31,9 +30,9 @@ export async function HomePage(): Promise<ReactNode> {
   return (
     <main>
       <HomeIntro />
-      {/* La historia es un Client Component: recibe la portada ya dibujada y solo los datos que usa. */}
+      {/* La historia es un Client Component: recibe solo los datos que usa. */}
       <HomeStory
-        hero={<HomeHero data={data} />}
+        slides={data.heroSlides}
         data={{
           content: data.content,
           story: data.story,
