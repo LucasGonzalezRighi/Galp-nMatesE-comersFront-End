@@ -119,10 +119,12 @@ export const ORDERS_COPY = {
   },
   noAddress: 'Sin dirección (retiro en persona)',
   free: 'Gratis',
-  kitPieces: 'Piezas del kit',
+  /** Nombre de la lista de piezas de una línea de kit o de combo. */
+  kitPieces: 'Piezas',
   totals: {
     items: 'Productos',
-    kitSavings: 'Ahorro por kit',
+    /** Ahorro de los kits y los combos del pedido. */
+    kitSavings: 'Ahorro',
     subtotal: 'Subtotal',
     shipping: 'Envío',
     total: 'Total',

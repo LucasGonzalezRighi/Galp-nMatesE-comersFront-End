@@ -31,6 +31,7 @@ export const ADMIN_SCREENS: readonly AdminScreen[] = [
     heading: 'Mate Imperial Premium',
   },
   { name: 'categories', path: '/lineas', heading: 'Líneas' },
+  { name: 'combos', path: '/combos', heading: 'Combos' },
   { name: 'orders', path: '/pedidos', heading: 'Pedidos' },
   { name: 'order', path: '/pedidos/GLP-09001', heading: 'Pedido GLP-09001' },
   { name: 'content-home', path: '/contenido/inicio', heading: 'Contenido' },

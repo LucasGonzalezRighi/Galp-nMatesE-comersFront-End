@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAjustesRouteImport } from './routes/_authenticated/ajustes'
+import { Route as AuthenticatedCombosRouteImport } from './routes/_authenticated/combos'
 import { Route as AuthenticatedCuentaRouteImport } from './routes/_authenticated/cuenta'
 import { Route as AuthenticatedLineasRouteImport } from './routes/_authenticated/lineas'
 import { Route as AuthenticatedMensajesRouteImport } from './routes/_authenticated/mensajes'
@@ -47,6 +48,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedAjustesRoute = AuthenticatedAjustesRouteImport.update({
   id: '/ajustes',
   path: '/ajustes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCombosRoute = AuthenticatedCombosRouteImport.update({
+  id: '/combos',
+  path: '/combos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCuentaRoute = AuthenticatedCuentaRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/ajustes': typeof AuthenticatedAjustesRoute
+  '/combos': typeof AuthenticatedCombosRoute
   '/cuenta': typeof AuthenticatedCuentaRoute
   '/lineas': typeof AuthenticatedLineasRoute
   '/mensajes': typeof AuthenticatedMensajesRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/ajustes': typeof AuthenticatedAjustesRoute
+  '/combos': typeof AuthenticatedCombosRoute
   '/cuenta': typeof AuthenticatedCuentaRoute
   '/lineas': typeof AuthenticatedLineasRoute
   '/mensajes': typeof AuthenticatedMensajesRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/ajustes': typeof AuthenticatedAjustesRoute
+  '/_authenticated/combos': typeof AuthenticatedCombosRoute
   '/_authenticated/cuenta': typeof AuthenticatedCuentaRoute
   '/_authenticated/lineas': typeof AuthenticatedLineasRoute
   '/_authenticated/mensajes': typeof AuthenticatedMensajesRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/ajustes'
+    | '/combos'
     | '/cuenta'
     | '/lineas'
     | '/mensajes'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/ajustes'
+    | '/combos'
     | '/cuenta'
     | '/lineas'
     | '/mensajes'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/ajustes'
+    | '/_authenticated/combos'
     | '/_authenticated/cuenta'
     | '/_authenticated/lineas'
     | '/_authenticated/mensajes'
@@ -307,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/ajustes'
       fullPath: '/ajustes'
       preLoaderRoute: typeof AuthenticatedAjustesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/combos': {
+      id: '/_authenticated/combos'
+      path: '/combos'
+      fullPath: '/combos'
+      preLoaderRoute: typeof AuthenticatedCombosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/cuenta': {
@@ -426,6 +445,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAjustesRoute: typeof AuthenticatedAjustesRoute
+  AuthenticatedCombosRoute: typeof AuthenticatedCombosRoute
   AuthenticatedCuentaRoute: typeof AuthenticatedCuentaRoute
   AuthenticatedLineasRoute: typeof AuthenticatedLineasRoute
   AuthenticatedMensajesRoute: typeof AuthenticatedMensajesRoute
@@ -447,6 +467,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAjustesRoute: AuthenticatedAjustesRoute,
+  AuthenticatedCombosRoute: AuthenticatedCombosRoute,
   AuthenticatedCuentaRoute: AuthenticatedCuentaRoute,
   AuthenticatedLineasRoute: AuthenticatedLineasRoute,
   AuthenticatedMensajesRoute: AuthenticatedMensajesRoute,

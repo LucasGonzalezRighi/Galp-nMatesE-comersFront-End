@@ -42,6 +42,7 @@ export const APP_COPY = {
     orders: 'Pedidos',
     products: 'Productos',
     categories: 'Líneas',
+    combos: 'Combos',
     content: 'Contenido',
     reviews: 'Reseñas',
     messages: 'Mensajes',

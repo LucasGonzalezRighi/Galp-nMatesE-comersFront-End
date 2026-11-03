@@ -3,6 +3,7 @@ import {
   ArticleIcon,
   EnvelopeSimpleIcon,
   GearSixIcon,
+  IntersectThreeIcon,
   PackageIcon,
   ReceiptIcon,
   SquaresFourIcon,
@@ -58,6 +59,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: APP_COPY.nav.categories,
     icon: StackIcon,
     section: '/lineas',
+    counter: null,
+  },
+  {
+    to: '/combos',
+    label: APP_COPY.nav.combos,
+    icon: IntersectThreeIcon,
+    section: '/combos',
     counter: null,
   },
   {
