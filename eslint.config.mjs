@@ -22,6 +22,8 @@ export default defineConfig(
     'playwright-report/**',
     'test-results/**',
     'docs/design/**',
+    // Notas y scripts sueltos del flujo de trabajo (los ignora git y también prettier).
+    '.superpowers/**',
   ]),
   {
     files: ['**/*.{ts,tsx,js,mjs}'],
