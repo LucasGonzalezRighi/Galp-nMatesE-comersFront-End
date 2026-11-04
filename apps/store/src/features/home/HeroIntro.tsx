@@ -24,7 +24,8 @@ export interface HeroIntroProps {
   ctaClassName?: string
   /**
    * `true` si el texto ya entró en la página: el título se dibuja quieto, sin su animación de
-   * entrada (el mate 3D lo pone porque se monta después de que la portada del servidor ya lo mostró).
+   * entrada (el mate 3D lo pone porque se monta después de que la portada del v4, `HeroCarousel`,
+   * ya lo mostró).
    */
   entered?: boolean
 }
@@ -35,8 +36,8 @@ export interface HeroIntroProps {
  * el descuento del kit). Lo usa la primera parada del mate 3D (`MateStage`); donde no hay 3D la
  * portada es `HeroCarousel`. El título entra con CSS, sin esperar a JavaScript, y el resto
  * aparece con `SceneReveal`; con `entered` (y, para el resto, dentro de `StaticRevealContext`)
- * todo se dibuja ya en su lugar, así el cambio de la portada del servidor al mate 3D no repite la
- * entrada.
+ * todo se dibuja ya en su lugar, así el cambio de la portada del v4 (tapada por la intro) al mate
+ * 3D no repite la entrada.
  *
  * @param props - Ver {@link HeroIntroProps}.
  */
