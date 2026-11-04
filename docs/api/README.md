@@ -75,6 +75,17 @@ Los combos llegaron al front en la rama `feat/inicio-combos`; el back los implem
 - **Caché**: cada escritura de combos avisa la etiqueta `combos` a la tienda (`POST /api/revalidate`); un cambio de precio o de stock de un producto cambia los combos que lo usan, así que la tienda lee los combos con las etiquetas `combos` y `products`.
 - **Contrato del back**: `LineType`, `CartItemInput`, `CartQuoteLine`, `OrderLine` (`kitItems.minItems` 2) y `ChangeNotice` cambiaron de forma o de descripción, así que la prueba de contrato del back marca `POST /cart/quote`, `POST /shipping/quote`, `POST /orders` y las lecturas de pedidos hasta que sume los combos.
 
+### Combos: lo que tiene que implementar el back
+
+Lista para el back (`backend/`, rama `main`), sacada de su código en la investigación de la ronda (2026-11-03). Va después de B5, porque toca la cotización y los pedidos:
+
+- **Prisma** (`prisma/schema.prisma`): `enum LineType` suma `combo` (migración `ALTER TYPE line_type ADD VALUE 'combo'`). Tablas nuevas `combos` (`id` uuid v7, `name`, `description`, `price_ars`, `status combo_status`, `position`, `created_at`, `updated_at`; sin foto ni slug en esta versión) y `combo_items` (`combo_id` en cascada, `product_id` restringido, `role product_group`, `position`; clave `(combo_id, role)`, así no se repite el grupo), con el enum `combo_status`. `OrderItem` y `OrderItemComponent` sirven tal cual para la línea y sus piezas (opcional: `OrderItem.comboId` con `onDelete: SetNull`). El ahorro va en `kit_savings_ars`, así que `orders_totals_check` no cambia. `StockReservation` suma también las piezas de los combos.
+- **Pedidos** (`src/modules/orders/`): `CartItem` suma `ComboCartItem` en `domain/cart-line.ts` (clave `combo:{comboId}:{cuero|-}:{virola|-}`, `cartProductIds` con las piezas); `priceCart` en `domain/pricing.ts` (importes, avisos y `kitItems` de 2 o 3); `ComboCartItemInputDto` y el mensaje de `CART_MESSAGES.lineType` en `interface/dto/cart-item-input.dto.ts`; `CartQuoteLineDto` y `OrderLineDto`; `order.mapper.ts` y `prisma-order.repository.ts`; un puerto para leer combos junto a `ProductCatalogPort`, usado por `quote-cart.query.ts` y `create-order.command.ts`.
+- **Catálogo** (`src/modules/catalog/`): repositorio, consulta y controlador de `GET /combos` (con caché como `cached-product.repository.ts`, claves `catalog:*`), y el CRUD de `/admin/combos` cuando llegue el módulo admin del catálogo, con los `code` del contrato (`product_unavailable`, `duplicate_group`, `price_not_below_sum`).
+- **Semilla** (`prisma/seed-data/combos.ts`): los combos de la Ruling IC-14 (Dúo Imperial, Camionero y Canarias, Torpedo completo y Bombilla y yerba publicados; Galleta y Canarias en borrador), los mismos que `FIXTURE_COMBOS` del mock.
+- **Revalidación de la tienda** (`storefront-sync`, cola `storefront-revalidate` del spec del back): después de cada escritura de combos, `POST /api/revalidate` con `combos`; al cambiar el precio o el stock de un producto, también `products` (cambian `listPriceArs`, `savingsArs` e `isSoldOut` de los combos que lo usan). La tienda ya acepta la etiqueta.
+- **Contrato y casos**: `npm run contract:check` del back lee `../frontend/docs/api/openapi.yaml`; con esta rama marca `POST /cart/quote`, `POST /shipping/quote`, `POST /orders` y las lecturas de pedidos hasta actualizar los DTO, y deja `/combos` y `/admin/combos…` como pendientes. Los casos nuevos de `validation-cases.json` (`Admin · combo: …` y `Admin · orden de combos`) se corren contra sus DTO.
+
 ## Cómo se valida
 
 ```bash
