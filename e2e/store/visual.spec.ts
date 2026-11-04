@@ -18,10 +18,15 @@ import { expect, test } from '../support/test'
 /** Carpeta donde se guardan las capturas (se compara a ojo con `docs/design/galpon-tienda-v3/screens/`). */
 const OUTPUT_DIR = join('test-results', 'visual')
 
-/** Tamaños de ventana del control visual: los mismos que usó el diseño (`scripts/capture-design.mjs`). */
+/**
+ * Tamaños de ventana del control visual: los mismos que usó el diseño (`scripts/capture-design.mjs`)
+ * y 1905 × 950, la pantalla de Lucas, la única donde se ve la grilla angosta de la tienda
+ * (`shop-container`, 5 columnas).
+ */
 const VIEWPORTS = [
   { label: '1440', width: 1440, height: 900 },
   { label: '390', width: 390, height: 844 },
+  { label: '1905', width: 1905, height: 950 },
 ] as const
 
 /** Una pantalla que solo se captura (no se recorre en las demás pruebas) porque el diseño la tiene. */
