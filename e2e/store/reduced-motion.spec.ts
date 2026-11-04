@@ -8,20 +8,21 @@ const ANIMATED = ['home', 'shop', 'product-imperial-premium', 'kit', 'about', 'f
 /**
  * Los elementos que siguen escondidos esperando una animación: con `opacity: 0` o desplazados con
  * `translate` en su estilo en línea. El desplazamiento calculado con `calc(` es el de la píldora
- * "Ver detalle" de las tarjetas, que solo se muestra al pasar el mouse o con el foco.
+ * "Ver detalle" de las tarjetas, que solo se muestra al pasar el mouse o con el foco. Las propiedades
+ * propias (`--rest: translate(…)` de las piezas de las reseñas) no mueven nada por sí solas, las usa
+ * una clase, así que no cuentan.
  */
 async function stillHidden(page: Page): Promise<string[]> {
-  return await page
-    .locator('[style]')
-    .evaluateAll((elements) =>
-      elements
-        .map(
-          (element) => `${element.tagName.toLowerCase()} :: ${element.getAttribute('style') ?? ''}`,
-        )
-        .filter(
-          (line) => /opacity:\s*0(?![.\d])/.test(line) || /translate[XY]?\((?!calc|0)/.test(line),
-        ),
-    )
+  return await page.locator('[style]').evaluateAll((elements) =>
+    elements
+      .map(
+        (element) => `${element.tagName.toLowerCase()} :: ${element.getAttribute('style') ?? ''}`,
+      )
+      .filter((line) => {
+        const applied = line.replace(/--[\w-]+:[^;]*;?/g, '')
+        return /opacity:\s*0(?![.\d])/.test(applied) || /translate[XY]?\((?!calc|0)/.test(applied)
+      }),
+  )
 }
 
 test.describe('tienda: movimiento reducido', () => {

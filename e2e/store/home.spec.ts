@@ -16,8 +16,13 @@ const STOPS = 3
  */
 const DIVE_STOPS = 2.55
 
-/** Las escenas que quedan apiladas en el celular y con menos movimiento. */
-const STACKED_SCENES = 2
+/** La portada del v4, donde no se monta el mate 3D (Ruling IC-8). */
+const HERO_CAROUSEL = '[data-hero-carousel]'
+
+/** La región de "Seis líneas para cada ronda" (`ArrowCarousel`, Ruling IC-9) y sus flechas. */
+const LINES = { name: 'Líneas de producto' } as const
+const NEXT_LINE = { name: 'Línea siguiente' } as const
+const PREVIOUS_LINE = { name: 'Línea anterior' } as const
 
 /** Ancho del documento que sobra a los costados (0 si no hay scroll horizontal). */
 async function horizontalOverflow(page: Page): Promise<number> {
@@ -61,6 +66,27 @@ async function scrollToEntry(page: Page, entry: number): Promise<void> {
   }, entry)
 }
 
+/**
+ * Recorre la entrada de la colección y verifica que nunca queda más de un tercio de pantalla de
+ * fondo liso: arriba del título se ve la yerba o, a medida que se disuelve, el fondo liso, así que
+ * la parte lisa es la de arriba del título por lo que la yerba ya se fue (Review Focus 1).
+ */
+async function expectCollectionNeverFlat(page: Page): Promise<void> {
+  for (let entry = 0.05; entry <= 1.17; entry += 0.04) {
+    await scrollToEntry(page, entry)
+    const flat = await page.evaluate(async () => {
+      // Motion escribe los estilos pegados al scroll en el cuadro siguiente.
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const title = document.querySelector('[data-entrance-title]')?.closest('h2')
+      const yerba = document.querySelector('[data-collection-yerba]')
+      if (!title || !yerba) return 1
+      const top = Math.min(Math.max(title.getBoundingClientRect().top, 0), window.innerHeight)
+      return (top / window.innerHeight) * (1 - Number(getComputedStyle(yerba).opacity))
+    })
+    expect(flat, `entrada ${entry.toFixed(2)}`).toBeLessThanOrEqual(1 / 3)
+  }
+}
+
 /** La parada (desde 0) del elemento que tiene el foco, o `null` si no está en una. */
 async function focusedStop(page: Page): Promise<string | null> {
   return await page.evaluate(
@@ -92,6 +118,31 @@ async function climbToManifesto(page: Page, viewportHeight: number): Promise<num
     window.scrollTo(0, top + 60)
   }, trackTop)
   return trackTop
+}
+
+/** La fila de tarjetas de "Seis líneas" (la que nombra `aria-controls` en sus flechas). */
+async function linesTrack(page: Page): Promise<Locator> {
+  const id = await page
+    .getByRole('region', LINES)
+    .getByRole('button', NEXT_LINE)
+    .getAttribute('aria-controls')
+  if (id === null) throw new Error('La flecha no nombra la fila que mueve.')
+  return page.locator(`[id="${id}"]`)
+}
+
+/** Cuánto corrió la fila sus tarjetas, en píxeles. */
+async function trackScroll(track: Locator): Promise<number> {
+  return await track.evaluate((element) => element.scrollLeft)
+}
+
+/** La posición ("5 de 7") de la tarjeta que tiene el foco, o `null` si el foco no está en una. */
+async function focusedCard(page: Page): Promise<string | null> {
+  return await page.evaluate(
+    () =>
+      document.activeElement
+        ?.closest('[aria-roledescription="línea"]')
+        ?.getAttribute('aria-label') ?? null,
+  )
 }
 
 /** Cuánto lo tapa el kit: desenfoque (px), brillo y escala del bloque clavado (sin tapar: 0, 1 y 1). */
@@ -135,9 +186,9 @@ test.describe('tienda: el mate 3D del inicio', () => {
         })
         .toBeGreaterThan(300)
       await expect(page.locator('[data-mate-fallback]')).toHaveCount(0)
-      // La portada vive en la primera parada: un solo título principal y sin la portada del servidor.
+      // La portada vive en la primera parada: un solo título principal y sin la portada del v4.
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-      await expect(page.locator('.home-hero')).toHaveCount(0)
+      await expect(page.locator(HERO_CAROUSEL)).toHaveCount(0)
     })
 
     test('al bajar 1,6 paradas la bombilla es la actual, con su título y su fondo', async ({
@@ -233,23 +284,7 @@ test.describe('tienda: el mate 3D del inicio', () => {
       page,
     }) => {
       await gotoStore(page, '/')
-      // Arriba del título se ve la yerba o, a medida que se disuelve, el fondo liso: la parte de la
-      // pantalla que queda lisa es la de arriba del título por lo que la yerba ya se fue.
-      for (let entry = 0.05; entry <= 1.17; entry += 0.04) {
-        await scrollToEntry(page, entry)
-        const flat = await page.evaluate(async () => {
-          // Motion escribe los estilos pegados al scroll en el cuadro siguiente.
-          await new Promise((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(resolve)),
-          )
-          const title = document.querySelector('[data-entrance-title]')?.closest('h2')
-          const yerba = document.querySelector('[data-collection-yerba]')
-          if (!title || !yerba) return 1
-          const top = Math.min(Math.max(title.getBoundingClientRect().top, 0), window.innerHeight)
-          return (top / window.innerHeight) * (1 - Number(getComputedStyle(yerba).opacity))
-        })
-        expect(flat, `entrada ${entry.toFixed(2)}`).toBeLessThanOrEqual(1 / 3)
-      }
+      await expectCollectionNeverFlat(page)
     })
 
     test('el raíl no se ve con la colección en pantalla y la colección termina visible y sin transformaciones', async ({
@@ -277,13 +312,21 @@ test.describe('tienda: el mate 3D del inicio', () => {
       await expect(
         page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' }),
       ).toBeInViewport()
-      // Después, la pista horizontal sigue igual: con la colección clavada, las tarjetas se corren.
+      // Después, la colección no se clava (Ruling IC-9): la rueda sobre las tarjetas baja la página
+      // y no las corre; las corren las flechas.
       const first = cards.first()
-      const before = (await first.boundingBox())?.x ?? 0
+      const before = await first.boundingBox()
+      if (before === null) throw new Error('La primera tarjeta no tiene caja.')
+      const scrollBefore = await page.evaluate(() => window.scrollY)
+      await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2)
       await page.mouse.wheel(0, 600)
-      await expect.poll(async () => (await first.boundingBox())?.x ?? 0).toBeLessThan(before - 100)
+      await expect
+        .poll(() => page.evaluate(() => window.scrollY))
+        .toBeGreaterThan(scrollBefore + 300)
+      expect((await first.boundingBox())?.x).toBeCloseTo(before.x, 0)
+      expect(await trackScroll(await linesTrack(page))).toBe(0)
       await expect(rail).toBeHidden()
-      // Con la colección clavada el escenario ya se fue: la capa de yerba tampoco se ve.
+      // Con la colección arriba el escenario ya se fue: la capa de yerba tampoco se ve.
       await expect(page.locator('[data-collection-bridge]')).toBeHidden()
     })
 
@@ -361,24 +404,43 @@ test.describe('tienda: el mate 3D del inicio', () => {
     })
   }
 
-  test.describe('con menos movimiento (1440 × 900)', () => {
-    test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
+  // Review Focus 1 de la ronda inicio v4 y combos, también en la pantalla de Lucas.
+  test.describe('en una pantalla grande (1905 × 950)', () => {
+    test.use({ viewport: { width: 1905, height: 950 }, reducedMotion: 'no-preference' })
 
-    test('portada con la foto del mate y las dos escenas apiladas, sin lienzo ni raíl', async ({
+    test('el inicio es el mate 3D sin la portada del v4 y la colección sale de la yerba sin un tercio de fondo liso', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      await expect(page.locator('[data-hero-poster] img[src*="pieces.jpg"]')).toBeVisible()
-      await expect(page.locator('.home-scene')).toHaveCount(STACKED_SCENES)
+      await expect(page.getByRole('region', STAGE)).toBeAttached()
+      await expect(page.locator(HERO_CAROUSEL)).toHaveCount(0)
+      await expectCollectionNeverFlat(page)
+    })
+  })
+
+  test.describe('con menos movimiento (1440 × 900)', () => {
+    test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
+
+    test('la portada del v4 con la pieza actual entera, sin escenas apiladas, lienzo ni raíl', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      await expect(page.locator(HERO_CAROUSEL)).toBeVisible()
+      await expect(page.locator('.home-scene')).toHaveCount(0)
       await expect(page.getByRole('region', STAGE)).toHaveCount(0)
       await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
       await expect(page.locator('canvas')).toHaveCount(0)
-      const hidden = await page
-        .locator('.home-scene *')
-        .evaluateAll(
-          (elements) =>
-            elements.filter((element) => getComputedStyle(element).opacity === '0').length,
-        )
+      // La tarjeta y el texto de la pieza actual se ven enteros desde el primer cuadro.
+      const current = page.locator(
+        `${HERO_CAROUSEL} [data-hero-card][data-current], ${HERO_CAROUSEL} [data-hero-info][data-current]`,
+      )
+      await expect(current).toHaveCount(2)
+      const hidden = await current.evaluateAll(
+        (roots) =>
+          roots
+            .flatMap((root) => [root, ...root.querySelectorAll('*')])
+            .filter((element) => getComputedStyle(element).opacity === '0').length,
+      )
       expect(hidden).toBe(0)
     })
   })
@@ -487,14 +549,106 @@ test.describe('tienda: el Manifiesto clavado en una laptop (1366 × 657)', () =>
 test.describe('tienda: el inicio en el celular (390 × 844)', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('portada y dos escenas apiladas, sin raíl, sin lienzo y sin scroll horizontal', async ({
+  test('la portada del v4, sin escenas apiladas, sin raíl, sin lienzo y sin scroll horizontal', async ({
     page,
   }) => {
     await gotoStore(page, '/')
-    await expect(page.locator('[data-hero-poster] img[src*="pieces.jpg"]')).toBeVisible()
-    await expect(page.locator('.home-scene')).toHaveCount(STACKED_SCENES)
+    await expect(page.locator(HERO_CAROUSEL)).toBeVisible()
+    await expect(page.locator('.home-scene')).toHaveCount(0)
     await expect(page.getByRole('navigation', RAIL)).toHaveCount(0)
     await expect(page.locator('canvas')).toHaveCount(0)
+    // Las líneas y los combos van en filas con flechas que no ensanchan la página.
+    await page.getByRole('region', LINES).scrollIntoViewIfNeeded()
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Combos listos para cebar' }),
+    ).toBeAttached()
+    expect(await horizontalOverflow(page)).toBe(0)
+  })
+})
+
+// Review Focus 2 de la ronda: el carrusel no secuestra el scroll. En los dos proyectos (escritorio
+// 1280 × 720 con el mate 3D y Pixel 7); la rueda está en la prueba de la colección del mate 3D.
+test.describe('tienda: "Seis líneas para cada ronda" con flechas (Ruling IC-9)', () => {
+  test('las flechas corren la fila de a una tarjeta, anuncian la posición y dan la vuelta', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const region = page.getByRole('region', LINES)
+    await region.scrollIntoViewIfNeeded()
+    const track = await linesTrack(page)
+    const counter = region.getByText(/^\d\d \/ 07$/)
+    const live = region.locator('[aria-live="polite"]')
+    await expect(counter).toHaveText('01 / 07')
+    await expect(live).toHaveText('')
+    const next = region.getByRole('button', NEXT_LINE)
+    await next.click()
+    await expect(counter).toHaveText('02 / 07')
+    await expect(live).toHaveText('2 de 7')
+    // Se corre exactamente una tarjeta: la segunda queda donde estaba la primera.
+    const second = await track.evaluate((element) => {
+      const cards = Array.from(element.querySelectorAll<HTMLElement>('[role="group"]'))
+      return (cards[1]?.offsetLeft ?? 0) - (cards[0]?.offsetLeft ?? 0)
+    })
+    expect(second).toBeGreaterThan(0)
+    await expect.poll(() => trackScroll(track)).toBeCloseTo(second, 0)
+    for (let presses = 0; presses < 5; presses += 1) await next.click()
+    await expect(counter).toHaveText('07 / 07')
+    // Al final da la vuelta al principio, y desde el principio "anterior" va a la última.
+    await next.click()
+    await expect(counter).toHaveText('01 / 07')
+    await expect.poll(() => trackScroll(track)).toBe(0)
+    await region.getByRole('button', PREVIOUS_LINE).click()
+    await expect(counter).toHaveText('07 / 07')
+    await expect.poll(() => trackScroll(track)).toBeGreaterThan(0)
+  })
+
+  test('con Tab el foco entra a las tarjetas y la fila se corre sola hasta la enfocada', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const region = page.getByRole('region', LINES)
+    await region.scrollIntoViewIfNeeded()
+    const track = await linesTrack(page)
+    await region.getByRole('button', NEXT_LINE).focus()
+    for (let presses = 0; presses < 12; presses += 1) {
+      await page.keyboard.press('Tab')
+      if ((await focusedCard(page)) === '5 de 7') break
+    }
+    expect(await focusedCard(page)).toBe('5 de 7')
+    await expect.poll(() => trackScroll(track)).toBeGreaterThan(0)
+    await expect(page.locator(':focus')).toBeInViewport()
+  })
+
+  test('con el dedo la fila se desliza y el contador la sigue, sin mover la página de costado', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'Deslizar con el dedo se prueba en el celular.')
+    await gotoStore(page, '/')
+    const region = page.getByRole('region', LINES)
+    const track = await linesTrack(page)
+    await track.scrollIntoViewIfNeeded()
+    const box = await track.boundingBox()
+    if (box === null) throw new Error('La fila no tiene caja.')
+    const scrollY = await page.evaluate(() => window.scrollY)
+    // Un dedo de verdad para Chromium (eventos táctiles crudos): 250 px hacia la izquierda.
+    const client = await page.context().newCDPSession(page)
+    const x = Math.round(box.x + box.width * 0.7)
+    const y = Math.round(box.y + box.height / 2)
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+    for (let move = 1; move <= 10; move += 1) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: x - move * 25, y }],
+      })
+      await page.waitForTimeout(16)
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect.poll(() => trackScroll(track)).toBeGreaterThan(100)
+    await expect(region.getByText(/^\d\d \/ 07$/)).not.toHaveText('01 / 07')
+    // Deslizar no anuncia nada (solo las flechas) y la página no se movió.
+    await expect(region.locator('[aria-live="polite"]')).toHaveText('')
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollY)).toBeLessThan(2)
     expect(await horizontalOverflow(page)).toBe(0)
   })
 })
