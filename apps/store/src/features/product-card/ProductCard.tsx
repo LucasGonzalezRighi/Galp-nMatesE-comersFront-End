@@ -170,7 +170,7 @@ export interface ProductCardProps {
  * "Consultar", la píldora "Ver detalle" y el botón de agregar rápido.
  *
  * Toda la tarjeta lleva a la ficha (`/producto/{slug}`); el nombre es el enlace para el teclado y
- * los lectores de pantalla. Agregar rápido usa Negro y Alpaca cincelada en los mates, respeta el
+ * los lectores de pantalla. Agregar rápido usa el primer cuero que ofrece el producto, respeta el
  * tope de compra (`remainingQuantityFor` de `@galpon/domain`, contando todas las líneas del
  * carrito: se deshabilita cuando ya está todo lo disponible), muestra el aviso y lanza el vuelo al
  * carrito. Con el mouse se inclina en 3D; con el mouse encima o el foco adentro sube 4 px, la foto

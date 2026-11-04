@@ -4,6 +4,4 @@ export const ORDER_LINES_COPY = {
   youSave: 'Ahorrás',
   /** Separa la cantidad del precio unitario: "2 × $39.999". */
   times: '×',
-  /** Une las piezas de un kit: "Mate + Bombilla + Yerba". */
-  kitJoiner: ' + ',
 } as const

@@ -35,7 +35,8 @@ const ADD_ICON_CLASS =
  * Fila de producto de una escena de la historia: nombre y precio (llevan a la ficha) y el botón
  * "+" que lo agrega al carrito con el vuelo. Respeta el tope de compra (`remainingQuantityFor` de
  * `@galpon/domain`, contando todas las líneas del carrito): con todo lo disponible ya en el
- * carrito, el botón se deshabilita. En los mates agrega Negro y Alpaca cincelada.
+ * carrito, el botón se deshabilita. Agrega con el primer cuero que ofrece el producto, si ofrece
+ * alguno (`addProductToCart`).
  *
  * @param props - Ver {@link StoryProductRowProps}.
  */

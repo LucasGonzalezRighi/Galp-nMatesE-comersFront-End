@@ -97,9 +97,9 @@ interface AddButtonProps {
 }
 
 /**
- * "+ Agregar" de la pieza actual: la suma al carrito con el vuelo (en los mates con Negro y Alpaca
- * cincelada, como `addProductToCart`) y se deshabilita si no se puede comprar o si el carrito ya
- * tiene todo lo disponible (`remainingQuantityFor` de `@galpon/domain`).
+ * "+ Agregar" de la pieza actual: la suma al carrito con el vuelo (con el primer cuero que ofrece,
+ * si ofrece alguno, como `addProductToCart`) y se deshabilita si no se puede comprar o si el carrito
+ * ya tiene todo lo disponible (`remainingQuantityFor` de `@galpon/domain`).
  */
 function AddButton({ product }: AddButtonProps): ReactNode {
   const { lines } = useCart()
