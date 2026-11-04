@@ -118,6 +118,22 @@ describe('datos de demostración del admin', () => {
     }
   })
 
+  it('GLP-09001 guarda la primera línea como un pedido anterior a los cueros por producto', () => {
+    const first = demoDb().orders.find((order) => order.number === 'GLP-09001')
+    expect(first?.lines[0]).toMatchObject({
+      productSlug: 'mate-imperial-premium',
+      detail: 'Cuero negro · Alpaca cincelada',
+      options: { leather: 'Negro' },
+    })
+    // Solo la primera: el resto sale de priceCart como un pedido de hoy.
+    expect(first?.lines[1]?.detail).toBe('')
+    const kit = demoDb().orders.find((order) => order.number === 'GLP-09002')
+    expect(kit?.lines[0]?.detail).not.toMatch(/Alpaca|Acero/)
+    expect(FIXTURE_ADMIN_DEMO.orders.filter((order) => order.legacyDetail !== undefined)).toEqual([
+      expect.objectContaining({ number: 'GLP-09001' }),
+    ])
+  })
+
   it('los importes salen de cartTotals con el costo del envío', () => {
     for (const order of demoDb().orders) {
       expect(order.lines.length).toBeGreaterThan(0)

@@ -113,7 +113,10 @@ describe('productFormValuesSchema', () => {
 describe('toAdminProductInput', () => {
   it('ida y vuelta: el producto guardado vuelve igual, con las fotos sin url', async () => {
     const product = await imperialPremium()
-    const input = toAdminProductInput(productFormValuesSchema.parse(toProductFormValues(product)))
+    const input = toAdminProductInput(
+      productFormValuesSchema.parse(toProductFormValues(product)),
+      'mate',
+    )
     expect(input).toEqual({
       name: product.name,
       slug: product.slug,
@@ -145,10 +148,18 @@ describe('toAdminProductInput', () => {
 
   it('manda los cueros elegidos en el orden de LEATHERS', async () => {
     const values = { ...toProductFormValues(await imperialPremium()), leathers: ['Crudo', 'Negro'] }
-    expect(toAdminProductInput(productFormValuesSchema.parse(values)).leathers).toEqual([
+    expect(toAdminProductInput(productFormValuesSchema.parse(values), 'mate').leathers).toEqual([
       'Negro',
       'Crudo',
     ])
+  })
+
+  it('fuera de los mates manda los cueros vacíos aunque el formulario los tenga', async () => {
+    const values = productFormValuesSchema.parse(toProductFormValues(await imperialPremium()))
+    expect(values.leathers).toHaveLength(4)
+    expect(toAdminProductInput(values, 'yerba').leathers).toEqual([])
+    expect(toAdminProductInput(values, 'bombilla').leathers).toEqual([])
+    expect(toAdminProductInput(values, null).leathers).toEqual([])
   })
 
   it('"a consultar" manda el precio en null y un solo texto propio deja el otro en null', async () => {
@@ -158,7 +169,7 @@ describe('toAdminProductInput', () => {
       priceOnRequest: true,
       tabsOverride: { materials: '  ', care: ' Secalo boca abajo. ' },
     }
-    expect(toAdminProductInput(productFormValuesSchema.parse(values))).toMatchObject({
+    expect(toAdminProductInput(productFormValuesSchema.parse(values), 'mate')).toMatchObject({
       priceArs: null,
       tabsOverride: { materials: null, care: 'Secalo boca abajo.' },
     })

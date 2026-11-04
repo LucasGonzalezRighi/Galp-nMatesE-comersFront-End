@@ -43,7 +43,8 @@ const ICON_PROPS = { size: 18, weight: 'regular', 'aria-hidden': true } as const
 
 /**
  * Contenido de la barra lateral del dashboard: la marca con "Admin" y el aviso del modo de prueba
- * ("Sin persistencia…" si los cambios se pierden al recargar), el menú con la sección activa
+ * (siempre "Lo que cambies acá no llega a la tienda…", y "Sin persistencia…" si los cambios se
+ * pierden al recargar), el menú con la sección activa
  * (`aria-current="page"`) y los contadores del resumen (no se muestran en 0 y forman parte del
  * nombre del enlace: "Pedidos, 3 para despachar"), y abajo el email, "Ver tienda", "Mi cuenta" y
  * "Cerrar sesión". La usan la barra fija de escritorio y el cajón del celular.
@@ -72,6 +73,7 @@ export function AdminSidebar({
         {mockStatus !== null && (
           <div className="flex flex-col items-start gap-1.5">
             <Badge tone="accent">{APP_COPY.mockBadge}</Badge>
+            <p className="text-xs text-neutral-400">{APP_COPY.mockNotShared}</p>
             {!mockStatus.isPersistent && (
               <p className="text-xs text-neutral-400">{APP_COPY.notPersistent}</p>
             )}

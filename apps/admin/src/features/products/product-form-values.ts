@@ -1,6 +1,6 @@
 import type { FieldPath } from 'react-hook-form'
 import { z } from 'zod'
-import type { AdminProduct, AdminProductInput, ImageInput } from '@galpon/api-client'
+import type { AdminProduct, AdminProductInput, ImageInput, ProductGroup } from '@galpon/api-client'
 import { imageFormSchema, MESSAGES, productFormSchema } from '@galpon/schemas'
 import { MAX_PRODUCT_PHOTOS } from './products.constants'
 
@@ -114,13 +114,19 @@ function toImageInput(photo: ImageInput & { url?: string }): ImageInput {
 
 /**
  * Arma el cuerpo de `POST` / `PATCH /admin/products` con los valores ya validados: fotos sin
- * `url`, precio en `null` si es "a consultar" y `tabsOverride` en `null` si no hay ningún texto
- * propio (si hay uno solo, el otro va en `null` y usa el de su grupo).
+ * `url`, precio en `null` si es "a consultar", `tabsOverride` en `null` si no hay ningún texto
+ * propio (si hay uno solo, el otro va en `null` y usa el de su grupo) y los cueros solo si la
+ * línea es de mates (en otra línea van vacíos: solo los mates llevan cuero, y el formulario
+ * conserva los marcados por si se vuelve a una línea de mates).
  *
  * @param values - Valores validados por {@link productFormValuesSchema}.
+ * @param group - Grupo de la línea elegida, o `null` si no se conoce (entonces van sin cueros).
  * @returns El producto como lo recibe la API (sin `expectedUpdatedAt`).
  */
-export function toAdminProductInput(values: ProductFormOutput): AdminProductInput {
+export function toAdminProductInput(
+  values: ProductFormOutput,
+  group: ProductGroup | null,
+): AdminProductInput {
   const materials = values.tabsOverride?.materials ?? null
   const care = values.tabsOverride?.care ?? null
   return {
@@ -133,7 +139,7 @@ export function toAdminProductInput(values: ProductFormOutput): AdminProductInpu
     featured: values.featured,
     status: values.status,
     images: values.images.map(toImageInput),
-    leathers: [...values.leathers],
+    leathers: group === 'mate' ? [...values.leathers] : [],
     tabsOverride: materials === null && care === null ? null : { materials, care },
   }
 }

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ImageUploaderProvider } from '../../../components/media/ImageUploaderProvider'
@@ -70,7 +70,7 @@ describe('NewProductScreen', () => {
     await user.click(screen.getByRole('radio', { name: 'Publicado' }))
     await user.click(screen.getByRole('switch', { name: 'Destacado' }))
     expect(screen.getByRole('switch', { name: 'Destacado' })).toHaveAccessibleDescription(
-      'Aparece en los destacados del inicio.',
+      'Aparece en «Los más vendidos» del inicio.',
     )
 
     await user.click(screen.getByRole('button', { name: 'Crear producto' }))
@@ -88,10 +88,42 @@ describe('NewProductScreen', () => {
       featured: true,
       status: 'published',
       images: [],
+      leathers: [],
       tabsOverride: null,
     })
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(`/productos/${created?.id ?? ''}`)
+    })
+  })
+
+  it('"Cueros" aparece solo con una línea de mates, sin ninguno marcado, y guarda los elegidos', async () => {
+    const { app, user } = await setup()
+
+    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    await screen.findByRole('option', { name: 'Torpedos' })
+    await user.selectOptions(screen.getByLabelText(/^Línea/), 'Torpedos')
+    const leathers = screen.getByRole('group', { name: 'Cueros que ofrece este mate' })
+    expect(within(leathers).getAllByRole('checkbox')).toHaveLength(4)
+    for (const box of within(leathers).getAllByRole('checkbox')) expect(box).not.toBeChecked()
+
+    await user.selectOptions(screen.getByLabelText(/^Línea/), 'Bombillones')
+    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText(/^Línea/), 'Imperiales')
+    await user.click(screen.getByRole('checkbox', { name: 'Crudo' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Negro' }))
+    await user.type(screen.getByLabelText(/^Nombre/), 'Mate Crudo')
+    await user.type(screen.getByLabelText(/^Descripción/), 'Un mate en cuero crudo y negro.')
+    await user.type(screen.getByLabelText(/^Precio$/), '30000')
+    await user.type(screen.getByLabelText(/^Stock/), '2')
+    await user.click(screen.getByRole('button', { name: 'Crear producto' }))
+
+    await waitFor(() => {
+      expect(app.mockDb.db.products.find((product) => product.name === 'Mate Crudo')).toMatchObject(
+        {
+          categoryId: 'cat-imperiales',
+          leathers: ['Negro', 'Crudo'],
+        },
+      )
     })
   })
 

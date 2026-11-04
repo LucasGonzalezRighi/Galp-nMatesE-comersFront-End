@@ -305,7 +305,7 @@ export function trackingText(carrier: string, trackingNumber: string): string {
 }
 
 /**
- * Cuero elegido en una línea.
+ * Cuero del mate de un kit o de un combo (una línea suelta muestra su detalle congelado).
  *
  * @param leather - Cuero, por ejemplo "Negro".
  * @returns "Cuero {x}", por ejemplo "Cuero Negro".

@@ -105,6 +105,43 @@ test.describe('dashboard: productos', () => {
     ).toBeVisible()
   })
 
+  test('los cueros del Imperial Premium: desmarcar Crudo y Borravino queda guardado al recargar', async ({
+    page,
+  }) => {
+    await gotoAdmin(page, {
+      path: '/productos/prd-imperial-premium',
+      heading: 'Mate Imperial Premium',
+    })
+    const section = page.getByRole('region', { name: 'Cueros' })
+    const leathers = section.getByRole('group', { name: 'Cueros que ofrece este mate' })
+    await expect(leathers.getByRole('checkbox')).toHaveCount(4)
+    for (const name of ['Negro', 'Marrón', 'Crudo', 'Borravino']) {
+      await expect(leathers.getByRole('checkbox', { name })).toBeChecked()
+    }
+
+    await leathers.getByRole('checkbox', { name: 'Crudo' }).uncheck()
+    await leathers.getByRole('checkbox', { name: 'Borravino' }).uncheck()
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(toast(page, 'Cambios guardados.')).toBeVisible()
+
+    await page.reload()
+    await expect(screenHeading(page, 'Mate Imperial Premium')).toBeVisible()
+    await expect(leathers.getByRole('checkbox', { name: 'Negro' })).toBeChecked()
+    await expect(leathers.getByRole('checkbox', { name: 'Marrón' })).toBeChecked()
+    await expect(leathers.getByRole('checkbox', { name: 'Crudo' })).not.toBeChecked()
+    await expect(leathers.getByRole('checkbox', { name: 'Borravino' })).not.toBeChecked()
+  })
+
+  test('una yerba no muestra "Cueros"', async ({ page }) => {
+    await gotoAdmin(page, {
+      path: '/productos/prd-yerba-canarias',
+      heading: 'Yerba Canarias 1 kg',
+    })
+    await expect(page.getByRole('combobox', { name: 'Línea' })).toHaveValue('cat-yerbas')
+    await expect(page.getByRole('region', { name: 'Precio y stock' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Cueros' })).toHaveCount(0)
+  })
+
   test('archiva con confirmación, lo muestra en "Archivados" y lo vuelve a publicar', async ({
     page,
   }) => {

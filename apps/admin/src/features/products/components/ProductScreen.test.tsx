@@ -92,6 +92,19 @@ function altTexts(): string[] {
     .map((input) => (input as HTMLInputElement).value)
 }
 
+/** Los cuatro cueros, en el orden de `LEATHERS`. */
+const LEATHER_NAMES = ['Negro', 'Marrón', 'Crudo', 'Borravino']
+
+/** El grupo de casillas de la sección "Cueros". */
+function leathersGroup(): HTMLElement {
+  return screen.getByRole('group', { name: 'Cueros que ofrece este mate' })
+}
+
+/** La casilla de un cuero. */
+function leatherBox(name: string): HTMLElement {
+  return within(leathersGroup()).getByRole('checkbox', { name })
+}
+
 afterEach(() => {
   useToastStore.setState({ toasts: [] })
 })
@@ -250,6 +263,100 @@ describe('ProductScreen', () => {
     // Todos los errores tenían su campo: no hace falta el aviso general.
     expect(screen.queryByText('Revisá los campos marcados.')).not.toBeInTheDocument()
     expect(stored(app).name).toBe('Mate Imperial Premium')
+  })
+
+  it('un mate muestra los 4 cueros marcados y al desmarcar Crudo y Borravino guarda Negro y Marrón', async () => {
+    const { app, user, patches } = await setup()
+
+    const section = screen.getByRole('region', { name: 'Cueros' })
+    expect(
+      within(section).getByText(
+        'Los que el cliente puede elegir en la ficha, el kit y los combos. Si no marcás ninguno, no se muestra el selector.',
+      ),
+    ).toBeInTheDocument()
+    const boxes = within(leathersGroup()).getAllByRole('checkbox')
+    expect(boxes.map((box) => box.closest('label')?.textContent)).toEqual(LEATHER_NAMES)
+    for (const box of boxes) expect(box).toBeChecked()
+
+    await user.click(leatherBox('Crudo'))
+    await user.click(leatherBox('Borravino'))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(patches.at(-1)).toMatchObject({ leathers: ['Negro', 'Marrón'] })
+    expect(stored(app).leathers).toEqual(['Negro', 'Marrón'])
+    expect(leatherBox('Negro')).toBeChecked()
+    expect(leatherBox('Crudo')).not.toBeChecked()
+  })
+
+  it('los cueros se guardan en el orden de siempre, no en el que se marcaron', async () => {
+    const { app, user, patches } = await setup()
+
+    for (const name of LEATHER_NAMES) await user.click(leatherBox(name))
+    await user.click(leatherBox('Borravino'))
+    await user.click(leatherBox('Crudo'))
+    await user.click(leatherBox('Negro'))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(patches.at(-1)).toMatchObject({ leathers: ['Negro', 'Crudo', 'Borravino'] })
+    expect(stored(app).leathers).toEqual(['Negro', 'Crudo', 'Borravino'])
+  })
+
+  it('sin ningún cuero marcado guarda la lista vacía', async () => {
+    const { app, user, patches } = await setup()
+
+    for (const name of LEATHER_NAMES) await user.click(leatherBox(name))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(patches.at(-1)).toMatchObject({ leathers: [] })
+    expect(stored(app).leathers).toEqual([])
+  })
+
+  it('al pasar el mate a una línea de yerbas, "Cueros" se va y se guarda sin cueros', async () => {
+    const { app, user, patches } = await setup()
+
+    await screen.findByRole('option', { name: 'Yerbas' })
+    await user.selectOptions(screen.getByLabelText(/^Línea/), 'Yerbas')
+    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(patches.at(-1)).toMatchObject({ categoryId: 'cat-yerbas', leathers: [] })
+    expect(stored(app)).toMatchObject({ categoryId: 'cat-yerbas', leathers: [] })
+  })
+
+  it('una yerba no muestra "Cueros"', async () => {
+    await setup({ id: 'prd-yerba-canarias' })
+
+    await screen.findByRole('option', { name: 'Yerbas' })
+    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Negro' })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['leathers', 'Solo los mates llevan cuero'],
+    ['leathers.1', 'Elegí un cuero de la lista'],
+  ])('un 422 en %s se ve debajo de las casillas de los cueros', async (field, message) => {
+    const { app, user } = await setup()
+    app.api.use({
+      onRequest: ({ request }) =>
+        request.method === 'PATCH' ? validationProblem([{ field, message }]) : undefined,
+    })
+
+    await user.click(leatherBox('Crudo'))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    const error = await within(screen.getByRole('region', { name: 'Cueros' })).findByText(message)
+    const group = leathersGroup()
+    expect(group.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(group).toHaveAccessibleDescription(message)
+    for (const name of LEATHER_NAMES) {
+      expect(leatherBox(name)).toHaveAttribute('aria-invalid', 'true')
+    }
+    expect(screen.queryByText('Revisá los campos marcados.')).not.toBeInTheDocument()
+    expect(stored(app).leathers).toEqual(['Negro', 'Marrón', 'Crudo', 'Borravino'])
   })
 
   it('un slug nuevo deja el anterior en las direcciones que redirigen', async () => {

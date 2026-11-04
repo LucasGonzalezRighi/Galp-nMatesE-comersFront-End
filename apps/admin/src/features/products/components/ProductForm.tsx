@@ -45,6 +45,7 @@ import {
   slugRedirectHint,
 } from '../products.copy'
 import { useRepublishProduct, useSaveProduct } from '../use-save-product'
+import { ProductLeathersFields } from './ProductLeathersFields'
 import { ProductPhotosField } from './ProductPhotosField'
 import { ProductTabsFields } from './ProductTabsFields'
 
@@ -62,8 +63,8 @@ const STATUS_OPTIONS: readonly SegmentedOption<ProductFormValues['status']>[] = 
 
 /**
  * Formulario de producto (`productFormSchema`, validación al salir de cada campo): "Datos",
- * "Precio y stock", "Estado", "Fotos" y "Pestañas de la ficha", con `FormActions` y
- * `UnsavedChangesGuard`.
+ * "Precio y stock", "Cueros" (solo si la línea elegida es de mates), "Estado", "Fotos" y
+ * "Pestañas de la ficha", con `FormActions` y `UnsavedChangesGuard`.
  *
  * - Al crear, el slug sigue a `slugify(nombre)` hasta que se lo toca a mano; al guardar avisa
  *   "Producto creado." y lleva a `/productos/$id`.
@@ -73,6 +74,8 @@ const STATUS_OPTIONS: readonly SegmentedOption<ProductFormValues['status']>[] = 
  * - Un archivado muestra el aviso con "Volver a publicar". Guardarle cambios lo pasa a borrador
  *   (la API solo recibe `draft` o `published`): el formulario lo avisa antes y en el toast.
  * - No envía con fotos subiendo o con error. `409 slug_taken` va al slug; un `422`, a cada campo.
+ * - Fuera de una línea de mates manda los cueros vacíos (`toAdminProductInput` con el grupo); lo
+ *   marcado se conserva por si se vuelve a una línea de mates antes de guardar.
  *
  * @param props - Ver {@link ProductFormProps}.
  */
@@ -113,7 +116,11 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
   })
   const categoriesQuery = useQuery(adminCategoriesQuery(api))
   const categories = categoriesQuery.data ?? []
-  const group = categories.find((category) => category.id === categoryId)?.group ?? null
+  // Mientras cargan las líneas, la del producto guardado ya trae su grupo: así guardar enseguida
+  // no le borra los cueros a un mate.
+  const group =
+    categories.find((category) => category.id === categoryId)?.group ??
+    (product !== null && categoryId === product.categoryId ? product.group : null)
   const save = useSaveProduct(productId)
   const republish = useRepublishProduct()
   const getProductName = useCallback(() => getValues('name'), [getValues])
@@ -164,7 +171,7 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
   }
 
   function saveValues(values: ProductFormOutput, overwrite: boolean) {
-    const input = toAdminProductInput(values)
+    const input = toAdminProductInput(values, group)
     const body =
       overwrite || baseUpdatedAt === null ? input : { ...input, expectedUpdatedAt: baseUpdatedAt }
     save.mutate(body, {
@@ -403,6 +410,8 @@ export function ProductForm({ product }: ProductFormProps): ReactNode {
             </p>
           </div>
         </Section>
+
+        {group === 'mate' && <ProductLeathersFields control={control} errors={errors} />}
 
         <Section title={PRODUCT_FORM_COPY.statusSection} description={PRODUCT_FORM_COPY.statusHint}>
           {product?.status === 'archived' ? (

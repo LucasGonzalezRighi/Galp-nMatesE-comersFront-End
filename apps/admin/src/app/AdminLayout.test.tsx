@@ -24,6 +24,10 @@ vi.mock(import('../features/orders'), async (importOriginal) => {
 
 const NOT_PERSISTENT = 'Sin persistencia: los cambios se pierden al recargar.'
 
+/** Aviso de que el modo de prueba del admin no comparte datos con la tienda (ADR 0003). */
+const MOCK_NOT_SHARED =
+  'Lo que cambies acá no llega a la tienda: cada una tiene sus datos de prueba.'
+
 /** Pantalla de prueba con un `h1` que dice en qué ruta está. */
 function Heading() {
   const pathname = useLocation({ select: (location) => location.pathname })
@@ -103,7 +107,7 @@ describe('AdminLayout: barra lateral', () => {
     expect(within(nav).getByRole('link', { name: 'Mensajes' })).toBeInTheDocument()
   })
 
-  it('en modo de prueba avisa "Sin persistencia" y lo vuelve a leer después de cada escritura', async () => {
+  it('en modo de prueba avisa que no llega a la tienda y "Sin persistencia" lo vuelve a leer después de cada escritura', async () => {
     let persistent = true
     const app = await createAdminTestApp()
     app.context = {
@@ -135,9 +139,16 @@ describe('AdminLayout: barra lateral', () => {
     const { user } = await renderLayout({ app, children: <Writer /> })
 
     expect(screen.getAllByText('Modo de prueba').length).toBeGreaterThan(0)
+    expect(screen.getByText(MOCK_NOT_SHARED)).toBeInTheDocument()
     expect(screen.queryByText(NOT_PERSISTENT)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Escribir' }))
     expect(await screen.findByText(NOT_PERSISTENT)).toBeInTheDocument()
+    expect(screen.getByText(MOCK_NOT_SHARED)).toBeInTheDocument()
+    // El aviso nuevo va debajo de "Modo de prueba" y antes del de la persistencia.
+    const notice = screen.getByText(MOCK_NOT_SHARED)
+    const badge = notice.parentElement?.firstElementChild
+    expect(badge).toHaveTextContent('Modo de prueba')
+    expect(notice.nextElementSibling).toHaveTextContent(NOT_PERSISTENT)
   })
 
   it('enlaza la tienda en otra pestaña y Mi cuenta', async () => {

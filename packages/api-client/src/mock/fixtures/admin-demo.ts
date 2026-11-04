@@ -62,6 +62,12 @@ interface DemoOrder {
   address: ShippingAddress | null
   /** Líneas del carrito, cotizadas con `priceCart` al sembrar. */
   items: CartItem[]
+  /**
+   * `detail` de la primera línea tal como lo guardó un pedido anterior a los cueros por producto
+   * (con la virola, que hoy ya no se elige), en lugar del que arma `priceCart`. Así la demostración
+   * muestra que el detalle de un pedido es texto congelado.
+   */
+  legacyDetail?: string
   /** Forma de pago elegida en el checkout. */
   paymentMethod: PaymentMethod
   /** Minutos antes de `now` en que se creó. */
@@ -177,6 +183,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
         product('prd-imperial-premium', 1, { leather: 'Negro' }),
         product('prd-yerba-canarias', 2),
       ],
+      legacyDetail: 'Cuero negro · Alpaca cincelada',
       paymentMethod: 'card',
       minutesAgo: 6,
       steps: [{ status: 'paid', minutesAgo: 1 }],
@@ -619,7 +626,8 @@ function demoIntent(now: Date, order: DemoOrder, intent: DemoIntent, index: numb
 
 /**
  * Arma un pedido de la demostración: las líneas y los importes salen de `priceCart` y `cartTotals`
- * (las mismas reglas que `POST /orders`), sin tocar el stock de los productos.
+ * (las mismas reglas que `POST /orders`), sin tocar el stock de los productos. Con `legacyDetail`,
+ * la primera línea lleva ese `detail` (el de un pedido anterior a los cueros por producto).
  */
 function demoOrder(db: MockDb, now: Date, order: DemoOrder): MockOrder {
   const priced = priceCart(db, order.items, now)
@@ -650,7 +658,11 @@ function demoOrder(db: MockDb, now: Date, order: DemoOrder): MockOrder {
     status: order.steps.at(-1)?.status ?? 'pending_payment',
     customer: order.customer,
     shipping,
-    lines: lines.map((line) => line.orderLine),
+    lines: lines.map((line, index) =>
+      index === 0 && order.legacyDetail !== undefined
+        ? { ...line.orderLine, detail: order.legacyDetail }
+        : line.orderLine,
+    ),
     itemsGrossArs: totals.itemsGrossArs,
     kitSavingsArs: totals.kitSavingsArs,
     subtotalArs: totals.subtotalArs,

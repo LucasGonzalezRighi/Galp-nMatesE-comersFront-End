@@ -33,8 +33,21 @@ solo reemplaza a la tabla si nunca cargó.
   la pantalla: la casilla "Precio a consultar" (sin ella el precio es obligatorio; la regla va en
   un objeto aparte unido con `.and`, porque un refinamiento del objeto entero no corre si otro
   campo ya cortó la validación), el stock vacío mientras no se escribe y la `url` de cada foto.
-  `toProductFormValues` y `toAdminProductInput` pasan de la API al formulario y de vuelta (fotos
-  sin `url`, precio `null` "a consultar", `tabsOverride` vacío → `null`).
+  `toProductFormValues` y `toAdminProductInput(values, group)` pasan de la API al formulario y de
+  vuelta (fotos sin `url`, precio `null` "a consultar", `tabsOverride` vacío → `null`, cueros
+  vacíos si el grupo no es `mate`).
+- **Cueros** (`ProductLeathersFields`, Ruling AT-5): sección "Cueros" entre "Precio y stock" y
+  "Estado", solo si la línea elegida es de mates (como las pestañas, sigue al grupo de la línea;
+  mientras cargan las líneas usa el grupo guardado del producto). Un `fieldset` (legend oculta
+  "Cueros que ofrece este mate") con cuatro casillas en el orden de `LEATHERS`, cada una con su
+  muestra de `tokens.leathersUi`; lo marcado se guarda en ese orden. Un producto nuevo arranca sin
+  ninguno; sin ninguno, la tienda no muestra el selector. Al pasar a una línea que no es de mates
+  la sección se va y se manda `leathers: []` (el back responde `422` `leathers_not_allowed`
+  "Solo los mates llevan cuero" si llegan cueros fuera de los mates). Un `422` en `leathers` o
+  `leathers.N` se ve debajo de las casillas. En modo de prueba lo guardado no llega a la tienda
+  (ADR 0003); para probar la tienda, `POST /api/v1/__mock/products/{id}` con `leathers`.
+- **Destacado**: la ayuda dice "Aparece en «Los más vendidos» del inicio." (Ruling AT-4: los
+  destacados son los de esa sección).
 - Al crear, el slug sigue a `slugify(nombre)` hasta que se lo toca; al editar muestra la
   redirección del slug viejo y las direcciones anteriores.
 - **Fotos** (`ProductPhotosField`): la cola es `useImageUploads` de `components/media`, con

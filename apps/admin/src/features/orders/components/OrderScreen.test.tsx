@@ -93,7 +93,10 @@ describe('OrderScreen', () => {
     expect(within(shipping).getByText('Av. Corrientes 1234, 5° B')).toBeInTheDocument()
 
     const lines = screen.getByRole('region', { name: 'Productos' })
-    expect(within(lines).getByText('Cuero Negro')).toBeInTheDocument()
+    // La línea suelta muestra su `detail` congelado: es un pedido anterior a los cueros por
+    // producto, así que conserva la virola.
+    expect(within(lines).getByText('Cuero negro · Alpaca cincelada')).toBeInTheDocument()
+    expect(within(lines).queryByText('Cuero Negro')).not.toBeInTheDocument()
     expect(within(lines).getByText(/^2 × \$/)).toBeInTheDocument()
 
     const totals = screen.getByRole('region', { name: 'Totales' })
@@ -103,6 +106,24 @@ describe('OrderScreen', () => {
     const history = screen.getByRole('region', { name: 'Historial' })
     expect(within(history).getByText('Pendiente de pago')).toBeInTheDocument()
     expect(within(history).getByText('Pagado')).toBeInTheDocument()
+  })
+
+  it('un kit muestra sus piezas y el cuero del mate, sin repetir el detalle', async () => {
+    const app = await createTestApp()
+    const order = await getAdminOrder(app.api, 'GLP-09002')
+    await renderOrder(app, 'GLP-09002')
+
+    const lines = screen.getByRole('region', { name: 'Productos' })
+    const pieces = within(lines).getByRole('list', { name: 'Piezas' })
+    expect(
+      within(pieces)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Mate Torpedo Premium', 'Bombillón Premium Curvo', 'Yerba Canarias Serena 1 kg'])
+    expect(within(lines).getByText('Cuero Marrón')).toBeInTheDocument()
+    const [kit] = order.lines
+    expect(kit?.detail).not.toBe('')
+    expect(within(lines).queryByText(kit?.detail ?? '')).not.toBeInTheDocument()
   })
 
   it('traduce el pago y enlaza el ID a Mercado Pago', async () => {

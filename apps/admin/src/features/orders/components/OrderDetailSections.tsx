@@ -107,16 +107,24 @@ interface LineItemProps {
   line: OrderLine
 }
 
-/** Una línea del pedido: nombre, opciones o detalle, piezas del kit, cantidad × precio y total. */
+/**
+ * Una línea del pedido: nombre, detalle o piezas con el cuero, cantidad × precio y total.
+ *
+ * - Un producto suelto muestra su `detail` tal cual: es texto congelado al comprar, así un pedido
+ *   anterior a los cueros por producto conserva la virola que eligió.
+ * - Un kit o un combo muestra sus piezas y, si el mate lleva cuero, "Cuero {x}" (su `detail`
+ *   repite las piezas).
+ */
 function LineItem({ line }: LineItemProps): ReactNode {
-  // `detail` repite las opciones o las piezas del kit: se muestra solo si no hay datos sueltos.
-  const showDetail = line.options === null && line.kitItems === null && line.detail !== ''
+  const isProduct = line.type === 'product'
   return (
     <li className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:justify-between sm:gap-6">
       <div className="flex min-w-0 flex-col gap-1">
         <p className="font-medium">{line.name}</p>
-        {showDetail && <p className="text-sm text-neutral-400">{line.detail}</p>}
-        {line.options !== null && (
+        {isProduct && line.detail !== '' && (
+          <p className="text-sm text-neutral-400">{line.detail}</p>
+        )}
+        {!isProduct && line.options !== null && (
           <p className="text-sm text-neutral-400">{lineOptionsText(line.options.leather)}</p>
         )}
         {line.kitItems !== null && (

@@ -22,6 +22,11 @@ export const APP_COPY = {
   brand: 'Galpón Mates',
   adminBadge: 'Admin',
   mockBadge: 'Modo de prueba',
+  /**
+   * Debajo de "Modo de prueba", siempre: el admin y la tienda tienen cada uno su base simulada
+   * (ADR 0003), así que lo que se guarda acá no se ve en la tienda.
+   */
+  mockNotShared: 'Lo que cambies acá no llega a la tienda: cada una tiene sus datos de prueba.',
   notPersistent: 'Sin persistencia: los cambios se pierden al recargar.',
   navLabel: 'Principal',
   openMenu: 'Menú',
