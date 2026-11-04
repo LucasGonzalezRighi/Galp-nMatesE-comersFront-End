@@ -32,8 +32,8 @@ export interface HeroIntroProps {
 /**
  * El texto de la portada del inicio (spec 9.5): la píldora con la marca, el título "Encontrá tu
  * mate." (el único `h1` del inicio), la bajada y los botones "Ver la tienda" y "Armá tu kit" (con
- * el descuento del kit). Lo usan la portada del servidor y del celular (`HomeHero`) y la primera
- * parada del mate 3D (`MateStage`). El título entra con CSS, sin esperar a JavaScript, y el resto
+ * el descuento del kit). Lo usa la primera parada del mate 3D (`MateStage`); donde no hay 3D la
+ * portada es `HeroCarousel`. El título entra con CSS, sin esperar a JavaScript, y el resto
  * aparece con `SceneReveal`; con `entered` (y, para el resto, dentro de `StaticRevealContext`)
  * todo se dibuja ya en su lugar, así el cambio de la portada del servidor al mate 3D no repite la
  * entrada.

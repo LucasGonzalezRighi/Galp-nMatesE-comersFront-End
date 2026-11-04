@@ -172,6 +172,8 @@ export function ArrowCarousel({
   const trackRef = useRef<HTMLDivElement>(null)
   const reduced = usePrefersReducedMotion()
   const [state, setState] = useState(INITIAL_STATE)
+  // Cancela la lectura pendiente de la fila: la usa una flecha, cuyo destino manda.
+  const cancelSettle = useRef<() => void>(() => undefined)
 
   // Al deslizar la fila (dedo, trackpad, foco con Tab o una flecha), cuando queda quieta se lee en
   // qué tarjeta quedó. Se espera a que se quede quieta para no pisar el destino de una flecha a
@@ -180,6 +182,9 @@ export function ArrowCarousel({
     const track = trackRef.current
     if (track === null) return
     let timer: ReturnType<typeof setTimeout> | undefined
+    cancelSettle.current = () => {
+      clearTimeout(timer)
+    }
     const settle = (): void => {
       const cards = cardsOf(track)
       const first = cards[0]
@@ -216,6 +221,9 @@ export function ArrowCarousel({
 
   /** Pasa a la tarjeta de al lado, la anuncia y corre la fila (no la página) hasta ella. */
   const step = (direction: CarouselDirection): void => {
+    // Si la fila acaba de quedar quieta, la lectura pendiente es de antes de esta flecha (el
+    // desplazamiento suave nuevo todavía no avisó nada) y pisaría su destino.
+    cancelSettle.current()
     const target = stepIndex(index, direction, count)
     setState({ index: target, announced: true })
     const track = trackRef.current

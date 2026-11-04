@@ -131,6 +131,25 @@ describe('ArrowCarousel', () => {
     expect(status).toHaveTextContent('')
   })
 
+  it('una flecha tocada justo al quedar quieta la fila no se pisa con la lectura del scroll anterior', () => {
+    vi.useFakeTimers()
+    mockReducedMotion(false)
+    const { track, next } = renderCarousel()
+    // La flecha corrió la fila hasta la segunda tarjeta y el último `scroll` acaba de llegar.
+    fireEvent.click(next)
+    track.scrollLeft = STEP
+    fireEvent.scroll(track)
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+    // Otra flecha antes de que se lea la posición: el desplazamiento suave todavía no arrancó.
+    fireEvent.click(next)
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(screen.getByText('03 / 03')).toBeVisible()
+  })
+
   it('sin tarjetas lanza RangeError', () => {
     mockReducedMotion(false)
     vi.spyOn(console, 'error').mockImplementation(() => undefined)

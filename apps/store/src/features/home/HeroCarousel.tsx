@@ -306,7 +306,7 @@ export function HeroCarousel({ hero, slides, kitDiscountLabel }: HeroCarouselPro
       className="relative overflow-hidden md:flex md:min-h-[calc(100svh-64px)] md:items-center"
     >
       <div aria-hidden="true" className="home-carousel-bg pointer-events-none absolute inset-0" />
-      <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-3 px-[clamp(20px,5vw,64px)] pt-4 pb-12 md:gap-[26px] md:pt-14 md:pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:grid-rows-[1fr_repeat(5,auto)_1fr] lg:gap-x-[clamp(32px,5vw,80px)]">
+      <div className="site-container grid grid-cols-1 gap-3 pt-4 pb-12 md:gap-[26px] md:pt-14 md:pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:grid-rows-[1fr_repeat(5,auto)_1fr] lg:gap-x-[clamp(32px,5vw,80px)]">
         <Reveal
           kind="up"
           className="bg-background/55 relative inline-flex items-center gap-[10px] justify-self-start rounded-full py-[6px] pr-4 pl-2 text-[13px] shadow-[inset_0_0_0_1px_var(--color-neutral-700)] lg:col-start-1 lg:row-start-2"

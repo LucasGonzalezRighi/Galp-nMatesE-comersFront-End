@@ -21,7 +21,7 @@ const EntranceContext = createContext<EntranceContextValue | null>(null)
 
 /** Props de {@link CollectionEntrance}. */
 export interface CollectionEntranceProps {
-  /** La colección: su `HorizontalScroll`, con un {@link EntranceTitle} y {@link EntranceCard}s. */
+  /** La colección: su `ArrowCarousel`, con un {@link EntranceTitle} y {@link EntranceCard}s. */
   children: ReactNode
 }
 
@@ -119,7 +119,7 @@ function DiveEntrance({ children }: ModeProps): ReactNode {
  * otra ({@link EntranceCard}), y se disuelve (opacidad 1 → 0) detrás de ellos cuando ya ocupan la
  * pantalla, hasta que la colección llega arriba: nunca queda más de un tercio de fondo liso. La
  * entrada del título y las tarjetas dura desde que la colección asoma abajo hasta que llega al 15 %
- * de arriba; después la pista horizontal sigue igual. Sin el mate 3D (celular, ventanas bajas)
+ * de arriba; después la fila con flechas sigue igual. Sin el mate 3D (celular, ventanas bajas)
  * entra con un fundido simple, y con `prefers-reduced-motion: reduce` queda quieta. Solo se
  * animan `transform`, `opacity` y `filter`.
  *

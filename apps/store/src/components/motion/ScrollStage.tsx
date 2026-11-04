@@ -56,7 +56,7 @@ const STAGE_CLASS = 'h-screen supports-[height:100svh]:h-svh'
  * decide qué se mueve.
  *
  * Al enfocar con el teclado algo de una parada que no es la actual (un elemento dentro de otro con
- * `data-stage-stop="n"`), la página se desplaza a esa parada, como hace `HorizontalScroll`.
+ * `data-stage-stop="n"`), la página se desplaza a esa parada.
  *
  * @param props - Ver {@link ScrollStageProps}.
  * @throws {RangeError} Si `stops` no es un entero de 1 a 50.
