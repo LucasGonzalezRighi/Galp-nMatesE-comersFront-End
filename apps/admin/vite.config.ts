@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => {
   return {
     // El plugin del router va antes que el de React, como pide su documentación.
     plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react(), tailwindcss()],
+    build: {
+      // Las fuentes van siempre como archivo: una `woff2` chica en `data:` la bloquea la CSP
+      // (`default-src 'self'`, sin `font-src`), y no se afloja la CSP por eso.
+      assetsInlineLimit: (file: string) => (file.endsWith('.woff2') ? false : undefined),
+    },
     preview: {
       // `Strict-Transport-Security` no va en `http://localhost`: la agrega el servidor de producción.
       headers: { 'Content-Security-Policy': buildAdminCsp(apiOrigin), ...ADMIN_SECURITY_HEADERS },
