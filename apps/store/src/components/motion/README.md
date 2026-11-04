@@ -42,6 +42,10 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
   qué se mueve con `progress`. Un elemento con `data-stage-stop="n"` marca la parada `n`: al
   enfocar algo adentro con el teclado, la página va a esa parada. No se adapta a
   `prefers-reduced-motion` (salvo el salto de `scrollToStop`): quien lo monta decide si corresponde.
+- El encabezado se esconde al bajar solo mientras haya una zona en pantalla (`useHeaderHideZone`,
+  el escenario del mate 3D, Ruling MR-20) y ningún pin lo fije (`useHeaderPin(active)`): la
+  colección del inicio, que entra encima del final del escenario, lo fija apenas se revela su
+  título (Ruling AT-1). El encabezado pregunta con `useHeaderMayHide()`.
 - `Reveal` sin `IntersectionObserver` muestra el contenido sin animar (en lugar de dejarlo oculto).
 - `Tilt`: `max` es el recorrido total, como el `tiltStrength` del diseño; en los bordes llega a
   `max / 2`.

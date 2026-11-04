@@ -15,7 +15,8 @@ function notify(): void {
 
 /**
  * Avisa que el escenario del mate 3D (`MateStage`) está montado: mientras dure, la colección que
- * viene debajo entra desde la yerba en que termina la zambullida (`CollectionEntrance`). El
+ * viene debajo se monta encima del final del escenario y entra en el mismo gesto en que el mate se
+ * va por arriba (`CollectionEntrance`, Ruling AT-1); sin él, entra sola al asomar. El
  * escenario se monta después de hidratar y solo en escritorio y con movimiento; al achicarse la
  * ventana, pedir menos movimiento o navegar a otra página se desmonta y retira el aviso.
  *

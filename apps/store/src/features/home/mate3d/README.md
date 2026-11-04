@@ -82,20 +82,19 @@ por cuadro a 60 Hz, igual a 30 o a 144 Hz), así el scroll se ve suave aunque ll
 
 ## Los momentos
 
-`progress` va de 0 a 1 sobre las tres paradas y la salida; cada parada ocupa un tercio y su hold es
+`progress` va de 0 a 1 sobre las tres paradas y el pase; cada parada ocupa un tercio y su hold es
 el 55 % inicial de su tercio (`HOLD_SHARE` de `stage-layout.ts`). Entre dos momentos la
 interpolación usa la curva quíntica del diseño (quieta el primer y el último 8 % del tramo).
 
-| Momento     | Avance          | Qué se ve                                                                                                                                                                                                                                                      |
-| ----------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `inicio`    | 0               | Parada 1: el mate de pie y vacío a la derecha, como la portada; paquete, bombilla y termo fuera de cuadro.                                                                                                                                                     |
-| `inclinado` | hold·0,35       | El mate inclinado 55° a la izquierda y el paquete cabeza abajo sobre la boca (`pour 1`, `fill 0,45`, `slope 1`, `wall 0`).                                                                                                                                     |
-| `lleno`     | hold·0,85       | Ya no cae yerba; el mate lleno, todavía a 40°, y el paquete saliendo por arriba a la izquierda (`fill 1`, `slope 1`, `wall 0,35`).                                                                                                                             |
-| `bombilla`  | todo el hold 2  | Parada 2: el mate de frente, en el lugar de la portada (giro X 16, escala 1,05); la montañita asoma sobre la virola con su pared recta (`wall 1`) y la bombilla calzada se apoya en la virola derecha.                                                         |
-| `agua`      | 2/3 + hold·0,25 | El mate quieto, igual que en la 2; el pico del termo arriba a la derecha y el chorro entra justo adentro del borde derecho, al lado de la bombilla (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); las gotas y el vapor asoman sobre la virola. |
-| `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                                                                                                         |
-| `boca`      | 0,85 + 0,05     | Primer tercio de la zambullida (desde `DIVE_FROM`, el fin del hold 3): el mate gira hasta mirar con la boca a la cámara (giro X 86, Y 0) y va al medio, todavía entero (escala 1,8); el vapor se apagó y el termo se fue.                                      |
-| `salida`    | 1               | La zambullida (Ruling MR-22): con la boca centrada el mate crece ×8 hasta que la virola sale del cuadro y la yerba llena la pantalla; la bombilla pasa de largo por la derecha. `MateStage` funde ahí la yerba del DOM y el escenario termina en ella.         |
+| Momento     | Avance          | Qué se ve                                                                                                                                                                                                                                                          |
+| ----------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `inicio`    | 0               | Parada 1: el mate de pie y vacío a la derecha, como la portada; paquete, bombilla y termo fuera de cuadro.                                                                                                                                                         |
+| `inclinado` | hold·0,35       | El mate inclinado 55° a la izquierda y el paquete cabeza abajo sobre la boca (`pour 1`, `fill 0,45`, `slope 1`, `wall 0`).                                                                                                                                         |
+| `lleno`     | hold·0,85       | Ya no cae yerba; el mate lleno, todavía a 40°, y el paquete saliendo por arriba a la izquierda (`fill 1`, `slope 1`, `wall 0,35`).                                                                                                                                 |
+| `bombilla`  | todo el hold 2  | Parada 2: el mate de frente, en el lugar de la portada (giro X 16, escala 1,05); la montañita asoma sobre la virola con su pared recta (`wall 1`) y la bombilla calzada se apoya en la virola derecha.                                                             |
+| `agua`      | 2/3 + hold·0,25 | El mate quieto, igual que en la 2; el pico del termo arriba a la derecha y el chorro entra justo adentro del borde derecho, al lado de la bombilla (`water 1`, `splash 1`, `wet 0,7`, `puddle 0,5`, `steam 0,6`); las gotas y el vapor asoman sobre la virola.     |
+| `agua-fin`  | fin del hold 3  | El chorro cortó (`water 0`, `splash 0`): quedan el charco, la yerba húmeda y el vapor (`wet`, `puddle` y `steam` en 1); el termo sube.                                                                                                                             |
+| `pase`      | 1               | El pase (Ruling AT-1), desde `PASS_FROM` (el fin del hold 3) por pistas (`passStateAt`): la boca se inclina hacia atrás (giro X −10), el mate va al centro (x 0,12), sube a 1,8 acelerando, crece a 1,9 y ofrece la bombilla (giro Y −60); sale entero por arriba. |
 
 Las colocaciones de `inclinado` se midieron con `three` a 16:9: el pico del paquete (x 0,3) queda
 sobre la boca inclinada y la yerba cae casi vertical. Las paradas 2 y 3 ponen el mate de frente, en
@@ -178,12 +177,22 @@ saltan de 0,26 a 0,39 (antes 0,02 a 0,05), más juntas (0,05 a 0,15) y apenas m�
 abajo a la derecha" a "te lo pasan": al centro, más grande y volcado hacia la bombilla.
 
 La zambullida (Task 13 del mate realista, Ruling MR-22, 2026-10-30) reemplazó a "te lo pasan": el
-mate gira con la boca hacia la cámara (`boca`) y crece ×8 (`salida`) hasta que la yerba llena la
-pantalla. `mouthToCamera(escala)` lo baja lo que la boca asoma (0,43 · cos 86° por unidad de escala,
-sobre la media pantalla de 1,745), así la yerba queda centrada mientras crece. Con 8 la yerba cubre la
-diagonal hasta 2,4:1, también en el fondo del hueco. El texto y el raíl se apagan en el primer 20 %
-del tramo (`MateStage`), la yerba del DOM (`YerbaDepth`) tapa el lienzo entre 0,97 y 0,995 y desde
-0,999 el lienzo va con `display: none` (la escena se pausa sola).
+mate giraba con la boca hacia la cámara y crecía ×8 hasta que la yerba llenaba la pantalla, y una capa
+de yerba del DOM tapaba el lienzo.
+
+El pase (Task 2 de los ajustes de la tienda, Ruling AT-1, 2026-11-04) reemplazó a la zambullida: Lucas
+pidió que el mate se vaya "para adelante y arriba, como si te lo estuviesen dando", sin mostrar la
+parte de adentro. Desde `PASS_FROM` (0,85) `mateStateAt` deja la quíntica (frena en cada momento) y
+usa `passStateAt(u)`, con una pista por campo entre `agua-fin` y `pase`: `turn` (0 → 0,35, seno:
+giro X 16 → −10 y el termo fuera; la montañita se esconde en el primer tercio), `near` (0 → 1, seno:
+x 0,42 → 0,12, giro Y −25 → −60 y giro Z 0 → 6), `grow` (`u^1,5`: escala 1,05 → 1,9), `lift` (`u²`,
+acelera: y −0,1 → 1,8) y `calm` (0 → 0,6: el vapor se apaga). Desde `u = 0,35` la boca nunca mira a la
+cámara (`rx < atan(1,745·y / 7) − 11°`, la cámara lo ve desde abajo) y en `u = 1` los pies quedan
+sobre el borde de arriba (`y − 0,332·escala > 1`). La sombra se apaga con la altura (`scene/mate.ts`)
+y en pantalla angosta el mate suma solo la subida del pase. La escena avisa el estado suavizado de
+cada cuadro (`onFrame`) y `MateStage` desenfoca y apaga la capa del lienzo con `passLook` (hasta
+`PASS_BLUR_PX`), así el DOM no se adelanta al 3D; el lienzo ya no sale con `display: none`: fuera de
+cuadro three descarta el mate.
 
 ## Rendimiento y respaldo
 

@@ -4,6 +4,7 @@ import type { MotionValue } from 'motion/react'
 import type { ReactNode } from 'react'
 import { useMotionValueEvent } from 'motion/react'
 import { useEffect, useRef } from 'react'
+import type { MateState } from './keyframes'
 import type { MateSceneApi } from './scene'
 import { mateStateAt } from './keyframes'
 import { createMateScene } from './scene'
@@ -18,6 +19,11 @@ export interface MateCanvasProps {
    * mate en su lugar.
    */
   onUnavailable: () => void
+  /**
+   * Se llama una vez por cuadro con el estado ya suavizado de la escena (ver `MateSceneOptions`).
+   * Puede cambiar entre renders sin recrear la escena.
+   */
+  onFrame?: (state: MateState) => void
   /** Clase extra del lienzo. */
   className?: string
 }
@@ -38,19 +44,30 @@ function stateFor(progress: number): ReturnType<typeof mateStateAt> {
  * el estado del avance ({@link mateStateAt}) en cada cambio, el puntero (solo el del mouse, de −1 a 1
  * sobre la ventana) y la visibilidad: fuera de pantalla o con la pestaña oculta la escena no dibuja.
  * Está transparente hasta que la escena existe (mientras three se descarga se ven los fondos) y
- * entonces aparece con un fundido de 1 s. Si no hay WebGL o la escena no se puede crear llama a
- * `onUnavailable`. No mira `prefers-reduced-motion`: con menos movimiento no se monta.
+ * entonces aparece con un fundido de 1 s. En cada cuadro le avisa a `onFrame` el estado ya suavizado.
+ * Si no hay WebGL o la escena no se puede crear llama a `onUnavailable`. No mira
+ * `prefers-reduced-motion`: con menos movimiento no se monta.
  *
  * @param props - Ver {@link MateCanvasProps}.
  */
-export function MateCanvas({ progress, onUnavailable, className }: MateCanvasProps): ReactNode {
+export function MateCanvas({
+  progress,
+  onUnavailable,
+  onFrame,
+  className,
+}: MateCanvasProps): ReactNode {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneRef = useRef<MateSceneApi | null>(null)
   const unavailableRef = useRef(onUnavailable)
+  const frameRef = useRef(onFrame)
 
   useEffect(() => {
     unavailableRef.current = onUnavailable
   }, [onUnavailable])
+
+  useEffect(() => {
+    frameRef.current = onFrame
+  }, [onFrame])
 
   useMotionValueEvent(progress, 'change', (value) => {
     sceneRef.current?.setState(stateFor(value))
@@ -75,7 +92,11 @@ export function MateCanvas({ progress, onUnavailable, className }: MateCanvasPro
     const load = (): void => {
       if (loading) return
       loading = true
-      createMateScene(canvas).then(
+      createMateScene(canvas, {
+        onFrame: (state) => {
+          frameRef.current?.(state)
+        },
+      }).then(
         (created) => {
           if (disposed) {
             created.dispose()

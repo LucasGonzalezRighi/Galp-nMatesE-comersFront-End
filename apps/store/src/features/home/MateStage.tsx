@@ -5,15 +5,17 @@ import type { ReactNode } from 'react'
 import { m, useMotionValueEvent, useTransform } from 'motion/react'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { MateState } from './mate3d/keyframes'
+import type { PassLook } from './mate3d/pass-look'
 import type { StoryData } from './SceneBody'
 import type { MateStop } from './story-stops'
 import { ScrollStage, useHeaderHideZone, useScrollStage } from '../../components/motion'
 import { cx } from '../../components/ui/cx'
-import { BRIDGE_START_SCALE } from './collection-entrance'
 import { HeroIntro } from './HeroIntro'
 import { HOME_COPY } from './home.copy'
-import { DIVE_FROM, MATE_STOP_COUNT } from './mate3d/keyframes'
+import { MATE_STOP_COUNT, PASS_FROM } from './mate3d/keyframes'
 import { MateCanvas } from './mate3d/MateCanvas'
+import { passLook } from './mate3d/pass-look'
 import { registerMateStage } from './mate-stage-presence'
 import { SceneBody } from './SceneBody'
 import { stageLayout } from './stage-layout'
@@ -27,44 +29,33 @@ import {
 } from './story-stops'
 import { StoryRail } from './StoryRail'
 import { StoryStop } from './StoryStop'
-import { YerbaDepth } from './YerbaDepth'
 
 /** Avance a partir del cual se da por empezado el recorrido y se esconde la pista "Deslizá para recorrer". */
 const HINT_LIMIT = 0.01
 
 /**
- * Avance en que ya se apagaron el texto de la parada 3 y el raíl: el primer 20 % de la zambullida
- * (Ruling MR-22). Después el mate gira, va al medio y crece sin pisar letras.
+ * Avance en que ya se apagaron el texto de la parada 3 y el raíl: el primer 20 % del pase (Ruling
+ * AT-1). Después el mate se levanta y se va por arriba sin pisar letras.
  */
-const TEXT_OUT = DIVE_FROM + (1 - DIVE_FROM) * 0.2
+const TEXT_OUT = PASS_FROM + (1 - PASS_FROM) * 0.2
 
 /**
- * Tramo final de la zambullida en que la yerba real del DOM ({@link YerbaDepth}) se funde con el
- * lienzo: arranca cuando la yerba del mate 3D ya llena la pantalla y termina un poco antes del final,
- * así el escenario termina en la yerba (el primer cuadro de la colección), sin fundido a negro.
+ * Avance en que ya se apagaron la foto de fondo de la última parada (la pava y el mate) y la foto
+ * de respaldo sin WebGL: el primer tercio del pase. Así el mate 3D no sube encima del mate de la
+ * foto y, al soltarse el escenario, queda el fondo liso de la página (sin costura con la colección).
  */
-const DIVE_LAYER: readonly [number, number] = [0.97, 0.995]
+const BACKDROP_OUT = PASS_FROM + (1 - PASS_FROM) / 3
 
 /**
- * Avance en que ya se apagó la foto de fondo de la última parada (la pava y el mate): el primer
- * tercio de la zambullida, mientras el mate gira hasta mirar con la boca a la cámara. Así el aro
- * del mate 3D no crece encima del mate de la foto: queda solo el mate 3D sobre el fondo oscuro.
- */
-const BACKDROP_OUT = DIVE_FROM + (1 - DIVE_FROM) / 3
-
-/**
- * Cuánto se ve la foto de fondo en la zambullida: entera hasta {@link DIVE_FROM} y nada desde
+ * Cuánto se ven las fotos de fondo en el pase: enteras hasta {@link PASS_FROM} y nada desde
  * {@link BACKDROP_OUT}, en línea recta (como el texto y el raíl).
  */
-function diveBackdropShare(value: number): number {
-  return Math.min(1, Math.max(0, (BACKDROP_OUT - value) / (BACKDROP_OUT - DIVE_FROM)))
+function passBackdropShare(value: number): number {
+  return Math.min(1, Math.max(0, (BACKDROP_OUT - value) / (BACKDROP_OUT - PASS_FROM)))
 }
 
-/** Desde qué avance la capa de yerba tapa entero al lienzo y el mate 3D deja de dibujarse. */
-const CANVAS_OFF = 0.999
-
-/** La capa de yerba del escenario queda con la escala con que arranca la de la colección. */
-const DIVE_LAYER_TRANSFORM = `scale(${String(BRIDGE_START_SCALE)})`
+/** Cómo arranca la capa del lienzo: nítida y entera, sin estilos (las paradas). */
+const RESTING_LOOK: PassLook = { filter: 'none', opacity: 1 }
 
 /**
  * El texto va siempre sobre los fondos oscurecidos y el velo del lado del texto: el contenido de
@@ -88,13 +79,13 @@ interface StageBackdropProps {
  * El fondo de una parada: su foto a pantalla completa, nítida y apenas oscurecida por CSS
  * (`.home-backdrop` en `home.css`), con el encuadre de su parada (`framing`, fijo: el mate 3D no
  * tapa lo importante de la foto). Se ve entero durante su parada y aparece encima del anterior con
- * la curva del recorrido ({@link backdropOpacity}); en el primer tercio de la zambullida se apaga
+ * la curva del recorrido ({@link backdropOpacity}); en el primer tercio del pase se apaga
  * ({@link BACKDROP_OUT}). Solo el primero carga con prioridad.
  */
 function StageBackdrop({ stop, index, current, progress }: StageBackdropProps): ReactNode {
   const opacity = useTransform(
     progress,
-    (value) => backdropOpacity(value, MATE_STOP_COUNT, index) * diveBackdropShare(value),
+    (value) => backdropOpacity(value, MATE_STOP_COUNT, index) * passBackdropShare(value),
   )
   return (
     <m.div
@@ -125,8 +116,7 @@ interface StageLayersProps {
 
 /**
  * Las capas del escenario, de atrás hacia adelante: los fondos, la foto de respaldo (sin WebGL),
- * el velo, el mate 3D, la yerba del final de la zambullida, los paneles de texto apilados, el raíl
- * y la pista.
+ * el velo, el mate 3D, los paneles de texto apilados, el raíl y la pista.
  */
 function StageLayers({ data }: StageLayersProps): ReactNode {
   const { progress, scrollToStop } = useScrollStage()
@@ -137,23 +127,35 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
     setCurrent(stageLayout(value, MATE_STOP_COUNT).index)
     setStarted(value > HINT_LIMIT)
   })
-  // El texto de la última parada y el raíl se apagan en el primer 20 % de la zambullida: el mate pasa
-  // por el medio sin pisarlos y el raíl nunca queda encima de la yerba ni de la colección.
-  const panelsOpacity = useTransform(progress, [DIVE_FROM, TEXT_OUT], [1, 0])
+  // El texto de la última parada y el raíl se apagan en el primer 20 % del pase: el mate sube sin
+  // pisarlos y el raíl nunca queda encima de la colección.
+  const panelsOpacity = useTransform(progress, [PASS_FROM, TEXT_OUT], [1, 0])
   const textGone = useTransform(progress, (value) => value >= TEXT_OUT)
   const panelsPointer = useTransform(textGone, (gone) => (gone ? 'none' : 'auto'))
   const railVisibility = useTransform(textGone, (gone) => (gone ? 'hidden' : 'visible'))
-  const diveOpacity = useTransform(progress, [...DIVE_LAYER], [0, 1])
-  const canvasDisplay = useTransform(progress, (value) => (value >= CANVAS_OFF ? 'none' : 'block'))
+  const fallbackOpacity = useTransform(progress, passBackdropShare)
   const onUnavailable = useCallback(() => {
     setUnavailable(true)
   }, [])
+  // El desenfoque y el apagado del pase salen de la altura del mate ya suavizado (la que se ve), no
+  // del scroll: así no se adelantan al 3D. Se escriben directo en la capa y solo si cambian.
+  const canvasLayerRef = useRef<HTMLDivElement>(null)
+  const lookRef = useRef<PassLook>(RESTING_LOOK)
+  const onFrame = useCallback((state: MateState) => {
+    const layer = canvasLayerRef.current
+    if (layer === null) return
+    const look = passLook(state.mate[1])
+    const last = lookRef.current
+    if (look.filter !== last.filter) layer.style.filter = look.filter
+    if (look.opacity !== last.opacity) layer.style.opacity = String(look.opacity)
+    lookRef.current = look
+  }, [])
   const scenes = storyScenes(data.content.scenes)
-  // Mientras el escenario se ve, el encabezado puede esconderse al bajar; desde la colección queda
-  // fijo (Ruling MR-20). La capa de fondos ocupa el escenario entero.
+  // Mientras el escenario se ve, el encabezado puede esconderse al bajar; la colección lo fija apenas
+  // se revela su título (Rulings MR-20 y AT-1). La capa de fondos ocupa el escenario entero.
   const zoneRef = useRef<HTMLDivElement>(null)
   useHeaderHideZone(zoneRef)
-  // La colección que viene debajo entra desde la yerba en que termina la zambullida.
+  // La colección que viene debajo se monta encima del final del escenario y entra en el pase.
   useEffect(() => registerMateStage(), [])
 
   const content = (stop: MateStop): ReactNode => {
@@ -181,7 +183,11 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
           />
         ))}
         {unavailable ? (
-          <div data-mate-fallback="" className="absolute inset-0">
+          <m.div
+            data-mate-fallback=""
+            className="absolute inset-0"
+            style={{ opacity: fallbackOpacity }}
+          >
             <Image
               src={MATE_PHOTO}
               alt=""
@@ -190,7 +196,7 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
               className="home-hero-poster object-cover"
               style={MATE_PHOTO_FRAMING}
             />
-          </div>
+          </m.div>
         ) : null}
         {/*
          * El velo: por delante de las fotos y detrás del mate y del texto; también bajo el header y
@@ -202,20 +208,15 @@ function StageLayers({ data }: StageLayersProps): ReactNode {
         <div className="from-background/70 absolute inset-x-0 bottom-0 h-40 bg-linear-to-t to-transparent" />
       </div>
       {/*
-       * Con la yerba del DOM tapándolo entero el lienzo sale del árbol de dibujo (`display: none`):
-       * `MateCanvas` deja de verlo en pantalla y pausa la escena mientras el escenario se va.
+       * En el pase la capa se desenfoca y se apaga (`passLook`, desde `onFrame`); nunca el `canvas`,
+       * que tiene su propio fundido de entrada. Fuera de cuadro three descarta el mate y, cuando el
+       * escenario se va de la pantalla, `MateCanvas` pausa la escena.
        */}
-      <m.div data-stage-canvas="" className="absolute inset-0" style={{ display: canvasDisplay }}>
-        {unavailable ? null : <MateCanvas progress={progress} onUnavailable={onUnavailable} />}
-      </m.div>
-      <m.div
-        aria-hidden="true"
-        data-stage-dive=""
-        className="pointer-events-none absolute inset-0"
-        style={{ opacity: diveOpacity, transform: DIVE_LAYER_TRANSFORM }}
-      >
-        <YerbaDepth />
-      </m.div>
+      <div ref={canvasLayerRef} data-stage-canvas="" className="absolute inset-0">
+        {unavailable ? null : (
+          <MateCanvas progress={progress} onUnavailable={onUnavailable} onFrame={onFrame} />
+        )}
+      </div>
       <m.div
         data-stage-panels=""
         className="relative h-full"
@@ -264,19 +265,20 @@ export interface MateStageProps {
  * 2 · "La bombilla": el mate de pie muestra la montañita con su pared y la bombilla se calza en el
  * hueco (escena `bombilla` de `HomeContent.scenes`). 3 · "El agua": el termo sirve un chorro fino en
  * el hueco, la yerba se humedece y sube el vapor (escena `ritual`). El estado del mate sale del
- * mismo avance del `ScrollStage` (`mateStateAt`, adentro de `MateCanvas`): las tres paradas y la
- * salida están repartidas en él.
+ * mismo avance del `ScrollStage` (`mateStateAt`, adentro de `MateCanvas`): las tres paradas y el
+ * pase están repartidos en él.
  *
  * Detrás, la foto de cada parada nítida (`pieces`, `bombilla`, `ritual`) con fundido cruzado;
  * delante, el velo del color de fondo a la izquierda y los paneles de texto apilados, donde solo se
  * ve el de la parada actual (`StoryStop`); el raíl marca la actual y lleva a cualquiera; la pista
- * se esconde al empezar. Al final de la tercera parada viene la zambullida (Ruling MR-22): en su
- * primer 20 % se apagan el texto y el raíl, y en su primer tercio la foto de fondo; el mate gira
- * hasta mirar con la boca a la cámara, va al medio y crece hasta que la yerba llena la pantalla, y
- * la yerba real del DOM ({@link YerbaDepth}) se funde con el lienzo: el escenario termina en la
- * yerba, sin fundido a negro, y la colección
- * arranca desde ahí (`CollectionEntrance`, que sabe del escenario por `registerMateStage`). Sin
- * WebGL, en lugar del lienzo va la foto del mate. Solo se animan `transform`, `opacity` y el lienzo.
+ * se esconde al empezar. Al final de la tercera parada viene el pase (Ruling AT-1): en su primer
+ * 20 % se apagan el texto y el raíl, y en su primer tercio la foto de fondo; el mate se levanta,
+ * avanza hacia quien mira con la bombilla ofrecida y se va por arriba, y la capa del lienzo se
+ * desenfoca (hasta `PASS_BLUR_PX`) y se apaga con la altura del mate ya suavizado (`passLook`, desde
+ * el `onFrame` de la escena). El escenario termina en el fondo liso de la página, sin costura: la
+ * colección se monta encima de su final y entra en el mismo gesto (`CollectionEntrance`, que sabe
+ * del escenario por `registerMateStage`). Sin WebGL, en lugar del lienzo va la foto del mate, que se
+ * apaga con las de fondo. Solo se animan `transform`, `opacity` y el `filter` de la capa del lienzo.
  *
  * Lo monta `HomeStory` después de hidratar, desde 1024 × 700 y sin `prefers-reduced-motion`.
  *

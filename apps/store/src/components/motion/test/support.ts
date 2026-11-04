@@ -59,6 +59,27 @@ export class FakeIntersectionObserver implements IntersectionObserver {
     }))
     this.callback(entries as IntersectionObserverEntry[], this)
   }
+
+  /** Avisa que todos los elementos observados salieron de pantalla, con el borde de arriba en `top`. */
+  leave(top: number): void {
+    const entries = [...this.targets].map((target): Partial<IntersectionObserverEntry> => ({
+      isIntersecting: false,
+      intersectionRatio: 0,
+      boundingClientRect: {
+        x: 0,
+        y: top,
+        width: 100,
+        height: 100,
+        top,
+        right: 100,
+        bottom: top + 100,
+        left: 0,
+        toJSON: () => ({}),
+      },
+      target,
+    }))
+    this.callback(entries as IntersectionObserverEntry[], this)
+  }
 }
 
 /**
@@ -73,6 +94,15 @@ export function installIntersectionObserver(): void {
 /** Avisa a todos los observadores que lo observado entró en pantalla. */
 export function intersectAll(): void {
   for (const observer of FakeIntersectionObserver.instances) observer.intersect()
+}
+
+/**
+ * Avisa a todos los observadores que lo observado salió de pantalla: por arriba (el borde de arriba
+ * queda en −200) o por abajo (en `innerHeight + 200`).
+ */
+export function leaveAll(edge: 'above' | 'below'): void {
+  const top = edge === 'above' ? -200 : window.innerHeight + 200
+  for (const observer of FakeIntersectionObserver.instances) observer.leave(top)
 }
 
 /** Limpia el DOM y las simulaciones después de cada prueba (el setup de la tienda no lo hace). */

@@ -16,7 +16,8 @@ import {
   mockReducedMotion,
 } from '../../components/motion/test/support'
 import { buildHomeData } from './home-data'
-import { DIVE_FROM, mateStateAt } from './mate3d/keyframes'
+import { mateStateAt, PASS_FROM } from './mate3d/keyframes'
+import { passLook } from './mate3d/pass-look'
 import { createMateScene } from './mate3d/scene'
 import { useMateStagePresent } from './mate-stage-presence'
 import { MateStage } from './MateStage'
@@ -204,15 +205,15 @@ describe('MateStage', () => {
     expect(framings()).toEqual(expected)
   })
 
-  it('en el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl, sin fundido a negro', async () => {
+  it('en el primer 20 % del pase se apagan el texto de la parada 3 y el raíl, sin fundido a negro', async () => {
     render(<MateStage data={data} />)
     const panels = byData('data-stage-panels')
     const rail = byData('data-stage-rail')
-    await moveTo(DIVE_FROM)
+    await moveTo(PASS_FROM)
     expect(panels.style.opacity).toBe('1')
     expect(rail.style.opacity).toBe('1')
     expect(rail.style.visibility).toBe('visible')
-    await moveTo(DIVE_FROM + (1 - DIVE_FROM) * 0.2)
+    await moveTo(PASS_FROM + (1 - PASS_FROM) * 0.2)
     expect(panels.style.opacity).toBe('0')
     expect(panels.style.pointerEvents).toBe('none')
     // El raíl no queda encima del mate ni de la colección: tampoco se puede tocar.
@@ -221,38 +222,63 @@ describe('MateStage', () => {
     expect(document.querySelector('[data-stage-fade]')).toBeNull()
   })
 
-  it('en el primer tercio de la zambullida se apaga la foto de la última parada: queda solo el mate 3D', async () => {
+  it('en el primer tercio del pase se apaga la foto de la última parada: queda solo el mate 3D', async () => {
     render(<MateStage data={data} />)
     const photo = byData('data-backdrop="ritual"')
-    await moveTo(DIVE_FROM)
+    await moveTo(PASS_FROM)
     expect(photo.style.opacity).toBe('1')
-    await moveTo(DIVE_FROM + (1 - DIVE_FROM) / 6)
+    await moveTo(PASS_FROM + (1 - PASS_FROM) / 6)
     expect(Number(photo.style.opacity)).toBeGreaterThan(0)
     expect(Number(photo.style.opacity)).toBeLessThan(1)
-    await moveTo(DIVE_FROM + (1 - DIVE_FROM) / 3)
+    await moveTo(PASS_FROM + (1 - PASS_FROM) / 3)
     expect(photo.style.opacity).toBe('0')
     await moveTo(1)
     expect(photo.style.opacity).toBe('0')
     // De vuelta para arriba, la foto vuelve entera.
-    await moveTo(DIVE_FROM)
+    await moveTo(PASS_FROM)
     expect(photo.style.opacity).toBe('1')
   })
 
-  it('al final de la zambullida la yerba real tapa el lienzo y el lienzo deja de dibujarse', async () => {
+  it('la capa del lienzo se desenfoca y se apaga con la altura del mate ya suavizado, sin yerba encima', async () => {
     render(<MateStage data={data} />)
-    const dive = byData('data-stage-dive')
-    const canvasLayer = byData('data-stage-canvas')
-    await moveTo(DIVE_FROM)
-    expect(dive.style.opacity).toBe('0')
-    expect(canvasLayer.style.display).toBe('block')
+    await act(async () => {
+      intersectAll()
+      await Promise.resolve()
+    })
+    const onFrame = vi.mocked(createMateScene).mock.calls[0]?.[1]?.onFrame
+    if (onFrame === undefined) throw new Error('La escena no recibió onFrame.')
+    const layer = byData('data-stage-canvas')
+    // En las paradas no hay estilos: sin capa de filtro.
+    act(() => {
+      onFrame(mateStateAt(0.5))
+    })
+    expect(layer.getAttribute('style')).toBeNull()
+    // A mitad de la subida, el desenfoque de la altura a la que va el mate.
+    const rising = mateStateAt(PASS_FROM + (1 - PASS_FROM) * 0.8)
+    act(() => {
+      onFrame(rising)
+    })
+    expect(layer.style.filter).toBe(passLook(rising.mate[1]).filter)
+    // Arriba de todo la capa ya no se ve.
+    act(() => {
+      onFrame(mateStateAt(1))
+    })
+    expect(layer.style.opacity).toBe('0')
+    expect(layer.style.filter).toBe(passLook(mateStateAt(1).mate[1]).filter)
+    // De vuelta, el mate baja y la capa vuelve entera y nítida.
+    act(() => {
+      onFrame(mateStateAt(PASS_FROM))
+    })
+    expect(layer.style.filter).toBe('none')
+    expect(layer.style.opacity).toBe('1')
+    // El lienzo sigue en el árbol de dibujo al final (sin display: none) y no hay yerba del DOM.
     await moveTo(1)
-    // El escenario termina cuando la yerba llena la pantalla: es el primer cuadro de la colección.
-    expect(dive.style.opacity).toBe('1')
-    expect(dive.querySelector('[data-yerba-depth]')).not.toBeNull()
-    expect(canvasLayer.style.display).toBe('none')
+    expect(layer.style.display).toBe('')
+    expect(document.querySelector('[data-stage-dive]')).toBeNull()
+    expect(document.querySelector('[data-yerba-depth]')).toBeNull()
   })
 
-  it('mientras está montado avisa que hay escenario: la colección entra desde la yerba', () => {
+  it('mientras está montado avisa que hay escenario: la colección se monta encima de su final', () => {
     /** Muestra lo que lee la colección. */
     function Probe(): ReactNode {
       return useMateStagePresent() ? 'con escenario' : 'sin escenario'
@@ -293,6 +319,19 @@ describe('MateStage', () => {
     )
     expect(stage().querySelector('canvas')).toBeNull()
     expect(createMateScene).not.toHaveBeenCalled()
+  })
+
+  it('sin WebGL la foto del mate también se apaga en el primer tercio del pase', async () => {
+    mockWebGL(false)
+    render(<MateStage data={data} />)
+    const fallback = byData('data-mate-fallback')
+    await moveTo(PASS_FROM)
+    expect(fallback.style.opacity).toBe('1')
+    await moveTo(PASS_FROM + (1 - PASS_FROM) / 6)
+    expect(Number(fallback.style.opacity)).toBeGreaterThan(0)
+    expect(Number(fallback.style.opacity)).toBeLessThan(1)
+    await moveTo(PASS_FROM + (1 - PASS_FROM) / 3)
+    expect(fallback.style.opacity).toBe('0')
   })
 
   it('mientras se ve, avisa que el encabezado puede esconderse al bajar (Ruling MR-20)', () => {

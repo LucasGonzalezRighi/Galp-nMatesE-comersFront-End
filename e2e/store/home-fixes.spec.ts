@@ -37,6 +37,9 @@ async function documentTopOf(locator: Locator): Promise<number> {
 test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', () => {
   test.skip(({ isMobile }) => isMobile, 'Son de escritorio: el celular apila el inicio.')
   test.use({ viewport: { width: 1905, height: 950 }, reducedMotion: 'no-preference' })
+  // Sin GPU (SwiftShader) cada golpe de rueda sobre el mate 3D a 1905 × 950 tarda: con varias
+  // pruebas en paralelo las del encabezado pasaban los 30 s.
+  test.slow()
 
   test('el encabezado se esconde al bajar sobre el mate 3D y desde la colección queda fijo (Ruling MR-20)', async ({
     page,
@@ -57,6 +60,30 @@ test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', ()
     await wheelDown(page, 200, 5)
     await expect.poll(() => headerTop(page)).toBe(0)
     await page.mouse.wheel(0, -300)
+    await page.waitForTimeout(400)
+    expect(await headerTop(page)).toBe(0)
+  })
+
+  test('bajando sobre el pase el encabezado vuelve apenas se revela "Categorías" (Ruling AT-1)', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/')
+    const stage = page.getByRole('region', STAGE)
+    const stageTop = await documentTopOf(stage)
+    // Una parada mide (4 − 1) pantallas / 3 = 950 px: desde la parada 2 hasta la mitad de la 3,
+    // el encabezado se esconde.
+    await scrollPageTo(page, stageTop + 1.5 * 950)
+    await page.mouse.move(950, 500)
+    await wheelDown(page, 200, 3)
+    await expect.poll(() => headerTop(page)).toBeLessThan(-40)
+    const title = page.locator('[data-entrance-title]')
+    await expect(title).toHaveAttribute('data-shown', 'false')
+    // Siguiendo hacia abajo (todavía sobre el escenario), al revelarse el título vuelve.
+    await wheelDown(page, 100, 6)
+    await expect(title).toHaveAttribute('data-shown', 'true')
+    await expect.poll(() => headerTop(page)).toBe(0)
+    // Mientras la colección esté a la vista, seguir bajando no lo esconde.
+    await wheelDown(page, 100, 3)
     await page.waitForTimeout(400)
     expect(await headerTop(page)).toBe(0)
   })

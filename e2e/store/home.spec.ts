@@ -11,15 +11,18 @@ const RAIL = { name: 'Paradas del mate' } as const
 const STOPS = 3
 
 /**
- * Dónde empieza la zambullida, en paradas: al terminar el hold de la parada 3 (el 55 % de su tramo),
- * como `DIVE_FROM` de `mate3d/keyframes.ts`.
+ * Dónde empieza el pase, en paradas: al terminar el hold de la parada 3 (el 55 % de su tramo), como
+ * `PASS_FROM` de `mate3d/keyframes.ts`.
  */
-const DIVE_STOPS = 2.55
+const PASS_STOPS = 2.55
 
 /** La portada del v4, donde no se monta el mate 3D (Ruling IC-8). */
 const HERO_CAROUSEL = '[data-hero-carousel]'
 
-/** La región de "Seis líneas para cada ronda" (`ArrowCarousel`, Ruling IC-9) y sus flechas. */
+/** El título de la colección (contenido de fábrica, Ruling AT-4). */
+const CATEGORIES = { level: 2, name: 'Categorías' } as const
+
+/** La región de "Categorías" (`ArrowCarousel`, Ruling IC-9) y sus flechas. */
 const LINES = { name: 'Líneas de producto' } as const
 const NEXT_LINE = { name: 'Línea siguiente' } as const
 const PREVIOUS_LINE = { name: 'Línea anterior' } as const
@@ -55,36 +58,27 @@ async function scrollToStops(page: Page, stops: number): Promise<void> {
   )
 }
 
-/**
- * Lleva la página a un avance de la entrada de la colección (0: asoma abajo, al soltarse el
- * escenario; 1: llegó al 15 % de arriba de la ventana). Se mide desde el final del escenario.
- */
-async function scrollToEntry(page: Page, entry: number): Promise<void> {
-  await page.getByRole('region', STAGE).evaluate((section, value) => {
-    const bottom = section.getBoundingClientRect().bottom + window.scrollY
-    window.scrollTo(0, bottom - window.innerHeight + value * 0.85 * window.innerHeight)
-  }, entry)
+/** Dónde está el borde de arriba de un elemento, en fracciones de la ventana (0 arriba, 1 abajo). */
+async function viewportShare(locator: Locator): Promise<number> {
+  return await locator.evaluate(
+    (element) => element.getBoundingClientRect().top / window.innerHeight,
+  )
 }
 
 /**
- * Recorre la entrada de la colección y verifica que nunca queda más de un tercio de pantalla de
- * fondo liso: arriba del título se ve la yerba o, a medida que se disuelve, el fondo liso, así que
- * la parte lisa es la de arriba del título por lo que la yerba ya se fue (Review Focus 1).
+ * En el mismo gesto en que el mate se va, entra "Categorías" (Review Focus 1 de los ajustes de la
+ * tienda): al terminar el escenario el título está en la mitad de arriba de la ventana, ya subió
+ * con su máscara, y la primera tarjeta se ve entera. La entrada corre por tiempo: se espera.
  */
-async function expectCollectionNeverFlat(page: Page): Promise<void> {
-  for (let entry = 0.05; entry <= 1.17; entry += 0.04) {
-    await scrollToEntry(page, entry)
-    const flat = await page.evaluate(async () => {
-      // Motion escribe los estilos pegados al scroll en el cuadro siguiente.
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-      const title = document.querySelector('[data-entrance-title]')?.closest('h2')
-      const yerba = document.querySelector('[data-collection-yerba]')
-      if (!title || !yerba) return 1
-      const top = Math.min(Math.max(title.getBoundingClientRect().top, 0), window.innerHeight)
-      return (top / window.innerHeight) * (1 - Number(getComputedStyle(yerba).opacity))
-    })
-    expect(flat, `entrada ${entry.toFixed(2)}`).toBeLessThanOrEqual(1 / 3)
-  }
+async function expectCategoriesEntered(page: Page): Promise<void> {
+  await scrollToStops(page, STOPS)
+  const title = page.getByRole('heading', CATEGORIES)
+  expect(await viewportShare(title)).toBeLessThanOrEqual(0.5)
+  await expect(title.locator('[data-entrance-title]')).toHaveCSS('transform', 'none')
+  const first = page.locator('[data-entrance-card]').first()
+  await expect(first).toBeInViewport()
+  await expect(first).toHaveCSS('opacity', '1')
+  await expect(first).toHaveCSS('transform', 'none')
 }
 
 /** La parada (desde 0) del elemento que tiene el foco, o `null` si no está en una. */
@@ -120,7 +114,7 @@ async function climbToManifesto(page: Page, viewportHeight: number): Promise<num
   return trackTop
 }
 
-/** La fila de tarjetas de "Seis líneas" (la que nombra `aria-controls` en sus flechas). */
+/** La fila de tarjetas de "Categorías" (la que nombra `aria-controls` en sus flechas). */
 async function linesTrack(page: Page): Promise<Locator> {
   const id = await page
     .getByRole('region', LINES)
@@ -230,61 +224,103 @@ test.describe('tienda: el mate 3D del inicio', () => {
       }
     })
 
-    test('al final del agua el mate se zambulle: el texto y el raíl se apagan y la yerba llena la pantalla, sin negro', async ({
+    test('al final del agua el mate se va por arriba: el texto y el raíl se apagan y la capa del lienzo también, sin yerba', async ({
       page,
     }) => {
       await gotoStore(page, '/')
       const panels = page.locator('[data-stage-panels]')
       const rail = page.getByRole('navigation', RAIL)
-      const dive = page.locator('[data-stage-dive]')
-      // Apenas antes de la zambullida (justo en el borde el redondeo del scroll ya la empieza).
-      await scrollToStops(page, DIVE_STOPS - 0.02)
+      const canvasLayer = page.locator('[data-stage-canvas]')
+      // El mate 3D tiene que estar dibujando: la capa sigue la altura del mate ya suavizado.
+      await expect
+        .poll(
+          () =>
+            canvasLayer.locator('canvas').evaluate((element: HTMLCanvasElement) => element.width),
+          { timeout: 30_000 },
+        )
+        .toBeGreaterThan(300)
+      // Apenas antes del pase (justo en el borde el redondeo del scroll ya lo empieza).
+      await scrollToStops(page, PASS_STOPS - 0.02)
       await expect(panels).toHaveCSS('opacity', '1')
       await expect(rail).toBeVisible()
-      await expect(dive).toHaveCSS('opacity', '0')
-      // En el primer 20 % de la zambullida se apagan el texto de la parada 3 y el raíl (2 px
-      // después del borde: el scroll redondea y justo en el borde puede quedar apenas antes).
-      await scrollToStops(page, DIVE_STOPS + (STOPS - DIVE_STOPS) * 0.2)
+      // En el primer 20 % del pase se apagan el texto de la parada 3 y el raíl (2 px después del
+      // borde: el scroll redondea y justo en el borde puede quedar apenas antes).
+      await scrollToStops(page, PASS_STOPS + (STOPS - PASS_STOPS) * 0.2)
       await page.evaluate(() => {
         window.scrollBy(0, 2)
       })
       await expect(panels).toHaveCSS('opacity', '0')
       await expect(rail).toBeHidden()
-      // Sin fundido a negro: el escenario termina con la yerba a pantalla completa.
-      await expect(page.locator('[data-stage-fade]')).toHaveCount(0)
+      // Al final el mate salió por arriba y la capa del lienzo ya no se ve: sin fundido a negro ni
+      // capas de yerba (la zambullida se fue).
       await scrollToStops(page, STOPS)
-      await expect(dive).toHaveCSS('opacity', '1')
-      const box = await dive.boundingBox()
-      expect(box?.x).toBeLessThanOrEqual(0)
-      expect(box?.y).toBeLessThanOrEqual(0)
-      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeGreaterThanOrEqual(1440)
-      expect((box?.y ?? 0) + (box?.height ?? 0)).toBeGreaterThanOrEqual(900)
+      await expect(canvasLayer).toHaveCSS('opacity', '0', { timeout: 15_000 })
+      await expect(page.locator('[data-stage-fade]')).toHaveCount(0)
+      await expect(page.locator('[data-stage-dive]')).toHaveCount(0)
+      await expect(page.locator('[data-collection-bridge]')).toHaveCount(0)
+      // De vuelta al agua, el mate baja a su lugar y la capa vuelve nítida.
+      await scrollToStops(page, 2.3)
+      await expect(canvasLayer).toHaveCSS('opacity', '1', { timeout: 15_000 })
+      await expect(canvasLayer).toHaveCSS('filter', 'none')
     })
 
-    test('entre el final del agua y el título de la colección no hay más de una pantalla de scroll', async ({
+    test('en el mismo gesto entra "Categorías": al soltarse el escenario el título está arriba y las tarjetas enteras', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      const title = page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' })
-      await scrollToStops(page, DIVE_STOPS)
-      const waterEnd = await page.evaluate(() => window.scrollY)
-      // Una pantalla después del final del agua el título ya subió con la máscara y se lee entero.
-      await page.evaluate((top) => {
-        window.scrollTo(0, top + window.innerHeight)
-      }, waterEnd)
-      await expect(title).toBeInViewport({ ratio: 1 })
-      await expect(title.locator('[data-entrance-title]')).toHaveCSS('transform', 'none')
-      // En el medio no hay una pantalla vacía: la capa de yerba tapa el escenario mientras se va.
-      await scrollToEntry(page, 0.1)
-      await expect(page.locator('[data-collection-bridge]')).toBeVisible()
-      await expect(page.locator('[data-collection-yerba]')).not.toHaveCSS('opacity', '0')
+      await expectCategoriesEntered(page)
     })
 
-    test('mientras la colección sale de la yerba nunca queda más de un tercio de pantalla de fondo liso', async ({
+    test('con el texto de la parada 3 en pantalla la colección no se ve ni tapa nada', async ({
       page,
     }) => {
       await gotoStore(page, '/')
-      await expectCollectionNeverFlat(page)
+      await scrollToStops(page, PASS_STOPS - 0.05)
+      const entrance = page.locator('[data-collection-entrance]')
+      await expect(entrance).toHaveAttribute('data-collection-entrance', 'overlap')
+      await expect(entrance).toHaveAttribute('data-shown', 'false')
+      // Ni las flechas ni el contador de la fila quedan sobre la parada 3.
+      await expect(entrance).toHaveCSS('opacity', '0')
+      await expect(page.locator('[data-entrance-title]')).not.toHaveCSS('transform', 'none')
+      await expect(page.locator('[data-entrance-card]').first()).toHaveCSS('opacity', '0')
+      // Lo que se ve de la parada 3 es de la parada 3, no de la colección (que pasa por encima).
+      const heading = page.getByRole('heading', { level: 2, name: /Agua a 75/ })
+      await expect(heading).toBeInViewport()
+      const covered = await heading.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(box.left + 8, box.top + box.height / 2)
+        return hit?.closest('[data-collection-entrance]') !== null
+      })
+      expect(covered).toBe(false)
+    })
+
+    test('volver para arriba rearma la colección y al bajar de nuevo vuelve a entrar', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      const entrance = page.locator('[data-collection-entrance]')
+      const line = page.locator('[data-entrance-title]')
+      await expectCategoriesEntered(page)
+      await scrollToStops(page, 2.3)
+      await expect(entrance).toHaveAttribute('data-shown', 'false')
+      await expect(line).not.toHaveCSS('transform', 'none')
+      await scrollToStops(page, STOPS)
+      await expect(entrance).toHaveAttribute('data-shown', 'true')
+      await expect(line).toHaveCSS('transform', 'none')
+    })
+
+    test('con la rueda rápida la entrada termina igual: corre por tiempo, no pegada al scroll', async ({
+      page,
+    }) => {
+      await gotoStore(page, '/')
+      await scrollToStops(page, PASS_STOPS)
+      await page.mouse.move(720, 450)
+      // Cinco golpes seguidos de 100 px, sin esperar: pasan el final del escenario.
+      for (let stroke = 0; stroke < 5; stroke += 1) await page.mouse.wheel(0, 100)
+      await expect(page.locator('[data-entrance-title]')).toHaveCSS('transform', 'none')
+      const cards = page.locator('[data-entrance-card]')
+      await expect(cards.first()).toHaveCSS('opacity', '1')
+      await expect(cards.nth(1)).toHaveCSS('opacity', '1')
     })
 
     test('el raíl no se ve con la colección en pantalla y la colección termina visible y sin transformaciones', async ({
@@ -293,25 +329,15 @@ test.describe('tienda: el mate 3D del inicio', () => {
       await gotoStore(page, '/')
       const rail = page.getByRole('navigation', RAIL)
       const cards = page.locator('[data-entrance-card]')
-      await scrollToEntry(page, 0.3)
+      await scrollToStops(page, STOPS)
       await expect(rail).toBeHidden()
-      await scrollToEntry(page, 1)
-      await expect(rail).toBeHidden()
-      // La yerba ya casi se disolvió (termina de irse con la colección arriba de todo); la capa
-      // sigue tapando el 15 % del escenario que se va.
-      const yerba = page.locator('[data-collection-yerba]')
-      await expect
-        .poll(() => yerba.evaluate((element) => Number(getComputedStyle(element).opacity)))
-        .toBeLessThan(0.3)
       await expect(cards).toHaveCount(7)
       for (const card of await cards.all()) {
         await expect(card).toHaveCSS('transform', 'none')
         await expect(card).toHaveCSS('filter', 'none')
         await expect(card).toHaveCSS('opacity', '1')
       }
-      await expect(
-        page.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' }),
-      ).toBeInViewport()
+      await expect(page.getByRole('heading', CATEGORIES)).toBeInViewport()
       // Después, la colección no se clava (Ruling IC-9): la rueda sobre las tarjetas baja la página
       // y no las corre; las corren las flechas.
       const first = cards.first()
@@ -326,8 +352,6 @@ test.describe('tienda: el mate 3D del inicio', () => {
       expect((await first.boundingBox())?.x).toBeCloseTo(before.x, 0)
       expect(await trackScroll(await linesTrack(page))).toBe(0)
       await expect(rail).toBeHidden()
-      // Con la colección arriba el escenario ya se fue: la capa de yerba tampoco se ve.
-      await expect(page.locator('[data-collection-bridge]')).toBeHidden()
     })
 
     test('con Tab se recorren las tres paradas y cada una viene a la vista', async ({ page }) => {
@@ -404,17 +428,17 @@ test.describe('tienda: el mate 3D del inicio', () => {
     })
   }
 
-  // Review Focus 1 de la ronda inicio v4 y combos, también en la pantalla de Lucas.
+  // Review Focus 1 de los ajustes de la tienda (el pase), también en la pantalla de Lucas.
   test.describe('en una pantalla grande (1905 × 950)', () => {
     test.use({ viewport: { width: 1905, height: 950 }, reducedMotion: 'no-preference' })
 
-    test('el inicio es el mate 3D sin la portada del v4 y la colección sale de la yerba sin un tercio de fondo liso', async ({
+    test('el inicio es el mate 3D sin la portada del v4 y "Categorías" entra entera en el mismo gesto', async ({
       page,
     }) => {
       await gotoStore(page, '/')
       await expect(page.getByRole('region', STAGE)).toBeAttached()
       await expect(page.locator(HERO_CAROUSEL)).toHaveCount(0)
-      await expectCollectionNeverFlat(page)
+      await expectCategoriesEntered(page)
     })
   })
 
@@ -568,7 +592,7 @@ test.describe('tienda: el inicio en el celular (390 × 844)', () => {
 
 // Review Focus 2 de la ronda: el carrusel no secuestra el scroll. En los dos proyectos (escritorio
 // 1280 × 720 con el mate 3D y Pixel 7); la rueda está en la prueba de la colección del mate 3D.
-test.describe('tienda: "Seis líneas para cada ronda" con flechas (Ruling IC-9)', () => {
+test.describe('tienda: "Categorías" con flechas (Ruling IC-9)', () => {
   test('las flechas corren la fila de a una tarjeta, anuncian la posición y dan la vuelta', async ({
     page,
   }) => {

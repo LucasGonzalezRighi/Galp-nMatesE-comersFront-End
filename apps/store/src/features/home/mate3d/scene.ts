@@ -36,6 +36,16 @@ export interface MateSceneApi {
   dispose: () => void
 }
 
+/** Opciones de {@link createMateScene}. */
+export interface MateSceneOptions {
+  /**
+   * Se llama una vez por cuadro, después de dibujar, con el estado ya suavizado (el que se ve, no el
+   * objetivo del scroll): así lo que la feature hace en el DOM con el mate (el desenfoque del pase)
+   * va al mismo paso que el 3D. La escena no sabe nada del DOM.
+   */
+  onFrame?: (state: MateState) => void
+}
+
 /** El renderer dibuja a lo sumo a 1,5 veces la resolución: más no se nota y cuesta cuadros. */
 const MAX_PIXEL_RATIO = 1.5
 
@@ -82,13 +92,19 @@ function assertFiniteState(state: MateState): void {
  *
  * Carga `three` con `import()` recién al llamarla (un chunk aparte, nunca en el servidor) y empieza a
  * dibujar enseguida con el estado del primer momento; quien la usa le pasa el estado del scroll con
- * `setState` y la pausa con `setVisible(false)` cuando no se ve.
+ * `setState` y la pausa con `setVisible(false)` cuando no se ve; si pasa `onFrame`, la escena le
+ * avisa el estado suavizado de cada cuadro.
  *
  * @param canvas - El lienzo donde dibujar; la escena toma su tamaño (`clientWidth` y `clientHeight`).
+ * @param options - Ver {@link MateSceneOptions}.
  * @returns La API de la escena ({@link MateSceneApi}).
  * @throws {Error} (como promesa rechazada) Si no se puede crear el contexto WebGL o un lienzo 2D.
  */
-export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSceneApi> {
+export async function createMateScene(
+  canvas: HTMLCanvasElement,
+  options: MateSceneOptions = {},
+): Promise<MateSceneApi> {
+  const { onFrame } = options
   const T = await import('three')
   const renderer = new T.WebGLRenderer({
     canvas,
@@ -181,10 +197,11 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
     const halfWidth = halfHeight * camera.aspect
     const narrow = camera.aspect < 0.9
 
-    // El mate, con el parallax del puntero, un vaivén lento y una flotación leve.
-    const [, , mateScale, mateRotateX, mateRotateY, mateRotateZ] = state.mate
+    // El mate, con el parallax del puntero, un vaivén lento y una flotación leve. En pantalla
+    // angosta va abajo al centro y solo suma la subida del pase (desde la altura de las paradas).
+    const [, mateY, mateScale, mateRotateX, mateRotateY, mateRotateZ] = state.mate
     const matePlacement: MatePlacement = narrow
-      ? [0, -0.38, mateScale, mateRotateX, mateRotateY, mateRotateZ]
+      ? [0, -0.38 + Math.max(0, mateY + 0.1), mateScale, mateRotateX, mateRotateY, mateRotateZ]
       : state.mate
     place(mateRoot, matePlacement, { halfWidth, halfHeight, narrow })
     mateRoot.rotation.x += degrees(pointerY * 6)
@@ -205,6 +222,7 @@ export async function createMateScene(canvas: HTMLCanvasElement): Promise<MateSc
     for (const part of parts) part.update(frame)
 
     renderer.render(scene, camera)
+    onFrame?.(state)
   }
 
   const loop = (time: number): void => {

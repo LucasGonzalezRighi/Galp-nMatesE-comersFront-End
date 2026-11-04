@@ -67,7 +67,7 @@ export interface MateState {
 
 /** Nombre de cada momento del recorrido. */
 export type MateMoment =
-  'agua' | 'agua-fin' | 'boca' | 'bombilla' | 'inclinado' | 'inicio' | 'lleno' | 'salida'
+  'agua' | 'agua-fin' | 'bombilla' | 'inclinado' | 'inicio' | 'lleno' | 'pase'
 
 /** Un momento del recorrido y el tramo del avance en que la escena se queda en él. */
 export interface MateKeyframe {
@@ -111,45 +111,49 @@ const MATE_COVER: MatePlacement = [0.42, -0.1, 1, 10, -25, 0]
 const MATE_FRONT: MatePlacement = [0.42, -0.1, 1.05, 16, -25, 0]
 
 /**
- * Avance en que empieza la zambullida: el fin del hold de la parada 3 (`agua-fin`). Desde acá hasta
- * 1 el mate gira hasta mirar con la boca a la cámara, va al medio y crece hasta que la yerba llena
- * la pantalla (Ruling MR-22). `MateStage` apaga el texto y el raíl en el primer 20 % de ese tramo.
+ * Avance en que empieza el pase: el fin del hold de la parada 3 (`agua-fin`). Desde acá hasta 1 el
+ * mate se levanta, avanza hacia quien mira con la bombilla ofrecida y se va por arriba (Ruling AT-1,
+ * {@link passStateAt}). `MateStage` apaga el texto y el raíl en el primer 20 % de ese tramo.
  */
-export const DIVE_FROM = 2 * SPAN + HOLD
-
-/** Avance en que el mate ya mira con la boca a la cámara, en el medio (`boca`): un tercio del tramo. */
-const MOUTH_AT = DIVE_FROM + (1 - DIVE_FROM) / 3
-
-/** Giro X con que la boca mira a la cámara (un poco menos de 90°: se lee el borde de la virola). */
-const MOUTH_TURN = 86
+export const PASS_FROM = 2 * SPAN + HOLD
 
 /**
- * Cuánto asoma el centro de la boca por encima del centro del mate, en fracciones de media pantalla
- * por unidad de escala: la boca está 0,43 sobre el centro (1,01 − 0,58 en `scene/mate.ts`), con el
- * giro X de {@link MOUTH_TURN} asoma 0,43 · cos 86° = 0,03 y la media pantalla mide
- * tan 14° · 7 = 1,745 (la cámara de `scene.ts`).
- *
- * Copiados a mano, no importados (este módulo no carga la escena): 0,43 sale de `MOUTH_Y` (1,01)
- * menos la bajada del cuerpo (`mate.position.y = -0.58`) de `scene/mate.ts`, y 1,745 de
- * `tan(HALF_FOV) · CAMERA_Z` de `scene.ts`. Si cambia alguno de esos valores (la boca, el cuerpo o
- * la cámara), hay que recalcularlos acá o la yerba se descentra en la zambullida.
+ * El mate al final del pase: arriba y hacia el centro, fuera de cuadro (los pies quedan sobre el
+ * borde de arriba), un 90 % más grande (vino hacia quien mira), con la boca inclinada hacia atrás
+ * (giro X −10: nunca se ve la yerba desde arriba), la bombilla en tres cuartos hacia quien mira
+ * (giro Y −60) y apenas inclinado hacia donde va (giro Z 6).
  */
-const MOUTH_LIFT = (0.43 * Math.cos((MOUTH_TURN * Math.PI) / 180)) / 1.745
+const MATE_PASSED: MatePlacement = [0.12, 1.8, 1.9, -10, -60, 6]
 
-/**
- * El mate con la boca hacia la cámara y el centro de la boca en el medio de la pantalla, a una
- * escala: baja lo que la boca asoma, así la yerba queda centrada mientras crece.
- */
-function mouthToCamera(scale: number): MatePlacement {
-  return [0, -MOUTH_LIFT * scale, scale, MOUTH_TURN, 0, 0]
+/** El final del hold 3 (`agua-fin`): el chorro cortó y quedan el charco, la yerba húmeda y el vapor. */
+const WATER_END: MateState = {
+  mate: MATE_FRONT,
+  bombilla: BOMBILLA_OUT,
+  attached: 1,
+  pack: PACK_OUT,
+  thermos: [0.66, 1.05, 1.2, 0, 0, 100],
+  fill: 1,
+  slope: 1,
+  wall: 1,
+  wet: 1,
+  water: 0,
+  steam: 1,
+  puddle: 1,
+  splash: 0,
+  pour: 0,
+  tilt: -10,
 }
 
 /**
- * Escala final de la zambullida: con 8 la yerba (radio 0,4 · 8 = 3,2 a 3,6 de la cámara) cubre la
- * diagonal de la pantalla hasta 2,4:1, también en el fondo del hueco, y la virola queda fuera del
- * cuadro.
+ * El final del pase (`pase`): el mate se fue por arriba ({@link MATE_PASSED}) con la bombilla
+ * calzada; el termo ya salió de cuadro y no queda vapor.
  */
-const DIVE_SCALE = 8
+const PASSED: MateState = {
+  ...WATER_END,
+  mate: MATE_PASSED,
+  thermos: THERMOS_OUT,
+  steam: 0,
+}
 
 /**
  * Los momentos del recorrido, en orden. En el hold de la parada 1 el mate se inclina 55° a la
@@ -160,8 +164,8 @@ const DIVE_SCALE = 8
  * derecha; en el primer cuarto del hold 3 el chorro cae en el hueco y salpica, y al terminar el hold
  * cortó: quedan el charco, la yerba húmeda y el vapor. En las paradas 2 y 3 el mate está de
  * frente, como en la portada (la montañita asoma sobre la virola y el hueco queda bajo el borde
- * derecho). Al final viene la zambullida ({@link DIVE_FROM}): el mate gira hasta mirar con la boca a
- * la cámara, va al medio (`boca`) y crece hasta que la yerba llena la pantalla (`salida`).
+ * derecho). Al final viene el pase ({@link PASS_FROM}, {@link passStateAt}): el mate se levanta,
+ * avanza hacia quien mira y se va por arriba (`pase`).
  */
 export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
   {
@@ -276,80 +280,8 @@ export const MATE_KEYFRAMES: readonly [MateKeyframe, ...MateKeyframe[]] = [
       tilt: -10,
     },
   },
-  {
-    name: 'agua-fin',
-    from: DIVE_FROM,
-    to: DIVE_FROM,
-    state: {
-      mate: MATE_FRONT,
-      bombilla: BOMBILLA_OUT,
-      attached: 1,
-      pack: PACK_OUT,
-      thermos: [0.66, 1.05, 1.2, 0, 0, 100],
-      fill: 1,
-      slope: 1,
-      wall: 1,
-      wet: 1,
-      water: 0,
-      steam: 1,
-      puddle: 1,
-      splash: 0,
-      pour: 0,
-      tilt: -10,
-    },
-  },
-  {
-    name: 'boca',
-    from: MOUTH_AT,
-    to: MOUTH_AT,
-    state: {
-      // El mate gira hasta mirar con la boca a la cámara y va al medio, todavía entero (la virola
-      // rodea la yerba): se ven la montañita con su pared, el hueco húmedo y la bombilla, que apunta
-      // hacia quien mira. El vapor se apagó y el termo ya se fue.
-      mate: mouthToCamera(1.8),
-      bombilla: BOMBILLA_OUT,
-      attached: 1,
-      pack: PACK_OUT,
-      thermos: THERMOS_OUT,
-      fill: 1,
-      slope: 1,
-      wall: 1,
-      wet: 1,
-      water: 0,
-      steam: 0,
-      puddle: 1,
-      splash: 0,
-      pour: 0,
-      tilt: -10,
-    },
-  },
-  {
-    name: 'salida',
-    from: 1,
-    to: 1,
-    state: {
-      // La zambullida (Ruling MR-22, Lucas eligió "Zoom adentro del mate"): con la boca centrada, el
-      // mate crece ×8 hasta que la virola sale del cuadro y la yerba llena la pantalla; se siente que
-      // la cámara entra en el mate. La bombilla, calzada y acostada hacia la derecha, pasa de largo
-      // por el costado (sale del cuadro entre las escalas 2 y 3). El escenario termina acá: la capa de
-      // yerba del DOM (`MateStage`) tapa el lienzo y es el primer cuadro de la colección.
-      mate: mouthToCamera(DIVE_SCALE),
-      bombilla: BOMBILLA_OUT,
-      attached: 1,
-      pack: PACK_OUT,
-      thermos: THERMOS_OUT,
-      fill: 1,
-      slope: 1,
-      wall: 1,
-      wet: 1,
-      water: 0,
-      steam: 0,
-      puddle: 1,
-      splash: 0,
-      pour: 0,
-      tilt: -10,
-    },
-  },
+  { name: 'agua-fin', from: PASS_FROM, to: PASS_FROM, state: WATER_END },
+  { name: 'pase', from: 1, to: 1, state: PASSED },
 ]
 
 /** Interpola entre dos números; exacta en los extremos (0 da `from` y 1 da `to`, sin redondeo). */
@@ -415,13 +347,94 @@ function easeSegment(share: number): number {
   return x * x * x * (x * (x * 6 - 15) + 10)
 }
 
+/** Arranca y llega suave (media vuelta de coseno). */
+function easeInOutSine(share: number): number {
+  return -(Math.cos(Math.PI * share) - 1) / 2
+}
+
+/** Arranca rápido y llega frenando. */
+function easeOutQuad(share: number): number {
+  return 1 - (1 - share) * (1 - share)
+}
+
+/** Una pista del pase: el tramo del avance del pase en que se mueve y con qué curva. */
+interface PassTrack {
+  /** Avance del pase (0 a 1) en que la pista arranca. */
+  readonly from: number
+  /** Avance del pase en que la pista llega. */
+  readonly to: number
+  /** La curva, de 0 a 1. */
+  readonly ease: (share: number) => number
+}
+
+/** Gira: la boca se inclina hacia atrás y se va el termo, en el primer tercio (la montañita se esconde). */
+const TURN: PassTrack = { from: 0, to: 0.35, ease: easeInOutSine }
+
+/** Se acerca: va hacia el centro y gira la bombilla hacia quien mira, en todo el pase. */
+const NEAR: PassTrack = { from: 0, to: 1, ease: easeInOutSine }
+
+/** Avanza hacia quien mira (crece), cada vez más rápido. */
+const GROW: PassTrack = { from: 0, to: 1, ease: (share) => share ** 1.5 }
+
+/** Sube: arranca sin velocidad y se va acelerando, como una salida. */
+const LIFT: PassTrack = { from: 0, to: 1, ease: (share) => share * share }
+
+/** Se apaga el vapor, en el 60 % inicial. */
+const CALM: PassTrack = { from: 0, to: 0.6, ease: easeOutQuad }
+
+/** Cuánto avanzó una pista en un avance del pase, de 0 a 1 (quieta antes y después de su tramo). */
+function trackShare(track: PassTrack, share: number): number {
+  return track.ease(Math.min(1, Math.max(0, (share - track.from) / (track.to - track.from))))
+}
+
+/**
+ * El estado de la escena 3D en el pase (Ruling AT-1), entre `agua-fin` y `pase`. No usa la curva
+ * quíntica de los momentos (frena hasta cero en cada uno): cada campo sigue su pista. La boca se
+ * inclina hacia atrás (giro X 16 → −10) y el termo se va en el primer 35 % (`TURN`, seno); el mate
+ * va hacia el centro, gira la bombilla hacia quien mira y se inclina hacia donde va en todo el pase
+ * (`NEAR`, seno); crece de 1,05 a 1,9 (`GROW`, `u^1,5`); sube de −0,1 a 1,8 acelerando (`LIFT`,
+ * `u²`), y el vapor se apaga en el 60 % inicial (`CALM`). Lo demás queda como en `agua-fin`.
+ *
+ * @param share - Avance del pase, de 0 (`agua-fin`, {@link PASS_FROM}) a 1 (`pase`, el final del
+ *   recorrido).
+ * @returns El estado objetivo de la escena.
+ * @throws {RangeError} Si `share` no es un número de 0 a 1.
+ * @example
+ * passStateAt(1).mate // [0.12, 1.8, 1.9, -10, -60, 6]: se fue por arriba
+ */
+export function passStateAt(share: number): MateState {
+  if (!Number.isFinite(share) || share < 0 || share > 1) {
+    throw new RangeError(
+      `El avance del pase del mate tiene que ser un número de 0 a 1; se recibió ${String(share)}.`,
+    )
+  }
+  const turn = trackShare(TURN, share)
+  const near = trackShare(NEAR, share)
+  const [fromX, fromY, fromScale, fromRotateX, fromRotateY, fromRotateZ] = WATER_END.mate
+  const [toX, toY, toScale, toRotateX, toRotateY, toRotateZ] = PASSED.mate
+  return {
+    ...WATER_END,
+    mate: [
+      lerp(fromX, toX, near),
+      lerp(fromY, toY, trackShare(LIFT, share)),
+      lerp(fromScale, toScale, trackShare(GROW, share)),
+      lerp(fromRotateX, toRotateX, turn),
+      lerp(fromRotateY, toRotateY, near),
+      lerp(fromRotateZ, toRotateZ, near),
+    ],
+    thermos: lerpPlacement(WATER_END.thermos, PASSED.thermos, turn),
+    steam: lerp(WATER_END.steam, PASSED.steam, trackShare(CALM, share)),
+  }
+}
+
 /**
  * El estado de la escena 3D para un avance del recorrido: busca entre qué momentos de
  * {@link MATE_KEYFRAMES} cae y los interpola con la curva quíntica del diseño; dentro del tramo de un
- * momento devuelve ese estado tal cual. Es pura: el mismo avance da siempre el mismo estado, así que
- * al volver atrás con el scroll todo se desarma igual.
+ * momento devuelve ese estado tal cual. Desde {@link PASS_FROM} es el pase ({@link passStateAt}).
+ * Es pura: el mismo avance da siempre el mismo estado, así que al volver atrás con el scroll todo se
+ * desarma igual.
  *
- * @param progress - Avance del recorrido de las tres paradas y la salida, de 0 a 1 (el `progress`
+ * @param progress - Avance del recorrido de las tres paradas y el pase, de 0 a 1 (el `progress`
  *   del `ScrollStage`).
  * @returns El estado objetivo de la escena.
  * @throws {RangeError} Si `progress` no es un número de 0 a 1.
@@ -434,6 +447,7 @@ export function mateStateAt(progress: number): MateState {
       `El avance del mate tiene que ser un número de 0 a 1; se recibió ${String(progress)}.`,
     )
   }
+  if (progress >= PASS_FROM) return passStateAt((progress - PASS_FROM) / (1 - PASS_FROM))
   let previous = MATE_KEYFRAMES[0]
   for (const keyframe of MATE_KEYFRAMES) {
     if (progress <= keyframe.to) {

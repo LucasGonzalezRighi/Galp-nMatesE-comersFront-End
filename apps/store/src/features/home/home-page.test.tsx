@@ -70,9 +70,9 @@ describe('HomePage', () => {
     const text = document.body.textContent
     const order = [
       'Encontrá', // portada: el carrusel del v4 (sin las escenas de la bombilla y del agua)
-      'Seis líneas para cada ronda', // colección
+      'Categorías', // colección
       'Combos listos para cebar', // combos (Ruling IC-12)
-      'Los más elegidos de la ronda', // destacados
+      'Los más vendidos', // destacados
       'Un mate no se compra', // manifiesto
       'Piezas en catálogo', // cifras
       '−10% en el kit.', // kit
@@ -163,9 +163,9 @@ describe('HomePage: combos', () => {
     const title = screen.getByRole('heading', { level: 2, name: 'Combos listos para cebar' })
     const collection = screen.getByRole('heading', {
       level: 2,
-      name: 'Seis líneas para cada ronda',
+      name: 'Categorías',
     })
-    const featured = screen.getByRole('heading', { level: 2, name: 'Los más elegidos de la ronda' })
+    const featured = screen.getByRole('heading', { level: 2, name: 'Los más vendidos' })
     expect(
       collection.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()

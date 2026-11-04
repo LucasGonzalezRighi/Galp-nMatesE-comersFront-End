@@ -19,6 +19,11 @@ describe('home.css: los fondos del mate 3D', () => {
     expect(backdrop).not.toContain('blur')
     expect(backdrop).not.toContain('scale')
   })
+
+  it('no queda la yerba a pantalla completa de la zambullida: el mate se va por arriba (pase)', () => {
+    expect(css).not.toContain('.home-yerba-depth')
+    expect(css).not.toContain('yerba-albedo.jpg')
+  })
 })
 
 describe('home.css: el Manifiesto clavado', () => {

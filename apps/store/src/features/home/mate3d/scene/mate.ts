@@ -11,11 +11,25 @@ const MOUTH_Y = 1.01
 /** Radio de la yerba adentro de la boca (el del disco de yerba), en coordenadas del cuerpo. */
 const INTERIOR_RADIUS = 0.4
 
+/** Altura del mate apoyado (las paradas 2 y 3), en fracciones de media pantalla. */
+const RESTING_Y = -0.1
+
+/** Cuánto sube el mate (en fracciones de media pantalla) hasta que su sombra se apaga del todo. */
+const SHADOW_FADE = 0.35
+
+/**
+ * Cuánto se ve la sombra según la altura del mate: entera apoyado (o más abajo, como en el vuelco) y
+ * nada a media subida del pase, así no queda "volando" debajo del mate que se levanta.
+ */
+function shadowOpacity(mateY: number): number {
+  return Math.min(1, Math.max(0, 1 - (mateY - RESTING_Y) / SHADOW_FADE))
+}
+
 /**
  * Crea el Mate Imperial Premium: calabaza forrada en cuero negro, virola de alpaca cincelada, aro y
  * cordón, interior curado, pared interior, bandas y patas de cuero con bolitas de bronce, y la sombra
  * bajo el mate. `scene.ts` coloca `mateRoot` con `state.mate` (más el parallax) antes de los
- * `update`; este `update` solo lleva la sombra debajo.
+ * `update`; este `update` solo lleva la sombra debajo y la apaga cuando el pase levanta el mate.
  *
  * @param T - La biblioteca `three` que cargó `scene.ts`.
  * @param parent - Donde va el mate (la escena).
@@ -105,11 +119,12 @@ export function createMate(
     mate,
     mouthY: MOUTH_Y,
     interiorRadius: INTERIOR_RADIUS,
-    update: () => {
-      // La sombra bajo el mate.
+    update: ({ state }) => {
+      // La sombra bajo el mate; se apaga al levantarlo (con la altura del estado, sin la flotación).
       mateRoot.localToWorld(point.set(0, -0.58, 0))
       shadow.position.set(point.x, point.y - 0.02, -0.4)
       shadow.scale.setScalar(mateRoot.scale.x)
+      shadow.material.opacity = shadowOpacity(state.mate[1])
     },
     dispose: () => {
       disposeTree(mateRoot)

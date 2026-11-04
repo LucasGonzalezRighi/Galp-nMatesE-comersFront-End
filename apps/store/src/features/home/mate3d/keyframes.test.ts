@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MateMoment, MatePlacement, MateState } from './keyframes'
 import { HOLD_SHARE } from '../stage-layout'
-import { DIVE_FROM, lerpMateState, MATE_KEYFRAMES, mateStateAt } from './keyframes'
+import { lerpMateState, MATE_KEYFRAMES, mateStateAt, PASS_FROM, passStateAt } from './keyframes'
 
 /** Tramo del avance que ocupa cada una de las tres paradas. */
 const SPAN = 1 / 3
@@ -179,65 +179,70 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
     expect(state.mate).toEqual(moment('bombilla').mate)
   })
 
-  it('la zambullida empieza al terminar el hold 3 (agua-fin) y ocupa el resto del recorrido', () => {
-    expect(DIVE_FROM).toBeCloseTo(holdEnd(2), 9)
-    expect(keyframe('agua-fin').to).toBe(DIVE_FROM)
-    expect(keyframe('salida').from).toBe(1)
+  it('pase: arranca en PASS_FROM (el fin del hold 3) y termina en 1 con el mate arriba al centro', () => {
+    expect(PASS_FROM).toBeCloseTo(holdEnd(2), 9)
+    expect(keyframe('agua-fin').to).toBe(PASS_FROM)
+    const { from, to, state } = keyframe('pase')
+    expect(from).toBe(1)
+    expect(to).toBe(1)
+    expect(state.mate).toEqual([0.12, 1.8, 1.9, -10, -60, 6])
+    expect(mateStateAt(1)).toEqual(state)
+    expect(passStateAt(0)).toEqual(moment('agua-fin'))
+    expect(passStateAt(1)).toEqual(state)
+    // El avance del recorrido desde PASS_FROM es el avance del pase.
+    expectClose(mateStateAt(PASS_FROM + (1 - PASS_FROM) / 2), passStateAt(0.5))
   })
 
-  it('boca (primer tercio de la zambullida): el mate gira hasta mirar con la boca a la cámara, en el medio', () => {
-    const { from, to, state } = keyframe('boca')
-    expect(from).toBeCloseTo(DIVE_FROM + (1 - DIVE_FROM) / 3, 9)
-    expect(to).toBe(from)
-    const [x, y, scale, rotateX, rotateY, rotateZ] = state.mate
-    // La boca mira a la cámara (giro X de 80 a 88, sin giro Y ni Z) y queda en el medio.
-    expect(rotateX).toBeGreaterThanOrEqual(80)
-    expect(rotateX).toBeLessThanOrEqual(88)
-    expect(rotateY).toBe(0)
-    expect(rotateZ).toBe(0)
-    expect(x).toBe(0)
-    expect(Math.abs(y)).toBeLessThanOrEqual(0.05)
-    // Todavía se ve el mate entero: la virola rodea la yerba.
-    expect(scale).toBeGreaterThan(1.05)
-    expect(scale).toBeLessThan(2.5)
-    // El vapor se apagó, el termo ya está fuera y la bombilla sigue calzada.
-    expect(state).toMatchObject({ steam: 0, water: 0, splash: 0, attached: 1, wet: 1, puddle: 1 })
-    expect(offscreen(state.thermos)).toBe(true)
-  })
-
-  it('salida (1): la zambullida, la yerba llena la pantalla con la boca hacia la cámara y centrada', () => {
-    const dive = mateStateAt(1)
-    const mouth = moment('boca')
-    expect(dive).toEqual(moment('salida'))
-    const [x, y, scale, rotateX, rotateY, rotateZ] = dive.mate
-    expect(rotateX).toBeGreaterThanOrEqual(80)
-    expect(rotateX).toBeLessThanOrEqual(88)
-    expect(rotateY).toBe(0)
-    expect(rotateZ).toBe(0)
-    // Crece hasta que la virola sale del cuadro (de ×6 a ×8).
-    expect(scale).toBeGreaterThanOrEqual(6)
-    expect(scale).toBeLessThanOrEqual(8)
-    // Centrado: el centro de la boca en el medio de la pantalla. La boca asoma por encima del centro
-    // del mate (0,43·cos giroX por unidad de escala, sobre media pantalla de 1,745): el mate baja
-    // lo mismo, así la yerba no se corre mientras crece.
-    expect(x).toBe(0)
-    const lift = (0.43 * Math.cos((rotateX * Math.PI) / 180)) / 1.745
-    expect(y + lift * scale).toBeCloseTo(0, 2)
-    expect(mouth.mate[1] + lift * mouth.mate[2]).toBeCloseTo(0, 2)
-    expect(rotateX).toBe(mouth.mate[3])
-    expect(offscreen(dive.thermos)).toBe(true)
-    expect(dive).toMatchObject({ steam: 0, water: 0, splash: 0, attached: 1 })
-  })
-
-  it('la zambullida es continua: la escala crece sin volver atrás y el mate llega al medio', () => {
-    const steps = 40
-    let previous = mateStateAt(DIVE_FROM).mate[2]
-    for (let step = 1; step <= steps; step += 1) {
-      const scale = mateStateAt(DIVE_FROM + ((1 - DIVE_FROM) * step) / steps).mate[2]
-      expect(scale).toBeGreaterThanOrEqual(previous)
-      previous = scale
+  it('la boca nunca mira a la cámara desde u = 0,35: no se ve la yerba desde arriba ni de cerca', () => {
+    // La cámara mira al mate desde abajo con el ángulo atan(1,745·y / 7); la montañita asoma 11°.
+    for (let step = 7; step <= 20; step += 1) {
+      const [, y, , rotateX] = passStateAt(step / 20).mate
+      const below = (Math.atan((1.745 * y) / 7) * 180) / Math.PI
+      expect(rotateX, `u = ${String(step / 20)}`).toBeLessThan(below - 11)
     }
-    expect(Math.abs(mateStateAt(keyframe('boca').from).mate[0])).toBe(0)
+    // La boca se inclina hacia atrás en el primer tercio y no vuelve.
+    expect(passStateAt(0.35).mate[3]).toBeCloseTo(-10, 9)
+    expect(passStateAt(0.7).mate[3]).toBeCloseTo(-10, 9)
+  })
+
+  it('sube y avanza sin volver atrás: y y la escala no bajan y x no sube', () => {
+    const steps = 40
+    let previous = passStateAt(0).mate
+    for (let step = 1; step <= steps; step += 1) {
+      const current = passStateAt(step / steps).mate
+      expect(current[1]).toBeGreaterThanOrEqual(previous[1])
+      expect(current[2]).toBeGreaterThanOrEqual(previous[2])
+      expect(current[0]).toBeLessThanOrEqual(previous[0])
+      previous = current
+    }
+  })
+
+  it('sale entero por arriba: en u = 1 hasta los pies quedan sobre el borde de la pantalla', () => {
+    // Los pies están 0,58 bajo el centro: 0,332 de media pantalla por unidad de escala.
+    const [, y, scale] = passStateAt(1).mate
+    expect(y - 0.332 * scale).toBeGreaterThan(1)
+  })
+
+  it('acelera al salir: sube más en el último décimo que en el primero', () => {
+    const rise = (from: number, to: number): number =>
+      passStateAt(to).mate[1] - passStateAt(from).mate[1]
+    expect(rise(0.9, 1)).toBeGreaterThan(rise(0, 0.1))
+  })
+
+  it('desde u = 0,6 el termo ya se fue y no hay vapor; la bombilla sigue calzada', () => {
+    for (let step = 12; step <= 20; step += 1) {
+      const state = passStateAt(step / 20)
+      expect(offscreen(state.thermos)).toBe(true)
+      expect(state.steam).toBe(0)
+      expect(state).toMatchObject({ attached: 1, water: 0, splash: 0, pour: 0 })
+    }
+  })
+
+  it('passStateAt lanza RangeError si el avance del pase no es un número de 0 a 1', () => {
+    for (const share of [Number.NaN, -0.01, 1.01, Number.POSITIVE_INFINITY]) {
+      expect(() => passStateAt(share)).toThrow(RangeError)
+    }
+    expect(() => passStateAt(2)).toThrow(/pase/)
   })
 
   it('van en orden, sin solaparse, de 0 a 1', () => {
@@ -248,8 +253,7 @@ describe('MATE_KEYFRAMES: un momento por paso del armado', () => {
       'bombilla',
       'agua',
       'agua-fin',
-      'boca',
-      'salida',
+      'pase',
     ])
     expect(MATE_KEYFRAMES[0].from).toBe(0)
     expect(MATE_KEYFRAMES.at(-1)?.to).toBe(1)

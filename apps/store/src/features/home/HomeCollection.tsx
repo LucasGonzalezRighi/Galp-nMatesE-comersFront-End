@@ -105,13 +105,19 @@ export interface HomeCollectionProps {
 }
 
 /**
- * Colección "Seis líneas para cada ronda" (spec 9.5): un carrusel con flechas (`ArrowCarousel`,
- * Ruling IC-9) con las líneas de producto (sin rótulo ni números en las tarjetas: Ruling MR-23) y,
- * al final, la tarjeta "Ver todo el catálogo · N piezas". La página no se clava: la rueda baja la
- * página, las flechas corren la fila de a una tarjeta y dan la vuelta, y con el dedo se desliza.
- * Después del mate 3D sale de adentro del mate: la yerba en que termina la zambullida se disuelve,
- * el título sube con máscara y las tarjetas salen de la profundidad una tras otra
- * (`CollectionEntrance`, Ruling MR-22); sin el mate 3D entra con un fundido y con
+ * Aire abajo de la fila: la pista recorta también en vertical (`overflow-x: auto`) y las tarjetas
+ * suben 48 px al entrar; 56 px de relleno con el mismo lugar final.
+ */
+const TRACK_AIR = 'pb-14 -mb-10'
+
+/**
+ * La colección de las líneas (spec 9.5; el título es contenido: "Categorías"): un carrusel con
+ * flechas (`ArrowCarousel`, Ruling IC-9) con las líneas de producto (sin rótulo ni números en las
+ * tarjetas: Ruling MR-23) y, al final, la tarjeta "Ver todo el catálogo · N piezas". La página no
+ * se clava: la rueda baja la página, las flechas corren la fila de a una tarjeta y dan la vuelta, y
+ * con el dedo se desliza. Entra por tiempo (`CollectionEntrance`, Ruling AT-1): el título sube con
+ * máscara y las tarjetas suben de a una; después del mate 3D se monta encima del final del
+ * escenario y entra en el mismo gesto en que el mate se va por arriba. Con
  * `prefers-reduced-motion: reduce` queda quieta. No se dibuja si no hay líneas con piezas.
  *
  * @param props - Ver {@link HomeCollectionProps}.
@@ -129,6 +135,7 @@ export function HomeCollection({ data }: HomeCollectionProps): ReactNode {
           itemLabel={copy.item}
           prevLabel={copy.previous}
           nextLabel={copy.next}
+          trackClassName={TRACK_AIR}
           header={<EntranceTitle className={HOME_SECTION_TITLE}>{collection.title}</EntranceTitle>}
         >
           {lines.map((line, index) => (

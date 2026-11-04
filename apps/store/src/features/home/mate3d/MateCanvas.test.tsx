@@ -121,7 +121,9 @@ describe('MateCanvas', () => {
     render(<MateCanvas progress={progress} onUnavailable={vi.fn()} />)
     expect(createMateScene).not.toHaveBeenCalled()
     observer().report(true)
-    expect(createMateScene).toHaveBeenCalledWith(document.querySelector('canvas'))
+    const [sceneCanvas, sceneOptions] = vi.mocked(createMateScene).mock.calls[0] ?? []
+    expect(sceneCanvas).toBe(document.querySelector('canvas'))
+    expect(sceneOptions?.onFrame).toBeTypeOf('function')
     await settle()
     expect(scene.setState).toHaveBeenLastCalledWith(mateStateAt(0.5))
     expect(scene.setVisible).toHaveBeenLastCalledWith(true)
@@ -137,6 +139,30 @@ describe('MateCanvas', () => {
     // Volver a entrar en pantalla no la carga otra vez.
     observer().report(false)
     observer().report(true)
+    expect(createMateScene).toHaveBeenCalledTimes(1)
+  })
+
+  it('le pasa a la escena un onFrame que avisa el estado de cada cuadro, sin recrearla al cambiar', async () => {
+    mockWebGL(true)
+    vi.mocked(createMateScene).mockResolvedValue(fakeScene())
+    const progress = motionValue(0)
+    const onUnavailable = vi.fn()
+    const first = vi.fn()
+    const second = vi.fn()
+    const { rerender } = render(
+      <MateCanvas progress={progress} onUnavailable={onUnavailable} onFrame={first} />,
+    )
+    observer().report(true)
+    await settle()
+    const onFrame = vi.mocked(createMateScene).mock.calls[0]?.[1]?.onFrame
+    if (onFrame === undefined) throw new Error('La escena no recibió onFrame.')
+    onFrame(mateStateAt(1))
+    expect(first).toHaveBeenCalledWith(mateStateAt(1))
+    // Cambiar la función no recrea la escena: el próximo cuadro avisa a la nueva.
+    rerender(<MateCanvas progress={progress} onUnavailable={onUnavailable} onFrame={second} />)
+    onFrame(mateStateAt(0.5))
+    expect(second).toHaveBeenCalledWith(mateStateAt(0.5))
+    expect(first).toHaveBeenCalledTimes(1)
     expect(createMateScene).toHaveBeenCalledTimes(1)
   })
 

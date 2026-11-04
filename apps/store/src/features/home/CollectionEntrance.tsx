@@ -1,23 +1,71 @@
 'use client'
 
-import type { MotionValue } from 'motion/react'
-import type { ReactNode } from 'react'
-import { domAnimation, LazyMotion, m, useScroll, useTransform } from 'motion/react'
-import { createContext, useContext, useMemo, useRef } from 'react'
-import { EASE_MAIN, usePrefersReducedMotion } from '../../components/motion'
+import type { FocusEvent, ReactNode, RefObject } from 'react'
+import { createContext, useContext, useMemo, useRef, useState } from 'react'
+import { useHeaderPin, usePrefersReducedMotion } from '../../components/motion'
 import { cx } from '../../components/ui/cx'
-import { bridgeLook, cardLook, ENTRANCE_SHARE, titleLook } from './collection-entrance'
 import { useMateStagePresent } from './mate-stage-presence'
-import { YerbaDepth } from './YerbaDepth'
+import { useRiseTrigger } from './use-rise-trigger'
 
-/** Lo que la entrada comparte con el título y las tarjetas: el avance, solo después del mate 3D. */
-interface EntranceContextValue {
-  /** Avance de la entrada, de 0 (la colección asoma abajo) a 1 (llegó al 15 % de arriba). */
-  progress: MotionValue<number>
+/**
+ * Cómo entra la colección: `static` con menos movimiento (quieta, sin estilos), `rise` sin el
+ * escenario del mate 3D (celular, tableta, ventanas bajas: entra una vez al asomar) y `overlap` con
+ * el escenario (se monta encima de su final y se rearma si se vuelve para arriba).
+ */
+export type EntranceMode = 'static' | 'rise' | 'overlap'
+
+/** El título se dispara cuando su borde de arriba cruza el 78 % de la ventana. */
+const TITLE_MARGIN = '0px 0px -22% 0px'
+
+/** La fila se dispara cuando la primera tarjeta cruza el 90 % de la ventana. */
+const ROW_MARGIN = '0px 0px -10% 0px'
+
+/** Cuánto espera cada tarjeta después de la anterior, en ms. */
+const CARD_STAGGER_MS = 70
+
+/** Desde qué posición las tarjetas ya no esperan más (las que quedan fuera de la fila a la derecha). */
+const CARD_STAGGER_CAP = 4
+
+/** Con el escenario: 70 svh arriba (encima de su final) y sin tomar el mouse hasta entrar. */
+const OVERLAP_CLASS = 'pointer-events-none relative -mt-[70vh] supports-[height:100svh]:-mt-[70svh]'
+
+/** Ya a la vista, la fila (con su título y sus flechas) toma el mouse; lo demás deja pasar. */
+const OVERLAP_SHOWN_CLASS = '[&_section]:pointer-events-auto'
+
+/**
+ * La colección entera (las flechas y el contador, que no tienen entrada propia) espera transparente
+ * y aparece con el título en 600 ms: no quedan sobre la parada 3 mientras la colección asoma.
+ */
+const ROOT_CLASS = 'ease-main transition-opacity'
+const ROOT_SHOWN_CLASS = 'opacity-100 duration-600'
+const ROOT_HIDDEN_CLASS = 'opacity-0 duration-250'
+
+/** La línea del título: sube dentro de la máscara en 600 ms; al rearmarse baja en 250 ms. */
+const TITLE_LINE_CLASS = 'ease-main block transition-transform'
+const TITLE_SHOWN_CLASS = 'transform-none duration-600'
+const TITLE_HIDDEN_CLASS = '[transform:translateY(110%)] duration-250'
+
+/** La tarjeta: sube 48 px con un fundido en 700 ms; al rearmarse se apaga en 250 ms, sin esperar. */
+const CARD_CLASS = 'ease-main flex-none transition-[opacity,transform]'
+const CARD_SHOWN_CLASS = 'transform-none opacity-100 duration-700'
+const CARD_HIDDEN_CLASS = 'opacity-0 [transform:translateY(48px)_scale(0.97)] duration-250'
+
+/** Qué ya está a la vista. */
+interface EntranceState {
+  /** Si el título ya está a la vista. */
+  titleShown: boolean
+  /** Si las tarjetas ya están a la vista. */
+  rowShown: boolean
 }
 
-/** El avance de la entrada desde la profundidad; `null` sin el mate 3D (fundido o quieta). */
-const EntranceContext = createContext<EntranceContextValue | null>(null)
+/** El `h2` del título, que dispara su entrada; `null` con menos movimiento (sin estados de entrada). */
+const TitleTargetContext = createContext<RefObject<HTMLHeadingElement | null> | null>(null)
+
+/** La primera tarjeta, que dispara la entrada de la fila; `null` con menos movimiento. */
+const RowTargetContext = createContext<RefObject<HTMLDivElement | null> | null>(null)
+
+/** Lo que ya está a la vista en la entrada en curso; `null` con menos movimiento. */
+const EntranceStateContext = createContext<EntranceState | null>(null)
 
 /** Props de {@link CollectionEntrance}. */
 export interface CollectionEntranceProps {
@@ -25,112 +73,79 @@ export interface CollectionEntranceProps {
   children: ReactNode
 }
 
-/** Props de las entradas de cada modo. */
-interface ModeProps {
-  /** La colección. */
-  children: ReactNode
-}
-
-/** Con menos movimiento: la colección queda quieta, sin estilos de entrada. */
-function StaticEntrance({ children }: ModeProps): ReactNode {
-  return <div data-collection-entrance="static">{children}</div>
-}
-
-/** Sin el mate 3D (celular, ventanas bajas, sin WebGL de por medio): un fundido simple al asomar. */
-function FadeEntrance({ children }: ModeProps): ReactNode {
-  return (
-    <LazyMotion features={domAnimation}>
-      <m.div
-        data-collection-entrance="fade"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: '0px 0px -15% 0px' }}
-        transition={{ duration: 0.6, ease: EASE_MAIN }}
-      >
-        {children}
-      </m.div>
-    </LazyMotion>
-  )
+/** Props de {@link RiseEntrance}. */
+interface RiseEntranceProps extends CollectionEntranceProps {
+  /** `true` con el escenario del mate 3D (modo `overlap`). */
+  overlap: boolean
 }
 
 /**
- * Después del mate 3D: la colección arranca desde la yerba en que termina la zambullida. La entrada
- * empieza una ventana más arriba (`-100svh`) para que la capa de yerba, fija arriba (`sticky`),
- * tape el escenario mientras se va; el resto no recibe el mouse, así no tapa los botones de la
- * última parada.
+ * La entrada por tiempo: el título y la fila se disparan por posición ({@link useRiseTrigger}) y
+ * corren enteros aunque el scroll siga. El foco adentro muestra todo.
  */
-function DiveEntrance({ children }: ModeProps): ReactNode {
-  const contentRef = useRef<HTMLDivElement>(null)
-  // De 0 (el borde de arriba de la colección asoma abajo) a 1 (llega arriba y el escenario ya se
-  // fue): la entrada es el tramo hasta el 15 % de arriba (`ENTRANCE_SHARE`).
-  const { scrollYProgress } = useScroll({
-    target: contentRef,
-    offset: ['start end', 'start start'],
-  })
-  const progress = useTransform(scrollYProgress, (value) =>
-    Math.min(1, Math.max(0, value / ENTRANCE_SHARE)),
-  )
-  // La capa de yerba se ve solo mientras el escenario se va: antes la tapa la del escenario. Se
-  // disuelve en todo ese tramo (no solo en la entrada), así termina de irse justo al esconderse.
-  const visibility = useTransform(scrollYProgress, (value) =>
-    value > 0 && value < 1 ? 'visible' : 'hidden',
-  )
-  const bridge = useTransform(scrollYProgress, (value) => Math.min(1, Math.max(0, value)))
-  const transform = useTransform(bridge, (value) => bridgeLook(value).transform)
-  const filter = useTransform(bridge, (value) => bridgeLook(value).filter)
-  const opacity = useTransform(bridge, (value) => bridgeLook(value).opacity)
-  const context = useMemo<EntranceContextValue>(() => ({ progress }), [progress])
+function RiseEntrance({ overlap, children }: RiseEntranceProps): ReactNode {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+  const [focused, setFocused] = useState(false)
+  const titleTriggered = useRiseTrigger(titleRef, { margin: TITLE_MARGIN, resetBelow: overlap })
+  const rowTriggered = useRiseTrigger(rowRef, { margin: ROW_MARGIN, resetBelow: overlap })
+  const titleShown = focused || titleTriggered
+  const rowShown = focused || rowTriggered
+  const shown = titleShown || rowShown
+  // Con el escenario, el encabezado vuelve apenas se revela "Categorías" (Ruling AT-1).
+  useHeaderPin(overlap && titleShown)
+  const state = useMemo<EntranceState>(() => ({ titleShown, rowShown }), [titleShown, rowShown])
+  const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
+  }
 
   return (
-    <EntranceContext value={context}>
-      <LazyMotion features={domAnimation}>
-        <div
-          data-collection-entrance="dive"
-          className="pointer-events-none relative -mt-[100vh] supports-[height:100svh]:-mt-[100svh]"
-        >
-          <m.div
-            aria-hidden="true"
-            data-collection-bridge=""
-            className="bg-background sticky top-0 h-screen overflow-hidden supports-[height:100svh]:h-svh"
-            style={{ visibility }}
+    <TitleTargetContext value={titleRef}>
+      <RowTargetContext value={rowRef}>
+        <EntranceStateContext value={state}>
+          <div
+            data-collection-entrance={overlap ? 'overlap' : 'rise'}
+            data-shown={String(shown)}
+            className={cx(
+              ROOT_CLASS,
+              shown ? ROOT_SHOWN_CLASS : ROOT_HIDDEN_CLASS,
+              overlap && OVERLAP_CLASS,
+              overlap && shown && OVERLAP_SHOWN_CLASS,
+            )}
+            onFocus={() => {
+              setFocused(true)
+            }}
+            onBlur={onBlur}
           >
-            <m.div
-              data-collection-yerba=""
-              className="absolute inset-0 will-change-[transform,opacity,filter]"
-              style={{ transform, filter, opacity }}
-            >
-              <YerbaDepth />
-            </m.div>
-          </m.div>
-          <div ref={contentRef} className="pointer-events-auto">
             {children}
           </div>
-        </div>
-      </LazyMotion>
-    </EntranceContext>
+        </EntranceStateContext>
+      </RowTargetContext>
+    </TitleTargetContext>
   )
 }
 
 /**
- * La entrada de la colección del inicio (Ruling MR-22). Después del mate 3D (`MateStage` montado,
- * ver `useMateStagePresent`) la colección sale de adentro del mate, pegada al scroll: la capa de
- * yerba en que terminó la zambullida se aleja (escala 1,15 → 1, desenfoque 0 → 10 px) mientras el
- * título sube con máscara ({@link EntranceTitle}) y las tarjetas salen de la profundidad una tras
- * otra ({@link EntranceCard}), y se disuelve (opacidad 1 → 0) detrás de ellos cuando ya ocupan la
- * pantalla, hasta que la colección llega arriba: nunca queda más de un tercio de fondo liso. La
- * entrada del título y las tarjetas dura desde que la colección asoma abajo hasta que llega al 15 %
- * de arriba; después la fila con flechas sigue igual. Sin el mate 3D (celular, ventanas bajas)
- * entra con un fundido simple, y con `prefers-reduced-motion: reduce` queda quieta. Solo se
- * animan `transform`, `opacity` y `filter`.
+ * La entrada de la colección del inicio (Ruling AT-1): se dispara por posición y corre por tiempo,
+ * así siempre se ve entera, a cualquier velocidad de scroll. El título sube con máscara
+ * ({@link EntranceTitle}) cuando cruza el 78 % de la ventana y las tarjetas suben de a una
+ * ({@link EntranceCard}) cuando la primera cruza el 90 %; las flechas y el contador aparecen con el
+ * título (un fundido de toda la colección). Con el escenario del mate 3D
+ * (`useMateStagePresent`) se monta 70 svh arriba, encima del final del escenario, sin tomar el
+ * mouse hasta entrar: entra en el mismo gesto en que el mate se va por arriba, deja ver el
+ * encabezado apenas se revela el título y se rearma si se vuelve para arriba (sale por abajo). Sin
+ * el escenario (celular, tableta, ventanas bajas) entra una sola vez, y con
+ * `prefers-reduced-motion: reduce` queda quieta, sin estilos en línea. Solo se animan `transform` y
+ * `opacity`, con transiciones de CSS (fuera del hilo principal aunque three esté dibujando).
  *
  * @param props - Ver {@link CollectionEntranceProps}.
  */
 export function CollectionEntrance({ children }: CollectionEntranceProps): ReactNode {
   const stage = useMateStagePresent()
   const reduced = usePrefersReducedMotion()
-  if (reduced) return <StaticEntrance>{children}</StaticEntrance>
-  if (stage) return <DiveEntrance>{children}</DiveEntrance>
-  return <FadeEntrance>{children}</FadeEntrance>
+  const mode: EntranceMode = reduced ? 'static' : stage ? 'overlap' : 'rise'
+  if (mode === 'static') return <div data-collection-entrance="static">{children}</div>
+  return <RiseEntrance overlap={mode === 'overlap'}>{children}</RiseEntrance>
 }
 
 /** Props de {@link EntranceTitle}. */
@@ -141,26 +156,18 @@ export interface EntranceTitleProps {
   children: ReactNode
 }
 
-/** La línea del título que sube dentro de la máscara, pegada al avance de la entrada. */
-function RisingLine({ progress, children }: EntranceContextValue & ModeProps): ReactNode {
-  const transform = useTransform(progress, (value) => titleLook(value).transform)
-  return (
-    <m.span data-entrance-title="" className="block" style={{ transform }}>
-      {children}
-    </m.span>
-  )
-}
-
 /**
- * El título de la colección (`h2`). Después del mate 3D sube con máscara: su línea arranca debajo
- * del borde del título y llega a su lugar en el primer cuarto de la entrada. El `h2` recorta lo que
- * asoma con un margen de 0,1 em arriba y abajo (los acentos y las patas de las letras no se cortan).
+ * El título de la colección (`h2`). Con movimiento sube con máscara: su línea arranca debajo del
+ * borde del título (`translateY(110%)`) y llega a su lugar en 600 ms con `EASE_MAIN`. El `h2`
+ * recorta lo que asoma con un margen de 0,1 em arriba y abajo (los acentos y las patas de las
+ * letras no se cortan) y es el que dispara la entrada (no se mueve).
  *
  * @param props - Ver {@link EntranceTitleProps}.
  */
 export function EntranceTitle({ className, children }: EntranceTitleProps): ReactNode {
-  const entrance = useContext(EntranceContext)
-  if (entrance === null) {
+  const titleRef = useContext(TitleTargetContext)
+  const state = useContext(EntranceStateContext)
+  if (titleRef === null || state === null) {
     return (
       <h2 className={className}>
         <span data-entrance-title="" className="block">
@@ -169,9 +176,16 @@ export function EntranceTitle({ className, children }: EntranceTitleProps): Reac
       </h2>
     )
   }
+  const shown = state.titleShown
   return (
-    <h2 className={cx(className, '-my-[0.1em] overflow-clip py-[0.1em]')}>
-      <RisingLine progress={entrance.progress}>{children}</RisingLine>
+    <h2 ref={titleRef} className={cx(className, '-my-[0.1em] overflow-clip py-[0.1em]')}>
+      <span
+        data-entrance-title=""
+        data-shown={String(shown)}
+        className={cx(TITLE_LINE_CLASS, shown ? TITLE_SHOWN_CLASS : TITLE_HIDDEN_CLASS)}
+      >
+        {children}
+      </span>
     </h2>
   )
 }
@@ -184,50 +198,41 @@ export interface EntranceCardProps {
   children: ReactNode
 }
 
-/** Props de {@link DepthCard}. */
-interface DepthCardProps extends EntranceContextValue, ModeProps {
-  /** Posición de la tarjeta en la pista, desde 0. */
-  index: number
-}
-
-/** La tarjeta que sale de la profundidad, pegada al avance de la entrada. */
-function DepthCard({ progress, index, children }: DepthCardProps): ReactNode {
-  const transform = useTransform(progress, (value) => cardLook(value, index).transform)
-  const filter = useTransform(progress, (value) => cardLook(value, index).filter)
-  const opacity = useTransform(progress, (value) => cardLook(value, index).opacity)
-  return (
-    <m.div data-entrance-card="" className="flex-none" style={{ transform, filter, opacity }}>
-      {children}
-    </m.div>
-  )
-}
-
 /**
- * Una tarjeta de la pista de la colección. Después del mate 3D sale de la profundidad
- * (`perspective(1200px) translateZ(-600px) rotateX(10deg) scale(0.7)`, 12 px de desenfoque y
- * transparente) hasta su lugar, 0,08 de avance después de la anterior; en su lugar no lleva
- * transformación ni filtro. Sin el mate 3D es una envoltura sin estilos.
+ * Una tarjeta de la pista de la colección. Con movimiento espera transparente y 48 px más abajo
+ * (`translateY(48px) scale(0.97)`, por clases) y sube a su lugar en 700 ms con `EASE_MAIN`, 70 ms
+ * después de la anterior (con tope en la quinta); al rearmarse se apaga en 250 ms, todas a la vez.
+ * La primera dispara la entrada de la fila. Con menos movimiento es una envoltura sin estilos.
  *
  * @param props - Ver {@link EntranceCardProps}.
  * @throws {RangeError} Si `index` no es un entero desde 0.
  */
 export function EntranceCard({ index, children }: EntranceCardProps): ReactNode {
-  const entrance = useContext(EntranceContext)
+  const rowRef = useContext(RowTargetContext)
+  const state = useContext(EntranceStateContext)
   if (!Number.isInteger(index) || index < 0) {
     throw new RangeError(
       `La posición de la tarjeta tiene que ser un entero desde 0; se recibió ${String(index)}.`,
     )
   }
-  if (entrance === null) {
+  if (rowRef === null || state === null) {
     return (
       <div data-entrance-card="" className="flex-none">
         {children}
       </div>
     )
   }
+  const shown = state.rowShown
+  const delay = CARD_STAGGER_MS * Math.min(index, CARD_STAGGER_CAP)
   return (
-    <DepthCard progress={entrance.progress} index={index}>
+    <div
+      ref={index === 0 ? rowRef : undefined}
+      data-entrance-card=""
+      data-shown={String(shown)}
+      className={cx(CARD_CLASS, shown ? CARD_SHOWN_CLASS : CARD_HIDDEN_CLASS)}
+      style={shown ? { transitionDelay: `${String(delay)}ms` } : undefined}
+    >
       {children}
-    </DepthCard>
+    </div>
   )
 }

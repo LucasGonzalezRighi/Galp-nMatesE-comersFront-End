@@ -30,7 +30,7 @@ function StagePending(): ReactNode {
 
 /**
  * El mate 3D, cargado aparte (`ssr: false`): su código (el escenario, las paradas, el raíl, la
- * zambullida y la escena de three.js) no baja en el celular ni con menos movimiento.
+ * pase y la escena de three.js) no baja en el celular ni con menos movimiento.
  */
 const MateStage = dynamic(() => import('./MateStage').then((module) => module.MateStage), {
   ssr: false,

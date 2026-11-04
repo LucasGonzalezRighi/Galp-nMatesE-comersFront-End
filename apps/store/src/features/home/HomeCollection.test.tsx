@@ -34,6 +34,14 @@ describe('HomeCollection', () => {
     },
   )
 
+  it('la fila deja aire abajo para que las tarjetas suban sin cortarse, con el mismo lugar final', async () => {
+    mockReducedMotion(false)
+    const data = buildHomeData(await loadFixtureCatalog())
+    render(<HomeCollection data={data} />)
+    const track = screen.getAllByRole('group')[0]?.parentElement
+    expect(track?.className).toContain('pb-14 -mb-10')
+  })
+
   it('cada línea y la tarjeta final "Ver todo el catálogo" siguen en la fila', async () => {
     mockReducedMotion(true)
     const data = buildHomeData(await loadFixtureCatalog())

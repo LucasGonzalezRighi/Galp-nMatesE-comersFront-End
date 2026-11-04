@@ -1,33 +1,24 @@
 // @vitest-environment jsdom
 
-import type { MotionValue } from 'motion/react'
+import type { ReactNode } from 'react'
 import { act, render, screen } from '@testing-library/react'
-import { motionValue } from 'motion/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerHeaderHideZone, useHeaderMayHide } from '../../components/motion'
 import {
   cleanUpAfterEach,
   installIntersectionObserver,
+  intersectAll,
+  leaveAll,
   mockReducedMotion,
 } from '../../components/motion/test/support'
 import { CollectionEntrance, EntranceCard, EntranceTitle } from './CollectionEntrance'
 import { registerMateStage } from './mate-stage-presence'
 
-/** El avance del scroll de la colección, que cada prueba mueve a mano (jsdom no hace scroll). */
-const scroll = vi.hoisted((): { progress: unknown } => ({ progress: null }))
-
-vi.mock('motion/react', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  useScroll: (): { scrollYProgress: unknown } => ({ scrollYProgress: scroll.progress }),
-}))
-
 cleanUpAfterEach()
 
-let progress: MotionValue<number>
 let unregister: (() => void) | null = null
 
 beforeEach(() => {
-  progress = motionValue(0)
-  scroll.progress = progress
   mockReducedMotion(false)
   installIntersectionObserver()
   return () => {
@@ -36,29 +27,30 @@ beforeEach(() => {
   }
 })
 
-/**
- * Lleva la colección a un avance y espera un cuadro: Motion escribe los estilos ligados al scroll en
- * el cuadro siguiente.
- */
-async function moveTo(value: number): Promise<void> {
-  await act(async () => {
-    progress.set(value)
-    await new Promise((resolve) => setTimeout(resolve, 40))
-  })
+/** Las líneas de prueba: seis, para ver el tope del escalonado. */
+const LINES = ['Mates', 'Bombillas', 'Yerbas', 'Termos', 'Materas', 'Accesorios']
+
+/** Muestra lo que lee el encabezado. */
+function HeaderProbe(): ReactNode {
+  return useHeaderMayHide() ? 'el encabezado puede esconderse' : 'el encabezado queda a la vista'
 }
 
-/** Dibuja la colección de prueba: el título y dos tarjetas. */
+/** Dibuja la colección de prueba: el título, seis tarjetas con su link y, aparte, el encabezado. */
 function renderCollection(): void {
   render(
-    <CollectionEntrance>
-      <EntranceTitle className="titulo">Seis líneas para cada ronda</EntranceTitle>
-      <EntranceCard index={0}>
-        <p>Mates</p>
-      </EntranceCard>
-      <EntranceCard index={1}>
-        <p>Bombillas</p>
-      </EntranceCard>
-    </CollectionEntrance>,
+    <>
+      <HeaderProbe />
+      <CollectionEntrance>
+        <section aria-label="Líneas de producto">
+          <EntranceTitle className="titulo">Categorías</EntranceTitle>
+          {LINES.map((line, index) => (
+            <EntranceCard key={line} index={index}>
+              <a href={`/tienda/${line.toLowerCase()}`}>{line}</a>
+            </EntranceCard>
+          ))}
+        </section>
+      </CollectionEntrance>
+    </>,
   )
 }
 
@@ -67,6 +59,11 @@ function byData(attribute: string): HTMLElement {
   const element = document.querySelector<HTMLElement>(`[${attribute}]`)
   if (element === null) throw new Error(`Falta [${attribute}].`)
   return element
+}
+
+/** La envoltura de la colección. */
+function root(): HTMLElement {
+  return byData('data-collection-entrance')
 }
 
 /** Las envolturas de las tarjetas, en orden. */
@@ -79,95 +76,170 @@ function titleLine(): HTMLElement {
   return byData('data-entrance-title')
 }
 
+/** Si la colección, el título y todas las tarjetas están (`true`) o no (`false`) a la vista. */
+function expectShown(shown: boolean): void {
+  const value = String(shown)
+  expect(root()).toHaveAttribute('data-shown', value)
+  expect(titleLine()).toHaveAttribute('data-shown', value)
+  for (const card of cards()) expect(card).toHaveAttribute('data-shown', value)
+}
+
 describe('CollectionEntrance', () => {
   it('el título sigue siendo el h2 de la sección, con su clase', () => {
     renderCollection()
-    const heading = screen.getByRole('heading', { level: 2, name: 'Seis líneas para cada ronda' })
-    expect(heading).toHaveClass('titulo')
+    expect(screen.getByRole('heading', { level: 2, name: 'Categorías' })).toHaveClass('titulo')
   })
 
-  it('con menos movimiento no hay capa de yerba ni estilos de entrada: todo queda quieto', () => {
+  it('con menos movimiento queda quieta: sin estilos en línea ni estados de entrada', () => {
     mockReducedMotion(true)
     unregister = registerMateStage()
     renderCollection()
-    expect(byData('data-collection-entrance').getAttribute('data-collection-entrance')).toBe(
-      'static',
-    )
-    expect(document.querySelector('[data-collection-bridge]')).toBeNull()
-    expect(titleLine().getAttribute('style')).toBeNull()
-    for (const card of cards()) expect(card.getAttribute('style')).toBeNull()
-    expect(byData('data-collection-entrance').getAttribute('style')).toBeNull()
+    expect(root()).toHaveAttribute('data-collection-entrance', 'static')
+    for (const element of [root(), titleLine(), ...cards()]) {
+      expect(element.getAttribute('style')).toBeNull()
+      expect(element).not.toHaveAttribute('data-shown')
+      expect(element.className).not.toMatch(/opacity-0|translate/)
+    }
+    expect(root().className).not.toContain('-mt-')
   })
 
-  it('sin el escenario (celular) entra con un fundido simple, sin capa de yerba ni profundidad', () => {
-    renderCollection()
-    const root = byData('data-collection-entrance')
-    expect(root.getAttribute('data-collection-entrance')).toBe('fade')
-    expect(root.style.opacity).toBe('0')
-    expect(document.querySelector('[data-collection-bridge]')).toBeNull()
-    for (const card of cards()) expect(card.getAttribute('style')).toBeNull()
-    expect(titleLine().getAttribute('style')).toBeNull()
+  describe('sin el escenario (celular, tableta, ventanas bajas)', () => {
+    it('el título y las tarjetas esperan escondidos hasta entrar en pantalla, sin solaparse con nada', () => {
+      renderCollection()
+      expect(root()).toHaveAttribute('data-collection-entrance', 'rise')
+      expect(root().className).not.toContain('-mt-')
+      expectShown(false)
+      // Lo demás de la fila (las flechas y el contador) también espera: entra con el título.
+      expect(root()).toHaveClass('opacity-0')
+      expect(titleLine().className).toContain('[transform:translateY(110%)]')
+      for (const card of cards()) {
+        expect(card.className).toContain('opacity-0')
+        expect(card.className).toContain('[transform:translateY(48px)_scale(0.97)]')
+        // Escondidas por clases, no con estilos en línea.
+        expect(card.getAttribute('style')).toBeNull()
+      }
+      act(() => {
+        intersectAll()
+      })
+      expectShown(true)
+      expect(root()).toHaveClass('opacity-100')
+      expect(titleLine().className).toContain('transform-none')
+      for (const card of cards()) expect(card.className).toContain('opacity-100')
+    })
+
+    it('las tarjetas suben de a una: 70 ms después de la anterior, con tope en la quinta', () => {
+      renderCollection()
+      act(() => {
+        intersectAll()
+      })
+      expect(cards().map((card) => card.style.transitionDelay)).toEqual([
+        '0ms',
+        '70ms',
+        '140ms',
+        '210ms',
+        '280ms',
+        '280ms',
+      ])
+    })
+
+    it('entra una sola vez: salir por abajo no la esconde', () => {
+      renderCollection()
+      act(() => {
+        intersectAll()
+      })
+      act(() => {
+        leaveAll('below')
+      })
+      expectShown(true)
+    })
   })
 
-  describe('después del mate 3D', () => {
+  describe('con el escenario del mate 3D', () => {
     beforeEach(() => {
       unregister = registerMateStage()
     })
 
-    it('arranca desde la yerba: la capa a pantalla completa y las tarjetas en la profundidad', () => {
+    it('se monta 70 svh arriba, encima del final del escenario, sin tomar el mouse hasta entrar', () => {
       renderCollection()
-      const root = byData('data-collection-entrance')
-      expect(root.getAttribute('data-collection-entrance')).toBe('dive')
-      // Mientras la colección no asoma, la capa de yerba no se ve (la del escenario la tapa).
-      expect(byData('data-collection-bridge').style.visibility).toBe('hidden')
-      expect(titleLine().style.transform).toBe('translateY(110%)')
-      for (const card of cards()) {
-        expect(card.style.transform).toContain('translateZ(-600px)')
-        expect(card.style.filter).toBe('blur(12px)')
-        expect(card.style.opacity).toBe('0')
-      }
+      expect(root()).toHaveAttribute('data-collection-entrance', 'overlap')
+      expect(root()).toHaveClass('pointer-events-none', 'relative', '-mt-[70vh]')
+      expect(root().className).toContain('supports-[height:100svh]:-mt-[70svh]')
+      expect(root().className).not.toContain('[&_section]:pointer-events-auto')
+      expectShown(false)
+      // Las flechas y el contador no quedan sobre la parada 3: esperan con el título.
+      expect(root()).toHaveClass('opacity-0')
+      act(() => {
+        intersectAll()
+      })
+      expectShown(true)
+      expect(root()).toHaveClass('opacity-100')
+      // Ya a la vista, la fila (y sus flechas) toma el mouse; lo demás deja pasar al escenario.
+      expect(root().className).toContain('[&_section]:pointer-events-auto')
     })
 
-    it('al asomar la colección la yerba se ve entera y después se aleja y se disuelve', async () => {
+    it('se rearma si sale por abajo (volver a la parada 3) y no si sale por arriba', () => {
       renderCollection()
-      await moveTo(0.02)
-      const bridge = byData('data-collection-bridge')
-      const yerba = byData('data-collection-yerba')
-      expect(bridge.style.visibility).toBe('visible')
-      expect(Number(yerba.style.opacity)).toBeGreaterThan(0.95)
-      // A mitad de la entrada la yerba sigue detrás del título y de las tarjetas: ya se alejó.
-      await moveTo(0.4)
-      expect(Number(yerba.style.opacity)).toBeGreaterThan(0.95)
-      expect(yerba.style.filter).toMatch(/blur/)
-      // Se disuelve con la colección ya arriba, hasta que la capa se esconde.
-      await moveTo(0.8)
-      expect(Number(yerba.style.opacity)).toBeLessThan(0.6)
-      await moveTo(0.999)
-      expect(Number(yerba.style.opacity)).toBeLessThan(0.01)
+      act(() => {
+        intersectAll()
+      })
+      act(() => {
+        leaveAll('above')
+      })
+      expectShown(true)
+      act(() => {
+        leaveAll('below')
+      })
+      expectShown(false)
+      // Al esconderse no espera: se va con un fundido corto, todas a la vez.
+      for (const card of cards()) expect(card.style.transitionDelay).toBe('')
+      act(() => {
+        intersectAll()
+      })
+      expectShown(true)
     })
 
-    it('la colección termina visible y sin transformaciones, y la capa de yerba ya no se ve', async () => {
+    it('el encabezado vuelve apenas se revela el título y se suelta si la colección se rearma', () => {
+      let releaseZone = (): void => undefined
+      act(() => {
+        releaseZone = registerHeaderHideZone()
+      })
       renderCollection()
-      await moveTo(1)
-      expect(byData('data-collection-bridge').style.visibility).toBe('hidden')
-      expect(titleLine().style.transform).toBe('none')
-      for (const card of cards()) {
-        expect(card.style.transform).toBe('none')
-        expect(card.style.filter).toBe('none')
-        expect(card.style.opacity).toBe('1')
-      }
+      expect(screen.getByText('el encabezado puede esconderse')).toBeInTheDocument()
+      act(() => {
+        intersectAll()
+      })
+      expect(screen.getByText('el encabezado queda a la vista')).toBeInTheDocument()
+      act(() => {
+        leaveAll('below')
+      })
+      expect(screen.getByText('el encabezado puede esconderse')).toBeInTheDocument()
+      act(() => {
+        releaseZone()
+      })
     })
 
-    it('si el escenario se va (la ventana se achica), vuelve al fundido simple', () => {
+    it('el foco muestra todo aunque no se haya disparado la entrada, y al irse vuelve a esperar', () => {
+      renderCollection()
+      expectShown(false)
+      const link = screen.getByRole('link', { name: 'Yerbas' })
+      act(() => {
+        link.focus()
+      })
+      expectShown(true)
+      act(() => {
+        link.blur()
+      })
+      expectShown(false)
+    })
+
+    it('si el escenario se va (la ventana se achica), entra como en el celular', () => {
       renderCollection()
       act(() => {
         unregister?.()
         unregister = null
       })
-      expect(byData('data-collection-entrance').getAttribute('data-collection-entrance')).toBe(
-        'fade',
-      )
-      expect(document.querySelector('[data-collection-bridge]')).toBeNull()
+      expect(root()).toHaveAttribute('data-collection-entrance', 'rise')
+      expect(root().className).not.toContain('-mt-')
     })
   })
 
