@@ -1,4 +1,4 @@
-import { slugify } from '@galpon/domain'
+import { LEATHERS, slugify } from '@galpon/domain'
 import type { Image } from '../../generated/schema'
 import type { MockProduct } from '../types'
 
@@ -65,6 +65,17 @@ const DEFAULT_STOCK = 12
 
 /** Fecha de alta de todos los productos de ejemplo. */
 const CREATED_AT = '2026-09-01T12:00:00Z'
+
+/**
+ * Líneas del diseño que son de mates (las de `group: 'mate'` en `categories.ts`, que importa este
+ * archivo y por eso no se lee de ahí): sus productos ofrecen los 4 cueros.
+ */
+const MATE_CATEGORIES: ReadonlySet<string> = new Set([
+  'imperiales',
+  'torpedos',
+  'camioneros',
+  'ranchero',
+])
 
 /**
  * Los 27 productos del diseño, en el orden de `P`. Las fotos son las que mandó el cliente: 16
@@ -426,7 +437,10 @@ const DESIGN_PRODUCTS: readonly DesignProduct[] = [
   },
 ]
 
-/** Productos de ejemplo: los 27 del diseño, publicados, con `slug` igual a `slugify(name)`. */
+/**
+ * Productos de ejemplo: los 27 del diseño, publicados, con `slug` igual a `slugify(name)`. Los 16
+ * mates ofrecen los 4 cueros; las 8 bombillas y las 3 yerbas, ninguno.
+ */
 export const FIXTURE_PRODUCTS: readonly MockProduct[] = DESIGN_PRODUCTS.map((product, index) => ({
   id: `prd-${product.id}`,
   slug: slugify(product.name),
@@ -439,6 +453,7 @@ export const FIXTURE_PRODUCTS: readonly MockProduct[] = DESIGN_PRODUCTS.map((pro
   featured: product.featured === true,
   status: 'published',
   images: (product.images ?? []).map((image) => ({ ...image })),
+  leathers: MATE_CATEGORIES.has(product.category) ? [...LEATHERS] : [],
   tabsOverride: null,
   previousSlugs: [],
   createdAt: CREATED_AT,

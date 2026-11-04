@@ -10,17 +10,17 @@ import {
   setCartLineQuantity,
 } from './cart'
 
-/** Mate suelto con las opciones por defecto, salvo el cuero. */
+/** Mate suelto con el cuero pedido. */
 function mateLine(quantity = 1, leather: Leather = 'Negro'): ProductCartLine {
   return {
     type: 'product',
     productId: 'm',
     quantity,
-    options: { leather, ferrule: 'Alpaca cincelada' },
+    options: { leather },
   }
 }
 
-/** Bombilla suelta: no tiene opciones. */
+/** Bombilla suelta: no tiene cuero. */
 function bombillaLine(quantity = 1): ProductCartLine {
   return { type: 'product', productId: 'b', quantity }
 }
@@ -30,43 +30,77 @@ function kitLine(quantity = 1, leather: Leather = 'Negro'): KitCartLine {
   return { type: 'kit', mateId: 'm', bombillaId: 'b', yerbaId: 'y', leather, quantity }
 }
 
-/** Combo "c" con el mate 'm' y la bombilla 'b', con el cuero pedido y la virola Acero. */
+/** Combo "c" con el mate 'm' y la bombilla 'b', con el cuero pedido. */
 function comboLine(quantity = 1, leather: Leather = 'Negro'): ComboCartLine {
   return {
     type: 'combo',
     comboId: 'c',
     productIds: ['m', 'b'],
-    options: { leather, ferrule: 'Acero' },
+    options: { leather },
     quantity,
   }
 }
 
-/** Combo "cy" sin mate: la bombilla 'b' y la yerba 'y', sin opciones. */
+/** Combo "cy" sin mate: la bombilla 'b' y la yerba 'y', sin cuero. */
 function comboWithoutMate(quantity = 1): ComboCartLine {
   return { type: 'combo', comboId: 'cy', productIds: ['b', 'y'], quantity }
 }
 
 describe('cartLineKey', () => {
-  it('arma la clave de un producto con sus opciones', () => {
-    expect(cartLineKey(mateLine(1, 'Borravino'))).toBe('product:m:Borravino:Alpaca cincelada')
+  it('arma la clave de un producto con su cuero', () => {
+    expect(cartLineKey(mateLine(1, 'Borravino'))).toBe('product:m:Borravino')
   })
-  it('usa un guion cuando el producto no tiene opciones', () => {
-    expect(cartLineKey(bombillaLine())).toBe('product:b:-:-')
+  it('usa un guion cuando el producto no trae cuero', () => {
+    expect(cartLineKey(bombillaLine())).toBe('product:b:-')
+    expect(cartLineKey({ type: 'product', productId: 'prd-yerba-canarias', quantity: 1 })).toBe(
+      'product:prd-yerba-canarias:-',
+    )
   })
   it('arma la clave de un kit con sus tres piezas y el cuero', () => {
     expect(cartLineKey(kitLine(1, 'Crudo'))).toBe('kit:m:b:y:Crudo')
+  })
+  it('usa un guion en un kit cuyo mate no ofrece cueros', () => {
+    expect(
+      cartLineKey({
+        type: 'kit',
+        mateId: 'prd-imperial-premium',
+        bombillaId: 'prd-bombillon-premium-curvo',
+        yerbaId: 'prd-yerba-canarias',
+        leather: null,
+        quantity: 1,
+      }),
+    ).toBe('kit:prd-imperial-premium:prd-bombillon-premium-curvo:prd-yerba-canarias:-')
   })
   it('no depende de la cantidad', () => {
     expect(cartLineKey(mateLine(1))).toBe(cartLineKey(mateLine(7)))
     expect(cartLineKey(kitLine(1))).toBe(cartLineKey(kitLine(3)))
     expect(cartLineKey(comboLine(1))).toBe(cartLineKey(comboLine(4)))
   })
-  it('arma la clave de un combo con su id, el cuero y la virola, sin las piezas', () => {
-    expect(cartLineKey(comboLine(1, 'Marrón'))).toBe('combo:c:Marrón:Acero')
-    expect(cartLineKey({ ...comboLine(), productIds: ['m', 'y'] })).toBe('combo:c:Negro:Acero')
+  it('arma la clave de un combo con su id y el cuero, sin las piezas', () => {
+    expect(cartLineKey(comboLine(1, 'Marrón'))).toBe('combo:c:Marrón')
+    expect(cartLineKey({ ...comboLine(), productIds: ['m', 'y'] })).toBe('combo:c:Negro')
   })
-  it('usa guiones en un combo sin mate', () => {
-    expect(cartLineKey(comboWithoutMate())).toBe('combo:cy:-:-')
+  it('usa un guion en un combo sin cuero', () => {
+    expect(cartLineKey(comboWithoutMate())).toBe('combo:cy:-')
+  })
+  it('arma las claves de los combos de prueba', () => {
+    expect(
+      cartLineKey({
+        type: 'combo',
+        comboId: 'cmb-bombilla-y-yerba',
+        productIds: ['prd-bombillon-premium-curvo', 'prd-yerba-canarias'],
+        quantity: 1,
+      }),
+    ).toBe('combo:cmb-bombilla-y-yerba:-')
+    expect(
+      cartLineKey({
+        type: 'combo',
+        comboId: 'cmb-duo-imperial',
+        productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+        options: { leather: 'Marrón' },
+        quantity: 1,
+      }),
+    ).toBe('combo:cmb-duo-imperial:Marrón')
   })
 })
 

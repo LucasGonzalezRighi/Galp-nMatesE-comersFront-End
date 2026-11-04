@@ -4,15 +4,15 @@ import { parseCartLines } from './cart-lines'
 import { buildCartView } from './cart-view'
 import { cartQuote, quoteLine, summary } from './test/support'
 
-/** Combo "Dúo Imperial": el mate `m1` y la bombilla `b1`, con cuero marrón y virola Acero. */
+/** Combo "Dúo Imperial": el mate `m1` y la bombilla `b1`, con cuero marrón. */
 const comboLine: CartLine = {
   type: 'combo',
   comboId: 'cmb-duo-imperial',
   productIds: ['m1', 'b1'],
-  options: { leather: 'Marrón', ferrule: 'Acero' },
+  options: { leather: 'Marrón' },
   quantity: 1,
 }
-const comboKey = 'combo:cmb-duo-imperial:Marrón:Acero'
+const comboKey = 'combo:cmb-duo-imperial:Marrón'
 
 const mate = summary({ id: 'm1', name: 'Mate Imperial Premium', priceArs: 39999 })
 const bombilla = summary({
@@ -27,7 +27,7 @@ const mateLine: CartLine = {
   type: 'product',
   productId: 'm1',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 }
 const kitLine: CartLine = {
   type: 'kit',
@@ -38,14 +38,14 @@ const kitLine: CartLine = {
   quantity: 1,
 }
 
-const mateKey = 'product:m1:Negro:Alpaca cincelada'
+const mateKey = 'product:m1:Negro'
 const kitKey = 'kit:m1:b1:y1:Negro'
 
 /** Cotización de la captura del diseño: un mate y un kit con 10 % de descuento. */
 const mateQuoteLine = quoteLine({
   key: mateKey,
   name: 'Mate Imperial Premium',
-  detail: 'Cuero negro · Alpaca cincelada',
+  detail: 'Cuero negro',
   unitPriceArs: 39999,
   totalArs: 39999,
   netUnitPriceArs: 33057,
@@ -72,7 +72,7 @@ describe('buildCartView', () => {
     const [productLine, kit] = view.lines
     expect(productLine).toMatchObject({
       name: 'Mate Imperial Premium',
-      detail: 'Cuero negro · Alpaca cincelada',
+      detail: 'Cuero negro',
       status: 'ready',
       issue: null,
       totalArs: 39999,
@@ -299,7 +299,7 @@ describe('buildCartView con combos', () => {
     key: comboKey,
     type: 'combo',
     name: 'Dúo Imperial',
-    detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+    detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
     unitPriceArs: 68998,
     kitSavingsArs: 6999,
     totalArs: 61999,
@@ -317,7 +317,7 @@ describe('buildCartView con combos', () => {
     expect(view.lines[0]).toMatchObject({
       key: comboKey,
       name: 'Dúo Imperial',
-      detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+      detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
       image: { url: '/m1.jpg', alt: 'Mate' },
       status: 'ready',
       totalArs: 61999,
@@ -360,7 +360,7 @@ describe('parseCartLines', () => {
     ['no es una lista', { type: 'product' }],
     ['la cantidad supera el tope', [{ ...mateLine, quantity: 21 }]],
     ['la cantidad es decimal', [{ ...mateLine, quantity: 1.5 }]],
-    ['el cuero no existe', [{ ...mateLine, options: { leather: 'Rosa', ferrule: 'Acero' } }]],
+    ['el cuero no existe', [{ ...mateLine, options: { leather: 'Rosa' } }]],
     ['el tipo no existe', [{ type: 'regalo', quantity: 1 }]],
     ['es basura', ['x', 1, null]],
   ])('descarta lo inválido: %s', (_motivo, value) => {
@@ -382,7 +382,7 @@ describe('parseCartLines', () => {
     ['tiene cuatro piezas', { ...comboLine, productIds: ['m1', 'b1', 'y1', 'z1'] }],
     ['repite una pieza', { ...comboLine, productIds: ['m1', 'm1'] }],
     ['no tiene el id del combo', { ...comboLine, comboId: '' }],
-    ['la virola no existe', { ...comboLine, options: { leather: 'Negro', ferrule: 'Oro' } }],
+    ['el cuero no existe', { ...comboLine, options: { leather: 'Rosa' } }],
   ])('descarta una línea de combo que %s', (_motivo, value) => {
     expect(parseCartLines([value])).toEqual([])
   })

@@ -2,6 +2,7 @@ import type { ApiClient, ProductDetail, ProductSummary } from '@galpon/api-clien
 import type { MockDb } from '@galpon/api-client/mock'
 import { createApiClient } from '@galpon/api-client'
 import { createMockDb, createMockFetch, DEFAULT_MOCK_DB_OPTIONS } from '@galpon/api-client/mock'
+import { LEATHERS } from '@galpon/domain'
 
 /** API simulada de un test: cliente tipado y la base en memoria para modificar antes de consultar. */
 export interface TestApi {
@@ -33,7 +34,10 @@ export function currentTestApi(): ApiClient {
   return current.api
 }
 
-/** Producto de la ficha para los tests: un mate de $39.999 con stock 10, salvo lo que se cambie. */
+/**
+ * Producto de la ficha para los tests: un mate de $39.999 con stock 10 y los 4 cueros, salvo lo
+ * que se cambie (otro grupo arranca sin cueros, como las fixtures).
+ */
 export function detail(overrides: Partial<ProductDetail> = {}): ProductDetail {
   return {
     id: 'prd-imperial-premium',
@@ -54,10 +58,7 @@ export function detail(overrides: Partial<ProductDetail> = {}): ProductDetail {
     rating: { average: 4.7, count: 3 },
     slug: 'mate-imperial-premium',
     images: [],
-    options: {
-      leathers: ['Negro', 'Marrón', 'Crudo', 'Borravino'],
-      ferrules: ['Alpaca lisa', 'Alpaca cincelada', 'Acero'],
-    },
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     tabs: {
       descriptionNote: 'Cada pieza es artesanal.',
       materials: 'Calabaza, cuero y alpaca.',
@@ -68,7 +69,7 @@ export function detail(overrides: Partial<ProductDetail> = {}): ProductDetail {
   }
 }
 
-/** Resumen de un producto para las tarjetas de relacionados. */
+/** Resumen de un producto para las tarjetas de relacionados (los mates, con los 4 cueros). */
 export function summary(overrides: Partial<ProductSummary> & { id: string }): ProductSummary {
   return {
     categoryId: 'cat-imperiales',
@@ -80,6 +81,7 @@ export function summary(overrides: Partial<ProductSummary> & { id: string }): Pr
     group: 'mate',
     isPurchasable: true,
     isSoldOut: false,
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     mainImage: null,
     maxQuantity: 10,
     name: `Producto ${overrides.id}`,

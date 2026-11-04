@@ -6,16 +6,8 @@ import { PlusIcon } from '@phosphor-icons/react/Plus'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import type { Combo, ComboItem } from '@galpon/api-client'
-import type { Ferrule, Leather } from '@galpon/domain'
-import {
-  DEFAULT_FERRULE,
-  DEFAULT_LEATHER,
-  FERRULES,
-  formatPesos,
-  LEATHERS,
-  pesos,
-  remainingQuantityFor,
-} from '@galpon/domain'
+import type { Leather } from '@galpon/domain'
+import { DEFAULT_LEATHER, formatPesos, LEATHERS, pesos, remainingQuantityFor } from '@galpon/domain'
 import { FadeImage, Magnetic, Reveal, Tilt } from '../../components/motion'
 import {
   Button,
@@ -24,7 +16,6 @@ import {
   type InstallmentsSetting,
   NetPrice,
   Price,
-  Segmented,
   Swatch,
   Tag,
 } from '../../components/ui'
@@ -34,8 +25,6 @@ import { addComboToCart, clickOrigin, useCart } from '../cart'
 import {
   addComboLabel,
   COMBO_CARD_COPY,
-  FERRULE_SHORT,
-  ferruleGroupLabel,
   leatherGroupLabel,
   piecesLabel,
   savingsLabel,
@@ -206,25 +195,14 @@ interface MateOptionsProps {
   mateName: string
   /** Cuero elegido. */
   leather: Leather
-  /** Virola elegida. */
-  ferrule: Ferrule
   /** Si las opciones están deshabilitadas (combo sin stock). */
   disabled: boolean
   /** Se llama con el cuero elegido. */
   onLeather: (leather: Leather) => void
-  /** Se llama con la virola elegida. */
-  onFerrule: (ferrule: Ferrule) => void
 }
 
-/** Cuero (círculos de color) y virola (control segmentado con nombres cortos) del mate del combo. */
-function MateOptions({
-  mateName,
-  leather,
-  ferrule,
-  disabled,
-  onLeather,
-  onFerrule,
-}: MateOptionsProps): ReactNode {
+/** Cuero (círculos de color) del mate del combo. */
+function MateOptions({ mateName, leather, disabled, onLeather }: MateOptionsProps): ReactNode {
   return (
     <div className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-2">
@@ -245,20 +223,6 @@ function MateOptions({
           ))}
         </span>
       </div>
-      <div className="flex flex-col gap-2">
-        <OptionHeading label={COMBO_CARD_COPY.ferrule} value={ferrule} />
-        <Segmented
-          label={ferruleGroupLabel(mateName)}
-          options={FERRULES.map((option) => ({
-            value: option,
-            label: FERRULE_SHORT[option],
-            disabled,
-          }))}
-          value={ferrule}
-          onChange={onFerrule}
-          className="self-start text-[12.5px]"
-        />
-      </div>
     </div>
   )
 }
@@ -266,8 +230,7 @@ function MateOptions({
 /**
  * Tarjeta de combo (Ruling IC-12, `research-design.md` §4–§8): las fotos de las piezas en fila con
  * un "+" en cada unión, "Combo", el nombre, cada pieza con el link a su ficha y su precio suelto,
- * el cuero y la virola del mate (solo si el combo lleva mate; arrancan en Negro y Alpaca
- * cincelada), el precio final con el de lista tachado y el chip verde "Ahorrás $X" (solo si hay
+ * el cuero del mate (solo si el combo lleva mate; arranca en Negro), el precio final con el de lista tachado y el chip verde "Ahorrás $X" (solo si hay
  * ahorro), las cuotas, el precio sin impuestos si el ajuste está activo, y el botón "Agregar combo"
  * a todo el ancho con el efecto gris del carrito.
  *
@@ -292,7 +255,6 @@ export function ComboCard({
   const titleId = useId()
   const { lines } = useCart()
   const [leather, setLeather] = useState<Leather>(DEFAULT_LEATHER)
-  const [ferrule, setFerrule] = useState<Ferrule>(DEFAULT_FERRULE)
   const mate = combo.items.find((item) => item.group === 'mate')
   const soldOut = !combo.isPurchasable
   const atCartLimit =
@@ -304,7 +266,7 @@ export function ComboCard({
   const add = (event: MouseEvent<HTMLButtonElement>): void => {
     addComboToCart({
       combo,
-      ...(mate === undefined ? {} : { options: { leather, ferrule } }),
+      ...(mate === undefined ? {} : { options: { leather } }),
       origin: clickOrigin(event),
     })
   }
@@ -363,10 +325,8 @@ export function ComboCard({
               <MateOptions
                 mateName={mate.name}
                 leather={leather}
-                ferrule={ferrule}
                 disabled={soldOut}
                 onLeather={setLeather}
-                onFerrule={setFerrule}
               />
             )}
             <div aria-hidden="true" className="mt-auto h-px" style={DIVIDER_STYLE} />

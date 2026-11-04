@@ -3,6 +3,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Category, ProductSummary, PublicSettings } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import { getCategories } from '../../lib/data/catalog'
 import { getPublicSettings } from '../../lib/data/settings'
 import { CATALOG_PLACEHOLDER_LINE } from './catalog-scope'
@@ -57,6 +58,7 @@ const imperial: ProductSummary = {
   group: 'mate',
   isPurchasable: true,
   isSoldOut: false,
+  leathers: [...LEATHERS],
   mainImage: null,
   maxQuantity: 10,
   name: 'Mate Imperial Premium',

@@ -8,10 +8,10 @@ const MATE: CartItemInput = {
   type: 'product',
   productId: 'prd-imperial-premium',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 }
 
-const OPTIONS = { leather: 'Negro', ferrule: 'Alpaca cincelada' } as const
+const OPTIONS = { leather: 'Negro' } as const
 
 const KIT: CartItemInput = {
   type: 'kit',
@@ -35,10 +35,10 @@ describe('POST /cart/quote', () => {
     expect(quote).toEqual({
       lines: [
         {
-          key: 'product:prd-imperial-premium:Negro:Alpaca cincelada',
+          key: 'product:prd-imperial-premium:Negro',
           type: 'product',
           name: 'Mate Imperial Premium',
-          detail: 'Cuero negro · Alpaca cincelada',
+          detail: 'Cuero negro',
           unitPriceArs: 39999,
           netUnitPriceArs: netPrice(pesos(39999), 21),
           kitSavingsArs: 0,
@@ -145,15 +145,97 @@ describe('POST /cart/quote', () => {
     expect(quote.lines[0]?.issue).toBe('sold_out')
   })
 
-  it('responde 422 sin líneas o con un mate sin cuero ni virola', async () => {
+  it('responde 422 sin líneas o con un mate con cueros que llega sin cuero', async () => {
     const mock = createCheckoutApi()
     await expect(quoteCart(mock.api, { items: [] })).rejects.toMatchObject({ status: 422 })
     await expect(
       quoteCart(mock.api, { items: [{ ...MATE, options: null }] }),
     ).rejects.toMatchObject({
       status: 422,
-      fieldErrors: { 'items.0.options': expect.any(String) as unknown },
+      problem: {
+        errors: [
+          { field: 'items.0.options', code: 'required', message: 'Elegí el cuero del mate.' },
+        ],
+      },
     })
+  })
+
+  it('responde 422 si el cuero no es uno de los que ofrece el mate, y junta los errores', async () => {
+    const mock = createCheckoutApi()
+    const mate = mock.db.products.find((product) => product.id === 'prd-imperial-premium')
+    if (mate === undefined) throw new Error('Falta el fixture')
+    mate.leathers = ['Marrón', 'Crudo']
+    await expect(
+      quoteCart(mock.api, {
+        items: [MATE, { ...KIT, leather: 'Borravino' }, { ...KIT, leather: null }],
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      problem: {
+        errors: [
+          {
+            field: 'items.0.options.leather',
+            code: 'leather_not_offered',
+            message: 'Ese cuero no está disponible para este mate.',
+          },
+          {
+            field: 'items.1.leather',
+            code: 'leather_not_offered',
+            message: 'Ese cuero no está disponible para este mate.',
+          },
+          { field: 'items.2.leather', code: 'required', message: 'Elegí el cuero del mate.' },
+        ],
+      },
+    })
+  })
+
+  it('un producto sin cueros ignora el cuero, y la clave repite lo que mandó la tienda', async () => {
+    const mock = createCheckoutApi()
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 1, options: null },
+        { type: 'product', productId: 'prd-yerba-canarias', quantity: 1, options: OPTIONS },
+      ],
+    })
+    expect(quote.lines.map((line) => [line.key, line.detail, line.issue])).toEqual([
+      ['product:prd-yerba-canarias:-', '', null],
+      ['product:prd-yerba-canarias:Negro', '', null],
+    ])
+  })
+
+  it('un mate sin cueros no pide cuero: ni suelto ni en un kit', async () => {
+    const mock = createCheckoutApi()
+    const mate = mock.db.products.find((product) => product.id === 'prd-imperial-premium')
+    if (mate === undefined) throw new Error('Falta el fixture')
+    mate.leathers = []
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { ...MATE, options: null },
+        { ...KIT, leather: null },
+      ],
+    })
+    expect(quote.lines.map((line) => [line.key, line.detail, line.issue])).toEqual([
+      ['product:prd-imperial-premium:-', '', null],
+      [
+        'kit:prd-imperial-premium:prd-bombillon-premium-curvo:prd-yerba-canarias:-',
+        'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg',
+        null,
+      ],
+    ])
+  })
+
+  it('un producto que no se vende sale unavailable sin error de cuero', async () => {
+    const mock = createCheckoutApi()
+    const mate = mock.db.products.find((product) => product.id === 'prd-imperial-premium')
+    if (mate === undefined) throw new Error('Falta el fixture')
+    mate.status = 'draft'
+    const quote = await quoteCart(mock.api, {
+      items: [
+        { ...MATE, options: null },
+        { ...KIT, leather: null },
+      ],
+    })
+    expect(quote.lines.map((line) => line.issue)).toEqual(['unavailable', 'unavailable'])
   })
 })
 
@@ -191,7 +273,7 @@ describe('POST /cart/quote con combos', () => {
     type: 'combo',
     comboId: 'cmb-duo-imperial',
     quantity: 2,
-    options: { leather: 'Marrón', ferrule: 'Acero' },
+    options: { leather: 'Marrón' },
   }
 
   /** "Bombilla y yerba": sin mate, a $34.999. */
@@ -214,10 +296,10 @@ describe('POST /cart/quote con combos', () => {
     expect(quote).toEqual({
       lines: [
         {
-          key: 'combo:cmb-duo-imperial:Marrón:Acero',
+          key: 'combo:cmb-duo-imperial:Marrón',
           type: 'combo',
           name: 'Dúo Imperial',
-          detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+          detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
           unitPriceArs: 68998,
           netUnitPriceArs: netPrice(pesos(61999), 21),
           kitSavingsArs: 13998,
@@ -233,19 +315,19 @@ describe('POST /cart/quote con combos', () => {
     })
   })
 
-  it('un combo sin mate no pide opciones y las ignora si vienen', async () => {
+  it('un combo sin mate no pide cuero y lo ignora si viene, con la clave que mandó la tienda', async () => {
     const mock = createCheckoutApi()
     const quote = await quoteCart(mock.api, {
-      items: [NO_MATE, { ...NO_MATE, options: { leather: 'Negro', ferrule: 'Acero' } }],
+      items: [NO_MATE, { ...NO_MATE, options: { leather: 'Negro' } }],
     })
     expect(quote.lines.map((line) => [line.key, line.detail, line.totalArs])).toEqual([
       [
-        'combo:cmb-bombilla-y-yerba:-:-',
+        'combo:cmb-bombilla-y-yerba:-',
         'Bombillón 100% Alpaca + Yerba Canarias Té y Jengibre 1 kg',
         34999,
       ],
       [
-        'combo:cmb-bombilla-y-yerba:-:-',
+        'combo:cmb-bombilla-y-yerba:Negro',
         'Bombillón 100% Alpaca + Yerba Canarias Té y Jengibre 1 kg',
         34999,
       ],
@@ -297,7 +379,7 @@ describe('POST /cart/quote con combos', () => {
         { ...MATE, quantity: 2 },
         { ...KIT, quantity: 1 },
         DUO,
-        { ...DUO, options: { leather: 'Negro', ferrule: 'Alpaca lisa' } },
+        { ...DUO, options: { leather: 'Negro' } },
       ],
     })
     expect(quote.lines.map((line) => [line.issue, line.maxQuantity])).toEqual([
@@ -334,13 +416,44 @@ describe('POST /cart/quote con combos', () => {
     expect(quote.lines[0]).toMatchObject({ unitPriceArs: 70998, kitSavingsArs: 17998 })
   })
 
-  it('responde 422 si un combo con mate llega sin cuero ni virola', async () => {
+  it('responde 422 si un combo con un mate con cueros llega sin cuero', async () => {
     const mock = createCheckoutApi()
     await expect(
       quoteCart(mock.api, { items: [MATE, { ...DUO, options: null }] }),
     ).rejects.toMatchObject({
       status: 422,
-      fieldErrors: { 'items.1.options': 'Elegí el cuero y la virola del mate.' },
+      problem: {
+        errors: [
+          { field: 'items.1.options', code: 'required', message: 'Elegí el cuero del mate.' },
+        ],
+      },
     })
+  })
+
+  it('responde 422 si el cuero del combo no es uno de los del mate', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-imperial-premium').leathers = ['Negro']
+    await expect(quoteCart(mock.api, { items: [DUO] })).rejects.toMatchObject({
+      status: 422,
+      problem: {
+        errors: [
+          {
+            field: 'items.0.options.leather',
+            code: 'leather_not_offered',
+            message: 'Ese cuero no está disponible para este mate.',
+          },
+        ],
+      },
+    })
+  })
+
+  it('un combo con un mate sin cueros ignora el cuero y no lo pide', async () => {
+    const mock = createCheckoutApi()
+    product(mock, 'prd-imperial-premium').leathers = []
+    const quote = await quoteCart(mock.api, { items: [{ ...DUO, options: null }, DUO] })
+    expect(quote.lines.map((line) => [line.key, line.detail, line.issue])).toEqual([
+      ['combo:cmb-duo-imperial:-', 'Mate Imperial Premium + Bombillón Premium Curvo', null],
+      ['combo:cmb-duo-imperial:Marrón', 'Mate Imperial Premium + Bombillón Premium Curvo', null],
+    ])
   })
 })

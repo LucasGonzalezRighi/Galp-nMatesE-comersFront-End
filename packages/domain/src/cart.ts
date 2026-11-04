@@ -1,7 +1,13 @@
-import type { Ferrule, Leather } from './options'
+import type { Leather } from './options'
 import { assertValidQuantity, maxQuantity } from './catalog'
 
-/** Línea del carrito de un producto suelto. Solo los mates llevan `options`. */
+/** Cuero elegido de un mate que ofrece cueros; es el `CartItemOptions` del contrato. */
+export interface CartLineOptions {
+  /** Cuero elegido, uno de los `leathers` del mate. */
+  leather: Leather
+}
+
+/** Línea del carrito de un producto suelto. Solo los mates que ofrecen cueros llevan `options`. */
 export interface ProductCartLine {
   /** Distingue la línea de un producto suelto de la de un kit o un combo. */
   type: 'product'
@@ -9,11 +15,11 @@ export interface ProductCartLine {
   productId: string
   /** Unidades del producto en esta línea. */
   quantity: number
-  /** Cuero y virola elegidos; existe solo para los mates (las bombillas y las yerbas no llevan). */
-  options?: { leather: Leather; ferrule: Ferrule }
+  /** Cuero elegido; existe solo si el producto ofrece cueros (las bombillas y las yerbas no llevan). */
+  options?: CartLineOptions
 }
 
-/** Línea del carrito de un kit: un mate, una bombilla y una yerba con un cuero. */
+/** Línea del carrito de un kit: un mate, una bombilla y una yerba, con el cuero del mate si ofrece. */
 export interface KitCartLine {
   /** Distingue la línea de un kit de la de un producto suelto o un combo. */
   type: 'kit'
@@ -23,15 +29,15 @@ export interface KitCartLine {
   bombillaId: string
   /** Id de la yerba del kit. */
   yerbaId: string
-  /** Cuero del mate del kit. */
-  leather: Leather
+  /** Cuero del mate del kit, o `null` si el mate no ofrece cueros. */
+  leather: Leather | null
   /** Cantidad de kits (no de piezas): cada kit trae un mate, una bombilla y una yerba. */
   quantity: number
 }
 
 /**
  * Línea del carrito de un combo: 2 o 3 productos fijos que arma el dashboard, con precio final.
- * La línea se identifica por el combo y las opciones del mate (ver {@link comboLineKey}); las
+ * La línea se identifica por el combo y el cuero del mate (ver {@link comboLineKey}); las
  * piezas se guardan solo para contar el stock que usa en el carrito.
  */
 export interface ComboCartLine {
@@ -41,8 +47,8 @@ export interface ComboCartLine {
   comboId: string
   /** Ids de las piezas del combo, en su orden (de 2 a 3), según lo último que informó la API. */
   productIds: readonly string[]
-  /** Cuero y virola del mate del combo; existe solo si el combo lleva mate. */
-  options?: { leather: Leather; ferrule: Ferrule }
+  /** Cuero del mate del combo; existe solo si el combo lleva un mate que ofrece cueros. */
+  options?: CartLineOptions
   /** Cantidad de combos (no de piezas): cada combo trae una unidad de cada pieza. */
   quantity: number
 }
@@ -56,20 +62,21 @@ export type CartLine = ProductCartLine | KitCartLine | ComboCartLine
  * Dos líneas con la misma clave son la misma línea: así se suman en vez de repetirse.
  *
  * @param line - Línea del carrito.
- * @returns `product:{id}:{cuero|-}:{virola|-}`, `kit:{mate}:{bombilla}:{yerba}:{cuero}` o
- *   `combo:{id}:{cuero|-}:{virola|-}` (sin las piezas, ver {@link comboLineKey}).
+ * @returns `product:{id}:{cuero|-}`, `kit:{mate}:{bombilla}:{yerba}:{cuero|-}` o
+ *   `combo:{id}:{cuero|-}` (sin las piezas, ver {@link comboLineKey}), con `-` si la línea no trae
+ *   cuero. Es la misma que devuelve el back en `CartQuoteLine.key`.
  * @throws {RangeError} Si la línea es de un combo con el id vacío.
  * @example
- * cartLineKey({ type: 'product', productId: 'b1', quantity: 2 }) // "product:b1:-:-"
+ * cartLineKey({ type: 'product', productId: 'b1', quantity: 2 }) // "product:b1:-"
  */
 export function cartLineKey(line: CartLine): string {
   switch (line.type) {
     case 'kit':
-      return `kit:${line.mateId}:${line.bombillaId}:${line.yerbaId}:${line.leather}`
+      return `kit:${line.mateId}:${line.bombillaId}:${line.yerbaId}:${line.leather ?? '-'}`
     case 'combo':
       return comboLineKey(line.comboId, line.options ?? null)
     case 'product':
-      return `product:${line.productId}:${line.options?.leather ?? '-'}:${line.options?.ferrule ?? '-'}`
+      return `product:${line.productId}:${line.options?.leather ?? '-'}`
   }
 }
 
@@ -80,19 +87,16 @@ export function cartLineKey(line: CartLine): string {
  * misma.
  *
  * @param comboId - Id del combo.
- * @param options - Cuero y virola del mate del combo, o `null` si el combo no lleva mate.
- * @returns `combo:{id}:{cuero|-}:{virola|-}`.
+ * @param options - Cuero del mate del combo, o `null` si el combo no lleva un mate con cueros.
+ * @returns `combo:{id}:{cuero|-}`.
  * @throws {RangeError} Si el id del combo está vacío.
  * @example
- * comboLineKey('cmb-duo-imperial', { leather: 'Negro', ferrule: 'Acero' }) // "combo:cmb-duo-imperial:Negro:Acero"
- * comboLineKey('cmb-bombilla-y-yerba', null) // "combo:cmb-bombilla-y-yerba:-:-"
+ * comboLineKey('cmb-duo-imperial', { leather: 'Marrón' }) // "combo:cmb-duo-imperial:Marrón"
+ * comboLineKey('cmb-bombilla-y-yerba', null) // "combo:cmb-bombilla-y-yerba:-"
  */
-export function comboLineKey(
-  comboId: string,
-  options: { leather: Leather; ferrule: Ferrule } | null,
-): string {
+export function comboLineKey(comboId: string, options: CartLineOptions | null): string {
   if (comboId.trim() === '') throw new RangeError('El id del combo no puede estar vacío.')
-  return `combo:${comboId}:${options?.leather ?? '-'}:${options?.ferrule ?? '-'}`
+  return `combo:${comboId}:${options?.leather ?? '-'}`
 }
 
 /**

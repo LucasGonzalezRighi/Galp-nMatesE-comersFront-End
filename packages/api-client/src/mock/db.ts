@@ -10,7 +10,7 @@ import {
 } from './fixtures'
 
 /** Versión actual del formato de la base simulada. */
-export const MOCK_DB_VERSION = 4
+export const MOCK_DB_VERSION = 5
 
 /** Datos de demostración que se pueden sembrar: hoy solo los del admin. */
 export type MockDemo = 'admin'

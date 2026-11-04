@@ -15,8 +15,8 @@ export type ProductStatus = (typeof PRODUCT_STATUSES)[number]
 /** Máximo de unidades de un mismo producto que se pueden comprar. */
 export const MAX_QUANTITY_PER_PRODUCT = 20
 
-/** Cantidad de productos relacionados que se muestran si no se pide otra. */
-const DEFAULT_RELATED_LIMIT = 4
+/** Máximo de productos relacionados de una ficha (`GET /products/{slug}/related`). */
+export const RELATED_PRODUCTS_LIMIT = 30
 
 /**
  * Indica si un producto se puede agregar al carrito.
@@ -156,24 +156,30 @@ export function sortProducts<T extends { name: string; priceArs: Pesos | null; f
 /**
  * Elige los productos relacionados con uno.
  *
- * Primero van los de la misma línea (sin el propio producto) y después los del mismo
- * grupo en otras líneas, cada tramo en el orden del catálogo. Nunca incluye otro grupo.
+ * Nunca incluye al propio producto. Van en tres tramos: primero los de la misma línea, después
+ * los del mismo grupo en otras líneas y después el resto del catálogo por grupo, en el orden de
+ * {@link PRODUCT_GROUPS} (mate, bombilla, yerba). Cada tramo sigue el orden del catálogo.
  *
  * @param product - Producto del que se buscan relacionados.
- * @param catalog - Productos entre los que elegir.
- * @param limit - Máximo de relacionados; por defecto 4. Un límite negativo se toma como 0 y uno
- *   fraccionario se redondea hacia abajo.
+ * @param catalog - Productos entre los que elegir (los publicados, en el orden del catálogo).
+ * @param limit - Máximo de relacionados; por defecto {@link RELATED_PRODUCTS_LIMIT}. Un límite
+ *   negativo se toma como 0 y uno fraccionario se redondea hacia abajo.
  * @returns Hasta `limit` productos; menos si no hay suficientes.
+ * @example
+ * // Con el catálogo de prueba, el Mate Imperial Premium trae 26: 3 imperiales, 12 mates de otras
+ * // líneas, 8 bombillas y 3 yerbas.
  */
 export function selectRelated<T extends { id: string; categoryId: string; group: ProductGroup }>(
   product: T,
   catalog: readonly T[],
-  limit: number = DEFAULT_RELATED_LIMIT,
+  limit: number = RELATED_PRODUCTS_LIMIT,
 ): T[] {
-  const sameGroup = catalog.filter(
-    (other) => other.id !== product.id && other.group === product.group,
-  )
+  const others = catalog.filter((other) => other.id !== product.id)
+  const sameGroup = others.filter((other) => other.group === product.group)
   const sameLine = sameGroup.filter((other) => other.categoryId === product.categoryId)
   const otherLines = sameGroup.filter((other) => other.categoryId !== product.categoryId)
-  return [...sameLine, ...otherLines].slice(0, Math.max(0, Math.floor(limit)))
+  const rest = PRODUCT_GROUPS.filter((group) => group !== product.group).flatMap((group) =>
+    others.filter((other) => other.group === group),
+  )
+  return [...sameLine, ...otherLines, ...rest].slice(0, Math.max(0, Math.floor(limit)))
 }

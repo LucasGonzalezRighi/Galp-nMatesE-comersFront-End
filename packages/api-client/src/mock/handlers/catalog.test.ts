@@ -109,7 +109,8 @@ describe('GET /products/{slug}', () => {
       rating: { count: 3 },
     })
     expect(product.tabs.descriptionNote).not.toBeNull()
-    expect(product.options?.leathers).toHaveLength(4)
+    expect(product.leathers).toEqual(['Negro', 'Marrón', 'Crudo', 'Borravino'])
+    expect(product).not.toHaveProperty('options')
     expect(product.images.map((image) => image.url)).toEqual([
       '/mock-images/mate-imperial-premium.jpg',
       '/mock-images/mate-imperial-premium-2.jpg',
@@ -134,13 +135,13 @@ describe('GET /products/{slug}', () => {
     expect((await getProduct(mock.api, 'mate-imperial')).slug).toBe('mate-imperial-premium')
   })
 
-  it('combina las pestañas del grupo con las del producto y deja sin opciones a lo que no es mate', async () => {
+  it('combina las pestañas del grupo con las del producto y deja sin cueros a lo que no es mate', async () => {
     const mock = createMockApi()
     const yerba = mock.db.products.find((product) => product.id === 'prd-yerba-canarias')
     if (yerba === undefined) throw new Error('Falta la yerba')
     yerba.tabsOverride = { materials: 'Yerba con palo.' }
     const product = await getProduct(mock.api, yerba.slug)
-    expect(product.options).toBeNull()
+    expect(product.leathers).toEqual([])
     expect(product.tabs).toEqual({
       descriptionNote: mock.db.content.productTabs.yerba.descriptionNote,
       materials: 'Yerba con palo.',
@@ -162,13 +163,32 @@ describe('GET /products/{slug}', () => {
 })
 
 describe('GET /products/{slug}/related', () => {
-  it('devuelve 3 imperiales y un mate de otra línea para el Imperial Premium', async () => {
+  it('devuelve 26 para el Imperial Premium: 3 imperiales, 12 mates, 8 bombillas y 3 yerbas', async () => {
     const related = await listRelatedProducts(createMockApi().api, 'mate-imperial-premium')
-    expect(related).toHaveLength(4)
+    expect(related).toHaveLength(26)
+    expect(related.slice(0, 4).map((product) => product.slug)).toEqual([
+      'mate-imperial-de-calabaza',
+      'mate-imperial-termico',
+      'mate-imperial-criollo',
+      'mate-torpedo-premium',
+    ])
     expect(related.slice(0, 3).every((product) => product.categorySlug === 'imperiales')).toBe(true)
-    expect(related[3]).toMatchObject({ group: 'mate' })
-    expect(related[3]?.categorySlug).not.toBe('imperiales')
+    expect(
+      related.slice(3, 15).every((p) => p.group === 'mate' && p.categorySlug !== 'imperiales'),
+    ).toBe(true)
+    expect(related.slice(15, 23).every((product) => product.group === 'bombilla')).toBe(true)
+    expect(related.slice(23).every((product) => product.group === 'yerba')).toBe(true)
     expect(related.some((product) => product.slug === 'mate-imperial-premium')).toBe(false)
+  })
+
+  it('no trae productos sin publicar', async () => {
+    const mock = createMockApi()
+    const yerba = mock.db.products.find((product) => product.id === 'prd-yerba-canarias')
+    if (yerba === undefined) throw new Error('Falta la yerba')
+    yerba.status = 'draft'
+    const related = await listRelatedProducts(mock.api, 'mate-imperial-premium')
+    expect(related).toHaveLength(25)
+    expect(related.some((product) => product.id === 'prd-yerba-canarias')).toBe(false)
   })
 
   it('responde 404 si el producto no existe', async () => {

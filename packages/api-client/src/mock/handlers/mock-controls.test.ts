@@ -7,12 +7,12 @@ import { createCheckoutApi, orderInput, placeOrder, postOrder } from '../test/ch
 import { randomUuid } from '../uuid'
 import { MOCK_EXPIRE_ORDER_PATH, MOCK_PRODUCT_PATH } from './mock-controls'
 
-/** Mate Imperial Premium ($39.999) con cuero y virola, como lo manda la tienda. */
+/** Mate Imperial Premium ($39.999) con su cuero, como lo manda la tienda. */
 const MATE = {
   type: 'product',
   productId: 'prd-imperial-premium',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 } satisfies CartItemInput
 
 /** Dos Mates Coquito Criollo: alcanzan para agotar el stock con dos pedidos. */
@@ -22,7 +22,7 @@ const COQUITO = {
       type: 'product' as const,
       productId: 'prd-coquito-criollo',
       quantity: 2,
-      options: { leather: 'Negro' as const, ferrule: 'Acero' as const },
+      options: { leather: 'Negro' as const },
     },
   ],
   expectedTotalArs: 2 * 28999 + 6500,
@@ -132,6 +132,29 @@ describe('POST /__mock/products/{id}', () => {
     await expect(response.json()).resolves.toMatchObject({ stock: 0 })
     const quote = await quoteCart(mock.api, { items: [MATE] })
     expect(quote.lines[0]).toMatchObject({ issue: 'sold_out', maxQuantity: 0 })
+  })
+
+  it('cambia los cueros: los guarda en orden y sin repetir, y la cotización los usa', async () => {
+    const mock = createCheckoutApi()
+    const response = await control(mock, productPath('prd-imperial-criollo'), {
+      leathers: ['Crudo', 'Marrón', 'Crudo'],
+    })
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      id: 'prd-imperial-criollo',
+      priceArs: 29999,
+      stock: 12,
+      leathers: ['Marrón', 'Crudo'],
+    })
+    await expect(
+      quoteCart(mock.api, { items: [{ ...MATE, productId: 'prd-imperial-criollo' }] }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { 'items.0.options.leather': 'Ese cuero no está disponible para este mate.' },
+    })
+    expect(
+      (await control(mock, productPath('prd-imperial-criollo'), { leathers: ['Rosa'] })).status,
+    ).toBe(422)
   })
 
   it('avisa que cambió el catálogo para renovar la caché de la tienda', async () => {

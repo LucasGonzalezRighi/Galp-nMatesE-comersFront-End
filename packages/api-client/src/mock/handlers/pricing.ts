@@ -1,13 +1,12 @@
 import { z } from 'zod'
-import type { CartLine, LineAmounts, ProductGroup } from '@galpon/domain'
+import type { CartLine, Leather, LineAmounts, ProductGroup } from '@galpon/domain'
 import {
   cartLineKey,
   cartTotals,
   comboLineAmounts,
   comboLineKey,
-  FERRULES,
+  comboMateLeathers,
   formatPesos,
-  KIT_FERRULE,
   kitLineAmounts,
   LEATHERS,
   MAX_QUANTITY_PER_PRODUCT,
@@ -37,8 +36,11 @@ const MISSING_PRODUCT_NAME = 'Producto no disponible'
 /** Nombre de una línea cuyo combo ya no existe. */
 const MISSING_COMBO_NAME = 'Combo no disponible'
 
-/** Error de un mate (suelto o dentro de un combo) que llega sin cuero ni virola. */
-const MISSING_OPTIONS_MESSAGE = 'Elegí el cuero y la virola del mate.'
+/** Error de un mate que ofrece cueros (suelto, en un kit o en un combo) y llega sin cuero. */
+const MISSING_LEATHER_MESSAGE = 'Elegí el cuero del mate.'
+
+/** Error de un mate que llega con un cuero que no ofrece. */
+const LEATHER_NOT_OFFERED_MESSAGE = 'Ese cuero no está disponible para este mate.'
 
 /** Identificador de un producto en el carrito. */
 const idSchema = z.string().min(1).max(80)
@@ -61,11 +63,8 @@ const quantitySchema = z
 const expectedPesosSchema = z.int().min(0).max(99_999_999).optional()
 const expectedTotalSchema = z.int().min(0).max(2_147_483_647).optional()
 
-/** Cuero y virola de un mate. */
-const optionsSchema = z.object({ leather: z.enum(LEATHERS), ferrule: z.enum(FERRULES) })
-
-/** Cuero y virola ya validados. */
-type ItemOptions = z.output<typeof optionsSchema>
+/** Cuero elegido de un mate (`CartItemOptions`). */
+const optionsSchema = z.object({ leather: z.enum(LEATHERS) })
 
 /** Línea del carrito como la manda la tienda (los `null` ya quitados). */
 const cartItemSchema = z.discriminatedUnion('type', [
@@ -81,7 +80,11 @@ const cartItemSchema = z.discriminatedUnion('type', [
     mateId: idSchema,
     bombillaId: idSchema,
     yerbaId: idSchema,
-    leather: z.enum(LEATHERS),
+    // El `null` del contrato llega quitado: sin cuero es `null`.
+    leather: z
+      .enum(LEATHERS)
+      .optional()
+      .transform((leather) => leather ?? null),
     quantity: quantitySchema,
     expectedUnitPriceArs: expectedTotalSchema,
   }),
@@ -192,12 +195,49 @@ function leatherLabel(leather: string): string {
   return `Cuero ${leather.toLowerCase()}`
 }
 
-/** Línea del carrito del dominio, con la cantidad indicada. */
-function toCartLine(
-  item: ProductOrKitItem,
-  options: ItemOptions | undefined,
-  quantity: number,
-): CartLine {
+/**
+ * Cuero que vale para una línea: el que mandó la tienda si el mate lo ofrece.
+ *
+ * @param sent - Cuero que mandó la tienda, o `null`.
+ * @param offered - Cueros que ofrece el mate (vacío si no es un mate o no tiene selector).
+ * @returns `sent` si está en `offered`; si no, `null` (sin cueros, el que llegue se ignora).
+ */
+function offeredLeather(sent: Leather | null, offered: readonly Leather[]): Leather | null {
+  return sent !== null && offered.includes(sent) ? sent : null
+}
+
+/**
+ * Error del cuero de una línea, con las reglas de `quoteCart` del contrato.
+ *
+ * @param sent - Cuero que mandó la tienda, o `null`.
+ * @param offered - Cueros que ofrece el mate.
+ * @param fields - Campo del error si falta el cuero y si no se ofrece.
+ * @returns El error, o `null` si el mate no ofrece cueros o el cuero es uno de los suyos.
+ */
+function leatherError(
+  sent: Leather | null,
+  offered: readonly Leather[],
+  fields: { missing: string; notOffered: string },
+): FieldError | null {
+  if (offered.length === 0) return null
+  if (sent === null) {
+    return { field: fields.missing, code: 'required', message: MISSING_LEATHER_MESSAGE }
+  }
+  if (!offered.includes(sent)) {
+    return {
+      field: fields.notOffered,
+      code: 'leather_not_offered',
+      message: LEATHER_NOT_OFFERED_MESSAGE,
+    }
+  }
+  return null
+}
+
+/**
+ * Línea del carrito del dominio, con la cantidad indicada y el cuero que mandó la tienda (así la
+ * clave repite lo que mandó).
+ */
+function toCartLine(item: ProductOrKitItem, quantity: number): CartLine {
   if (item.type === 'kit') {
     const { mateId, bombillaId, yerbaId, leather } = item
     return { type: 'kit', mateId, bombillaId, yerbaId, leather, quantity }
@@ -206,7 +246,7 @@ function toCartLine(
     type: 'product',
     productId: item.productId,
     quantity,
-    ...(options === undefined ? {} : { options }),
+    ...(item.options === undefined ? {} : { options: item.options }),
   }
 }
 
@@ -239,9 +279,10 @@ interface PricingState {
 
 /**
  * Cotiza una línea de combo con las reglas de `ComboCartItemInput` del contrato: combo dado de
- * baja o con una pieza que no se vende, `unavailable`; mate sin cuero ni virola, error en
- * `items.N.options`; stock compartido con las demás líneas; importes de `comboLineAmounts` y
- * `price_changed` contra el precio del combo.
+ * baja o con una pieza que no se vende, `unavailable`; mate con cueros sin cuero, error en
+ * `items.N.options`, y con un cuero que no ofrece, en `items.N.options.leather`; stock
+ * compartido con las demás líneas; importes de `comboLineAmounts` y `price_changed` contra el
+ * precio del combo.
  *
  * @param db - Base simulada.
  * @param item - Línea de combo validada.
@@ -260,19 +301,27 @@ function priceComboItem(
   const found = (combo?.productIds ?? []).map((id) =>
     db.products.find((product) => product.id === id),
   )
-  const hasMate = found.some((product) => product !== undefined && groupOf(db, product) === 'mate')
-  // Sin el combo no se sabe si lleva mate: la clave conserva lo que mandó la tienda.
-  const options = combo === undefined || hasMate ? item.options : undefined
+  const offered = comboMateLeathers(
+    found.flatMap((product) => {
+      const group = product === undefined ? undefined : groupOf(db, product)
+      return product === undefined || group === undefined
+        ? []
+        : [{ group, leathers: product.leathers }]
+    }),
+  )
+  const sent = item.options?.leather ?? null
+  const leather = offeredLeather(sent, offered)
   const name = combo?.name ?? MISSING_COMBO_NAME
   const pieceNames = found.map((product) => product?.name ?? MISSING_PRODUCT_NAME).join(' + ')
   const base = {
-    key: comboLineKey(item.comboId, options ?? null),
+    // La clave repite lo que mandó la tienda, ofrezca o no cueros el mate.
+    key: comboLineKey(item.comboId, item.options ?? null),
     type: 'combo' as const,
     name,
     detail:
-      options === undefined || pieceNames === ''
+      leather === null || pieceNames === ''
         ? pieceNames
-        : `${pieceNames} · ${leatherLabel(options.leather)} · ${options.ferrule}`,
+        : `${pieceNames} · ${leatherLabel(leather)}`,
   }
   const blocked = (issue: 'sold_out' | 'unavailable', productId: string | null): PricedLine => ({
     quote: blockedLine(base, issue, showNetPrice),
@@ -289,13 +338,11 @@ function priceComboItem(
   const pieces = found.filter((product): product is MockProduct & { priceArs: number } =>
     sellable(db, product, undefined),
   )
-  if (hasMate && options === undefined) {
-    state.errors.push({
-      field: `items.${String(index)}.options`,
-      code: 'required',
-      message: MISSING_OPTIONS_MESSAGE,
-    })
-  }
+  const error = leatherError(sent, offered, {
+    missing: `items.${String(index)}.options`,
+    notOffered: `items.${String(index)}.options.leather`,
+  })
+  if (error !== null) state.errors.push(error)
 
   const rooms = pieces.map((product) =>
     remainingQuantityFor(product.id, availableStock(db, product, state.now), state.accepted),
@@ -339,7 +386,7 @@ function priceComboItem(
       kitSavingsArs: amounts.savingsArs,
       totalArs: amounts.totalArs,
       productSlug: null,
-      options: options ?? null,
+      options: leather === null ? null : { leather },
       kitItems: pieces.map((product) => ({
         slug: product.slug,
         name: product.name,
@@ -364,7 +411,8 @@ function priceComboItem(
  * @param items - Líneas del carrito, ya validadas con {@link cartItemsSchema}.
  * @param now - Momento del pedido (para no vender stock reservado).
  * @returns La cotización, los datos de cada línea y lo que se reservaría.
- * @throws {ResponseError} Con `422` si un mate (suelto o en un combo) llega sin cuero ni virola.
+ * @throws {ResponseError} Con `422` si un mate que ofrece cueros (suelto, en un kit o en un combo)
+ *   llega sin cuero o con uno que no ofrece.
  */
 export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): PricedCart {
   const { kitDiscountPercent, vatRatePercent } = db.settings
@@ -388,30 +436,37 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
       const product = findProduct(id)
       return sellable(db, product, group) ? product : undefined
     })
+    // El producto suelto o el mate del kit: sus cueros son los que se pueden elegir.
     const first = found[0]
-    const isMate = item.type === 'product' && first !== undefined && groupOf(db, first) === 'mate'
-    const options = isMate ? item.options : undefined
-    if (isMate && options === undefined && products[0] !== undefined) {
-      errors.push({
-        field: `items.${String(index)}.options`,
-        code: 'required',
-        message: MISSING_OPTIONS_MESSAGE,
-      })
-    }
+    const offered = first?.leathers ?? []
+    const sent = item.type === 'kit' ? item.leather : (item.options?.leather ?? null)
+    const leather = offeredLeather(sent, offered)
+    const leatherText = leather === null ? '' : leatherLabel(leather)
+    const pieceNames = found.map((product) => product?.name ?? MISSING_PRODUCT_NAME).join(' + ')
     const base = {
-      key: cartLineKey(toCartLine(item, options, item.quantity)),
+      // La clave repite lo que mandó la tienda, ofrezca o no cueros el producto.
+      key: cartLineKey(toCartLine(item, item.quantity)),
       type: item.type,
       name: item.type === 'kit' ? KIT_NAME : (first?.name ?? MISSING_PRODUCT_NAME),
       detail:
         item.type === 'kit'
-          ? `${found.map((product) => product?.name ?? MISSING_PRODUCT_NAME).join(' + ')} · ${leatherLabel(item.leather)}`
-          : options === undefined
-            ? ''
-            : `${leatherLabel(options.leather)} · ${options.ferrule}`,
+          ? leather === null
+            ? pieceNames
+            : `${pieceNames} · ${leatherText}`
+          : leatherText,
     }
 
     const missing = products.findIndex((product) => product === undefined)
-    if (missing !== -1) {
+    if (missing === -1) {
+      // Sin error de cuero en una línea que no se vende (`unavailable`).
+      const field =
+        item.type === 'kit' ? `items.${String(index)}.leather` : `items.${String(index)}.options`
+      const error = leatherError(sent, offered, {
+        missing: field,
+        notOffered: item.type === 'kit' ? field : `${field}.leather`,
+      })
+      if (error !== null) errors.push(error)
+    } else {
       return {
         quote: blockedLine(base, 'unavailable', showNetPrice),
         amounts: null,
@@ -451,7 +506,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
     const unitPriceArs = sumPesos(prices)
     const priceChanged =
       item.expectedUnitPriceArs !== undefined && item.expectedUnitPriceArs !== unitPriceArs
-    accepted.push(toCartLine(item, options, quantity))
+    accepted.push(toCartLine(item, quantity))
 
     return {
       quote: {
@@ -476,8 +531,7 @@ export function priceCart(db: MockDb, items: readonly CartItem[], now: Date): Pr
         kitSavingsArs: amounts.savingsArs,
         totalArs: amounts.totalArs,
         productSlug: item.type === 'kit' ? null : (sellableProducts[0]?.slug ?? null),
-        options:
-          item.type === 'kit' ? { leather: item.leather, ferrule: KIT_FERRULE } : (options ?? null),
+        options: leather === null ? null : { leather },
         kitItems:
           item.type === 'kit'
             ? sellableProducts.map((product) => ({

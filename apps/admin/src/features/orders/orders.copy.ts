@@ -305,17 +305,15 @@ export function trackingText(carrier: string, trackingNumber: string): string {
 }
 
 /**
- * Cuero y virola elegidos en una línea.
+ * Cuero elegido en una línea.
  *
  * @param leather - Cuero, por ejemplo "Negro".
- * @param ferrule - Virola, por ejemplo "Alpaca cincelada".
- * @returns "Cuero {x} · Virola {y}".
- * @throws {RangeError} Si alguno está vacío.
+ * @returns "Cuero {x}", por ejemplo "Cuero Negro".
+ * @throws {RangeError} Si está vacío.
  */
-export function lineOptionsText(leather: string, ferrule: string): string {
+export function lineOptionsText(leather: string): string {
   assertText(leather, 'El cuero')
-  assertText(ferrule, 'La virola')
-  return `Cuero ${leather} · Virola ${ferrule}`
+  return `Cuero ${leather}`
 }
 
 /**

@@ -107,7 +107,7 @@ export function orderInput(overrides: Partial<CreateOrderInput> = {}): CreateOrd
         type: 'product',
         productId: 'prd-imperial-premium',
         quantity: 1,
-        options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+        options: { leather: 'Negro' },
       },
     ],
     paymentMethod: 'mp_redirect',

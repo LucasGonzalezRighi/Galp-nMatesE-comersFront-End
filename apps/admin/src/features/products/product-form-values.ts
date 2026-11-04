@@ -33,6 +33,7 @@ const priceRuleSchema = z
  *   (`MESSAGES.invalidPrice`).
  * - `stock`: vacío (`null`) mientras no se escribe; al validar pide un entero de 0 a 9999.
  * - `images`: cada foto lleva su `url` para la vista previa (no se manda a la API).
+ * - `leathers`: los cueros que ofrece el producto (los de `productFormSchema`).
  */
 export const productFormValuesSchema = productFormFieldsSchema.and(priceRuleSchema)
 
@@ -46,7 +47,7 @@ export type ProductFormOutput = z.output<typeof productFormValuesSchema>
 export type ProductPhotoValue = ProductFormValues['images'][number]
 
 /**
- * Valores de un producto nuevo: vacío, en borrador, sin precio elegido ni fotos.
+ * Valores de un producto nuevo: vacío, en borrador, sin precio elegido, sin fotos y sin cueros.
  *
  * @returns Los valores iniciales de `/productos/nuevo`.
  */
@@ -62,6 +63,7 @@ export function newProductFormValues(): ProductFormValues {
     featured: false,
     status: 'draft',
     images: [],
+    leathers: [],
     tabsOverride: { materials: '', care: '' },
   }
 }
@@ -92,6 +94,7 @@ export function toProductFormValues(product: AdminProduct): ProductFormValues {
       height,
       alt,
     })),
+    leathers: [...product.leathers],
     tabsOverride: {
       materials: product.tabsOverride?.materials ?? '',
       care: product.tabsOverride?.care ?? '',
@@ -130,13 +133,15 @@ export function toAdminProductInput(values: ProductFormOutput): AdminProductInpu
     featured: values.featured,
     status: values.status,
     images: values.images.map(toImageInput),
+    leathers: [...values.leathers],
     tabsOverride: materials === null && care === null ? null : { materials, care },
   }
 }
 
 /**
- * Cuerpo de `PATCH` para volver a publicar un producto archivado: lo guardado, con
- * `status: 'published'` y la fecha de la versión que se abrió.
+ * Cuerpo de `PATCH` para volver a publicar un producto archivado: lo guardado (cueros incluidos,
+ * porque el `PATCH` lleva el producto completo), con `status: 'published'` y la fecha de la
+ * versión que se abrió.
  *
  * @param product - Producto guardado (archivado).
  * @param expectedUpdatedAt - `updatedAt` de la versión que muestra la pantalla.
@@ -160,14 +165,15 @@ export function republishInput(
     featured: product.featured,
     status: 'published',
     images: product.images.map(toImageInput),
+    leathers: [...product.leathers],
     tabsOverride: product.tabsOverride,
     expectedUpdatedAt,
   }
 }
 
-/** Campos del formulario que puede nombrar un `422` (las fotos, con su índice). */
+/** Campos del formulario que puede nombrar un `422` (las fotos y los cueros, con su índice). */
 const FORM_PATH =
-  /^(?:name|slug|categoryId|description|priceArs|stock|featured|status|tabsOverride\.(?:materials|care)|images(?:\.\d+(?:\.(?:alt|publicId|width|height))?)?)$/
+  /^(?:name|slug|categoryId|description|priceArs|stock|featured|status|tabsOverride\.(?:materials|care)|images(?:\.\d+(?:\.(?:alt|publicId|width|height))?)?|leathers(?:\.\d+)?)$/
 
 /**
  * Indica si un campo de un `422` (`error.fieldErrors`) es un campo del formulario, para ponerle

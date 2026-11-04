@@ -1,4 +1,3 @@
-import type { Ferrule } from '@galpon/domain'
 import { formatPesos, pesos, pluralize } from '@galpon/domain'
 
 /** Microtextos de la tarjeta de combo (`research-design.md` §8, Ruling IC-12). */
@@ -11,9 +10,8 @@ export const COMBO_CARD_COPY = {
   comboPrice: 'Precio del combo:',
   /** Solo para lectores de pantalla, antes del precio de lista tachado. */
   listPrice: 'Precio de lista:',
-  /** Título de las opciones del mate. */
+  /** Título de la elección del cuero del mate. */
   leather: 'Cuero',
-  ferrule: 'Virola',
   /** Botón de agregar. */
   add: 'Agregar combo',
   /** Etiqueta y botón de un combo sin stock, y precio de una pieza sin stock. */
@@ -21,13 +19,6 @@ export const COMBO_CARD_COPY = {
   /** Pista del botón cuando ya está en el carrito todo lo que se puede comprar de alguna pieza. */
   cartLimit: 'Ya tenés el máximo disponible en el carrito',
 } as const
-
-/** Nombres cortos de las virolas, para que entren las tres en la tarjeta de un celular. */
-export const FERRULE_SHORT: Readonly<Record<Ferrule, string>> = {
-  'Alpaca lisa': 'Lisa',
-  'Alpaca cincelada': 'Cincelada',
-  Acero: 'Acero',
-}
 
 /**
  * Chip verde del ahorro del combo.
@@ -59,16 +50,6 @@ export function piecesLabel(count: number): string {
  */
 export function leatherGroupLabel(mateName: string): string {
   return `Cuero del ${mateName}`
-}
-
-/**
- * Nombre accesible del grupo de virolas, único en la página.
- *
- * @param mateName - Nombre del mate del combo.
- * @returns "Virola del Mate Imperial Premium".
- */
-export function ferruleGroupLabel(mateName: string): string {
-  return `Virola del ${mateName}`
 }
 
 /**

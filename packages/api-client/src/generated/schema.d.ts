@@ -800,7 +800,7 @@ export interface paths {
         put?: never;
         /**
          * Cotizar el carrito
-         * @description Recibe las líneas del carrito y devuelve los importes que calcula el back, con el ahorro por kit y la disponibilidad de cada línea. Es la fuente de verdad de los importes en el checkout: la tienda no calcula precios por su cuenta. No reserva stock. Una línea con problemas no hace fallar la cotización: se informa en su `issue` y el front decide qué mostrar.
+         * @description Recibe las líneas del carrito y devuelve los importes que calcula el back, con el ahorro por kit y la disponibilidad de cada línea. Es la fuente de verdad de los importes en el checkout: la tienda no calcula precios por su cuenta. No reserva stock. Una línea con problemas no hace fallar la cotización: se informa en su `issue` y el front decide qué mostrar. El cuero sí: en un producto suelto que ofrece cueros (`leathers` no vacío), si falta `options` responde `422` en `items.N.options` ("Elegí el cuero del mate.", `code` `required`) y si `options.leather` no es uno de sus cueros, en `items.N.options.leather` ("Ese cuero no está disponible para este mate.", `code` `leather_not_offered`); en un kit, lo mismo con los cueros del mate del kit, en `items.N.leather`; en un combo, ver `ComboCartItemInput`. Si el producto no ofrece cueros, el cuero que llegue se ignora. Un producto inexistente, no publicado o sin precio sale `unavailable` sin error de cuero. Los errores se juntan y la respuesta es un solo `422` con todos.
          */
         post: operations["quoteCart"];
         delete?: never;
@@ -1292,7 +1292,7 @@ export interface paths {
         };
         /**
          * Listar los productos relacionados
-         * @description Devuelve hasta 4 productos relacionados: primero los de la misma línea y después los del mismo grupo en otras líneas. Nunca incluye al producto pedido.
+         * @description Devuelve hasta 30 productos relacionados, todos publicados y nunca el producto pedido, en tres tramos: primero los de la misma línea, después los del mismo grupo en otras líneas y después el resto del catálogo por grupo, en el orden mate, bombilla, yerba. Cada tramo sigue el orden del catálogo.
          */
         get: operations["listRelatedProducts"];
         put?: never;
@@ -1708,7 +1708,7 @@ export interface components {
              */
             updatedAt: string;
         };
-        /** @description Producto que guarda el dashboard. Las reglas son las de `productFormSchema` de `@galpon/schemas`. `code`, `sequence`, `previousSlugs` y las fechas los pone el back, y las opciones de un mate no se editan. */
+        /** @description Producto que guarda el dashboard. Las reglas son las de `productFormSchema` de `@galpon/schemas`. `code`, `sequence`, `previousSlugs` y las fechas los pone el back. Además, con la base, el back responde `422` en `leathers` ("Solo los mates llevan cuero", `code` `leathers_not_allowed`) si la línea elegida no es de mates y trae algún cuero. */
         AdminProductInput: {
             /**
              * @description Identificador de la línea del producto.
@@ -1733,6 +1733,14 @@ export interface components {
             featured: boolean;
             /** @description Fotos del producto, hasta 8. La primera es la principal. */
             images: components["schemas"]["ImageInput"][];
+            /**
+             * @description Cueros que ofrece el producto, de 0 a 4 y sin repetir; el back los guarda en el orden de `Leather`. Vacío: la ficha, el kit y los combos no muestran selector de cuero. Solo los mates pueden tener cueros: en una línea de otro grupo el back responde `422` en `leathers` ("Solo los mates llevan cuero", `code` `leathers_not_allowed`). Es obligatorio porque el `PATCH` lleva el producto completo: un cliente que no lo mande borraría los cueros.
+             * @example [
+             *       "Negro",
+             *       "Marrón"
+             *     ]
+             */
+            leathers: components["schemas"]["Leather"][];
             /**
              * @description Nombre del producto, de 3 a 120 caracteres.
              * @example Mate Imperial Premium
@@ -1919,9 +1927,8 @@ export interface components {
         };
         /** @description Línea del carrito que se envía al back. El campo `type` dice si es un producto suelto, un kit o un combo. */
         CartItemInput: components["schemas"]["ProductCartItemInput"] | components["schemas"]["KitCartItemInput"] | components["schemas"]["ComboCartItemInput"];
-        /** @description Opciones elegidas de un mate. No cambian el precio. */
+        /** @description Cuero elegido de un mate que ofrece cueros. No cambia el precio. */
         CartItemOptions: {
-            ferrule: components["schemas"]["Ferrule"];
             leather: components["schemas"]["Leather"];
         };
         /**
@@ -1929,10 +1936,10 @@ export interface components {
          * @example {
          *       "lines": [
          *         {
-         *           "key": "product:prd-imperial-premium:Negro:Alpaca cincelada",
+         *           "key": "product:prd-imperial-premium:Negro",
          *           "type": "product",
          *           "name": "Mate Imperial Premium",
-         *           "detail": "Cuero Negro · Virola Alpaca cincelada",
+         *           "detail": "Cuero negro",
          *           "unitPriceArs": 39999,
          *           "netUnitPriceArs": 33057,
          *           "kitSavingsArs": 0,
@@ -1968,8 +1975,7 @@ export interface components {
          *           "productId": "prd-imperial-premium",
          *           "quantity": 1,
          *           "options": {
-         *             "leather": "Negro",
-         *             "ferrule": "Alpaca cincelada"
+         *             "leather": "Negro"
          *           }
          *         }
          *       ]
@@ -1982,8 +1988,8 @@ export interface components {
         /** @description Línea cotizada. `unitPriceArs` es el precio de lista de una unidad (en un kit, la suma de las tres piezas; en un combo, la suma de sus piezas o el precio del combo si es mayor), `kitSavingsArs` es el ahorro de toda la línea y `totalArs = unitPriceArs × cantidad − kitSavingsArs`. Las líneas `unavailable` y `sold_out` tienen todos sus importes en 0 y no suman a los totales. */
         CartQuoteLine: {
             /**
-             * @description Texto secundario de la línea, con las opciones elegidas (en un kit o un combo, además las piezas unidas con " + "); vacío si no hay.
-             * @example Cuero Negro · Virola Alpaca cincelada
+             * @description Texto secundario de la línea, con el cuero elegido (en un kit o un combo, además las piezas unidas con " + " y el cuero después de " · "); vacío si no hay.
+             * @example Cuero negro
              */
             detail: string;
             /**
@@ -1993,8 +1999,8 @@ export interface components {
              */
             issue: "unavailable" | "sold_out" | "quantity_reduced" | "price_changed" | null;
             /**
-             * @description Clave de la línea, igual a la que arma la tienda: `product:{productId}:{cuero}:{virola}` (con `-` si no hay opciones), `kit:{mateId}:{bombillaId}:{yerbaId}:{cuero}` o `combo:{comboId}:{cuero}:{virola}` (con `-` si el combo no lleva mate; no incluye las piezas, así la línea sigue siendo la misma si el dashboard cambia la composición).
-             * @example product:prd-imperial-premium:Negro:Alpaca cincelada
+             * @description Clave de la línea, igual a la que arma la tienda: `product:{productId}:{cuero}`, `kit:{mateId}:{bombillaId}:{yerbaId}:{cuero}` o `combo:{comboId}:{cuero}`, con `-` si la línea no trae cuero. Siempre repite lo que mandó la tienda: no depende de si el producto ofrece cueros. La del combo no incluye las piezas, así la línea sigue siendo la misma si el dashboard cambia la composición.
+             * @example product:prd-imperial-premium:Negro
              */
             key: string;
             /** @description Ahorro por kit o por combo de toda la línea; 0 en los productos sueltos. */
@@ -2105,7 +2111,7 @@ export interface components {
             productId: string | null;
         };
         /**
-         * @description Combo de 2 o 3 productos fijos, de grupos distintos (a lo sumo un mate, una bombilla y una yerba), con un precio final que carga el dashboard. No es el kit: no tiene porcentaje de descuento ni se arma. El cliente solo elige el cuero y la virola si el combo lleva un mate (todos los de `Leather` y `Ferrule`; la tienda arranca en Negro y Alpaca cincelada). No tiene foto propia (la tienda compone las fotos de las piezas) ni slug. `listPriceArs`, `savingsArs`, `isPurchasable`, `isSoldOut` y `maxQuantity` se calculan al responder con los precios y el stock vigentes de las piezas.
+         * @description Combo de 2 o 3 productos fijos, de grupos distintos (a lo sumo un mate, una bombilla y una yerba), con un precio final que carga el dashboard. No es el kit: no tiene porcentaje de descuento ni se arma. El cliente solo elige el cuero si el combo lleva un mate que ofrece cueros (los `leathers` de esa pieza; la tienda arranca en Negro si está y si no en el primero). No tiene foto propia (la tienda compone las fotos de las piezas) ni slug. `listPriceArs`, `savingsArs`, `isPurchasable`, `isSoldOut` y `maxQuantity` se calculan al responder con los precios y el stock vigentes de las piezas.
          * @example {
          *       "id": "cmb-duo-imperial",
          *       "name": "Dúo Imperial",
@@ -2116,6 +2122,12 @@ export interface components {
          *           "slug": "mate-imperial-premium",
          *           "name": "Mate Imperial Premium",
          *           "group": "mate",
+         *           "leathers": [
+         *             "Negro",
+         *             "Marrón",
+         *             "Crudo",
+         *             "Borravino"
+         *           ],
          *           "unitPriceArs": 39999,
          *           "isPurchasable": true,
          *           "maxQuantity": 12,
@@ -2126,6 +2138,7 @@ export interface components {
          *           "slug": "bombillon-premium-curvo",
          *           "name": "Bombillón Premium Curvo",
          *           "group": "bombilla",
+         *           "leathers": [],
          *           "unitPriceArs": 28999,
          *           "isPurchasable": true,
          *           "maxQuantity": 12,
@@ -2191,7 +2204,7 @@ export interface components {
             savingsArs: components["schemas"]["TotalArs"];
             status: components["schemas"]["ComboStatus"];
         };
-        /** @description Combo en el carrito. Solo lleva el combo: el back usa sus piezas y su precio vigentes. Cotización de la línea (también en `POST /orders`), en este orden: 1) si el combo no existe o no está publicado, `unavailable` con `name` "Combo no disponible" o el nombre del combo; 2) si alguna pieza no existe, no está publicada o no tiene precio, `unavailable`; 3) si el combo lleva mate y falta `options`, `422` en `items.N.options` ("Elegí el cuero y la virola del mate."); 4) el stock de cada pieza se comparte con las demás líneas del carrito (sueltas, kits y otros combos, en orden): sin lugar, `sold_out`; con menos que lo pedido, `quantity_reduced` con esa cantidad; 5) con `q` combos, `suma` = los precios de lista vigentes de las piezas y `precio` = `Combo.priceArs`: `unitPriceArs = max(suma, precio)`, `kitSavingsArs = (unitPriceArs − precio) × q` y `totalArs = precio × q`, así `totalArs = unitPriceArs × q − kitSavingsArs` y el ahorro nunca es negativo; 6) `price_changed` si `expectedUnitPriceArs` vino y no es `Combo.priceArs`. La línea se llama como el combo y su `detail` son las piezas unidas con " + " y, si hay mate, " · Cuero negro · Alpaca cincelada". En el pedido la línea guarda las piezas en `kitItems` y la reserva suma cada pieza. */
+        /** @description Combo en el carrito. Solo lleva el combo: el back usa sus piezas y su precio vigentes. Cotización de la línea (también en `POST /orders`), en este orden: 1) si el combo no existe o no está publicado, `unavailable` con `name` "Combo no disponible" o el nombre del combo; 2) si alguna pieza no existe, no está publicada o no tiene precio, `unavailable`; 3) si el mate del combo ofrece cueros (los `leathers` de esa pieza) y falta `options`, `422` en `items.N.options` ("Elegí el cuero del mate.", `code` `required`); si `options.leather` no es uno de sus cueros, `422` en `items.N.options.leather` ("Ese cuero no está disponible para este mate.", `code` `leather_not_offered`); 4) el stock de cada pieza se comparte con las demás líneas del carrito (sueltas, kits y otros combos, en orden): sin lugar, `sold_out`; con menos que lo pedido, `quantity_reduced` con esa cantidad; 5) con `q` combos, `suma` = los precios de lista vigentes de las piezas y `precio` = `Combo.priceArs`: `unitPriceArs = max(suma, precio)`, `kitSavingsArs = (unitPriceArs − precio) × q` y `totalArs = precio × q`, así `totalArs = unitPriceArs × q − kitSavingsArs` y el ahorro nunca es negativo; 6) `price_changed` si `expectedUnitPriceArs` vino y no es `Combo.priceArs`. La línea se llama como el combo y su `detail` son las piezas unidas con " + " y, si hay cuero, " · Cuero negro". En el pedido la línea guarda las piezas en `kitItems` y la reserva suma cada pieza. */
         ComboCartItemInput: {
             /**
              * @description Identificador del combo.
@@ -2200,7 +2213,7 @@ export interface components {
             comboId: string;
             /** @description Precio final por combo (`Combo.priceArs`) que la tienda tenía cotizado. Es opcional: si viene y no coincide, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed`. Un cambio de precio de las piezas no lo dispara, porque el combo cuesta lo mismo. Si a la vez bajó el stock, gana el stock. */
             expectedUnitPriceArs?: components["schemas"]["Pesos"];
-            /** @description Cuero y virola del mate del combo; `null` si el combo no lleva mate (en un combo sin mate se ignoran). */
+            /** @description Cuero del mate del combo; `null` si el combo no lleva mate o el mate no ofrece cueros (entonces se ignora). */
             options: components["schemas"]["CartItemOptions"] | null;
             /**
              * @description Cantidad de combos, de 1 a 20 (y no más que el stock de cada pieza).
@@ -2250,6 +2263,16 @@ export interface components {
              * @example true
              */
             isPurchasable: boolean;
+            /**
+             * @description Cueros que se pueden elegir de esta pieza, en el orden de `Leather`. Vacío si no es un mate o si el mate no tiene selector de cuero. No cambian el precio.
+             * @example [
+             *       "Negro",
+             *       "Marrón",
+             *       "Crudo",
+             *       "Borravino"
+             *     ]
+             */
+            leathers: components["schemas"]["Leather"][];
             /**
              * @description Unidades de este producto que se pueden pedir de una vez: el menor entre 20 y su stock disponible (el stock menos lo que reservan los pedidos que esperan el pago); 0 si no hay.
              * @example 12
@@ -2414,8 +2437,7 @@ export interface components {
          *           "productId": "prd-imperial-premium",
          *           "quantity": 1,
          *           "options": {
-         *             "leather": "Negro",
-         *             "ferrule": "Alpaca cincelada"
+         *             "leather": "Negro"
          *           }
          *         }
          *       ],
@@ -2594,12 +2616,6 @@ export interface components {
                 slug: string;
             };
         };
-        /**
-         * @description Virola de un mate.
-         * @example Alpaca cincelada
-         * @enum {string}
-         */
-        Ferrule: "Alpaca lisa" | "Alpaca cincelada" | "Acero";
         /** @description Error de validación de un campo. */
         FieldError: {
             /**
@@ -2917,7 +2933,8 @@ export interface components {
             bombillaId: string;
             /** @description Precio de lista por unidad que la tienda tenía cotizado (la suma de las tres piezas, sin el descuento del kit). Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea sale con `quantity_reduced` y `POST /orders` responde `stock_changed`. */
             expectedUnitPriceArs?: components["schemas"]["TotalArs"];
-            leather: components["schemas"]["Leather"];
+            /** @description Cuero del mate del kit, uno de los `leathers` del mate; `null` si el mate no ofrece cueros (si llega, se ignora). */
+            leather: components["schemas"]["Leather"] | null;
             /**
              * @description Identificador del mate del kit.
              * @example prd-imperial-premium
@@ -3082,15 +3099,14 @@ export interface components {
          *         {
          *           "type": "product",
          *           "name": "Mate Imperial Premium",
-         *           "detail": "Cuero Negro · Virola Alpaca cincelada",
+         *           "detail": "Cuero negro",
          *           "quantity": 1,
          *           "unitPriceArs": 39999,
          *           "kitSavingsArs": 0,
          *           "totalArs": 39999,
          *           "productSlug": "mate-imperial-premium",
          *           "options": {
-         *             "leather": "Negro",
-         *             "ferrule": "Alpaca cincelada"
+         *             "leather": "Negro"
          *           },
          *           "kitItems": null
          *         }
@@ -3180,8 +3196,8 @@ export interface components {
         /** @description Línea de un pedido. Es una copia de lo que se compró, con los nombres y precios del momento de la compra: no cambia si después se edita el producto. Los importes se calculan como en `CartQuoteLine`. */
         OrderLine: {
             /**
-             * @description Texto secundario de la línea, con las opciones elegidas; vacío si no hay.
-             * @example Cuero Negro · Virola Alpaca cincelada
+             * @description Texto secundario de la línea, con el cuero elegido (en un kit o un combo, además las piezas); vacío si no hay. Es texto congelado al comprar: en los pedidos anteriores a los cueros por producto también dice la virola elegida.
+             * @example Cuero negro
              */
             detail: string;
             /** @description Las piezas de un kit (mate, bombilla y yerba, 3) o de un combo (2 o 3, en el orden del combo), o `null` si la línea es un producto suelto. */
@@ -3206,7 +3222,7 @@ export interface components {
              * @example Mate Imperial Premium
              */
             name: string;
-            /** @description Cuero y virola de un mate; en un kit, el cuero y la virola fija del kit; en un combo con mate, el cuero y la virola elegidos. `null` en los demás productos y en los combos sin mate. */
+            /** @description Cuero elegido de un mate suelto, del mate de un kit o del mate de un combo; `null` si la línea no tiene cuero. En los pedidos anteriores a este cambio la virola elegida quedó solo en `detail`. */
             options: components["schemas"]["CartItemOptions"] | null;
             /**
              * @description Slug del producto al comprar, o `null` en un kit o un combo.
@@ -3437,7 +3453,7 @@ export interface components {
         ProductCartItemInput: {
             /** @description Precio de lista por unidad que la tienda tenía cotizado. Es opcional: si viene y no coincide con el vigente, la línea de `POST /cart/quote` sale con `issue` `price_changed` y `POST /orders` responde `409` con `type` `price_changed` y no crea nada. Sin este campo, un cambio de precio solo se nota como `total_changed`. Si a la vez bajó el stock, gana el stock: la línea sale con `quantity_reduced` y `POST /orders` responde `stock_changed`. */
             expectedUnitPriceArs?: components["schemas"]["Pesos"];
-            /** @description Cuero y virola elegidos; `null` en los productos que no son mates. */
+            /** @description Cuero elegido. Obligatorio si el producto ofrece cueros (`leathers` no vacío); `null` en los demás (si llega, se ignora). */
             options: components["schemas"]["CartItemOptions"] | null;
             /**
              * @description Identificador del producto.
@@ -3459,8 +3475,6 @@ export interface components {
         ProductDetail: components["schemas"]["ProductSummary"] & {
             /** @description Todas las fotos del producto, en el orden en que se muestran. */
             images: components["schemas"]["Image"][];
-            /** @description Opciones a elegir, o `null` si el producto no tiene (solo los mates las tienen). */
-            options: components["schemas"]["ProductOptions"] | null;
             tabs: components["schemas"]["ProductTabs"];
         };
         /**
@@ -3469,13 +3483,6 @@ export interface components {
          * @enum {string}
          */
         ProductGroup: "mate" | "bombilla" | "yerba";
-        /** @description Opciones a elegir en un mate. No cambian el precio. */
-        ProductOptions: {
-            /** @description Virolas disponibles. */
-            ferrules: components["schemas"]["Ferrule"][];
-            /** @description Cueros disponibles. */
-            leathers: components["schemas"]["Leather"][];
-        };
         /** @description Página de productos. */
         ProductPage: {
             /** @description Productos de la página. */
@@ -3520,6 +3527,12 @@ export interface components {
          *       "categorySlug": "imperiales",
          *       "categoryName": "Imperiales",
          *       "group": "mate",
+         *       "leathers": [
+         *         "Negro",
+         *         "Marrón",
+         *         "Crudo",
+         *         "Borravino"
+         *       ],
          *       "priceArs": 39999,
          *       "netPriceArs": 33057,
          *       "isPurchasable": true,
@@ -3586,6 +3599,16 @@ export interface components {
              * @example false
              */
             isSoldOut: boolean;
+            /**
+             * @description Cueros que el cliente puede elegir, en el orden de `Leather`. Vacío si el producto no tiene selector de cuero (las bombillas, las yerbas y los mates sin cuero elegible). No cambian el precio.
+             * @example [
+             *       "Negro",
+             *       "Marrón",
+             *       "Crudo",
+             *       "Borravino"
+             *     ]
+             */
+            leathers: components["schemas"]["Leather"][];
             /** @description Foto principal, o `null` si todavía no tiene. */
             mainImage: components["schemas"]["Image"] | null;
             /**
@@ -3623,7 +3646,7 @@ export interface components {
             descriptionNote: string | null;
             /**
              * @description Texto de la pestaña de materiales (o de contenido, en las yerbas).
-             * @example Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
+             * @example Calabaza natural curable, cuero vacuno cosido a mano y base de alpaca o cuero según el modelo.
              */
             materials: string;
             /**
@@ -3662,7 +3685,7 @@ export interface components {
             descriptionNote: string | null;
             /**
              * @description Texto de la pestaña de materiales, hasta 2000 caracteres.
-             * @example Calabaza natural curable, virola de alpaca o acero según variante y cuero vacuno cosido a mano.
+             * @example Calabaza natural curable, cuero vacuno cosido a mano y base de alpaca o cuero según el modelo.
              */
             materials: string;
             /**
@@ -4330,7 +4353,6 @@ export type DashboardSummary = components['schemas']['DashboardSummary'];
 export type Email = components['schemas']['Email'];
 export type FaqContent = components['schemas']['FaqContent'];
 export type FeaturedReview = components['schemas']['FeaturedReview'];
-export type Ferrule = components['schemas']['Ferrule'];
 export type FieldError = components['schemas']['FieldError'];
 export type FooterContent = components['schemas']['FooterContent'];
 export type ForgotPasswordInput = components['schemas']['ForgotPasswordInput'];
@@ -4373,7 +4395,6 @@ export type Problem = components['schemas']['Problem'];
 export type ProductCartItemInput = components['schemas']['ProductCartItemInput'];
 export type ProductDetail = components['schemas']['ProductDetail'];
 export type ProductGroup = components['schemas']['ProductGroup'];
-export type ProductOptions = components['schemas']['ProductOptions'];
 export type ProductPage = components['schemas']['ProductPage'];
 export type ProductSortOrder = components['schemas']['ProductSortOrder'];
 export type ProductStatus = components['schemas']['ProductStatus'];

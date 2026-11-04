@@ -60,7 +60,7 @@ describe('buildProductTabs', () => {
   })
 
   it('en las yerbas los títulos son "Contenido" y "Conservación"', () => {
-    const tabs = buildProductTabs(detail({ group: 'yerba', options: null }), content)
+    const tabs = buildProductTabs(detail({ group: 'yerba' }), content)
 
     expect(tabs[1]?.label).toBe('Contenido')
     expect(tabs[3]?.label).toBe('Conservación')

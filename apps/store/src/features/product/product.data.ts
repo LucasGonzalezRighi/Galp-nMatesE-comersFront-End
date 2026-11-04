@@ -74,7 +74,8 @@ export async function findProduct(slug: string): Promise<ProductDetail | null> {
 }
 
 /**
- * Hasta cuatro productos relacionados con uno. Cacheada por horas con las etiquetas `products` y
+ * Hasta 30 productos relacionados con uno (`RELATED_PRODUCTS_LIMIT`: la misma línea, el mismo
+ * grupo y después el resto del catálogo). Cacheada por horas con las etiquetas `products` y
  * `product:{slug}`.
  *
  * @param slug - Slug actual de un producto que existe.

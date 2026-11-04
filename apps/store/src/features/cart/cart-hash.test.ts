@@ -6,7 +6,7 @@ const mateLine: CartLine = {
   type: 'product',
   productId: 'prd-imperial-premium',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 }
 const yerbaLine: CartLine = { type: 'product', productId: 'prd-yerba-canarias', quantity: 2 }
 const kitLine: CartLine = {
@@ -28,7 +28,8 @@ describe('cartHash', () => {
   })
 
   it('no cambia entre versiones: el checkout lo compara tras recargar', () => {
-    expect(cartHash([yerbaLine])).toBe('17e5747dcb7428')
+    // Cambió una vez con la clave sin virola (`product:{id}:{cuero|-}`, Ruling AT-5).
+    expect(cartHash([yerbaLine])).toBe('0320b28ceb5ab3')
   })
 
   it('no depende del orden de las líneas', () => {
@@ -41,11 +42,7 @@ describe('cartHash', () => {
     ['suma una línea', [mateLine, yerbaLine, kitLine, { ...kitLine, leather: 'Marrón' as const }]],
     [
       'cambia el cuero de un mate',
-      [
-        { ...mateLine, options: { leather: 'Marrón', ferrule: 'Alpaca cincelada' } },
-        yerbaLine,
-        kitLine,
-      ],
+      [{ ...mateLine, options: { leather: 'Marrón' } }, yerbaLine, kitLine],
     ],
     ['cambia un producto del kit', [mateLine, yerbaLine, { ...kitLine, yerbaId: 'prd-otra' }]],
   ] satisfies [string, CartLine[]][])('cambia si %s', (_caso, lines) => {

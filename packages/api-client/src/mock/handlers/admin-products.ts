@@ -5,7 +5,7 @@ import {
   PRODUCT_SORT_ORDERS,
   PRODUCT_STATUSES,
 } from '@galpon/domain'
-import { productFormSchema } from '@galpon/schemas'
+import { MESSAGES, productFormSchema } from '@galpon/schemas'
 import type { Image } from '../../generated/schema'
 import type { MockContext, MockRoute } from '../router'
 import type { MockDb, MockProduct } from '../types'
@@ -38,6 +38,7 @@ type ProductFields = Pick<
   | 'featured'
   | 'status'
   | 'images'
+  | 'leathers'
   | 'tabsOverride'
 >
 
@@ -82,16 +83,27 @@ function toTabsOverride(value: ProductInput['tabsOverride']): MockProduct['tabsO
 }
 
 /**
- * Arma los campos del producto: revisa que la línea exista y resuelve cada foto.
+ * Arma los campos del producto: revisa que la línea exista, que solo un mate traiga cueros y
+ * resuelve cada foto. Los cueros ya llegan sin repetir y en el orden de `LEATHERS`
+ * (`productFormSchema`).
  *
- * @throws {ResponseError} Con `422` en `categoryId` ("Esa línea no existe") o en
- *   `images.N.publicId` si una foto no existe.
+ * @throws {ResponseError} Con `422` en `categoryId` ("Esa línea no existe"), en `leathers`
+ *   (`MESSAGES.leathersOnlyMates`, `code` `leathers_not_allowed`) si la línea no es de mates y
+ *   trae cueros, o en `images.N.publicId` si una foto no existe.
  */
 function productFields(input: ProductInput, db: MockDb, current: readonly Image[]): ProductFields {
-  if (!db.categories.some((category) => category.id === input.categoryId)) {
+  const category = db.categories.find((candidate) => candidate.id === input.categoryId)
+  if (category === undefined) {
     throw new ResponseError(
       validationProblem([
         { field: 'categoryId', code: 'unknown_category', message: 'Esa línea no existe' },
+      ]),
+    )
+  }
+  if (category.group !== 'mate' && input.leathers.length > 0) {
+    throw new ResponseError(
+      validationProblem([
+        { field: 'leathers', code: 'leathers_not_allowed', message: MESSAGES.leathersOnlyMates },
       ]),
     )
   }
@@ -106,6 +118,7 @@ function productFields(input: ProductInput, db: MockDb, current: readonly Image[
     images: input.images.map((image, index) =>
       resolveImage(image, db, current, `images.${String(index)}`),
     ),
+    leathers: [...input.leathers],
     tabsOverride: toTabsOverride(input.tabsOverride),
   }
 }

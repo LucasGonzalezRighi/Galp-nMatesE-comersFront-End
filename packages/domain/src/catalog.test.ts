@@ -6,6 +6,7 @@ import {
   PRODUCT_GROUPS,
   PRODUCT_SORT_ORDERS,
   PRODUCT_STATUSES,
+  RELATED_PRODUCTS_LIMIT,
   assertValidQuantity,
   formatProductCode,
   isProductSortOrder,
@@ -22,6 +23,7 @@ describe('constantes del catálogo', () => {
     expect(PRODUCT_STATUSES).toEqual(['draft', 'published', 'archived'])
     expect(PRODUCT_SORT_ORDERS).toEqual(['destacados', 'menor', 'mayor', 'az'])
     expect(MAX_QUANTITY_PER_PRODUCT).toBe(20)
+    expect(RELATED_PRODUCTS_LIMIT).toBe(30)
   })
 })
 
@@ -218,21 +220,57 @@ describe('selectRelated', () => {
     item('m6', 'torpedo'),
   ]
 
-  it('pone primero la misma línea (sin el propio producto) y después el mismo grupo en otras líneas', () => {
-    expect(ids(selectRelated(m1, catalog))).toEqual(['m3', 'm5', 'm2', 'm4'])
+  it('pone la misma línea, el mismo grupo en otras líneas y el resto por grupo (mate, bombilla, yerba)', () => {
+    expect(ids(selectRelated(m1, catalog))).toEqual(['m3', 'm5', 'm2', 'm4', 'm6', 'b1', 'y1'])
   })
-  it('devuelve hasta 4 por defecto', () => {
-    expect(selectRelated(m1, catalog)).toHaveLength(4)
+  it('en una bombilla, el resto va con los mates antes que las yerbas', () => {
+    const bombilla = item('b2', 'curvo', 'bombilla')
+    expect(ids(selectRelated(bombilla, [...catalog, bombilla]))).toEqual([
+      'b1',
+      'm1',
+      'm2',
+      'm3',
+      'm4',
+      'm5',
+      'm6',
+      'y1',
+    ])
   })
   it('respeta el límite indicado', () => {
     expect(ids(selectRelated(m1, catalog, 2))).toEqual(['m3', 'm5'])
-    expect(ids(selectRelated(m1, catalog, 6))).toEqual(['m3', 'm5', 'm2', 'm4', 'm6'])
+    expect(ids(selectRelated(m1, catalog, 6))).toEqual(['m3', 'm5', 'm2', 'm4', 'm6', 'b1'])
   })
-  it('nunca incluye productos de otro grupo', () => {
-    const bombilla = item('b2', 'curvo', 'bombilla')
-    const related = selectRelated(bombilla, [...catalog, bombilla])
-    expect(ids(related)).toEqual(['b1'])
-    expect(related.every((r) => r.group === 'bombilla')).toBe(true)
+  it('devuelve hasta 30 por defecto y nunca el propio producto', () => {
+    const many = [m1, ...Array.from({ length: 40 }, (_, i) => item(`x${String(i)}`, 'otra'))]
+    const related = selectRelated(m1, many)
+    expect(related).toHaveLength(RELATED_PRODUCTS_LIMIT)
+    expect(ids(related)).not.toContain('m1')
+  })
+  it('con el catálogo de prueba, un mate imperial trae 26 y arriba quedan los de antes', () => {
+    const lines: [string, ProductGroup, number][] = [
+      ['imperiales', 'mate', 4],
+      ['torpedos', 'mate', 6],
+      ['camioneros', 'mate', 3],
+      ['ranchero', 'mate', 3],
+      ['yerbas', 'yerba', 3],
+      ['bombillones', 'bombilla', 8],
+    ]
+    const fixture = lines.flatMap(([line, group, count]) =>
+      Array.from({ length: count }, (_, i) => item(`${line}-${String(i)}`, line, group)),
+    )
+    const [premium] = fixture
+    if (premium === undefined) throw new Error('falta el primer imperial')
+    const related = selectRelated(premium, fixture)
+    expect(related).toHaveLength(26)
+    expect(ids(related.slice(0, 4))).toEqual([
+      'imperiales-1',
+      'imperiales-2',
+      'imperiales-3',
+      'torpedos-0',
+    ])
+    expect(related.slice(0, 15).every((r) => r.group === 'mate')).toBe(true)
+    expect(related.slice(15, 23).every((r) => r.group === 'bombilla')).toBe(true)
+    expect(related.slice(23).every((r) => r.group === 'yerba')).toBe(true)
   })
   it('un límite negativo o 0 no devuelve ninguno', () => {
     expect(selectRelated(m1, catalog, -1)).toEqual([])
@@ -248,7 +286,10 @@ describe('selectRelated', () => {
   it('devuelve los que hay si hay menos que el límite', () => {
     expect(ids(selectRelated(m1, [m1, item('m3', 'imperial')]))).toEqual(['m3'])
   })
-  it('devuelve una lista vacía si el producto está solo en su grupo', () => {
-    expect(selectRelated(m1, [m1, item('y1', 'clasica', 'yerba')])).toEqual([])
+  it('si el producto está solo en su grupo, trae los de los otros grupos', () => {
+    expect(ids(selectRelated(m1, [m1, item('y1', 'clasica', 'yerba')]))).toEqual(['y1'])
+  })
+  it('devuelve una lista vacía si el producto está solo en el catálogo', () => {
+    expect(selectRelated(m1, [m1])).toEqual([])
   })
 })

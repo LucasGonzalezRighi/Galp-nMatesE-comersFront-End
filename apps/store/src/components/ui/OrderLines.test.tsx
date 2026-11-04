@@ -14,7 +14,7 @@ const LINES: OrderLine[] = [
     name: 'Mate Imperial Premium',
     detail: 'Cuero Negro · Virola Alpaca cincelada',
     productSlug: 'mate-imperial-premium',
-    options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+    options: { leather: 'Negro' },
     kitItems: null,
     quantity: 2,
     unitPriceArs: 39999,
@@ -26,7 +26,7 @@ const LINES: OrderLine[] = [
     name: 'Kit',
     detail: 'Cuero Negro',
     productSlug: null,
-    options: { leather: 'Negro', ferrule: 'Alpaca lisa' },
+    options: { leather: 'Negro' },
     kitItems: [
       { name: 'Mate Galleta', slug: 'mate-galleta', unitPriceArs: 25000 },
       { name: 'Bombilla Pico de Loro', slug: 'bombilla-pico-de-loro', unitPriceArs: 12000 },

@@ -2,10 +2,8 @@ import type { Pesos, ProductSortOrder } from '@galpon/domain'
 import {
   averageRating,
   comboSavings,
-  FERRULES,
   formatProductCode,
   isPurchasable,
-  LEATHERS,
   maxQuantity,
   netPrice,
   pesos,
@@ -149,6 +147,7 @@ export function toProductSummary(product: MockProduct, db: MockDb): ProductSumma
     categoryName: category.name,
     categorySlug: category.slug,
     group: category.group,
+    leathers: [...product.leathers],
     priceArs: product.priceArs,
     netPriceArs:
       db.settings.priceDisplay.showNetPrice && price !== null
@@ -178,6 +177,7 @@ function toComboItem(product: MockProduct, db: MockDb, now: Date): ComboItem {
     slug: product.slug,
     name: product.name,
     group: categoryOf(product, db).group,
+    leathers: [...product.leathers],
     unitPriceArs: product.priceArs,
     isPurchasable: isPurchasable({
       status: product.status,
@@ -248,7 +248,6 @@ export function toProductDetail(product: MockProduct, db: MockDb): ProductDetail
   return {
     ...summary,
     images: product.images,
-    options: summary.group === 'mate' ? { ferrules: [...FERRULES], leathers: [...LEATHERS] } : null,
     tabs: {
       descriptionNote: groupTabs.descriptionNote,
       materials: product.tabsOverride?.materials ?? groupTabs.materials,

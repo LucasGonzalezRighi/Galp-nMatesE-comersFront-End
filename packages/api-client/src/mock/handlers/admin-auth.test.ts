@@ -207,6 +207,7 @@ const PRODUCT: AdminProductInput = {
   featured: false,
   status: 'draft',
   images: [],
+  leathers: [],
 }
 
 /** Cada escritura del admin de la API simulada I, con datos que de otro modo serían válidos. */

@@ -17,7 +17,7 @@ Cuando cambia el contrato: editá el YAML, corré `npm run api:lint`, `npm run a
 
 ## Alineación con `domain`
 
-`src/contract-alignment.ts` solo tiene aserciones de tipos, sin código en tiempo de ejecución. Compara cada enum del contrato (`ProductGroup`, `ProductStatus`, `ComboStatus`, `Leather`, `Ferrule`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`, `Province`) con el de `@galpon/domain`, y `ContactReason` con el de `@galpon/schemas`. Si un valor cambia de un lado y no del otro, `npm run typecheck` falla en la línea del enum desfasado.
+`src/contract-alignment.ts` solo tiene aserciones de tipos, sin código en tiempo de ejecución. Compara cada enum del contrato (`ProductGroup`, `ProductStatus`, `ComboStatus`, `Leather`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`, `Province`) con el de `@galpon/domain`, y `ContactReason` con el de `@galpon/schemas`. También compara `CartItemOptions` (el cuero elegido de una línea del carrito) con `CartLineOptions` del dominio. Si un valor cambia de un lado y no del otro, `npm run typecheck` falla en la línea del enum desfasado.
 
 ## Cliente
 
@@ -156,7 +156,7 @@ Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardho
 **Controles para probar escenarios.** Otras dos rutas internas, también fuera del contrato (`MOCK_CONTROL_ROUTES`), para los tests de extremo a extremo, que solo llegan a la base del servidor por HTTP (en la tienda, `/api/v1/__mock/…`):
 
 - `POST /__mock/orders/{number}/expire` (`MOCK_EXPIRE_ORDER_PATH`) vence la reserva del pedido ahora: pasa a `expired`, libera el stock y cancela el intento de pago activo (`409 order_not_pending` si ya no esperaba el pago).
-- `POST /__mock/products/{id}` (`MOCK_PRODUCT_PATH`) con `{ priceArs?, stock? }` cambia el precio o el stock del producto (al menos un campo) y avisa que cambió el catálogo. Sirve para provocar `409 price_changed`, `total_changed` y `stock_changed` antes de pagar.
+- `POST /__mock/products/{id}` (`MOCK_PRODUCT_PATH`) con `{ priceArs?, stock?, leathers? }` cambia el precio, el stock o los cueros del producto (al menos un campo; los cueros se guardan sin repetir y en el orden de `LEATHERS`, y la respuesta los devuelve) y avisa que cambió el catálogo. Sirve para provocar `409 price_changed`, `total_changed` y `stock_changed` antes de pagar, y para probar la conciliación del cuero del carrito.
 
 **Dashboard (P4).** Todas las rutas `/admin/*` piden la sesión del admin (`401`) y las escrituras, además, el token CSRF (`403 csrf_invalid`).
 
@@ -190,7 +190,7 @@ Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardho
 
 **Solo del back.** El aviso de Mercado Pago (`POST /webhooks/mercadopago`, en `BACKEND_ONLY_OPERATIONS`) responde `501` con `title: 'No implementado en el modo de prueba'` y `detail: 'Lo atiende solo el back'`: en el modo de prueba lo reemplaza el simulador. `PENDING_OPERATIONS` (las que el modo de prueba todavía no atiende, `501` con `detail: 'Todavía no está en el modo de prueba'`) queda vacía desde P4. Una ruta desconocida responde `404` y un método que la ruta no admite, `405`, siempre como `application/problem+json`. `contract-coverage.test.ts` falla si una operación de `docs/api/openapi.yaml` no está en exactamente una de `IMPLEMENTED_ROUTES`, `PENDING_OPERATIONS` y `BACKEND_ONLY_OPERATIONS`.
 
-**Base.** La base tiene versión (`MOCK_DB_VERSION`, hoy 4, con pedidos, clientes, sesiones, fotos simuladas, `updatedAt` en los productos y combos): una guardada con otra versión se descarta y se vuelve a sembrar. `createMockDb` crea una base nueva (con `demo: 'admin'`, con los datos de demostración); `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin). La base no se guarda sola: quien llama a `onMutation` es `createMockFetch`, después de cada pedido que no es `GET` y responde 2xx, así que se le pasa `onMutation: handle.persist` (con `handle` lo que devuelve `createPersistentMockDb`). `onInvalidate` se llama cuando un handler avisa, con `ctx.invalidate`, que cambió algo que la tienda tiene en caché.
+**Base.** La base tiene versión (`MOCK_DB_VERSION`, hoy 5, con pedidos, clientes, sesiones, fotos simuladas, `updatedAt` en los productos, combos y los cueros de cada producto): una guardada con otra versión se descarta y se vuelve a sembrar. `createMockDb` crea una base nueva (con `demo: 'admin'`, con los datos de demostración); `getGlobalMockDb` comparte una sola por proceso (el servidor de Next) y `createPersistentMockDb` la guarda en `sessionStorage` (el admin). La base no se guarda sola: quien llama a `onMutation` es `createMockFetch`, después de cada pedido que no es `GET` y responde 2xx, así que se le pasa `onMutation: handle.persist` (con `handle` lo que devuelve `createPersistentMockDb`). `onInvalidate` se llama cuando un handler avisa, con `ctx.invalidate`, que cambió algo que la tienda tiene en caché.
 
 ## Exports
 

@@ -47,6 +47,7 @@ describe('toProductFormValues', () => {
           alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
         },
       ],
+      leathers: ['Negro', 'Marrón', 'Crudo', 'Borravino'],
       tabsOverride: { materials: '', care: '' },
     })
   })
@@ -68,7 +69,7 @@ describe('toProductFormValues', () => {
 })
 
 describe('newProductFormValues', () => {
-  it('arranca vacío, en borrador y sin fotos', () => {
+  it('arranca vacío, en borrador, sin fotos y sin cueros', () => {
     expect(newProductFormValues()).toEqual({
       name: '',
       slug: '',
@@ -80,6 +81,7 @@ describe('newProductFormValues', () => {
       featured: false,
       status: 'draft',
       images: [],
+      leathers: [],
       tabsOverride: { materials: '', care: '' },
     })
   })
@@ -135,9 +137,18 @@ describe('toAdminProductInput', () => {
           alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
         },
       ],
+      leathers: ['Negro', 'Marrón', 'Crudo', 'Borravino'],
       tabsOverride: null,
     })
     expect(input.images[0]).not.toHaveProperty('url')
+  })
+
+  it('manda los cueros elegidos en el orden de LEATHERS', async () => {
+    const values = { ...toProductFormValues(await imperialPremium()), leathers: ['Crudo', 'Negro'] }
+    expect(toAdminProductInput(productFormValuesSchema.parse(values)).leathers).toEqual([
+      'Negro',
+      'Crudo',
+    ])
   })
 
   it('"a consultar" manda el precio en null y un solo texto propio deja el otro en null', async () => {
@@ -184,6 +195,7 @@ describe('republishInput', () => {
           alt: 'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
         },
       ],
+      leathers: ['Negro', 'Marrón', 'Crudo', 'Borravino'],
       tabsOverride: { materials: 'Propio.', care: null },
       expectedUpdatedAt: '2026-10-01T10:00:00Z',
     })
@@ -196,12 +208,14 @@ describe('republishInput', () => {
 })
 
 describe('isProductFormPath', () => {
-  it('reconoce los campos del formulario, también los de cada foto', () => {
+  it('reconoce los campos del formulario, también los de cada foto y cada cuero', () => {
     expect(isProductFormPath('slug')).toBe(true)
     expect(isProductFormPath('images.2.alt')).toBe(true)
     expect(isProductFormPath('images.0.publicId')).toBe(true)
     expect(isProductFormPath('tabsOverride.care')).toBe(true)
     expect(isProductFormPath('images')).toBe(true)
+    expect(isProductFormPath('leathers')).toBe(true)
+    expect(isProductFormPath('leathers.0')).toBe(true)
     expect(isProductFormPath('expectedUpdatedAt')).toBe(false)
     expect(isProductFormPath('images.x.alt')).toBe(false)
   })

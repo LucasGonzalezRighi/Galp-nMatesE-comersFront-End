@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProductSummary } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import {
   catalogCountLabel,
   catalogSearch,
@@ -20,6 +21,7 @@ function product(overrides: Partial<ProductSummary> & { id: string }): ProductSu
     group: 'mate',
     isPurchasable: true,
     isSoldOut: false,
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     mainImage: null,
     maxQuantity: 10,
     name: `Producto ${overrides.id}`,

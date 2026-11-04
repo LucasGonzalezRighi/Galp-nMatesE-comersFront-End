@@ -188,7 +188,7 @@ describe('ProductDetailView', () => {
 
   it('una bombilla o una yerba no lleva la banda del kit', () => {
     for (const group of ['bombilla', 'yerba'] as const) {
-      renderView(detail({ group, options: null }))
+      renderView(detail({ group }))
       expect(screen.queryByText('Completá la ronda')).toBeNull()
       cleanup()
     }

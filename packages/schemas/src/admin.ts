@@ -5,9 +5,11 @@ import {
   COMBO_MAX_ITEMS,
   COMBO_MIN_ITEMS,
   COMBO_STATUSES,
+  LEATHERS,
   MAX_IMAGES,
   MAX_KIT_DISCOUNT_PERCENT,
   MEDIA_PURPOSES,
+  normalizeLeathers,
   PRODUCT_GROUPS,
   SHIPPING_METHODS,
 } from '@galpon/domain'
@@ -172,6 +174,9 @@ export type ImageForm = z.output<typeof imageFormSchema>
  * - `tabsOverride`: texto propio de Materiales y Cuidados (hasta 2000 cada uno); vacío queda en
  *   `undefined`, y entonces la pestaña usa el texto del grupo.
  * - `images`: hasta 8 fotos, la primera es la principal.
+ * - `leathers`: cueros que ofrece el producto (de 0 a 4, sin repetir); salen en el orden de
+ *   `LEATHERS`. Vacío: la tienda no muestra selector de cuero. Que solo los mates lleven cueros lo
+ *   valida el servidor (`MESSAGES.leathersOnlyMates`).
  */
 export const productFormSchema = z.object({
   name: requiredText(3, 120),
@@ -193,6 +198,12 @@ export const productFormSchema = z.object({
     })
     .optional(),
   images: z.array(imageFormSchema).max(MAX_PRODUCT_IMAGES, MESSAGES.maxImages(MAX_PRODUCT_IMAGES)),
+  leathers: z
+    .array(z.enum(LEATHERS, { error: MESSAGES.invalidLeather }))
+    .refine((leathers) => new Set(leathers).size === leathers.length, {
+      error: MESSAGES.duplicateLeathers,
+    })
+    .transform(normalizeLeathers),
 })
 
 /** Producto como lo arma el formulario, antes de normalizarlo. */

@@ -21,8 +21,8 @@ import { CartHydrator } from './CartHydrator'
 import { EMPTY_SEEN } from './reconcile'
 import { createTestApi } from './test/support'
 
-/** Cuero y virola de un mate: la cotización los exige en cada mate. */
-const OPTIONS = { leather: 'Negro', ferrule: 'Alpaca cincelada' } as const
+/** Cuero de un mate: la cotización lo exige en cada mate que ofrece cueros. */
+const OPTIONS = { leather: 'Negro' } as const
 
 /** Carrito completo montado como en el layout, con la API simulada de fábrica. */
 function renderCart(api: ApiClient): void {
@@ -129,7 +129,7 @@ describe('CartDrawer', () => {
               type: 'product',
               productId: 'prd-imperial-premium',
               quantity: 1,
-              options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+              options: { leather: 'Negro' },
             },
           ],
         },
@@ -142,7 +142,7 @@ describe('CartDrawer', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Carrito (4)' })
     // El detalle llega con la cotización; hasta entonces las líneas están cargando.
-    expect(await within(dialog).findAllByText('Cuero negro · Alpaca cincelada')).toHaveLength(3)
+    expect(await within(dialog).findAllByText('Cuero negro')).toHaveLength(3)
     expect(within(dialog).getByText('Mate Imperial Premium')).toBeVisible()
     expect(within(dialog).queryByText('prd-borrado')).not.toBeInTheDocument()
     // Sin stock: marcada y sin selector de cantidad; el total solo suma las líneas con stock.
@@ -204,7 +204,7 @@ describe('CartDrawer', () => {
     expect(within(dialog).getAllByText('$71.097')).toHaveLength(2)
   })
 
-  it('muestra el combo con su nombre, sus piezas, el cuero y la virola, y su ahorro', async () => {
+  it('muestra el combo con su nombre, sus piezas, el cuero y su ahorro', async () => {
     const { api } = createTestApi()
     useCartStore.setState({
       lines: [
@@ -212,7 +212,7 @@ describe('CartDrawer', () => {
           type: 'combo',
           comboId: 'cmb-duo-imperial',
           productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
-          options: { leather: 'Marrón', ferrule: 'Acero' },
+          options: { leather: 'Marrón' },
           quantity: 1,
         },
       ],
@@ -225,9 +225,7 @@ describe('CartDrawer', () => {
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByText('Dúo Imperial')).toBeVisible()
     expect(
-      within(dialog).getByText(
-        'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
-      ),
+      within(dialog).getByText('Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón'),
     ).toBeVisible()
     // Las piezas suman $68.998 y el combo cuesta $61.999.
     expect(within(dialog).getByText('Ahorrás $6.999')).toBeVisible()

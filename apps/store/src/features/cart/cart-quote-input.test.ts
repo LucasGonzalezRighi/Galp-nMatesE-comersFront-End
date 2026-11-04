@@ -6,7 +6,7 @@ const mateLine: CartLine = {
   type: 'product',
   productId: 'm1',
   quantity: 2,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 }
 const yerbaLine: CartLine = { type: 'product', productId: 'y1', quantity: 1 }
 const kitLine: CartLine = {
@@ -34,7 +34,7 @@ describe('buildCartQuoteInput', () => {
           type: 'product',
           productId: 'm1',
           quantity: 2,
-          options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+          options: { leather: 'Negro' },
         },
         // Lo que no es un mate no lleva opciones: el contrato pide `null`, no que falte.
         { type: 'product', productId: 'y1', quantity: 1, options: null },
@@ -99,7 +99,7 @@ describe('buildCartQuoteInput con combos', () => {
     type: 'combo',
     comboId: 'cmb-duo-imperial',
     productIds: ['m1', 'b1'],
-    options: { leather: 'Marrón', ferrule: 'Acero' },
+    options: { leather: 'Marrón' },
     quantity: 2,
   }
   const comboWithoutMate: CartLine = {
@@ -115,7 +115,7 @@ describe('buildCartQuoteInput con combos', () => {
         type: 'combo',
         comboId: 'cmb-duo-imperial',
         quantity: 2,
-        options: { leather: 'Marrón', ferrule: 'Acero' },
+        options: { leather: 'Marrón' },
       },
       { type: 'combo', comboId: 'cmb-bombilla-y-yerba', quantity: 1, options: null },
     ])

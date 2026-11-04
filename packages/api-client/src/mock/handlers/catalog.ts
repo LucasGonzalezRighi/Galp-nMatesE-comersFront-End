@@ -1,4 +1,10 @@
-import { matchesSearch, PRODUCT_GROUPS, PRODUCT_SORT_ORDERS, selectRelated } from '@galpon/domain'
+import {
+  matchesSearch,
+  PRODUCT_GROUPS,
+  PRODUCT_SORT_ORDERS,
+  RELATED_PRODUCTS_LIMIT,
+  selectRelated,
+} from '@galpon/domain'
 import type { MockRoute } from '../router'
 import { json, notFound } from '../http'
 import {
@@ -17,9 +23,6 @@ export const DEFAULT_PAGE_SIZE = 24
 
 /** Máximo de productos por página del contrato. */
 export const MAX_PAGE_SIZE = 100
-
-/** Productos relacionados que devuelve la ficha. */
-const RELATED_LIMIT = 4
 
 /** Rutas públicas del catálogo: líneas, listado, ficha y relacionados. */
 export const catalogRoutes: readonly MockRoute[] = [
@@ -95,6 +98,8 @@ export const catalogRoutes: readonly MockRoute[] = [
     if (product === undefined) return notFound('No existe un producto con ese slug.')
     const summaries = published.map((candidate) => toProductSummary(candidate, db))
     const current = summaries.find((summary) => summary.id === product.id)
-    return json(current === undefined ? [] : selectRelated(current, summaries, RELATED_LIMIT))
+    return json(
+      current === undefined ? [] : selectRelated(current, summaries, RELATED_PRODUCTS_LIMIT),
+    )
   }),
 ]

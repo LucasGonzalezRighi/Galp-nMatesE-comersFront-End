@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Combo } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import type { PieceProduct } from './combo-form-values'
 import {
   comboDialogSchema,
@@ -40,6 +41,7 @@ const SAVED: Combo = {
       slug: 'mate-galleta',
       name: 'Mate Galleta',
       group: 'mate',
+      leathers: [...LEATHERS],
       unitPriceArs: 27999,
       isPurchasable: false,
       maxQuantity: 0,
@@ -50,6 +52,7 @@ const SAVED: Combo = {
       slug: 'yerba-canarias',
       name: 'Yerba Canarias 1 kg',
       group: 'yerba',
+      leathers: [],
       unitPriceArs: 9999,
       isPurchasable: true,
       maxQuantity: 30,

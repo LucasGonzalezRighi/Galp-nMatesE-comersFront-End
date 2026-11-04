@@ -33,7 +33,7 @@ describe('useCartQuoteInput', () => {
     })
 
     act(() => {
-      useCartStore.getState().setLineQuantity('product:prd-yerba-canarias:-:-', 3)
+      useCartStore.getState().setLineQuantity('product:prd-yerba-canarias:-', 3)
     })
 
     expect(result.current.items[0]?.quantity).toBe(3)

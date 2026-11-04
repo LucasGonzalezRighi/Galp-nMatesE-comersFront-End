@@ -4,7 +4,6 @@ import {
   addCartLine,
   COMBO_MAX_ITEMS,
   COMBO_MIN_ITEMS,
-  FERRULES,
   LEATHERS,
   MAX_QUANTITY_PER_PRODUCT,
 } from '@galpon/domain'
@@ -18,8 +17,11 @@ const quantitySchema = z.int().min(1).max(MAX_QUANTITY_PER_PRODUCT)
 /** Identificador de producto guardado: texto no vacío y acotado. */
 const idSchema = z.string().min(1).max(100)
 
-/** Cuero y virola de un mate, como se guardan. */
-const optionsSchema = z.object({ leather: z.enum(LEATHERS), ferrule: z.enum(FERRULES) })
+/**
+ * Cuero de un mate, como se guarda. Las líneas guardadas antes con virola la pierden al leerse
+ * (`z.object` descarta las claves de más).
+ */
+const optionsSchema = z.object({ leather: z.enum(LEATHERS) })
 
 /** Línea de un producto suelto, como se guarda. */
 const productLineSchema = z.object({
@@ -35,7 +37,7 @@ const kitLineSchema = z.object({
   mateId: idSchema,
   bombillaId: idSchema,
   yerbaId: idSchema,
-  leather: z.enum(LEATHERS),
+  leather: z.enum(LEATHERS).nullable(),
   quantity: quantitySchema,
 })
 

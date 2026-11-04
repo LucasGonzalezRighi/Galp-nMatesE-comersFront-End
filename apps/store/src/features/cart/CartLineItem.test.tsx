@@ -14,7 +14,7 @@ const mateLine: CartLine = {
   type: 'product',
   productId: 'm1',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 }
 const kitLine: CartLine = {
   type: 'kit',
@@ -26,9 +26,9 @@ const kitLine: CartLine = {
 }
 
 const mateQuote = quoteLine({
-  key: 'product:m1:Negro:Alpaca cincelada',
+  key: 'product:m1:Negro',
   name: 'Mate Imperial Premium',
-  detail: 'Cuero negro · Alpaca cincelada',
+  detail: 'Cuero negro',
   unitPriceArs: 39999,
   totalArs: 39999,
   netUnitPriceArs: 33057,

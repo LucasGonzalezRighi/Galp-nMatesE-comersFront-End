@@ -1,5 +1,6 @@
 import type { ProductGroup } from './catalog'
 import type { Pesos } from './money'
+import type { Leather } from './options'
 import type { LineAmounts } from './totals'
 import { assertValidQuantity } from './catalog'
 import { pesos, sumPesos } from './money'
@@ -73,7 +74,7 @@ export function comboLineAmounts(
 
 /**
  * Indica si los productos de un combo son de grupos distintos (a lo sumo un mate, una bombilla y
- * una yerba), que es la regla para guardarlo: así cada combo tiene un solo cuero y una sola virola.
+ * una yerba), que es la regla para guardarlo: así cada combo tiene a lo sumo un cuero.
  *
  * @param groups - Grupo de cada producto del combo.
  * @returns `true` si ningún grupo se repite.
@@ -86,11 +87,27 @@ export function hasDistinctGroups(groups: readonly ProductGroup[]): boolean {
 }
 
 /**
- * Indica si el combo lleva un mate: solo entonces el cliente elige cuero y virola.
+ * Indica si el combo lleva un mate. El cliente elige cuero solo si ese mate ofrece cueros (ver
+ * {@link comboMateLeathers}).
  *
  * @param groups - Grupo de cada producto del combo.
  * @returns `true` si alguna pieza es un mate.
  */
 export function comboHasMate(groups: readonly ProductGroup[]): boolean {
   return groups.includes('mate')
+}
+
+/**
+ * Devuelve los cueros que se pueden elegir en un combo: los del mate, si lleva uno.
+ *
+ * @param items - Piezas del combo, con su grupo y sus cueros.
+ * @returns Una copia de los `leathers` del mate; `[]` si el combo no lleva mate o el mate no
+ *   ofrece cueros.
+ * @example
+ * comboMateLeathers([{ group: 'mate', leathers: ['Negro'] }, { group: 'yerba', leathers: [] }]) // ["Negro"]
+ */
+export function comboMateLeathers(
+  items: readonly { group: ProductGroup; leathers: readonly Leather[] }[],
+): Leather[] {
+  return [...(items.find((item) => item.group === 'mate')?.leathers ?? [])]
 }

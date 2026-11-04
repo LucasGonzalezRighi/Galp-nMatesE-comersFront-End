@@ -117,9 +117,7 @@ function LineItem({ line }: LineItemProps): ReactNode {
         <p className="font-medium">{line.name}</p>
         {showDetail && <p className="text-sm text-neutral-400">{line.detail}</p>}
         {line.options !== null && (
-          <p className="text-sm text-neutral-400">
-            {lineOptionsText(line.options.leather, line.options.ferrule)}
-          </p>
+          <p className="text-sm text-neutral-400">{lineOptionsText(line.options.leather)}</p>
         )}
         {line.kitItems !== null && (
           <ul aria-label={ORDERS_COPY.kitPieces} className="text-sm text-neutral-400">

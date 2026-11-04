@@ -103,7 +103,7 @@ describe('addProductToCart', () => {
         type: 'product',
         productId: 'm1',
         quantity: 1,
-        options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+        options: { leather: 'Negro' },
       },
     ])
     expect(announced()).toHaveTextContent('Agregado al carrito. Mate Imperial Premium')
@@ -117,8 +117,8 @@ describe('addProductToCart', () => {
     expect(cart().lines).toEqual([{ type: 'product', productId: 'b1', quantity: 1 }])
   })
 
-  it('usa el cuero y la virola elegidos y suma las líneas iguales', () => {
-    const options = { leather: 'Borravino', ferrule: 'Acero' } as const
+  it('usa el cuero elegido y suma las líneas iguales', () => {
+    const options = { leather: 'Borravino' } as const
     add({ product: mate, options })
     add({ product: mate, options, quantity: 2 })
 
@@ -167,7 +167,7 @@ describe('addProductToCart', () => {
     expect(() =>
       addProductToCart({
         product: mate,
-        options: { leather: 'Rosa' as 'Negro', ferrule: 'Acero' },
+        options: { leather: 'Rosa' as 'Negro' },
       }),
     ).toThrow(RangeError)
     expect(cart().lines).toEqual([])
@@ -294,7 +294,7 @@ describe('addComboToCart', () => {
     ],
   })
 
-  it('suma el combo con sus piezas y Negro + Alpaca cincelada, avisa con el nombre y no abre el carrito', () => {
+  it('suma el combo con sus piezas y el cuero Negro, avisa con el nombre y no abre el carrito', () => {
     vi.useFakeTimers()
 
     const result = addCombo({ combo: duo })
@@ -305,7 +305,7 @@ describe('addComboToCart', () => {
         type: 'combo',
         comboId: 'cmb-duo',
         productIds: ['m1', 'b1'],
-        options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+        options: { leather: 'Negro' },
         quantity: 1,
       },
     ])
@@ -318,8 +318,8 @@ describe('addComboToCart', () => {
     expect(cart().isOpen).toBe(false)
   })
 
-  it('usa el cuero y la virola elegidos y suma los combos iguales', () => {
-    const options = { leather: 'Marrón', ferrule: 'Acero' } as const
+  it('usa el cuero elegido y suma los combos iguales', () => {
+    const options = { leather: 'Marrón' } as const
     addCombo({ combo: duo, options })
     addCombo({ combo: duo, options })
     addCombo({ combo: duo })
@@ -329,7 +329,7 @@ describe('addComboToCart', () => {
   })
 
   it('un combo sin mate no lleva opciones aunque se pasen', () => {
-    addCombo({ combo: withoutMate, options: { leather: 'Crudo', ferrule: 'Acero' } })
+    addCombo({ combo: withoutMate, options: { leather: 'Crudo' } })
 
     expect(cart().lines).toEqual([
       { type: 'combo', comboId: 'cmb-by', productIds: ['b1', 'y1'], quantity: 1 },
@@ -363,7 +363,7 @@ describe('addComboToCart', () => {
       { combo: { ...duo, items: [mateItem, bombillaItem, { ...bombillaItem, productId: 'b2' }] } },
       { combo: { ...duo, items: [mateItem, { ...mateItem, productId: 'm2' }] } },
       { combo: { ...duo, priceArs: 0 } },
-      { combo: duo, options: { leather: 'Rosa' as 'Negro', ferrule: 'Acero' } },
+      { combo: duo, options: { leather: 'Rosa' as 'Negro' } },
     ]
     for (const input of invalid) {
       expect(() => addComboToCart(input)).toThrow(RangeError)
@@ -372,7 +372,7 @@ describe('addComboToCart', () => {
   })
 
   it('se guarda con sus piezas y sobrevive a recargar (Review Focus 4)', () => {
-    addCombo({ combo: duo, options: { leather: 'Marrón', ferrule: 'Acero' } })
+    addCombo({ combo: duo, options: { leather: 'Marrón' } })
     const stored = localStorage.getItem(CART_STORAGE_KEY)
     useCartStore.setState({ lines: [], seen: EMPTY_SEEN, hasHydrated: false })
     localStorage.setItem(CART_STORAGE_KEY, stored ?? '')
@@ -384,7 +384,7 @@ describe('addComboToCart', () => {
         type: 'combo',
         comboId: 'cmb-duo',
         productIds: ['m1', 'b1'],
-        options: { leather: 'Marrón', ferrule: 'Acero' },
+        options: { leather: 'Marrón' },
         quantity: 1,
       },
     ])
@@ -422,7 +422,7 @@ describe('persistencia en localStorage', () => {
             type: 'product',
             productId: 'm1',
             quantity: 1,
-            options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+            options: { leather: 'Negro' },
           },
         ],
         seen: { prices: { m1: 39999 }, kitDiscountPercent: null },
@@ -566,14 +566,14 @@ describe('syncCart con datos viejos en localStorage (Review Focus 1)', () => {
           type: 'combo',
           comboId: 'cmb-duo-imperial',
           productIds: ['prd-imperial-premium', 'prd-yerba-canarias'],
-          options: { leather: 'Negro', ferrule: 'Acero' },
+          options: { leather: 'Negro' },
           quantity: 1,
         },
         {
           type: 'combo',
           comboId: 'cmb-galleta-y-canarias',
           productIds: ['prd-galleta', 'prd-yerba-canarias'],
-          options: { leather: 'Negro', ferrule: 'Acero' },
+          options: { leather: 'Negro' },
           quantity: 1,
         },
       ],
@@ -587,7 +587,7 @@ describe('syncCart con datos viejos en localStorage (Review Focus 1)', () => {
         type: 'combo',
         comboId: 'cmb-duo-imperial',
         productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
-        options: { leather: 'Negro', ferrule: 'Acero' },
+        options: { leather: 'Negro' },
         quantity: 1,
       },
     ])

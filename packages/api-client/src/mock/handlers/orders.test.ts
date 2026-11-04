@@ -4,12 +4,12 @@ import { getOrder } from '../../services'
 import { createCheckoutApi, orderInput, placeOrder, postOrder, START } from '../test/checkout-api'
 import { randomUuid } from '../uuid'
 
-/** Mate Imperial Premium con cuero y virola, como lo manda la tienda. */
+/** Mate Imperial Premium con su cuero, como lo manda la tienda. */
 const MATE = {
   type: 'product',
   productId: 'prd-imperial-premium',
   quantity: 1,
-  options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+  options: { leather: 'Negro' },
 } satisfies CartItemInput
 
 describe('POST /orders', () => {
@@ -38,13 +38,13 @@ describe('POST /orders', () => {
     expect(order.lines[0]).toEqual({
       type: 'product',
       name: 'Mate Imperial Premium',
-      detail: 'Cuero negro · Alpaca cincelada',
+      detail: 'Cuero negro',
       quantity: 1,
       unitPriceArs: 39999,
       kitSavingsArs: 0,
       totalArs: 39999,
       productSlug: 'mate-imperial-premium',
-      options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+      options: { leather: 'Negro' },
       kitItems: null,
     })
     expect(orderToken.length).toBeGreaterThan(20)
@@ -52,7 +52,7 @@ describe('POST /orders', () => {
     expect(mock.db.orders[0]?.creation.orderToken).toBe(orderToken)
   })
 
-  it('arma la línea de un kit con sus tres piezas y la virola fija', async () => {
+  it('arma la línea de un kit con sus tres piezas y el cuero del mate', async () => {
     const mock = createCheckoutApi()
     const { order } = await placeOrder(mock, {
       shipping: { method: 'pickup', address: null },
@@ -75,7 +75,7 @@ describe('POST /orders', () => {
       kitSavingsArs: 7900,
       totalArs: 71097,
       productSlug: null,
-      options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+      options: { leather: 'Negro' },
       kitItems: [
         { slug: 'mate-imperial-premium', name: 'Mate Imperial Premium', unitPriceArs: 39999 },
         { slug: 'bombillon-premium-curvo', name: 'Bombillón Premium Curvo', unitPriceArs: 28999 },
@@ -183,7 +183,7 @@ describe('POST /orders', () => {
           type: 'product' as const,
           productId: 'prd-coquito-criollo',
           quantity: 2,
-          options: { leather: 'Negro' as const, ferrule: 'Acero' as const },
+          options: { leather: 'Negro' as const },
         },
       ],
       expectedTotalArs: 2 * 28999 + 6500,
@@ -240,7 +240,7 @@ describe('GET /orders/{number}', () => {
           type: 'product' as const,
           productId: 'prd-coquito-criollo',
           quantity: 2,
-          options: { leather: 'Negro' as const, ferrule: 'Acero' as const },
+          options: { leather: 'Negro' as const },
         },
       ],
       expectedTotalArs: 2 * 28999 + 6500,
@@ -269,7 +269,7 @@ describe('POST /orders con combos', () => {
     type: 'combo',
     comboId: 'cmb-duo-imperial',
     quantity: 2,
-    options: { leather: 'Marrón', ferrule: 'Acero' },
+    options: { leather: 'Marrón' },
     expectedUnitPriceArs: 61999,
   } satisfies CartItemInput
 
@@ -284,13 +284,13 @@ describe('POST /orders con combos', () => {
       {
         type: 'combo',
         name: 'Dúo Imperial',
-        detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero',
+        detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
         quantity: 2,
         unitPriceArs: 68998,
         kitSavingsArs: 13998,
         totalArs: 123998,
         productSlug: null,
-        options: { leather: 'Marrón', ferrule: 'Acero' },
+        options: { leather: 'Marrón' },
         kitItems: [
           { slug: 'mate-imperial-premium', name: 'Mate Imperial Premium', unitPriceArs: 39999 },
           { slug: 'bombillon-premium-curvo', name: 'Bombillón Premium Curvo', unitPriceArs: 28999 },

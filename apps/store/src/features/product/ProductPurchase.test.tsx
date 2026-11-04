@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { ReactNode } from 'react'
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearCart, useCart } from '../cart'
@@ -53,22 +53,27 @@ afterEach(() => {
 })
 
 describe('opciones del mate', () => {
-  it('un mate ofrece el cuero (cuatro muestras) y la virola (tres opciones)', () => {
+  it('un mate con los cuatro cueros muestra cuatro muestras con Negro elegido, sin virola', () => {
     renderPurchase(detail())
 
     const leathers = screen.getByRole('group', { name: 'Cuero' })
     expect(leathers.querySelectorAll('button')).toHaveLength(4)
     expect(screen.getByRole('button', { name: 'Negro', pressed: true })).toBeInTheDocument()
-    const ferrules = screen.getByRole('radiogroup', { name: 'Virola' })
-    expect(within(ferrules).getAllByRole('radio')).toHaveLength(3)
-    expect(screen.getByRole('radio', { name: 'Alpaca cincelada', checked: true })).toBeVisible()
+    expect(screen.queryByRole('radiogroup')).toBeNull()
   })
 
-  it('una bombilla o una yerba no ofrece cuero ni virola', () => {
+  it('muestra solo los cueros que ofrece el producto, y sin Negro arranca en el primero', () => {
+    renderPurchase(detail({ leathers: ['Crudo', 'Borravino'] }))
+
+    const leathers = screen.getByRole('group', { name: 'Cuero' })
+    expect(leathers.querySelectorAll('button')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Crudo', pressed: true })).toBeInTheDocument()
+  })
+
+  it('una bombilla o una yerba no ofrece cuero', () => {
     for (const group of ['bombilla', 'yerba'] as const) {
-      renderPurchase(detail({ group, options: null }))
+      renderPurchase(detail({ group }))
       expect(screen.queryByRole('group', { name: 'Cuero' })).toBeNull()
-      expect(screen.queryByRole('radiogroup', { name: 'Virola' })).toBeNull()
       expect(screen.getByRole('button', { name: 'Agregar al carrito' })).toBeVisible()
       cleanup()
     }
@@ -79,7 +84,6 @@ describe('opciones del mate', () => {
     renderPurchase(detail())
 
     await user.click(screen.getByRole('button', { name: 'Borravino' }))
-    await user.click(screen.getByRole('radio', { name: 'Acero' }))
     await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
 
     expect(cartLines()).toEqual([
@@ -87,14 +91,14 @@ describe('opciones del mate', () => {
         type: 'product',
         productId: 'prd-imperial-premium',
         quantity: 1,
-        options: { leather: 'Borravino', ferrule: 'Acero' },
+        options: { leather: 'Borravino' },
       },
     ])
   })
 
   it('una bombilla se agrega sin opciones', async () => {
     const user = userEvent.setup()
-    renderPurchase(detail({ id: 'prd-bombillon', group: 'bombilla', options: null }))
+    renderPurchase(detail({ id: 'prd-bombillon', group: 'bombilla' }))
 
     await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
 
@@ -161,10 +165,9 @@ describe('producto que no se puede comprar', () => {
     expect(new URL(href).searchParams.get('subject')).toBe('Consulta: Té & Mate "Ñandú"')
   })
 
-  it('un mate sin precio igual muestra sus opciones', () => {
+  it('un mate sin precio igual muestra sus cueros', () => {
     renderPurchase(detail({ priceArs: null, netPriceArs: null, isPurchasable: false }))
 
     expect(screen.getByRole('group', { name: 'Cuero' })).toBeVisible()
-    expect(screen.getByRole('radiogroup', { name: 'Virola' })).toBeVisible()
   })
 })

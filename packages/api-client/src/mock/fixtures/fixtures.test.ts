@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { hasDistinctGroups, slugify } from '@galpon/domain'
+import { hasDistinctGroups, LEATHERS, slugify } from '@galpon/domain'
 import { comboFormSchema, imageFormSchema, settingsFormSchema } from '@galpon/schemas'
 import {
   FIXTURE_CATEGORIES,
@@ -115,6 +115,22 @@ describe('fixtures del diseño: catálogo', () => {
     expect(stockOf('prd-galleta')).toBe(0)
     expect(stockOf('prd-coquito-criollo')).toBe(2)
     expect(stockOf('prd-imperial-premium')).toBe(12)
+  })
+
+  it('los 16 mates ofrecen los 4 cueros y las 8 bombillas y las 3 yerbas, ninguno', () => {
+    const groupOf = (categoryId: string) =>
+      FIXTURE_CATEGORIES.find((category) => category.id === categoryId)?.group
+    const withLeathers = FIXTURE_PRODUCTS.filter((product) => product.leathers.length > 0)
+    const withoutLeathers = FIXTURE_PRODUCTS.filter((product) => product.leathers.length === 0)
+    expect(withLeathers).toHaveLength(16)
+    expect(withoutLeathers).toHaveLength(11)
+    for (const product of withLeathers) {
+      expect(groupOf(product.categoryId)).toBe('mate')
+      expect(product.leathers).toEqual([...LEATHERS])
+    }
+    for (const product of withoutLeathers) {
+      expect(groupOf(product.categoryId)).not.toBe('mate')
+    }
   })
 
   it('todos están publicados, sin slugs viejos ni ajustes de pestañas', () => {
@@ -254,6 +270,18 @@ describe('fixtures del diseño: contenido y ajustes', () => {
       'leather',
     ])
     expect(ritualSteps).toEqual(['Yerba', 'Montañita', 'Bombilla', 'Agua'])
+  })
+
+  it('los títulos del inicio son "Categorías" y "Los más vendidos", y el cuero se elige sin virola', () => {
+    const { collection, featured, scenes } = FIXTURE_CONTENT.home
+    expect(collection).toEqual({ eyebrow: 'Colección', title: 'Categorías' })
+    expect(featured).toEqual({ eyebrow: 'Destacados', title: 'Los más vendidos' })
+    expect(scenes.find((scene) => scene.key === 'leather')?.text).toBe(
+      'Negro, marrón, crudo o borravino. Elegís el cuero en la página de cada mate.',
+    )
+    expect(FIXTURE_CONTENT.productTabs.mate.materials).toBe(
+      'Calabaza natural curable, cuero vacuno cosido a mano y base de alpaca o cuero según el modelo. La virola de cada mate está en su descripción.',
+    )
   })
 
   it('las preguntas frecuentes mantienen las 6 categorías del diseño', () => {

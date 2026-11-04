@@ -108,7 +108,7 @@ describe('ComboCard', () => {
     expect(article.querySelectorAll('[data-combo-plus]')).toHaveLength(1)
   })
 
-  it('el cuero y la virola aparecen solo si el combo lleva mate, con Negro y Alpaca cincelada elegidos', async () => {
+  it('el cuero aparece solo si el combo lleva mate, con Negro elegido y sin virola', async () => {
     renderCards([await fixtureCombo('Dúo Imperial'), await fixtureCombo('Bombilla y yerba')])
 
     const duo = card('Dúo Imperial')
@@ -118,23 +118,19 @@ describe('ComboCard', () => {
       'aria-pressed',
       'true',
     )
-    const ferrules = within(duo).getByRole('radiogroup', {
-      name: 'Virola del Mate Imperial Premium',
-    })
-    expect(within(ferrules).getByRole('radio', { name: 'Cincelada' })).toBeChecked()
-    expect(duo).toHaveTextContent('Alpaca cincelada')
+    expect(within(duo).queryByRole('radiogroup')).toBeNull()
+    expect(duo).not.toHaveTextContent('Virola')
 
     const withoutMate = card('Bombilla y yerba')
     expect(within(withoutMate).queryByRole('group', { name: /^Cuero/ })).toBeNull()
     expect(within(withoutMate).queryByRole('radiogroup')).toBeNull()
   })
 
-  it('agrega el combo con el cuero y la virola elegidos, avisa y no abre el carrito', async () => {
+  it('agrega el combo con el cuero elegido, avisa y no abre el carrito', async () => {
     renderCards([await fixtureCombo('Dúo Imperial')])
     const duo = card('Dúo Imperial')
 
     await userEvent.click(within(duo).getByRole('button', { name: 'Marrón' }))
-    await userEvent.click(within(duo).getByRole('radio', { name: 'Acero' }))
     await userEvent.click(
       within(duo).getByRole('button', { name: 'Agregar combo Dúo Imperial al carrito' }),
     )
@@ -144,7 +140,7 @@ describe('ComboCard', () => {
         type: 'combo',
         comboId: 'cmb-duo-imperial',
         productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
-        options: { leather: 'Marrón', ferrule: 'Acero' },
+        options: { leather: 'Marrón' },
         quantity: 1,
       },
     ])
@@ -175,7 +171,6 @@ describe('ComboCard', () => {
     expect(pieces).not.toHaveTextContent('$28.999')
     expect(within(pieces).getByText('Sin stock')).toBeInTheDocument()
     expect(within(article).getByRole('button', { name: 'Negro' })).toBeDisabled()
-    expect(within(article).getByRole('radio', { name: 'Acero' })).toBeDisabled()
   })
 
   it('con todo lo disponible de una pieza en el carrito, el botón se deshabilita y explica por qué', async () => {
@@ -200,17 +195,14 @@ describe('ComboCard', () => {
     expect(within(article).queryByText('Precio de lista:')).toBeNull()
   })
 
-  it('con los combos de fábrica, cada botón y cada grupo de opciones tiene un nombre propio', async () => {
+  it('con los combos de fábrica, cada botón y cada grupo de cueros tiene un nombre propio', async () => {
     const combos = await fixtureCombos()
     renderCards(combos)
 
     const names = (elements: HTMLElement[]): string[] =>
       elements.map((element) => element.getAttribute('aria-label') ?? '')
     const buttons = names(screen.getAllByRole('button', { name: /^Agregar combo/ }))
-    const groups = names([
-      ...screen.getAllByRole('group', { name: /^Cuero del/ }),
-      ...screen.getAllByRole('radiogroup'),
-    ])
+    const groups = names(screen.getAllByRole('group', { name: /^Cuero del/ }))
     expect(buttons).toHaveLength(combos.length)
     expect(new Set(buttons).size).toBe(buttons.length)
     expect(new Set(groups).size).toBe(groups.length)

@@ -102,7 +102,7 @@ export async function placeGuestOrder(testApi: ResultTestApi): Promise<Order> {
           type: 'product',
           productId: 'prd-imperial-premium',
           quantity: 1,
-          options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+          options: { leather: 'Negro' },
         },
       ],
       paymentMethod: 'card',

@@ -25,8 +25,8 @@ export interface CartLineView {
   /** Nombre del producto o del combo, o "Kit ronda completa". */
   name: string
   /**
-   * Detalle de una línea: cuero y virola de un mate, las tres piezas de un kit, o las piezas de un
-   * combo con el cuero y la virola de su mate. Vacío si no hay.
+   * Detalle de una línea: el cuero de un mate, las tres piezas de un kit (y el cuero), o las piezas
+   * de un combo con el cuero de su mate. Vacío si no hay.
    */
   detail: string
   /**

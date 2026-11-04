@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProductSummary } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import { PAGE_COVERED_ATTRIBUTE } from '../../components/motion'
 import {
   installIntersectionObserver,
@@ -45,6 +46,7 @@ function summary(overrides: Partial<ProductSummary> & { id: string }): ProductSu
     group: 'mate',
     isPurchasable: true,
     isSoldOut: false,
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     mainImage: null,
     maxQuantity: 10,
     name: `Producto ${overrides.id}`,
@@ -177,7 +179,7 @@ describe('ProductCard', () => {
     expect(placeholder).toHaveTextContent('Mate Imperial Premium')
   })
 
-  it('agregar rápido suma el mate con Negro y Alpaca cincelada y avisa "Agregado al carrito"', async () => {
+  it('agregar rápido suma el mate con Negro y avisa "Agregado al carrito"', async () => {
     renderCard(mate)
 
     await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
@@ -187,7 +189,7 @@ describe('ProductCard', () => {
         type: 'product',
         productId: 'prd-imperial-premium',
         quantity: 1,
-        options: { leather: 'Negro', ferrule: 'Alpaca cincelada' },
+        options: { leather: 'Negro' },
       },
     ])
     expect(screen.getByRole('status')).toHaveTextContent(

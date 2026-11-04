@@ -12,7 +12,7 @@ import { MATE_IMPERIAL_PREMIUM_IMAGE } from '../fixtures/products'
 
 const NOW = new Date('2026-10-27T15:00:00Z')
 
-/** Producto válido para el formulario del dashboard, en borrador y sin fotos. */
+/** Producto válido para el formulario del dashboard, en borrador, sin fotos y sin cueros. */
 function productInput(overrides: Partial<AdminProductInput> = {}): AdminProductInput {
   return {
     categoryId: 'cat-torpedos',
@@ -25,6 +25,7 @@ function productInput(overrides: Partial<AdminProductInput> = {}): AdminProductI
     status: 'draft',
     tabsOverride: null,
     images: [],
+    leathers: [],
     ...overrides,
   }
 }
@@ -132,6 +133,7 @@ describe('POST /admin/products', () => {
       images: [],
       previousSlugs: [],
       tabsOverride: { materials: 'Calabaza y alpaca.', care: null },
+      leathers: [],
       createdAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),
     })
@@ -150,6 +152,38 @@ describe('POST /admin/products', () => {
     ).rejects.toMatchObject({
       status: 422,
       fieldErrors: { name: 'Requerido', stock: expect.any(String) as unknown },
+    })
+    expect(mock.db.products).toHaveLength(27)
+  })
+
+  it('guarda los cueros sin repetir y en el orden de LEATHERS', async () => {
+    const mock = await adminApi()
+    const created = await createAdminProduct(
+      mock.api,
+      productInput({ leathers: ['Borravino', 'Negro'] }),
+    )
+    expect(created.leathers).toEqual(['Negro', 'Borravino'])
+    expect(mock.db.products.at(-1)?.leathers).toEqual(['Negro', 'Borravino'])
+  })
+
+  it('responde 422 leathers_not_allowed si un producto que no es mate trae cueros', async () => {
+    const mock = await adminApi()
+    await expect(
+      createAdminProduct(
+        mock.api,
+        productInput({ categoryId: 'cat-yerbas', slug: 'yerba-de-prueba', leathers: ['Negro'] }),
+      ),
+    ).rejects.toMatchObject({
+      status: 422,
+      problem: {
+        errors: [
+          {
+            field: 'leathers',
+            code: 'leathers_not_allowed',
+            message: 'Solo los mates llevan cuero',
+          },
+        ],
+      },
     })
     expect(mock.db.products).toHaveLength(27)
   })
@@ -248,6 +282,29 @@ describe('PATCH /admin/products/{id}', () => {
       updatedAt: new Date(NOW.getTime() + 5 * 60_000).toISOString(),
     })
     expect(mock.invalidated).toEqual([['products']])
+  })
+
+  it('guarda los cueros del mate en orden y rechaza los de una yerba sin tocarla', async () => {
+    const mock = await adminApi()
+    const imperial = await updateAdminProduct(mock.api, 'prd-imperial-premium', {
+      ...productInput({ slug: 'mate-imperial-premium', categoryId: 'cat-imperiales' }),
+      leathers: ['Borravino', 'Negro'],
+    })
+    expect(imperial.leathers).toEqual(['Negro', 'Borravino'])
+    const yerba = await getAdminProduct(mock.api, 'prd-yerba-canarias')
+    await expect(
+      updateAdminProduct(mock.api, yerba.id, {
+        ...productInput({ slug: yerba.slug, categoryId: 'cat-yerbas', name: yerba.name }),
+        leathers: ['Negro'],
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { leathers: 'Solo los mates llevan cuero' },
+    })
+    expect(mock.db.products.find((product) => product.id === yerba.id)).toMatchObject({
+      name: yerba.name,
+      leathers: [],
+    })
   })
 
   it('cambiar el slug guarda el anterior, y volver a uno propio lo saca de la lista', async () => {

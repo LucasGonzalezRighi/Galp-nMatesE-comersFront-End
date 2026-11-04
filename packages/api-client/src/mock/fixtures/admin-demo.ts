@@ -125,7 +125,7 @@ function customer(firstName: string, lastName: string, email: string, phone: str
   return { firstName, lastName, email, phone }
 }
 
-/** Línea de un producto suelto (con cuero y virola si es un mate). */
+/** Línea de un producto suelto (con cuero si es un mate que ofrece cueros). */
 function product(
   productId: string,
   quantity: number,
@@ -174,7 +174,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
         province: 'CABA',
       },
       items: [
-        product('prd-imperial-premium', 1, { leather: 'Negro', ferrule: 'Alpaca cincelada' }),
+        product('prd-imperial-premium', 1, { leather: 'Negro' }),
         product('prd-yerba-canarias', 2),
       ],
       paymentMethod: 'card',
@@ -213,7 +213,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
       customer: customer('Carla', 'Fernández', 'carla.fernandez@example.com', '3514567890'),
       shippingMethod: 'branch',
       address: { city: 'Córdoba', postalCode: 'X5000', province: 'Córdoba' },
-      items: [product('prd-camionero-pelo', 1, { leather: 'Crudo', ferrule: 'Alpaca lisa' })],
+      items: [product('prd-camionero-pelo', 1, { leather: 'Crudo' })],
       paymentMethod: 'mp_redirect',
       minutesAgo: DAY,
       steps: [
@@ -257,7 +257,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
         postalCode: 'S2000',
         province: 'Santa Fe',
       },
-      items: [product('prd-ranchero-manchas', 1, { leather: 'Negro', ferrule: 'Acero' })],
+      items: [product('prd-ranchero-manchas', 1, { leather: 'Negro' })],
       paymentMethod: 'mp_redirect',
       minutesAgo: 6 * DAY,
       steps: [
@@ -292,7 +292,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
       customer: customer('Valentina', 'Díaz', 'valentina.diaz@example.com', '3814567890'),
       shippingMethod: 'branch',
       address: { city: 'San Miguel de Tucumán', postalCode: 'T4000', province: 'Tucumán' },
-      items: [product('prd-imperial-criollo', 1, { leather: 'Borravino', ferrule: 'Alpaca lisa' })],
+      items: [product('prd-imperial-criollo', 1, { leather: 'Borravino' })],
       paymentMethod: 'card',
       minutesAgo: 9,
       steps: [],
@@ -334,9 +334,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
       customer: customer('Camila', 'Sosa', 'camila.sosa@example.com', '1156789012'),
       shippingMethod: 'pickup',
       address: null,
-      items: [
-        product('prd-torpedo-cincelada', 1, { leather: 'Negro', ferrule: 'Alpaca cincelada' }),
-      ],
+      items: [product('prd-torpedo-cincelada', 1, { leather: 'Negro' })],
       paymentMethod: 'mp_redirect',
       minutesAgo: 4 * DAY,
       steps: [
@@ -357,9 +355,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
         postalCode: 'B7600',
         province: 'Buenos Aires',
       },
-      items: [
-        product('prd-imperial-calabaza', 1, { leather: 'Marrón', ferrule: 'Alpaca cincelada' }),
-      ],
+      items: [product('prd-imperial-calabaza', 1, { leather: 'Marrón' })],
       paymentMethod: 'card',
       minutesAgo: 9 * DAY,
       steps: [
@@ -392,7 +388,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
         province: 'Neuquén',
       },
       items: [
-        product('prd-camionero-criollo', 1, { leather: 'Negro', ferrule: 'Alpaca lisa' }),
+        product('prd-camionero-criollo', 1, { leather: 'Negro' }),
         product('prd-bombillon-100-alpaca', 1),
       ],
       paymentMethod: 'card',
@@ -421,9 +417,7 @@ export const FIXTURE_ADMIN_DEMO: AdminDemoFixture = {
       customer: customer('Matías', 'Ruiz', 'matias.ruiz@example.com', '3874567890'),
       shippingMethod: 'branch',
       address: { city: 'Salta', postalCode: 'A4400', province: 'Salta' },
-      items: [
-        product('prd-torpedo-borravino', 1, { leather: 'Borravino', ferrule: 'Alpaca cincelada' }),
-      ],
+      items: [product('prd-torpedo-borravino', 1, { leather: 'Borravino' })],
       paymentMethod: 'mp_redirect',
       minutesAgo: 5 * DAY,
       steps: [

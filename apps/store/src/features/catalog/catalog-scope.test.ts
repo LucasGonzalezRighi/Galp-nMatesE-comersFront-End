@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Category, ProductSummary } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import {
   buildCatalogScope,
   CATALOG_PLACEHOLDER_LINE,
@@ -34,6 +35,7 @@ function product(id: string, categorySlug: string): ProductSummary {
     group: 'mate',
     isPurchasable: true,
     isSoldOut: false,
+    leathers: [...LEATHERS],
     mainImage: null,
     maxQuantity: 10,
     name: id,

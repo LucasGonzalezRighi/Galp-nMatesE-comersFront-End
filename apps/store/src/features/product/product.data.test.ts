@@ -70,8 +70,8 @@ describe('lecturas de la ficha', () => {
 
   it('trae relacionados y la primera página de reseñas con sus estadísticas', async () => {
     const related = await getRelatedProducts('mate-imperial-premium')
-    expect(related.length).toBeGreaterThan(0)
-    expect(related.length).toBeLessThanOrEqual(4)
+    expect(related.length).toBeGreaterThan(15)
+    expect(related.length).toBeLessThanOrEqual(30)
     expect(related.map((item) => item.slug)).not.toContain('mate-imperial-premium')
     const reviews = await getProductReviews('mate-imperial-premium')
     expect(reviews.stats.count).toBe(3)

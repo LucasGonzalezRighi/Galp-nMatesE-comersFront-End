@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { LEATHERS } from '@galpon/domain'
 import { kitProductsFrom } from './kit-products'
 import { buildKitView, kitOptions, linkedMate, resolvePieces } from './kit-view'
 import { missingText, noOptionsText, stepHint } from './kit.copy'
@@ -31,6 +32,7 @@ describe('kitProductsFrom', () => {
         id: 'm1',
         isPurchasable: true,
         isSoldOut: false,
+        leathers: [...LEATHERS],
         mainImage: { alt: 'Foto', height: 10, publicId: 'p', url: '/foto.jpg', width: 10 },
         maxQuantity: 5,
         name: 'Mate',
@@ -50,6 +52,7 @@ describe('kitProductsFrom', () => {
         id: 'm2',
         isPurchasable: false,
         isSoldOut: true,
+        leathers: [...LEATHERS],
         mainImage: null,
         maxQuantity: 0,
         name: 'Mate agotado',

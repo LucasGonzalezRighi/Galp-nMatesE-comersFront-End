@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { AdminOrderTarget, ComboStatus, MediaPurpose } from '@galpon/domain'
+import type { AdminOrderTarget, ComboStatus, Leather, MediaPurpose } from '@galpon/domain'
 import {
   ADMIN_ORDER_TARGETS,
   COMBO_STATUSES,
@@ -58,6 +58,7 @@ const validProduct = {
   featured: false,
   status: 'draft',
   images: [validImage],
+  leathers: ['Negro', 'Marrón'],
 }
 
 const noSeller = {
@@ -337,10 +338,51 @@ describe('productFormSchema', () => {
     })
   })
 
+  describe('leathers', () => {
+    it('guarda los cueros sin repetir y en el orden de LEATHERS', () => {
+      const leathers = ['Borravino', 'Negro', 'Marrón', 'Crudo']
+      expect(productFormSchema.parse({ ...validProduct, leathers }).leathers).toEqual([
+        'Negro',
+        'Marrón',
+        'Crudo',
+        'Borravino',
+      ])
+    })
+
+    it('acepta ninguno (sin selector de cuero)', () => {
+      expect(productFormSchema.parse({ ...validProduct, leathers: [] }).leathers).toEqual([])
+    })
+
+    it('rechaza un cuero que no existe', () => {
+      expect(issuesOf(productFormSchema, { ...validProduct, leathers: ['Rosa'] })).toEqual([
+        { path: ['leathers', 0], message: MESSAGES.invalidLeather },
+      ])
+    })
+
+    it('rechaza un cuero repetido', () => {
+      expect(
+        issuesOf(productFormSchema, { ...validProduct, leathers: ['Negro', 'Negro'] }),
+      ).toEqual([{ path: ['leathers'], message: MESSAGES.duplicateLeathers }])
+    })
+
+    it('es obligatorio', () => {
+      const withoutLeathers: Record<string, unknown> = { ...validProduct }
+      delete withoutLeathers.leathers
+      expect(productFormSchema.safeParse(withoutLeathers).success).toBe(false)
+    })
+
+    it('tiene los mensajes exactos', () => {
+      expect(MESSAGES.invalidLeather).toBe('Elegí un cuero de la lista')
+      expect(MESSAGES.duplicateLeathers).toBe('Cada cuero tiene que aparecer una sola vez')
+      expect(MESSAGES.leathersOnlyMates).toBe('Solo los mates llevan cuero')
+    })
+  })
+
   it('tiene los tipos del formulario', () => {
     expectTypeOf<ProductForm['priceArs']>().toEqualTypeOf<number | null>()
     expectTypeOf<ProductForm['status']>().toEqualTypeOf<'draft' | 'published'>()
     expectTypeOf<ProductForm['images'][number]['alt']>().toEqualTypeOf<string>()
+    expectTypeOf<ProductForm['leathers']>().toEqualTypeOf<Leather[]>()
   })
 })
 

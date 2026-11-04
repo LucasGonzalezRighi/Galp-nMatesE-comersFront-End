@@ -14,8 +14,6 @@ export const PRODUCT_COPY = {
   outOfStock: 'Sin stock por ahora',
   /** Título de la elección del cuero. */
   leather: 'Cuero',
-  /** Título de la elección de la virola. */
-  ferrule: 'Virola',
   /** Botón de agregar al carrito. */
   addToCart: 'Agregar al carrito',
   /** Botón de comprar ya. */

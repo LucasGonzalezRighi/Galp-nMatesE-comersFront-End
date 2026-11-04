@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Combo, ComboItem } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import { comboWarnings } from './combo-warnings'
 
 /** Una pieza que se puede comprar. */
@@ -9,6 +10,7 @@ function item(overrides: Partial<ComboItem> = {}): ComboItem {
     slug: 'mate-imperial-premium',
     name: 'Mate Imperial Premium',
     group: 'mate',
+    leathers: [...LEATHERS],
     unitPriceArs: 39999,
     isPurchasable: true,
     maxQuantity: 10,
@@ -30,6 +32,7 @@ function combo(overrides: Partial<Combo> = {}): Combo {
         slug: 'bombillon-premium-curvo',
         name: 'Bombillón Premium Curvo',
         group: 'bombilla',
+        leathers: [],
         unitPriceArs: 28999,
       }),
     ],

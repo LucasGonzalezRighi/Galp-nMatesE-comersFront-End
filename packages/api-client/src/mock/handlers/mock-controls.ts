@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { Leather } from '@galpon/domain'
+import { LEATHERS, normalizeLeathers } from '@galpon/domain'
 import type { MockRoute } from '../router'
 import { json, notFound, problem, ResponseError } from '../http'
 import { orderNumberParam, parseOrFail } from '../validation'
@@ -13,14 +15,18 @@ import { expireOrders, orderNotFound } from './order-state'
 export const MOCK_EXPIRE_ORDER_PATH = '/__mock/orders/{number}/expire'
 
 /**
- * Ruta interna que cambia el precio o el stock de un producto (`{id}` es el identificador, por
- * ejemplo `prd-imperial-premium`), relativa al prefijo de la API. No está en el contrato: solo
- * existe en el modo de prueba y sirve para probar `409 price_changed`, `total_changed` y
- * `stock_changed` desde un navegador, que solo llega a la base por HTTP.
+ * Ruta interna que cambia el precio, el stock o los cueros de un producto (`{id}` es el
+ * identificador, por ejemplo `prd-imperial-premium`), relativa al prefijo de la API. No está en el
+ * contrato: solo existe en el modo de prueba y sirve para probar `409 price_changed`,
+ * `total_changed`, `stock_changed` y la conciliación del cuero del carrito desde un navegador, que
+ * solo llega a la base por HTTP.
  */
 export const MOCK_PRODUCT_PATH = '/__mock/products/{id}'
 
-/** Cuerpo de {@link MOCK_PRODUCT_PATH}: al menos uno de los dos campos, y ninguno más. */
+/**
+ * Cuerpo de {@link MOCK_PRODUCT_PATH}: al menos uno de los tres campos, y ninguno más. Los cueros
+ * se guardan sin repetir y en el orden de `LEATHERS`.
+ */
 const productChangeSchema = z
   .strictObject({
     priceArs: z
@@ -31,12 +37,18 @@ const productChangeSchema = z
       .int({ error: 'El stock tiene que ser un número entero.' })
       .min(0, 'El stock no puede ser negativo.')
       .optional(),
+    leathers: z
+      .array(z.enum(LEATHERS, { error: 'Elegí un cuero de la lista.' }))
+      .transform(normalizeLeathers)
+      .optional(),
   })
-  .refine((change) => change.priceArs !== undefined || change.stock !== undefined, {
-    message: 'Mandá el precio, el stock o los dos.',
-  })
+  .refine(
+    (change) =>
+      change.priceArs !== undefined || change.stock !== undefined || change.leathers !== undefined,
+    { message: 'Mandá el precio, el stock o los cueros.' },
+  )
 
-/** Cambio de precio o de stock que se le pide a un producto. */
+/** Cambio de precio, de stock o de cueros que se le pide a un producto. */
 export type MockProductChangeInput = z.input<typeof productChangeSchema>
 
 /** Respuesta de {@link MOCK_PRODUCT_PATH}: cómo quedó el producto. */
@@ -47,6 +59,8 @@ export interface MockProductChangeResult {
   priceArs: number | null
   /** Unidades en stock. */
   stock: number
+  /** Cueros que ofrece, en el orden de `LEATHERS`. */
+  leathers: Leather[]
 }
 
 /** Respuesta de {@link MOCK_EXPIRE_ORDER_PATH}: cómo quedó el pedido. */
@@ -60,14 +74,14 @@ export interface MockExpireOrderResult {
 }
 
 /**
- * Rutas internas del modo de prueba para armar escenarios (pedido vencido, precio o stock que
- * cambian), fuera del contrato. Las usan los tests de extremo a extremo, que solo llegan a la base
+ * Rutas internas del modo de prueba para armar escenarios (pedido vencido, precio, stock o cueros
+ * que cambian), fuera del contrato. Las usan los tests de extremo a extremo, que solo llegan a la base
  * del servidor por HTTP.
  *
  * - `POST /__mock/orders/{number}/expire`: vence la reserva del pedido pendiente, libera su stock
  *   y cancela su intento de pago activo; `409` si el pedido ya no está pendiente de pago.
- * - `POST /__mock/products/{id}` con `{ priceArs?, stock? }`: cambia el precio o el stock del
- *   producto y avisa que cambió el catálogo.
+ * - `POST /__mock/products/{id}` con `{ priceArs?, stock?, leathers? }`: cambia el precio, el
+ *   stock o los cueros del producto y avisa que cambió el catálogo.
  * - `POST /__mock/media` con `{ folder, dataUrl, width, height }`: registra una foto reducida del
  *   dashboard en lugar de subirla a Cloudinary (ver `MOCK_MEDIA_ROUTE`).
  */
@@ -109,11 +123,13 @@ export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
       }
       if (change.priceArs !== undefined) product.priceArs = change.priceArs
       if (change.stock !== undefined) product.stock = change.stock
+      if (change.leathers !== undefined) product.leathers = change.leathers
       ctx.invalidate(['products'])
       const result: MockProductChangeResult = {
         id: product.id,
         priceArs: product.priceArs,
         stock: product.stock,
+        leathers: [...product.leathers],
       }
       return json(result)
     },

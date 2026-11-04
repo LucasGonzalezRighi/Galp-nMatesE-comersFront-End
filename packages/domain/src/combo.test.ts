@@ -6,6 +6,7 @@ import {
   COMBO_STATUSES,
   comboHasMate,
   comboLineAmounts,
+  comboMateLeathers,
   comboSavings,
   hasDistinctGroups,
 } from './combo'
@@ -104,21 +105,49 @@ describe('hasDistinctGroups', () => {
 })
 
 describe('comboHasMate', () => {
-  it('pide cuero y virola solo si alguna pieza es un mate', () => {
+  it('dice si alguna pieza es un mate', () => {
     expect(comboHasMate(['mate', 'bombilla'])).toBe(true)
     expect(comboHasMate(['bombilla', 'yerba'])).toBe(false)
   })
 })
 
+describe('comboMateLeathers', () => {
+  it('devuelve los cueros del mate del combo', () => {
+    expect(
+      comboMateLeathers([
+        { group: 'bombilla', leathers: [] },
+        { group: 'mate', leathers: ['Marrón', 'Crudo'] },
+      ]),
+    ).toEqual(['Marrón', 'Crudo'])
+  })
+  it('sin mate, ninguno', () => {
+    expect(
+      comboMateLeathers([
+        { group: 'bombilla', leathers: [] },
+        { group: 'yerba', leathers: [] },
+      ]),
+    ).toEqual([])
+  })
+  it('un mate sin cueros, ninguno', () => {
+    expect(comboMateLeathers([{ group: 'mate', leathers: [] }])).toEqual([])
+  })
+  it('devuelve una copia', () => {
+    const leathers = ['Negro'] as const
+    const result = comboMateLeathers([{ group: 'mate', leathers }])
+    expect(result).toEqual(['Negro'])
+    expect(result).not.toBe(leathers)
+  })
+})
+
 describe('comboLineKey', () => {
-  it('lleva el combo, el cuero y la virola', () => {
-    expect(comboLineKey('cmb-duo-imperial', { leather: 'Marrón', ferrule: 'Acero' })).toBe(
-      'combo:cmb-duo-imperial:Marrón:Acero',
+  it('lleva el combo y el cuero', () => {
+    expect(comboLineKey('cmb-duo-imperial', { leather: 'Marrón' })).toBe(
+      'combo:cmb-duo-imperial:Marrón',
     )
   })
 
-  it('sin mate usa guiones', () => {
-    expect(comboLineKey('cmb-bombilla-y-yerba', null)).toBe('combo:cmb-bombilla-y-yerba:-:-')
+  it('sin cuero usa un guion', () => {
+    expect(comboLineKey('cmb-bombilla-y-yerba', null)).toBe('combo:cmb-bombilla-y-yerba:-')
   })
 
   it.each([[''], ['   ']])('rechaza un combo sin id (%j)', (comboId) => {

@@ -177,13 +177,13 @@ describe('reconcileCart: el stock vale para el producto en todas las líneas', (
           type: 'product',
           productId: 'm1',
           quantity: 2,
-          options: { leather: 'Negro', ferrule: 'Acero' },
+          options: { leather: 'Negro' },
         },
         {
           type: 'product',
           productId: 'm1',
           quantity: 1,
-          options: { leather: 'Crudo', ferrule: 'Acero' },
+          options: { leather: 'Crudo' },
         },
       ],
       products: [{ ...mate, maxQuantity: 2 }],
@@ -223,7 +223,7 @@ describe('reconcileCart con combos', () => {
     type: 'combo',
     comboId: 'cmb-duo',
     productIds: ['m1', 'b1'],
-    options: { leather: 'Negro', ferrule: 'Acero' },
+    options: { leather: 'Negro' },
     quantity: 1,
   }
 

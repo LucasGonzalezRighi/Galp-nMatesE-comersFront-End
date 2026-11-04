@@ -10,9 +10,11 @@ import type {
 import type { MockDb } from '@galpon/api-client/mock'
 import { createApiClient } from '@galpon/api-client'
 import { createMockDb, createMockFetch, DEFAULT_MOCK_DB_OPTIONS } from '@galpon/api-client/mock'
+import { LEATHERS } from '@galpon/domain'
 
 /**
  * Producto del catálogo para los tests, con valores razonables (un mate de $10.000 con stock 10).
+ * Los mates ofrecen los 4 cueros y el resto ninguno, como las fixtures.
  *
  * @param overrides - Campos que cambian; `id` es obligatorio.
  */
@@ -27,6 +29,7 @@ export function summary(overrides: Partial<ProductSummary> & { id: string }): Pr
     group: 'mate',
     isPurchasable: true,
     isSoldOut: false,
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     mainImage: null,
     maxQuantity: 10,
     name: `Producto ${overrides.id}`,
@@ -39,7 +42,8 @@ export function summary(overrides: Partial<ProductSummary> & { id: string }): Pr
 }
 
 /**
- * Pieza de un combo para los tests: un mate de $10.000 con stock 10, a la venta.
+ * Pieza de un combo para los tests: un mate de $10.000 con stock 10, a la venta. Los mates
+ * ofrecen los 4 cueros y el resto ninguno.
  *
  * @param overrides - Campos que cambian; `productId` es obligatorio.
  */
@@ -48,6 +52,7 @@ export function comboItem(overrides: Partial<ComboItem> & { productId: string })
     group: 'mate',
     image: null,
     isPurchasable: true,
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     maxQuantity: 10,
     name: `Producto ${overrides.productId}`,
     slug: overrides.productId,

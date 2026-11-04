@@ -93,7 +93,7 @@ describe('OrderScreen', () => {
     expect(within(shipping).getByText('Av. Corrientes 1234, 5° B')).toBeInTheDocument()
 
     const lines = screen.getByRole('region', { name: 'Productos' })
-    expect(within(lines).getByText('Cuero Negro · Virola Alpaca cincelada')).toBeInTheDocument()
+    expect(within(lines).getByText('Cuero Negro')).toBeInTheDocument()
     expect(within(lines).getByText(/^2 × \$/)).toBeInTheDocument()
 
     const totals = screen.getByRole('region', { name: 'Totales' })

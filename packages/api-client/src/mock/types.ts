@@ -11,6 +11,7 @@ import type {
   FooterContent,
   HomeContent,
   Image,
+  Leather,
   LegalContent,
   OrderHistoryEntry,
   OrderLine,
@@ -88,6 +89,11 @@ export interface MockProduct {
   status: ProductStatus
   /** Fotos del producto. */
   images: Image[]
+  /**
+   * Cueros que el cliente puede elegir (de 0 a 4, sin repetir y en el orden de `LEATHERS`); vacío
+   * si no tiene selector de cuero. Solo los mates pueden tener.
+   */
+  leathers: Leather[]
   /** Textos propios de las pestañas Materiales y Cuidado, o `null` para usar los del grupo. */
   tabsOverride: { materials?: string; care?: string } | null
   /** Slugs anteriores, que redirigen al actual. */
@@ -326,7 +332,7 @@ export interface MockCustomerSession {
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
-  version: 4
+  version: 5
   /** Líneas de productos. */
   categories: MockCategory[]
   /** Productos. */
