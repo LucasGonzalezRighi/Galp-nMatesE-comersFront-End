@@ -1,5 +1,5 @@
 import type { ProductSummary } from '@galpon/api-client'
-import type { ProductGroup } from '@galpon/domain'
+import type { Leather, ProductGroup } from '@galpon/domain'
 
 /**
  * Lo que necesita el kit de un producto: lo mínimo del listado de la API para mostrar la opción
@@ -14,6 +14,8 @@ export interface KitProduct {
   name: string
   /** Grupo: mate, bombilla o yerba. */
   group: ProductGroup
+  /** Cueros que ofrece (solo los mates pueden tener); vacío si no lleva cuero. */
+  leathers: readonly Leather[]
   /** Nombre de la línea, que se muestra sobre el nombre. */
   categoryName: string
   /** Precio de lista, o `null` si es "a consultar" (esos no son opciones del kit). */
@@ -38,6 +40,7 @@ export function toKitProduct(product: ProductSummary): KitProduct {
     slug: product.slug,
     name: product.name,
     group: product.group,
+    leathers: product.leathers,
     categoryName: product.categoryName,
     priceArs: product.priceArs,
     maxQuantity: product.maxQuantity,

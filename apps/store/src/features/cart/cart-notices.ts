@@ -3,6 +3,7 @@ import {
   CART_COPY,
   itemsRemovedNotice,
   kitDiscountChangedNotice,
+  leatherChangedNotice,
   moreChangesSuffix,
   priceChangedNotice,
   quantityReducedNotice,
@@ -19,6 +20,8 @@ function describeNotice(notice: CartNotice): string {
       return priceChangedNotice(notice.name)
     case 'kit-discount-changed':
       return kitDiscountChangedNotice(notice.percent)
+    case 'leather-changed':
+      return leatherChangedNotice(notice.name, notice.leather)
   }
 }
 

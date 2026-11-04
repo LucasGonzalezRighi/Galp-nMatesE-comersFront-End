@@ -129,6 +129,7 @@ function addYerba(db: MockDb, quantity = 1): void {
       id: product.id,
       name: product.name,
       group: 'yerba',
+      leathers: [],
       priceArs: product.priceArs,
       maxQuantity: 10,
       isPurchasable: true,

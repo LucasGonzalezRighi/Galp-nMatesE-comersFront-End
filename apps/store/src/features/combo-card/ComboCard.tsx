@@ -7,7 +7,13 @@ import Link from 'next/link'
 import { useId, useState } from 'react'
 import type { Combo, ComboItem } from '@galpon/api-client'
 import type { Leather } from '@galpon/domain'
-import { DEFAULT_LEATHER, formatPesos, LEATHERS, pesos, remainingQuantityFor } from '@galpon/domain'
+import {
+  comboMateLeathers,
+  formatPesos,
+  pesos,
+  remainingQuantityFor,
+  resolveLeather,
+} from '@galpon/domain'
 import { FadeImage, Magnetic, Reveal, Tilt } from '../../components/motion'
 import {
   Button,
@@ -193,7 +199,9 @@ function OptionHeading({ label, value }: { label: string; value: string }): Reac
 interface MateOptionsProps {
   /** Nombre del mate del combo: hace únicos los nombres de los grupos. */
   mateName: string
-  /** Cuero elegido. */
+  /** Cueros que ofrece el mate (al menos uno); con uno solo, la muestra es informativa. */
+  leathers: readonly Leather[]
+  /** Cuero elegido, uno de `leathers`. */
   leather: Leather
   /** Si las opciones están deshabilitadas (combo sin stock). */
   disabled: boolean
@@ -201,14 +209,20 @@ interface MateOptionsProps {
   onLeather: (leather: Leather) => void
 }
 
-/** Cuero (círculos de color) del mate del combo. */
-function MateOptions({ mateName, leather, disabled, onLeather }: MateOptionsProps): ReactNode {
+/** Cuero (círculos de color, uno por cada cuero que ofrece) del mate del combo. */
+function MateOptions({
+  mateName,
+  leathers,
+  leather,
+  disabled,
+  onLeather,
+}: MateOptionsProps): ReactNode {
   return (
     <div className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-2">
         <OptionHeading label={COMBO_CARD_COPY.leather} value={leather} />
         <span role="group" aria-label={leatherGroupLabel(mateName)} className="flex gap-2">
-          {LEATHERS.map((option) => (
+          {leathers.map((option) => (
             <Swatch
               key={option}
               leather={option}
@@ -230,7 +244,8 @@ function MateOptions({ mateName, leather, disabled, onLeather }: MateOptionsProp
 /**
  * Tarjeta de combo (Ruling IC-12, `research-design.md` §4–§8): las fotos de las piezas en fila con
  * un "+" en cada unión, "Combo", el nombre, cada pieza con el link a su ficha y su precio suelto,
- * el cuero del mate (solo si el combo lleva mate; arranca en Negro), el precio final con el de lista tachado y el chip verde "Ahorrás $X" (solo si hay
+ * el cuero del mate (solo los que ofrece el mate del combo, `comboMateLeathers`; arranca en Negro
+ * si está y si no en el primero; sin cueros no hay selector), el precio final con el de lista tachado y el chip verde "Ahorrás $X" (solo si hay
  * ahorro), las cuotas, el precio sin impuestos si el ajuste está activo, y el botón "Agregar combo"
  * a todo el ancho con el efecto gris del carrito.
  *
@@ -254,8 +269,11 @@ export function ComboCard({
 }: ComboCardProps): ReactNode {
   const titleId = useId()
   const { lines } = useCart()
-  const [leather, setLeather] = useState<Leather>(DEFAULT_LEATHER)
+  const [preferred, setLeather] = useState<Leather | null>(null)
   const mate = combo.items.find((item) => item.group === 'mate')
+  const leathers = comboMateLeathers(combo.items)
+  // Lo elegido si el mate lo sigue ofreciendo; si no (o al empezar), `initialLeather`.
+  const leather = resolveLeather(preferred, leathers)
   const soldOut = !combo.isPurchasable
   const atCartLimit =
     combo.isPurchasable &&
@@ -266,7 +284,7 @@ export function ComboCard({
   const add = (event: MouseEvent<HTMLButtonElement>): void => {
     addComboToCart({
       combo,
-      ...(mate === undefined ? {} : { options: { leather } }),
+      ...(leather === null ? {} : { options: { leather } }),
       origin: clickOrigin(event),
     })
   }
@@ -321,9 +339,10 @@ export function ComboCard({
                 </li>
               ))}
             </ul>
-            {mate === undefined ? null : (
+            {mate === undefined || leather === null ? null : (
               <MateOptions
                 mateName={mate.name}
+                leathers={leathers}
                 leather={leather}
                 disabled={soldOut}
                 onLeather={setLeather}

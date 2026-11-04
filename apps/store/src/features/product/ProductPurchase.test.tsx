@@ -70,6 +70,37 @@ describe('opciones del mate', () => {
     expect(screen.getByRole('button', { name: 'Crudo', pressed: true })).toBeInTheDocument()
   })
 
+  it('con un solo cuero muestra esa muestra sola, elegida, y la línea lo lleva', async () => {
+    const user = userEvent.setup()
+    renderPurchase(detail({ leathers: ['Crudo'] }))
+
+    const leathers = screen.getByRole('group', { name: 'Cuero' })
+    expect(leathers.querySelectorAll('button')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Crudo', pressed: true })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
+
+    expect(cartLines()).toEqual([
+      {
+        type: 'product',
+        productId: 'prd-imperial-premium',
+        quantity: 1,
+        options: { leather: 'Crudo' },
+      },
+    ])
+  })
+
+  it('un mate sin cueros no muestra el selector y se agrega sin opciones', async () => {
+    const user = userEvent.setup()
+    renderPurchase(detail({ leathers: [] }))
+
+    expect(screen.queryByRole('group', { name: 'Cuero' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
+
+    expect(cartLines()).toEqual([
+      { type: 'product', productId: 'prd-imperial-premium', quantity: 1 },
+    ])
+  })
+
   it('una bombilla o una yerba no ofrece cuero', () => {
     for (const group of ['bombilla', 'yerba'] as const) {
       renderPurchase(detail({ group }))

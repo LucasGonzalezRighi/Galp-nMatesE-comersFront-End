@@ -4,7 +4,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import { Suspense, useMemo } from 'react'
 import { useScrollTopOnStep } from '@/components/motion'
 import { cx } from '@/components/ui/cx'
-import { KIT_GROUP_ORDER } from '@galpon/domain'
+import { KIT_GROUP_ORDER, resolveLeather } from '@galpon/domain'
 import type { KitProduct } from './kit-products'
 import { addKitToCart, clickOrigin } from '../cart'
 import { buildKitView, resolvePieces } from './kit-view'
@@ -33,8 +33,9 @@ const CONTAINER = 'site-container'
  * los 420 ms y al cambiar de paso la página sube con scroll suave.
  *
  * "Agregar kit al carrito" usa `addKitToCart` (respeta el tope de compra y abre el carrito a los
- * 850 ms): solo si se agregó, reinicia piezas y paso, y nunca el cuero. Si ya no hay stock para
- * otro kit, las piezas quedan elegidas.
+ * 850 ms) con el cuero preferido si el mate lo ofrece (si no, `resolveLeather` da el inicial, o
+ * `null` si el mate no ofrece cueros): solo si se agregó, reinicia piezas y paso, y nunca el cuero
+ * preferido. Si ya no hay stock para otro kit, las piezas quedan elegidas.
  *
  * @param props - Ver {@link KitBuilderProps}.
  * @throws {RangeError} Si el descuento no es un entero entre 0 y 30.
@@ -59,7 +60,8 @@ export function KitBuilder({ products, discountPercent }: KitBuilderProps): Reac
     if (mate === null || bombilla === null || yerba === null) return
     const result = addKitToCart({
       pieces: { mate, bombilla, yerba },
-      leather: current.leather,
+      // El preferido si el mate lo ofrece; si no, el inicial; `null` si no ofrece cueros.
+      leather: resolveLeather(current.leather, mate.leathers),
       discountPercent,
       origin: clickOrigin(event),
     })

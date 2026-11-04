@@ -219,6 +219,54 @@ describe('KitBuilder: pasos y opciones', () => {
     )
     expect(screen.getByText('Cuero · Borravino')).toBeVisible()
   })
+
+  it('muestra solo los cueros del mate elegido y, si no ofrece el preferido, usa el primero (Ruling AT-5)', () => {
+    const catalog = CATALOG.map((product) =>
+      product.id === 'm2' ? { ...product, leathers: ['Crudo', 'Borravino'] as const } : product,
+    )
+    renderKit(catalog)
+    choose('Mate Torpedo')
+
+    const colors = screen.getByRole('group', { name: 'Cuero' })
+    expect(
+      within(colors)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Crudo', 'Borravino'])
+    expect(within(colors).getByRole('button', { name: 'Crudo' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('Cuero · Crudo')).toBeVisible()
+    choose('Bombillón Curvo')
+    choose('Yerba Canarias')
+
+    fireEvent.click(addButton())
+
+    expect(cart().lines).toEqual([
+      expect.objectContaining({ type: 'kit', mateId: 'm2', leather: 'Crudo' }),
+    ])
+    // La preferencia no se pisa: otro mate con Negro vuelve a Negro.
+    expect(useKitStore.getState().leather).toBe('Negro')
+  })
+
+  it('un mate sin cueros no muestra el selector y el kit va con el cuero en null', () => {
+    const catalog = CATALOG.map((product) =>
+      product.id === 'm1' ? { ...product, leathers: [] } : product,
+    )
+    renderKit(catalog)
+    buildFullKit()
+
+    const panel = screen.getByRole('complementary', { name: 'Resumen del kit' })
+    expect(within(panel).queryByRole('group', { name: 'Cuero' })).toBeNull()
+    expect(within(panel).queryByText(/^Cuero/)).toBeNull()
+
+    fireEvent.click(addButton())
+
+    expect(cart().lines).toEqual([
+      { type: 'kit', mateId: 'm1', bombillaId: 'b1', yerbaId: 'y1', leather: null, quantity: 1 },
+    ])
+  })
 })
 
 describe('KitBuilder: agregar al carrito', () => {

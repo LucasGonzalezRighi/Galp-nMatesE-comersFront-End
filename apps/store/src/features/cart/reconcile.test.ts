@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CartLine } from '@galpon/domain'
 import { describeCartNotices } from './cart-notices'
+import { leatherChangedNotice } from './cart.copy'
 import { EMPTY_SEEN, parseSeenValues, reconcileCart } from './reconcile'
 import { comboItem, comboOf, summary } from './test/support'
 
@@ -8,7 +9,12 @@ const mate = summary({ id: 'm1', name: 'Mate Uno', group: 'mate', priceArs: 4000
 const bombilla = summary({ id: 'b1', name: 'Bombilla Uno', group: 'bombilla', priceArs: 26000 })
 const yerba = summary({ id: 'y1', name: 'Yerba Uno', group: 'yerba', priceArs: 10000 })
 
-const mateLine: CartLine = { type: 'product', productId: 'm1', quantity: 2 }
+const mateLine: CartLine = {
+  type: 'product',
+  productId: 'm1',
+  quantity: 2,
+  options: { leather: 'Negro' },
+}
 const kitLine: CartLine = {
   type: 'kit',
   mateId: 'm1',
@@ -340,6 +346,189 @@ describe('reconcileCart con combos', () => {
   })
 })
 
+describe('reconcileCart: cueros por producto (Ruling AT-5)', () => {
+  /** El mate m1 ahora solo ofrece Marrón y Crudo. */
+  const brownOrRaw = { ...mate, leathers: ['Marrón', 'Crudo'] } satisfies typeof mate
+  /** El mate m1 ya no ofrece cueros. */
+  const plain = { ...mate, leathers: [] } satisfies typeof mate
+  const duo = comboOf({
+    id: 'cmb-duo',
+    name: 'Dúo Imperial',
+    items: [
+      comboItem({ productId: 'm1', name: 'Mate Uno', leathers: ['Marrón', 'Crudo'] }),
+      comboItem({ productId: 'b1', name: 'Bombilla Uno', group: 'bombilla' }),
+    ],
+  })
+  const comboLine: CartLine = {
+    type: 'combo',
+    comboId: 'cmb-duo',
+    productIds: ['m1', 'b1'],
+    options: { leather: 'Negro' },
+    quantity: 1,
+  }
+
+  it('un mate suelto con un cuero que ya no se ofrece pasa al primero que se ofrece y avisa', () => {
+    const result = reconcileCart({
+      lines: [mateLine],
+      products: [brownOrRaw],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([{ ...mateLine, options: { leather: 'Marrón' } }])
+    expect(result.notices).toEqual([
+      { kind: 'leather-changed', name: 'Mate Uno', leather: 'Marrón' },
+    ])
+    expect(describeCartNotices(result.notices)).toEqual({
+      title: 'Actualizamos tu carrito',
+      subtitle: 'Cambiamos el cuero de Mate Uno a marrón',
+    })
+  })
+
+  it('un mate que ya no ofrece cueros pierde el cuero en silencio', () => {
+    const result = reconcileCart({
+      lines: [mateLine],
+      products: [plain],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([{ type: 'product', productId: 'm1', quantity: 2 }])
+    expect(result.notices).toEqual([])
+  })
+
+  it('un mate sin cuero que ahora ofrece cueros toma el inicial en silencio', () => {
+    const result = reconcileCart({
+      lines: [{ type: 'product', productId: 'm1', quantity: 2 }],
+      products: [brownOrRaw],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([{ ...mateLine, options: { leather: 'Marrón' } }])
+    expect(result.notices).toEqual([])
+  })
+
+  it('el kit toma los cueros de su mate y avisa con el nombre del mate', () => {
+    const changed = reconcileCart({
+      lines: [kitLine],
+      products: [brownOrRaw, bombilla, yerba],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: 10,
+    })
+    expect(changed.lines).toEqual([{ ...kitLine, leather: 'Marrón' }])
+    expect(changed.notices).toEqual([
+      { kind: 'leather-changed', name: 'Mate Uno', leather: 'Marrón' },
+    ])
+
+    const removed = reconcileCart({
+      lines: [kitLine],
+      products: [plain, bombilla, yerba],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: 10,
+    })
+    expect(removed.lines).toEqual([{ ...kitLine, leather: null }])
+    expect(removed.notices).toEqual([])
+
+    const added = reconcileCart({
+      lines: [{ ...kitLine, leather: null }],
+      products: [brownOrRaw, bombilla, yerba],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: 10,
+    })
+    expect(added.lines).toEqual([{ ...kitLine, leather: 'Marrón' }])
+    expect(added.notices).toEqual([])
+  })
+
+  it('el combo toma los cueros de su mate y avisa con el nombre del combo', () => {
+    const changed = reconcileCart({
+      lines: [comboLine],
+      products: [],
+      combos: [duo],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+    expect(changed.lines).toEqual([{ ...comboLine, options: { leather: 'Marrón' } }])
+    expect(changed.notices).toEqual([
+      { kind: 'leather-changed', name: 'Dúo Imperial', leather: 'Marrón' },
+    ])
+
+    const withoutLeathers = {
+      ...duo,
+      items: duo.items.map((item) => ({ ...item, leathers: [] })),
+    }
+    const removed = reconcileCart({
+      lines: [comboLine],
+      products: [],
+      combos: [withoutLeathers],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+    expect(removed.lines).toEqual([
+      { type: 'combo', comboId: 'cmb-duo', productIds: ['m1', 'b1'], quantity: 1 },
+    ])
+    expect(removed.notices).toEqual([])
+
+    const added = reconcileCart({
+      lines: [{ type: 'combo', comboId: 'cmb-duo', productIds: ['m1', 'b1'], quantity: 1 }],
+      products: [],
+      combos: [duo],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+    expect(added.lines).toEqual([{ ...comboLine, options: { leather: 'Marrón' } }])
+    expect(added.notices).toEqual([])
+  })
+
+  it('dos líneas del mismo mate que quedan con el mismo cuero se suman en una sola', () => {
+    const result = reconcileCart({
+      lines: [
+        { ...mateLine, quantity: 2 },
+        { ...mateLine, quantity: 1, options: { leather: 'Marrón' } },
+      ],
+      products: [brownOrRaw],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    expect(result.lines).toEqual([{ ...mateLine, quantity: 3, options: { leather: 'Marrón' } }])
+    expect(result.notices).toEqual([
+      { kind: 'leather-changed', name: 'Mate Uno', leather: 'Marrón' },
+    ])
+  })
+
+  it('la suma de las líneas que se juntan respeta el stock', () => {
+    const result = reconcileCart({
+      lines: [
+        { ...mateLine, quantity: 3 },
+        { ...mateLine, quantity: 3, options: { leather: 'Marrón' } },
+      ],
+      products: [brownOrRaw],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: null,
+    })
+
+    // El mate tiene stock 5: 3 + 3 se baja a 5.
+    expect(result.lines).toEqual([{ ...mateLine, quantity: 5, options: { leather: 'Marrón' } }])
+    expect(result.notices).toEqual([
+      { kind: 'reduced', name: 'Mate Uno', quantity: 5 },
+      { kind: 'leather-changed', name: 'Mate Uno', leather: 'Marrón' },
+    ])
+  })
+
+  it('una línea que se quita no cambia de cuero ni avisa', () => {
+    const result = reconcileCart({
+      lines: [kitLine],
+      products: [brownOrRaw, bombilla],
+      seen: EMPTY_SEEN,
+      kitDiscountPercent: 10,
+    })
+
+    expect(result.lines).toEqual([])
+    expect(result.notices).toEqual([{ kind: 'removed', count: 1 }])
+  })
+})
+
 describe('parseSeenValues', () => {
   it('lee lo guardado y descarta lo que no tiene la forma esperada', () => {
     expect(parseSeenValues({ prices: { a: 100 }, kitDiscountPercent: 10 })).toEqual({
@@ -353,6 +542,14 @@ describe('parseSeenValues', () => {
 })
 
 describe('describeCartNotices', () => {
+  it('el aviso del cuero valida el nombre y el cuero', () => {
+    expect(leatherChangedNotice('Mate Imperial Criollo', 'Marrón')).toBe(
+      'Cambiamos el cuero de Mate Imperial Criollo a marrón',
+    )
+    expect(() => leatherChangedNotice(' ', 'Marrón')).toThrow(RangeError)
+    expect(() => leatherChangedNotice('Mate', 'Rosa' as 'Negro')).toThrow(RangeError)
+  })
+
   it('no hay aviso sin cambios', () => {
     expect(describeCartNotices([])).toBeNull()
   })

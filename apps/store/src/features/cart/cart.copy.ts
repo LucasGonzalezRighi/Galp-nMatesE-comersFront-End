@@ -1,4 +1,5 @@
-import { pluralize } from '@galpon/domain'
+import type { Leather } from '@galpon/domain'
+import { isLeather, pluralize } from '@galpon/domain'
 
 /** Microtextos del carrito, tal como están en el diseño y en el spec (9.4, 9.5 y 9.7). */
 export const CART_COPY = {
@@ -109,6 +110,23 @@ export function priceChangedNotice(name: string): string {
  */
 export function kitDiscountChangedNotice(percent: number): string {
   return `El descuento del kit ahora es de ${String(percent)}%`
+}
+
+/**
+ * Aviso de que el cuero de una línea ya no se ofrece y se cambió por otro (Ruling AT-5). Sin
+ * punto final, como los otros avisos del carrito.
+ *
+ * @param name - Nombre del producto, del mate del kit o del combo.
+ * @param leather - Cuero nuevo, por ejemplo "Marrón"; se escribe en minúscula.
+ * @returns "Cambiamos el cuero de Mate Imperial Criollo a marrón".
+ * @throws {RangeError} Si el nombre está vacío o el cuero no existe.
+ */
+export function leatherChangedNotice(name: string, leather: Leather): string {
+  if (name.trim() === '') {
+    throw new RangeError('El aviso del cuero necesita el nombre del producto.')
+  }
+  if (!isLeather(leather)) throw new RangeError(`El cuero "${String(leather)}" no existe.`)
+  return `Cambiamos el cuero de ${name} a ${leather.toLowerCase()}`
 }
 
 /**

@@ -69,6 +69,7 @@ describe('kitProductsFrom', () => {
         slug: 'mate',
         name: 'Mate',
         group: 'mate',
+        leathers: [...LEATHERS],
         categoryName: 'Imperiales',
         priceArs: 121,
         maxQuantity: 5,

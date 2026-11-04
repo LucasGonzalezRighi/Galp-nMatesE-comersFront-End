@@ -38,8 +38,9 @@ test.describe('tienda: combos (Ruling IC-12)', () => {
       combos.getByRole('heading', { level: 2, name: 'Combos listos para cebar' }),
     ).toBeVisible()
     await expect(combos.getByRole('article')).toHaveCount(4)
-    const collection = page.getByRole('heading', { name: 'Seis líneas para cada ronda' })
-    const featured = page.getByRole('heading', { name: 'Los más elegidos de la ronda' })
+    // Los títulos son contenido (Ruling AT-4).
+    const collection = page.getByRole('heading', { level: 2, name: 'Categorías', exact: true })
+    const featured = page.getByRole('heading', { level: 2, name: 'Los más vendidos', exact: true })
     const top = async (locator: Locator): Promise<number> =>
       await locator.evaluate((element) => element.getBoundingClientRect().top + window.scrollY)
     const [collectionTop, combosTop, featuredTop] = await Promise.all([
@@ -51,7 +52,7 @@ test.describe('tienda: combos (Ruling IC-12)', () => {
     expect(combosTop).toBeLessThan(featuredTop)
   })
 
-  test('agrega "Dúo Imperial" con cuero Marrón y virola Acero, lo ve en el carrito, recarga y lo compra', async ({
+  test('agrega "Dúo Imperial" con cuero Marrón, lo ve en el carrito, recarga y lo compra', async ({
     page,
   }, testInfo) => {
     await changeMockProduct(page.request, 'prd-imperial-premium', { stock: PLENTY_OF_STOCK })
@@ -69,20 +70,15 @@ test.describe('tienda: combos (Ruling IC-12)', () => {
       'aria-pressed',
       'true',
     )
-    const steel = card.getByRole('radio', { name: 'Acero' })
-    // El radio nativo está oculto dentro de su etiqueta: se toca la etiqueta, como una persona.
-    await card
-      .locator('label')
-      .filter({ hasText: /^Acero$/ })
-      .click()
-    await expect(steel).toBeChecked()
+    // Sin virola (Ruling AT-5): el mate del combo solo elige el cuero.
+    await expect(card.getByRole('radio')).toHaveCount(0)
     await card.getByRole('button', { name: 'Agregar combo Dúo Imperial al carrito' }).click()
     await expect(page.getByText('Combo agregado al carrito. Dúo Imperial')).toBeAttached()
     await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 1 producto')
     // No abre el carrito: solo el aviso y el vuelo.
     await expect(page.getByRole('dialog', { name: /^Carrito/ })).toBeHidden()
 
-    const pieces = 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón · Acero'
+    const pieces = 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón'
     let drawer = await openCart(page)
     await expect(drawer.getByText('Dúo Imperial')).toBeVisible()
     await expect(drawer.getByText(pieces)).toBeVisible()
@@ -106,7 +102,8 @@ test.describe('tienda: combos (Ruling IC-12)', () => {
     await waitForResult(page, number)
     await expect(page.getByText(`Tu pedido ${number} está confirmado.`)).toBeVisible()
     await expect(page.getByText('Dúo Imperial')).toBeVisible()
-    await expect(page.getByText('Mate Imperial Premium + Bombillón Premium Curvo')).toBeVisible()
+    // El resultado muestra el detalle del pedido: las piezas y el cuero.
+    await expect(page.getByText(pieces, { exact: true })).toBeVisible()
     await expect(page.getByText('Ahorrás $6.999')).toBeVisible()
   })
 })

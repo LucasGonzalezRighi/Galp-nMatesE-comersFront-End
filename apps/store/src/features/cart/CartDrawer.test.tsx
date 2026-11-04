@@ -350,6 +350,7 @@ describe('CartDrawer', () => {
       id: 'prd-yerba-canarias',
       name: 'Yerba Canarias 1 kg',
       group: 'yerba',
+      leathers: [],
       priceArs: 9999,
       maxQuantity: 12,
       isPurchasable: true,

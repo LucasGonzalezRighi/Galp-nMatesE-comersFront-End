@@ -1,7 +1,9 @@
+import { LEATHERS } from '@galpon/domain'
 import type { KitProduct } from '../kit-products'
 
 /**
  * Producto del kit para los tests: un mate comprable de $10.000 con stock 10, salvo lo que se cambie.
+ * Los mates ofrecen los 4 cueros y el resto ninguno, como las fixtures.
  *
  * @param overrides - Campos que cambian; `id` es obligatorio.
  */
@@ -10,6 +12,7 @@ export function kitProduct(overrides: Partial<KitProduct> & { id: string }): Kit
     slug: overrides.id,
     name: `Producto ${overrides.id}`,
     group: 'mate',
+    leathers: (overrides.group ?? 'mate') === 'mate' ? [...LEATHERS] : [],
     categoryName: 'Imperiales',
     priceArs: 10000,
     maxQuantity: 10,

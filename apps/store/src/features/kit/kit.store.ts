@@ -23,13 +23,16 @@ export interface KitState {
   step: KitStep
   /** Piezas elegidas. */
   picks: KitPicks
-  /** Cuero del mate; no se reinicia con el kit. */
+  /**
+   * Cuero preferido para el mate; no se reinicia con el kit. Si el mate elegido no lo ofrece, la
+   * pantalla usa `resolveLeather` (el inicial de ese mate) sin pisar la preferencia.
+   */
   leather: Leather
   /** Va a un paso, sin orden obligatorio (también al Resumen). Cancela el avance automático pendiente. */
   goToStep: (step: number) => void
   /** Elige una pieza y, a los 420 ms, pasa al paso siguiente si no se cambió de paso mientras tanto. */
   pickPiece: (group: ProductGroup, productId: string) => void
-  /** Elige el cuero del mate. */
+  /** Elige el cuero preferido del mate. */
   setLeather: (leather: string) => void
   /** Elige el mate que llegó por `/kit?mate=`, conserva las otras piezas y abre en Bombilla. */
   chooseMateFromLink: (productId: string) => void

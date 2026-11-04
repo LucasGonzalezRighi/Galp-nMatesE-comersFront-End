@@ -126,6 +126,70 @@ describe('ComboCard', () => {
     expect(within(withoutMate).queryByRole('radiogroup')).toBeNull()
   })
 
+  it('muestra solo los cueros que ofrece el mate y, sin Negro, arranca en el primero (Ruling AT-5)', async () => {
+    const duo = await fixtureCombo('Dúo Imperial')
+    const [mate, bombilla] = duo.items
+    if (mate === undefined || bombilla === undefined) throw new Error('Faltan piezas.')
+    renderCards([{ ...duo, items: [{ ...mate, leathers: ['Marrón', 'Crudo'] }, bombilla] }])
+
+    const article = card('Dúo Imperial')
+    const leathers = within(article).getByRole('group', { name: 'Cuero del Mate Imperial Premium' })
+    expect(
+      within(leathers)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Marrón', 'Crudo'])
+    expect(within(leathers).getByRole('button', { name: 'Marrón' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.click(
+      within(article).getByRole('button', { name: 'Agregar combo Dúo Imperial al carrito' }),
+    )
+    expect(cartLines()).toEqual([
+      expect.objectContaining({ comboId: 'cmb-duo-imperial', options: { leather: 'Marrón' } }),
+    ])
+  })
+
+  it('con un solo cuero muestra una muestra; sin cueros, no hay selector y va sin opciones', async () => {
+    const duo = await fixtureCombo('Dúo Imperial')
+    const [mate, bombilla] = duo.items
+    if (mate === undefined || bombilla === undefined) throw new Error('Faltan piezas.')
+    renderCards([
+      { ...duo, items: [{ ...mate, leathers: ['Borravino'] }, bombilla] },
+      {
+        ...duo,
+        id: 'cmb-liso',
+        name: 'Dúo liso',
+        items: [{ ...mate, name: 'Mate Liso', leathers: [] }, bombilla],
+      },
+    ])
+
+    const single = within(card('Dúo Imperial')).getByRole('group', {
+      name: 'Cuero del Mate Imperial Premium',
+    })
+    expect(within(single).getAllByRole('button')).toHaveLength(1)
+    expect(within(single).getByRole('button', { name: 'Borravino' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    const plain = card('Dúo liso')
+    expect(within(plain).queryByRole('group', { name: /^Cuero/ })).toBeNull()
+    expect(plain).not.toHaveTextContent('Cuero')
+    await userEvent.click(
+      within(plain).getByRole('button', { name: 'Agregar combo Dúo liso al carrito' }),
+    )
+    expect(cartLines()).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-liso',
+        productIds: ['prd-imperial-premium', 'prd-bombillon-premium-curvo'],
+        quantity: 1,
+      },
+    ])
+  })
+
   it('agrega el combo con el cuero elegido, avisa y no abre el carrito', async () => {
     renderCards([await fixtureCombo('Dúo Imperial')])
     const duo = card('Dúo Imperial')

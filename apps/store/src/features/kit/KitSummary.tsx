@@ -4,7 +4,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from 'react'
 import type { Leather } from '@galpon/domain'
 import { Magnetic } from '@/components/motion'
 import { Button, Swatch } from '@/components/ui'
-import { formatDiscountPesos, formatPesos, LEATHERS } from '@galpon/domain'
+import { formatDiscountPesos, formatPesos, resolveLeather } from '@galpon/domain'
 import type { KitView } from './kit-view'
 import { discountLabel, KIT_COPY, missingText } from './kit.copy'
 
@@ -12,7 +12,10 @@ import { discountLabel, KIT_COPY, missingText } from './kit.copy'
 export interface KitSummaryProps {
   /** Lo que se muestra: piezas, importes y qué falta. */
   view: KitView
-  /** Cuero elegido para el mate. */
+  /**
+   * Cuero preferido: se muestra elegido si el mate lo ofrece; si no, el que da
+   * `resolveLeather(leather, mate.leathers)`.
+   */
   leather: Leather
   /** Descuento del kit, un entero entre 0 y 30. */
   discountPercent: number
@@ -37,7 +40,8 @@ const DIVIDER_STYLE: CSSProperties = {
 }
 
 /**
- * Panel "Resumen del kit": las tres piezas, el cuero del mate (con sus muestras), subtotal,
+ * Panel "Resumen del kit": las tres piezas, el cuero del mate (una muestra por cada cuero que
+ * ofrece el mate elegido; nada si no ofrece ninguno), subtotal,
  * descuento (si el kit tiene) y total, lo que falta elegir y los botones "Agregar kit al carrito" (deshabilitado
  * hasta tener las tres piezas) y "Empezar de nuevo". Los importes vienen ya calculados en `view`
  * con `kitLineAmounts`.
@@ -52,7 +56,8 @@ export function KitSummary({
   onAdd,
   onReset,
 }: KitSummaryProps): ReactNode {
-  const hasMate = view.slots.some((slot) => slot.group === 'mate' && slot.product !== null)
+  const mate = view.slots.find((slot) => slot.group === 'mate')?.product ?? null
+  const chosen = mate === null ? null : resolveLeather(leather, mate.leathers)
   return (
     <aside
       aria-labelledby="kit-summary-title"
@@ -68,18 +73,18 @@ export function KitSummary({
           <span className="max-w-[65%] text-right">{slot.product?.name ?? KIT_COPY.unchosen}</span>
         </div>
       ))}
-      {hasMate ? (
+      {mate === null || chosen === null ? null : (
         <div className="flex items-center justify-between gap-3 text-[13.5px]">
           <span className="text-neutral-400">
-            {KIT_COPY.leatherLabel} · {leather}
+            {KIT_COPY.leatherLabel} · {chosen}
           </span>
           <span role="group" aria-label={KIT_COPY.leatherLabel} className="flex gap-2">
-            {LEATHERS.map((option) => (
+            {mate.leathers.map((option) => (
               <Swatch
                 key={option}
                 leather={option}
                 size="sm"
-                selected={option === leather}
+                selected={option === chosen}
                 onClick={() => {
                   onLeather(option)
                 }}
@@ -87,7 +92,7 @@ export function KitSummary({
             ))}
           </span>
         </div>
-      ) : null}
+      )}
       <div aria-hidden="true" className="h-px" style={DIVIDER_STYLE} />
       <div className="flex justify-between text-[14px] tabular-nums">
         <span className="text-neutral-400">{KIT_COPY.subtotal}</span>

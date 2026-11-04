@@ -24,7 +24,7 @@ const LINES: OrderLine[] = [
   {
     type: 'kit',
     name: 'Kit',
-    detail: 'Cuero Negro',
+    detail: 'Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Cuero negro',
     productSlug: null,
     options: { leather: 'Negro' },
     kitItems: [
@@ -46,11 +46,13 @@ describe('OrderLines', () => {
     const [mate, kit] = screen.getAllByRole('listitem')
     if (mate === undefined || kit === undefined) throw new Error('Faltan líneas')
     expect(within(mate).getByText('Mate Imperial Premium')).toBeInTheDocument()
+    // Un pedido anterior a los cueros por producto conserva su virola en el detalle (Ruling AT-5).
     expect(within(mate).getByText('Cuero Negro · Virola Alpaca cincelada')).toBeInTheDocument()
     expect(within(mate).getByText('2 × $39.999')).toBeInTheDocument()
     expect(within(mate).getByText('$79.998')).toBeInTheDocument()
+    // El kit muestra el detalle del pedido: sus piezas y el cuero del mate.
     expect(
-      within(kit).getByText('Mate Galleta + Bombilla Pico de Loro + Yerba Suave'),
+      within(kit).getByText('Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Cuero negro'),
     ).toBeInTheDocument()
     expect(within(kit).getByText('Ahorrás $4.000')).toBeInTheDocument()
     expect(within(kit).getByText('$36.000')).toBeInTheDocument()

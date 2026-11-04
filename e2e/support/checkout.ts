@@ -1,4 +1,5 @@
 import type { APIRequestContext, Locator, Page, TestInfo } from '@playwright/test'
+import type { Leather } from '@galpon/domain'
 import { gotoStore } from './store'
 import { expect } from './test'
 
@@ -107,18 +108,28 @@ export function buyerFor(testInfo: TestInfo, firstName = 'Lucía'): Buyer {
   return { email: `compra.${tag}@ejemplo.com`, firstName, lastName: 'Pérez' }
 }
 
+/** Lo que cambia {@link changeMockProduct}: al menos uno de los campos. */
+export interface MockProductChange {
+  /** Precio nuevo en pesos enteros. */
+  priceArs?: number
+  /** Stock nuevo. */
+  stock?: number
+  /** Cueros que ofrece desde ahora (la ruta los guarda sin repetir y en el orden canónico). */
+  leathers?: Leather[]
+}
+
 /**
- * Cambia el precio o el stock de un producto en la API simulada (ruta de control
+ * Cambia el precio, el stock o los cueros de un producto en la API simulada (ruta de control
  * `POST /api/v1/__mock/products/{id}`, solo en modo de prueba).
  *
  * @param request - Cliente HTTP de Playwright con la dirección de la tienda.
  * @param id - Identificador del producto.
- * @param change - Precio nuevo, stock nuevo o los dos.
+ * @param change - Ver {@link MockProductChange}.
  */
 export async function changeMockProduct(
   request: APIRequestContext,
   id: string,
-  change: { priceArs?: number; stock?: number },
+  change: MockProductChange,
 ): Promise<void> {
   const response = await request.post(`/api/v1/__mock/products/${id}`, { data: change })
   expect(response.status(), `No se pudo cambiar el producto ${id}`).toBe(200)

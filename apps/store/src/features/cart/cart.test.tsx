@@ -4,6 +4,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApiClient } from '@galpon/api-client'
+import { LEATHERS } from '@galpon/domain'
 import { hideToast, Toaster } from '../toast'
 import {
   addComboToCart,
@@ -32,12 +33,19 @@ const mate: CartableProduct = {
   id: 'm1',
   name: 'Mate Imperial Premium',
   group: 'mate',
+  leathers: [...LEATHERS],
   priceArs: 39999,
   maxQuantity: 5,
   isPurchasable: true,
 }
-const bombilla: CartableProduct = { ...mate, id: 'b1', name: 'Bombillón Curvo', group: 'bombilla' }
-const yerba: CartableProduct = { ...mate, id: 'y1', name: 'Yerba Canarias', group: 'yerba' }
+const bombilla: CartableProduct = {
+  ...mate,
+  id: 'b1',
+  name: 'Bombillón Curvo',
+  group: 'bombilla',
+  leathers: [],
+}
+const yerba: CartableProduct = { ...bombilla, id: 'y1', name: 'Yerba Canarias', group: 'yerba' }
 
 /** Estado actual del carrito. */
 function cart(): ReturnType<typeof useCartStore.getState> {
@@ -123,6 +131,30 @@ describe('addProductToCart', () => {
     add({ product: mate, options, quantity: 2 })
 
     expect(cart().lines).toEqual([{ type: 'product', productId: 'm1', quantity: 3, options }])
+  })
+
+  it('un mate sin cueros se agrega sin opciones aunque se pasen (Ruling AT-5)', () => {
+    add({ product: { ...mate, leathers: [] }, options: { leather: 'Crudo' } })
+
+    expect(cart().lines).toEqual([{ type: 'product', productId: 'm1', quantity: 1 }])
+  })
+
+  it('sin Negro entre sus cueros, arranca en el primero que ofrece', () => {
+    add({ product: { ...mate, leathers: ['Crudo', 'Borravino'] } })
+
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1, options: { leather: 'Crudo' } },
+    ])
+  })
+
+  it('un cuero que el mate no ofrece es un error', () => {
+    expect(() =>
+      addProductToCart({
+        product: { ...mate, leathers: ['Crudo'] },
+        options: { leather: 'Negro' },
+      }),
+    ).toThrow(RangeError)
+    expect(cart().lines).toEqual([])
   })
 
   it('un doble clic rápido nunca supera el tope de compra (remainingQuantityFor)', () => {
@@ -270,6 +302,40 @@ describe('addKitToCart', () => {
     expect(() => addKitToCart({ pieces, leather: 'Rosa' as 'Negro', discountPercent: 10 })).toThrow(
       RangeError,
     )
+    expect(() =>
+      addKitToCart({
+        pieces: { ...pieces, mate: { ...mate, leathers: ['Crudo'] } },
+        leather: 'Negro',
+        discountPercent: 10,
+      }),
+    ).toThrow(RangeError)
+  })
+
+  it('un mate sin cueros va en el kit con el cuero en null, y sobrevive a recargar', () => {
+    addKit({
+      pieces: { ...pieces, mate: { ...mate, leathers: [] } },
+      leather: null,
+      discountPercent: 10,
+    })
+    const stored = localStorage.getItem(CART_STORAGE_KEY)
+    useCartStore.setState({ lines: [], seen: EMPTY_SEEN, hasHydrated: false })
+    localStorage.setItem(CART_STORAGE_KEY, stored ?? '')
+
+    ensureCartHydrated()
+
+    expect(cart().lines).toEqual([
+      { type: 'kit', mateId: 'm1', bombillaId: 'b1', yerbaId: 'y1', leather: null, quantity: 1 },
+    ])
+  })
+
+  it('el cuero del kit se ignora si el mate no ofrece cueros', () => {
+    addKit({
+      pieces: { ...pieces, mate: { ...mate, leathers: [] } },
+      leather: 'Negro',
+      discountPercent: 10,
+    })
+
+    expect(cart().lines[0]).toMatchObject({ type: 'kit', leather: null })
   })
 })
 
@@ -333,6 +399,45 @@ describe('addComboToCart', () => {
 
     expect(cart().lines).toEqual([
       { type: 'combo', comboId: 'cmb-by', productIds: ['b1', 'y1'], quantity: 1 },
+    ])
+  })
+
+  it('un combo cuyo mate no ofrece cueros no lleva opciones aunque se pasen', () => {
+    const plain = comboOf({
+      id: 'cmb-liso',
+      items: [
+        comboItem({ productId: 'm1', leathers: [] }),
+        comboItem({ productId: 'b1', group: 'bombilla' }),
+      ],
+    })
+
+    addCombo({ combo: plain, options: { leather: 'Negro' } })
+
+    expect(cart().lines).toEqual([
+      { type: 'combo', comboId: 'cmb-liso', productIds: ['m1', 'b1'], quantity: 1 },
+    ])
+  })
+
+  it('el combo arranca en el primer cuero del mate si no ofrece Negro, y no acepta otro', () => {
+    const items = [
+      comboItem({ productId: 'm1', leathers: ['Marrón', 'Crudo'] }),
+      comboItem({ productId: 'b1', group: 'bombilla' }),
+    ]
+    const twoLeathers = comboOf({ id: 'cmb-dos', items })
+
+    expect(() => addComboToCart({ combo: twoLeathers, options: { leather: 'Negro' } })).toThrow(
+      RangeError,
+    )
+    addCombo({ combo: twoLeathers })
+
+    expect(cart().lines).toEqual([
+      {
+        type: 'combo',
+        comboId: 'cmb-dos',
+        productIds: ['m1', 'b1'],
+        options: { leather: 'Marrón' },
+        quantity: 1,
+      },
     ])
   })
 
@@ -531,6 +636,37 @@ describe('syncCart con datos viejos en localStorage (Review Focus 1)', () => {
     await sync(api)
 
     expect(cart().lines).toEqual([])
+  })
+
+  it('un cuero que el mate ya no ofrece pasa al primero que ofrece y avisa (Ruling AT-5)', async () => {
+    const { api, db } = createTestApi()
+    const product = db.products.find((candidate) => candidate.id === 'prd-imperial-premium')
+    if (product === undefined) throw new Error('Falta el producto de fábrica')
+    product.leathers = ['Marrón', 'Crudo']
+    useCartStore.setState({
+      lines: [
+        {
+          type: 'product',
+          productId: 'prd-imperial-premium',
+          quantity: 1,
+          options: { leather: 'Negro' },
+        },
+      ],
+    })
+
+    await sync(api)
+
+    expect(cart().lines).toEqual([
+      {
+        type: 'product',
+        productId: 'prd-imperial-premium',
+        quantity: 1,
+        options: { leather: 'Marrón' },
+      },
+    ])
+    expect(announced()).toHaveTextContent(
+      'Actualizamos tu carrito. Cambiamos el cuero de Mate Imperial Premium a marrón',
+    )
   })
 
   it('si no se puede consultar el catálogo, avisa y deja el carrito como estaba', async () => {

@@ -17,18 +17,12 @@ const DIVIDER_STYLE: CSSProperties = {
   borderTop: '1px solid var(--color-divider)',
 }
 
-/** Texto secundario de una línea: las tres piezas de un kit o las opciones elegidas. */
-function lineDetail(line: OrderLine): string {
-  if (line.kitItems !== null && line.kitItems.length > 0) {
-    return line.kitItems.map((item) => item.name).join(ORDER_LINES_COPY.kitJoiner)
-  }
-  return line.detail
-}
-
 /**
  * Líneas de un pedido ya hecho (las comparten la cuenta del cliente y el resultado del checkout):
- * nombre, detalle (opciones o piezas del kit), cantidad por precio unitario, ahorro del kit y total
- * de la línea. Los importes son los que guardó el pedido: no se recalculan.
+ * nombre, detalle, cantidad por precio unitario, ahorro del kit y total de la línea. El detalle es
+ * siempre el `detail` que guardó el pedido (las piezas de un kit o de un combo y el cuero, como
+ * "A + B + C · Cuero negro"): así los pedidos anteriores a los cueros por producto conservan su
+ * virola (Ruling AT-5). Los importes son los que guardó el pedido: no se recalculan.
  *
  * @param props - Ver {@link OrderLinesProps}.
  * @throws {RangeError} Si un importe no es un entero de pesos mayor o igual a 0.
@@ -39,7 +33,7 @@ export function OrderLines({ lines, className }: OrderLinesProps): ReactNode {
   return (
     <ul className={cx('m-0 flex list-none flex-col p-0', className)}>
       {lines.map((line, index) => {
-        const detail = lineDetail(line)
+        const { detail } = line
         return (
           <li
             key={`${line.type}-${line.name}-${String(index)}`}

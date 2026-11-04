@@ -3,9 +3,9 @@ import {
   assertValidQuantity,
   COMBO_MAX_ITEMS,
   COMBO_MIN_ITEMS,
-  comboHasMate,
-  DEFAULT_LEATHER,
+  comboMateLeathers,
   hasDistinctGroups,
+  initialLeather,
   isLeather,
   MAX_KIT_DISCOUNT_PERCENT,
   remainingQuantityFor,
@@ -25,8 +25,10 @@ export interface CartableProduct {
   id: string
   /** Nombre, para el aviso. */
   name: string
-  /** Grupo del producto: solo los mates llevan cuero. */
+  /** Grupo del producto: el kit lo usa para validar cada pieza. */
   group: ProductGroup
+  /** Cueros que ofrece (solo los mates pueden tener); vacío si no lleva cuero. */
+  leathers: readonly Leather[]
   /** Precio de lista, o `null` si es "a consultar". */
   priceArs: number | null
   /** Máximo que se puede pedir de una vez: el menor entre 20 y el stock (0 sin stock). */
@@ -50,7 +52,10 @@ export interface AddProductInput {
   product: CartableProduct
   /** Unidades; por omisión 1. Un entero mayor o igual a 1. */
   quantity?: number
-  /** Cuero, solo para mates; por omisión Negro. Se ignora en otros grupos. */
+  /**
+   * Cuero, uno de los `leathers` del producto; por omisión `initialLeather(product.leathers)`.
+   * Se ignora si el producto no ofrece cueros.
+   */
   options?: CartLineOptions
   /** Punto del clic, para el vuelo al carrito (ver `clickOrigin`). Sin él solo rebota el contador. */
   origin?: FlyOrigin
@@ -60,8 +65,12 @@ export interface AddProductInput {
 export interface AddKitInput {
   /** Las tres piezas: un mate, una bombilla y una yerba. */
   pieces: { mate: CartableProduct; bombilla: CartableProduct; yerba: CartableProduct }
-  /** Cuero del mate del kit. */
-  leather: Leather
+  /**
+   * Cuero del mate del kit, uno de sus `leathers` (la pantalla del kit manda
+   * `resolveLeather(preferencia, mate.leathers)`); con `null`, `initialLeather(mate.leathers)`. Se
+   * ignora (queda `null`) si el mate no ofrece cueros.
+   */
+  leather: Leather | null
   /** Descuento actual del kit (para el aviso); un entero entre 0 y 30. */
   discountPercent: number
   /** Punto del clic, para el vuelo al carrito. */
@@ -72,8 +81,10 @@ export interface AddKitInput {
 export interface CartableComboItem {
   /** Id del producto. */
   productId: string
-  /** Grupo del producto: si hay un mate, el combo lleva cuero. */
+  /** Grupo del producto: si hay un mate que ofrece cueros, el combo lleva cuero. */
   group: ProductGroup
+  /** Cueros que ofrece la pieza (solo los mates pueden tener). */
+  leathers: readonly Leather[]
   /** Máximo que se puede pedir de la pieza: el menor entre 20 y su stock disponible (0 sin stock). */
   maxQuantity: number
 }
@@ -96,7 +107,10 @@ export interface CartableCombo {
 export interface AddComboInput {
   /** Combo a agregar. */
   combo: CartableCombo
-  /** Cuero del mate del combo; por omisión Negro. Sin mate se ignora. */
+  /**
+   * Cuero del mate del combo, uno de sus `leathers`; por omisión `initialLeather` de esos cueros.
+   * Se ignora si el combo no lleva mate o el mate no ofrece cueros (`comboMateLeathers`).
+   */
   options?: CartLineOptions
   /** Punto del clic, para el vuelo al carrito. */
   origin?: FlyOrigin
@@ -139,16 +153,41 @@ function assertCartable(product: CartableProduct): void {
 }
 
 /**
+ * Decide el cuero de una línea nueva con los cueros que ofrece el mate (Ruling AT-5).
+ *
+ * @param chosen - Cuero pedido, o `null` si no se pidió ninguno.
+ * @param offered - Cueros que ofrece el mate (suelto, del kit o del combo).
+ * @param name - Nombre del producto o del combo, para el mensaje del error.
+ * @returns `null` si no ofrece cueros (el pedido se ignora); el pedido si lo ofrece; si no se
+ *   pidió, `initialLeather(offered)`.
+ * @throws {RangeError} Si el cuero pedido no existe o, ofreciendo cueros, no es uno de ellos.
+ */
+function chooseLeather(
+  chosen: Leather | null,
+  offered: readonly Leather[],
+  name: string,
+): Leather | null {
+  if (chosen !== null && !isLeather(chosen)) throw new RangeError('El cuero elegido no existe.')
+  if (offered.length === 0) return null
+  if (chosen === null) return initialLeather(offered)
+  if (!offered.includes(chosen)) {
+    throw new RangeError(`"${name}" no ofrece el cuero ${chosen}; ofrece ${offered.join(', ')}.`)
+  }
+  return chosen
+}
+
+/**
  * Agrega un producto suelto al carrito (spec 9.4): respeta el tope de compra
  * (`remainingQuantityFor`, contando el producto en todas las líneas, así que un doble clic
  * rápido nunca lo supera), muestra el aviso "Agregado al carrito" con el botón "Ver carrito" y
- * lanza el vuelo al carrito. En los mates usa Negro y Alpaca cincelada si no se piden otras
- * opciones. Es una función común (no un hook): se puede llamar desde cualquier manejador.
+ * lanza el vuelo al carrito. Si el producto ofrece cueros, la línea lleva el pedido o, si no se
+ * pide ninguno, `initialLeather` (Negro si está; si no, el primero); si no ofrece, va sin cuero.
+ * Es una función común (no un hook): se puede llamar desde cualquier manejador.
  *
  * @param input - Ver {@link AddProductInput}.
  * @returns Qué pasó: ver {@link AddToCartResult}.
  * @throws {RangeError} Si la cantidad no es un entero mayor o igual a 1, si faltan el id o el
- *   nombre del producto, o si el cuero no es de los permitidos.
+ *   nombre del producto, o si el cuero no existe o el producto no lo ofrece.
  * @example
  * addProductToCart({ product, origin: clickOrigin(event) })
  */
@@ -160,9 +199,7 @@ export function addProductToCart({
 }: AddProductInput): AddToCartResult {
   assertValidQuantity(quantity)
   assertCartable(product)
-  if (options !== undefined && !isLeather(options.leather)) {
-    throw new RangeError('El cuero elegido no existe.')
-  }
+  const leather = chooseLeather(options?.leather ?? null, product.leathers, product.name)
   if (!product.isPurchasable) return { status: 'unavailable' }
 
   ensureCartHydrated()
@@ -179,7 +216,7 @@ export function addProductToCart({
       type: 'product',
       productId: product.id,
       quantity: added,
-      ...(product.group === 'mate' ? { options: options ?? { leather: DEFAULT_LEATHER } } : null),
+      ...(leather === null ? null : { options: { leather } }),
     },
     { prices: priceMap([product]) },
   )
@@ -189,14 +226,15 @@ export function addProductToCart({
 }
 
 /**
- * Agrega un kit (un mate, una bombilla y una yerba con un cuero) al carrito. Respeta el tope de compra de cada pieza, muestra el aviso
+ * Agrega un kit (un mate, una bombilla y una yerba, con el cuero del mate si ofrece) al carrito.
+ * Respeta el tope de compra de cada pieza, muestra el aviso
  * "Kit agregado al carrito · Descuento de N% aplicado", lanza el vuelo y abre el carrito a los
  * 850 ms ({@link KIT_CART_OPEN_DELAY_MS}).
  *
  * @param input - Ver {@link AddKitInput}.
  * @returns Qué pasó: ver {@link AddToCartResult}.
  * @throws {RangeError} Si una pieza no es del grupo que le toca, si el descuento no es un entero
- *   entre 0 y 30, o si el cuero no es de los permitidos.
+ *   entre 0 y 30, o si el cuero no existe o el mate no lo ofrece.
  */
 export function addKitToCart({
   pieces,
@@ -216,7 +254,7 @@ export function addKitToCart({
       throw new RangeError(`La pieza "${piece.name}" tiene que ser del grupo ${group}.`)
     }
   }
-  if (!isLeather(leather)) throw new RangeError('El cuero elegido no existe.')
+  const mateLeather = chooseLeather(leather, mate.leathers, mate.name)
   if (
     !Number.isInteger(discountPercent) ||
     discountPercent < 0 ||
@@ -241,7 +279,7 @@ export function addKitToCart({
       mateId: mate.id,
       bombillaId: bombilla.id,
       yerbaId: yerba.id,
-      leather,
+      leather: mateLeather,
       quantity: 1,
     },
     {
@@ -260,12 +298,14 @@ export function addKitToCart({
 }
 
 /**
- * Valida el combo y las opciones que pide {@link addComboToCart}.
+ * Valida el combo que pide {@link addComboToCart} y decide su cuero.
  *
+ * @returns El cuero de la línea, o `null` si el combo no lleva un mate que ofrezca cueros.
  * @throws {RangeError} Si faltan el id o el nombre, si no tiene de 2 a 3 piezas de grupos
- *   distintos, si el precio no es un entero mayor a 0 o si el cuero no existe.
+ *   distintos, si el precio no es un entero mayor a 0 o si el cuero no existe o el mate no lo
+ *   ofrece.
  */
-function assertComboInput({ combo, options }: AddComboInput): void {
+function checkComboInput({ combo, options }: AddComboInput): Leather | null {
   if (combo.id.trim() === '' || combo.name.trim() === '') {
     throw new RangeError('El combo tiene que tener id y nombre.')
   }
@@ -283,14 +323,12 @@ function assertComboInput({ combo, options }: AddComboInput): void {
       `El precio del combo tiene que ser un entero mayor a 0; se recibió ${String(combo.priceArs)}.`,
     )
   }
-  if (options !== undefined && !isLeather(options.leather)) {
-    throw new RangeError('El cuero elegido no existe.')
-  }
+  return chooseLeather(options?.leather ?? null, comboMateLeathers(combo.items), combo.name)
 }
 
 /**
  * Agrega un combo al carrito (Ruling IC-12): una línea con el combo, sus piezas (para el tope) y,
- * si lleva mate, el cuero (por omisión Negro). Respeta el tope de
+ * si el mate del combo ofrece cueros, el cuero (por omisión `initialLeather`). Respeta el tope de
  * compra de cada pieza contando todas las líneas (sueltas, kits y otros combos), así un doble clic
  * rápido nunca lo supera; muestra el aviso "Combo agregado al carrito" con el nombre y el botón
  * "Ver carrito" y lanza el vuelo, sin abrir el carrito. Recuerda el precio final del combo para
@@ -303,8 +341,8 @@ function assertComboInput({ combo, options }: AddComboInput): void {
  * addComboToCart({ combo, options: { leather }, origin: clickOrigin(event) })
  */
 export function addComboToCart(input: AddComboInput): AddToCartResult {
-  assertComboInput(input)
-  const { combo, options, origin } = input
+  const leather = checkComboInput(input)
+  const { combo, origin } = input
   if (!combo.isPurchasable) return { status: 'unavailable' }
 
   ensureCartHydrated()
@@ -316,13 +354,12 @@ export function addComboToCart(input: AddComboInput): AddToCartResult {
     return { status: 'limit' }
   }
 
-  const withMate = comboHasMate(combo.items.map((item) => item.group))
   addLine(
     {
       type: 'combo',
       comboId: combo.id,
       productIds: combo.items.map((item) => item.productId),
-      ...(withMate ? { options: options ?? { leather: DEFAULT_LEATHER } } : null),
+      ...(leather === null ? null : { options: { leather } }),
       quantity: 1,
     },
     { prices: { [combo.id]: combo.priceArs } },

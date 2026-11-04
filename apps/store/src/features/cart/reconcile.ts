@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import type { Combo, ProductSummary } from '@galpon/api-client'
-import type { CartLine } from '@galpon/domain'
+import type { CartLine, Leather } from '@galpon/domain'
+import {
+  addCartLine,
+  cartLineKey,
+  comboMateLeathers,
+  MAX_QUANTITY_PER_PRODUCT,
+  resolveLeather,
+} from '@galpon/domain'
 import { lineProductIds } from './cart-lines'
 
 /**
@@ -48,6 +55,14 @@ export type CartNotice =
   | { kind: 'price-changed'; name: string }
   /** Cambió el descuento del kit. */
   | { kind: 'kit-discount-changed'; percent: number }
+  /**
+   * El cuero de una línea ya no se ofrece y pasó a `leather` (Ruling AT-5); `name` es el del
+   * producto, el del mate en un kit o el del combo.
+   */
+  | { kind: 'leather-changed'; name: string; leather: Leather }
+
+/** Aviso de un cuero que cambió. */
+type LeatherChanged = Extract<CartNotice, { kind: 'leather-changed' }>
 
 /** Lo que necesita {@link reconcileCart}. */
 export interface ReconcileInput {
@@ -94,6 +109,32 @@ interface CheckedLine {
   name: string | null
   /** Las piezas que usa la línea. */
   pieces: LinePiece[]
+  /** Cueros que se ofrecen hoy para la línea: los del producto, los del mate del kit o del combo. */
+  leathers: readonly Leather[]
+  /** Nombre con el que se avisa un cambio de cuero: el del producto, el del mate del kit o el del combo. */
+  leatherName: string
+}
+
+/** Cuero que lleva la línea, o `null` si no lleva. */
+function lineLeather(line: CartLine): Leather | null {
+  return line.type === 'kit' ? line.leather : (line.options?.leather ?? null)
+}
+
+/** La misma línea con otro cuero (o sin cuero, con `null`). */
+function withLeather(line: CartLine, leather: Leather | null): CartLine {
+  const options = leather === null ? {} : { options: { leather } }
+  switch (line.type) {
+    case 'kit':
+      return { ...line, leather }
+    case 'combo': {
+      const { comboId, productIds, quantity } = line
+      return { type: 'combo', comboId, productIds, quantity, ...options }
+    }
+    case 'product': {
+      const { productId, quantity } = line
+      return { type: 'product', productId, quantity, ...options }
+    }
+  }
 }
 
 /**
@@ -119,6 +160,8 @@ function checkLine(
         name: item.name,
         maxQuantity: item.maxQuantity,
       })),
+      leathers: comboMateLeathers(combo.items),
+      leatherName: combo.name,
     }
   }
   const ids = lineProductIds(line)
@@ -126,7 +169,28 @@ function checkLine(
     const product = byId.get(id)
     return product === undefined || product.priceArs === null ? [] : [product]
   })
-  return pieces.length < ids.length ? null : { line, name: null, pieces }
+  // La primera pieza es el producto suelto o el mate del kit: la que lleva el cuero.
+  const [owner] = pieces
+  if (owner === undefined || pieces.length < ids.length) return null
+  return { line, name: null, pieces, leathers: owner.leathers, leatherName: owner.name }
+}
+
+/**
+ * Acomoda el cuero de una línea revisada a los cueros que se ofrecen hoy (Ruling AT-5): sin cueros,
+ * se quita en silencio; sin cuero y con cueros, `initialLeather` en silencio (vía `resolveLeather`);
+ * con un cuero que ya no está, `resolveLeather` y aviso.
+ *
+ * @returns La línea con el cuero al día y el aviso, o `null` si no hay que avisar.
+ */
+function fitLeather(checked: CheckedLine): { line: CartLine; notice: LeatherChanged | null } {
+  const current = lineLeather(checked.line)
+  const next = resolveLeather(current, checked.leathers)
+  if (next === current) return { line: checked.line, notice: null }
+  const notice: LeatherChanged | null =
+    current === null || next === null
+      ? null
+      : { kind: 'leather-changed', name: checked.leatherName, leather: next }
+  return { line: withLeather(checked.line, next), notice }
 }
 
 /**
@@ -134,6 +198,11 @@ function checkLine(
  * función pura: no consulta nada ni toca el store.
  *
  * - Producto que no vino (despublicado, archivado o inexistente) o sin precio: se quita la línea.
+ * - Cuero (Ruling AT-5), antes de repartir el stock y de cotizar (un cuero que no se ofrece haría
+ *   fallar la cotización entera): con los cueros que se ofrecen hoy (los del producto, los del mate
+ *   del kit o los del mate del combo), si ya no hay se quita en silencio; si la línea no tenía y
+ *   ahora hay, toma `initialLeather` en silencio; si el suyo ya no está, pasa al que da
+ *   `resolveLeather` y se avisa. Si así queda con la clave de otra línea, se suman (`addCartLine`).
  * - Combo que no vino en `GET /combos` o que no se puede comprar por otra cosa que el stock: se
  *   quita la línea. Si sigue, sus piezas se toman de la lista (el dashboard pudo cambiarlas).
  * - Producto o combo sin stock: la línea se queda (el panel la marca "Sin stock" y no deja
@@ -160,10 +229,17 @@ export function reconcileCart({
   const notices: CartNotice[] = []
   let removed = 0
   const reduced: CartNotice[] = []
+  /** Cambios de cuero sin repetir (dos líneas del mismo mate avisan una vez). */
+  const leatherChanges = new Map<string, LeatherChanged>()
 
+  // Primero se revisa cada línea y se le acomoda el cuero; las que quedan iguales se suman.
+  let merged: CartLine[] = []
+  /** Piezas de cada línea por su clave; `null` en un combo que no se pudo revisar. */
+  const checkedByKey = new Map<string, CheckedLine | null>()
   for (const line of lines) {
     if (line.type === 'combo' && combos === undefined) {
-      kept.push(line)
+      merged = addCartLine(merged, line)
+      checkedByKey.set(cartLineKey(line), null)
       continue
     }
     const checked = checkLine(line, byId, combosById)
@@ -171,9 +247,25 @@ export function reconcileCart({
       removed += 1
       continue
     }
+    const fitted = fitLeather(checked)
+    if (fitted.notice !== null) {
+      leatherChanges.set(`${fitted.notice.name}:${fitted.notice.leather}`, fitted.notice)
+    }
+    merged = addCartLine(merged, fitted.line)
+    const key = cartLineKey(fitted.line)
+    if (!checkedByKey.has(key)) checkedByKey.set(key, checked)
+  }
+
+  for (const line of merged) {
+    const checked = checkedByKey.get(cartLineKey(line)) ?? null
+    if (checked === null) {
+      kept.push(line)
+      continue
+    }
     const { pieces } = checked
     if (pieces.some((piece) => piece.maxQuantity === 0)) {
-      kept.push(checked.line)
+      // Dos líneas sumadas no pueden pasar del tope por producto (si no, no se podrían volver a leer).
+      kept.push({ ...line, quantity: Math.min(line.quantity, MAX_QUANTITY_PER_PRODUCT) })
       continue
     }
     const rooms = pieces.map((piece) => ({
@@ -190,11 +282,11 @@ export function reconcileCart({
       reduced.push({ kind: 'reduced', name: checked.name ?? tightest.piece.name, quantity })
     }
     for (const piece of pieces) used.set(piece.id, (used.get(piece.id) ?? 0) + quantity)
-    kept.push(quantity === line.quantity ? checked.line : { ...checked.line, quantity })
+    kept.push(quantity === line.quantity ? line : { ...line, quantity })
   }
 
   if (removed > 0) notices.push({ kind: 'removed', count: removed })
-  notices.push(...reduced)
+  notices.push(...reduced, ...leatherChanges.values())
 
   const prices: Record<string, number> = {}
   const remember = (id: string, price: number, name: string): void => {

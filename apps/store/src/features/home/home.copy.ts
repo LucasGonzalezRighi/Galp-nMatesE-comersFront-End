@@ -20,7 +20,7 @@ export const HOME_COPY = {
   /** Combos (Ruling IC-12): título y bajada fijos (no son contenido editable) y el carrusel. */
   combos: {
     title: 'Combos listos para cebar',
-    text: 'Mate y bombilla, o mate y yerba, elegidos para ir juntos y a precio cerrado. Si el combo trae mate, el cuero y la virola los elegís vos.',
+    text: 'Mate y bombilla, o mate y yerba, elegidos para ir juntos y a precio cerrado. Si el combo trae mate, el cuero lo elegís vos.',
     carousel: {
       /** Nombre accesible de la región. */
       label: 'Combos',
