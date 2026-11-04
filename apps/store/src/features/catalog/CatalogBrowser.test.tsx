@@ -50,6 +50,7 @@ function product(
     group: 'mate',
     isPurchasable: priceArs !== null,
     isSoldOut: false,
+    leathers: [],
     mainImage: null,
     maxQuantity: 10,
     name,
@@ -366,7 +367,7 @@ describe('CatalogBrowser: la dirección', () => {
 })
 
 /** Columnas que "mide" la grilla en las pruebas: lo que devuelve su `grid-template-columns`. */
-const layout = { columns: 6 }
+const layout = { columns: 5 }
 
 /** Avisos de cambio de tamaño de las grillas observadas, para simular un cambio de ancho. */
 const resizeNotices: (() => void)[] = []
@@ -408,9 +409,9 @@ const manyProducts = [
   }),
 ]
 
-/** El botón "Más productos", si está. */
+/** El botón "Ver más productos", si está. */
 function moreButton(): HTMLElement | null {
-  return screen.queryByRole('button', { name: 'Más productos' })
+  return screen.queryByRole('button', { name: 'Ver más productos' })
 }
 
 /** El link del nombre de la tarjeta en la posición `position` (desde 1) de lo que se ve. */
@@ -428,7 +429,7 @@ const nativeScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 
 
 describe('CatalogBrowser: más productos', () => {
   beforeEach(() => {
-    layout.columns = 6
+    layout.columns = 5
     scrollIntoView.mockClear()
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       configurable: true,
@@ -459,21 +460,21 @@ describe('CatalogBrowser: más productos', () => {
     }
   })
 
-  it('con 6 columnas muestra 4 hileras (24 piezas) y el botón "Más productos"', () => {
+  it('con 5 columnas muestra 4 hileras (20 piezas) y el botón "Ver más productos"', () => {
     renderCatalog(null, { products: manyProducts })
     expect(screen.getByRole('status')).toHaveTextContent('27 piezas')
-    expect(shownNames()).toHaveLength(24)
+    expect(shownNames()).toHaveLength(20)
     expect(moreButton()).toBeInTheDocument()
   })
 
   it('el botón despliega el resto, desaparece y deja el foco en la primera tarjeta nueva', async () => {
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    const button = screen.getByRole('button', { name: 'Más productos' })
+    const button = screen.getByRole('button', { name: 'Ver más productos' })
     await user.click(button)
     expect(shownNames()).toHaveLength(27)
     expect(moreButton()).not.toBeInTheDocument()
-    expect(cardLink(25)).toHaveFocus()
+    expect(cardLink(21)).toHaveFocus()
     // Al terminar de crecer, la tarjeta enfocada se acerca a la pantalla para el teclado.
     await vi.waitFor(
       () => {
@@ -486,13 +487,13 @@ describe('CatalogBrowser: más productos', () => {
   it('el lugar del botón se achica y se funde mientras la grilla crece (la banda no salta)', async () => {
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    await user.click(screen.getByRole('button', { name: 'Ver más productos' }))
     // Sigue debajo de la grilla nueva, inerte y oculto para los lectores, hasta que se pliega.
     const leaving = document.querySelector('[data-more-leaving]')
     expect(leaving).not.toBeNull()
     expect(leaving).toHaveAttribute('aria-hidden', 'true')
     expect(leaving).toHaveAttribute('inert')
-    expect(leaving?.previousElementSibling?.contains(cardLink(25))).toBe(true)
+    expect(leaving?.previousElementSibling?.contains(cardLink(21))).toBe(true)
     await vi.waitFor(
       () => {
         expect(document.querySelector('[data-more-leaving]')).toBeNull()
@@ -504,8 +505,8 @@ describe('CatalogBrowser: más productos', () => {
   it('la tarjeta nueva no suma su entrada propia: su Reveal queda quieto y visible', async () => {
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    await user.click(screen.getByRole('button', { name: 'Más productos' }))
-    const wrapper = cardLink(25).closest('[class*="opacity-100!"]')
+    await user.click(screen.getByRole('button', { name: 'Ver más productos' }))
+    const wrapper = cardLink(21).closest('[class*="opacity-100!"]')
     expect(wrapper).not.toBeNull()
     expect(wrapper?.className).toContain('*:transform-none!')
     expect(wrapper?.className).toContain('*:filter-none!')
@@ -532,22 +533,22 @@ describe('CatalogBrowser: más productos', () => {
   it('al cambiar el orden vuelve a 4 hileras con el botón', async () => {
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    await user.click(screen.getByRole('button', { name: 'Ver más productos' }))
     expect(shownNames()).toHaveLength(27)
     await user.selectOptions(sortSelect(), 'az')
-    expect(shownNames()).toHaveLength(24)
+    expect(shownNames()).toHaveLength(20)
     expect(moreButton()).toBeInTheDocument()
   })
 
   it('al buscar vuelve a 4 hileras: con 8 resultados no hay botón y al borrar vuelve a estar', async () => {
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    await user.click(screen.getByRole('button', { name: 'Ver más productos' }))
     await user.type(searchBox(), 'bombi')
     expect(shownNames()).toHaveLength(8)
     expect(moreButton()).not.toBeInTheDocument()
     await user.clear(searchBox())
-    expect(shownNames()).toHaveLength(24)
+    expect(shownNames()).toHaveLength(20)
     expect(moreButton()).toBeInTheDocument()
   })
 
@@ -560,9 +561,9 @@ describe('CatalogBrowser: más productos', () => {
     }))
     const user = userEvent.setup()
     renderCatalog(null, { products: manyProducts })
-    await user.click(screen.getByRole('button', { name: 'Más productos' }))
+    await user.click(screen.getByRole('button', { name: 'Ver más productos' }))
     expect(shownNames()).toHaveLength(27)
-    expect(cardLink(25).closest('[style*="opacity"]')).toBeNull()
-    expect(cardLink(25)).toHaveFocus()
+    expect(cardLink(21).closest('[style*="opacity"]')).toBeNull()
+    expect(cardLink(21)).toHaveFocus()
   })
 })

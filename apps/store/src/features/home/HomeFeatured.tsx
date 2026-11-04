@@ -5,8 +5,7 @@ import type { HomeData } from './home-data'
 import { Reveal } from '../../components/motion'
 import { Button } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
-import { ProductCard } from '../product-card'
-import { FeaturedExit } from './FeaturedExit'
+import { FeaturedGrid } from './FeaturedGrid'
 import { HOME_CONTAINER, HOME_SECTION_TITLE } from './home-styles'
 import { HOME_COPY } from './home.copy'
 
@@ -17,10 +16,11 @@ export interface HomeFeaturedProps {
 }
 
 /**
- * Destacados (spec 9.5): los productos `featured` en la tarjeta Vitrina, en una grilla de hasta
- * cuatro columnas, con el link "Ver toda la tienda". No se dibuja si no hay destacados. En
- * escritorio y con movimiento la grilla se despide al salir de pantalla ({@link FeaturedExit}); el
- * título y el link no cambian.
+ * Destacados (spec 9.5, "Los más vendidos"): los productos `featured` en la tarjeta Vitrina, en una
+ * grilla de hasta cuatro columnas ({@link FeaturedGrid}), con el link "Ver toda la tienda". No se
+ * dibuja si no hay destacados. En el celular (una columna) se ven 3 y "Ver más productos"; desde la
+ * tableta, todos. En escritorio y con movimiento la grilla se despide al salir de pantalla
+ * (`FeaturedExit`); el título y el link no cambian.
  *
  * @param props - Ver {@link HomeFeaturedProps}.
  */
@@ -42,17 +42,11 @@ export function HomeFeatured({ data }: HomeFeaturedProps): ReactNode {
             </Link>
           </Button>
         </div>
-        <FeaturedExit className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,250px),1fr))] gap-5 min-[1440px]:grid-cols-4">
-          {data.featured.map((product, index) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              installments={installments}
-              showNetPrice={priceDisplay.showNetPrice}
-              index={index}
-            />
-          ))}
-        </FeaturedExit>
+        <FeaturedGrid
+          products={data.featured}
+          installments={installments}
+          showNetPrice={priceDisplay.showNetPrice}
+        />
       </div>
     </section>
   )

@@ -15,7 +15,8 @@ export interface ProductPageProps {
 }
 
 /**
- * Ficha de un producto (spec 9.5): la ficha completa, las reseñas y los relacionados.
+ * Ficha de un producto (spec 9.5): la ficha completa, las reseñas y los relacionados. Los
+ * relacionados llevan `key={product.slug}`: al pasar a otra ficha su grilla vuelve a plegarse.
  *
  * Un slug inválido (mayúsculas, `..`, `%`) o inexistente responde `notFound()`. Con un slug
  * anterior, la API devuelve el producto con su slug actual y la página redirige con
@@ -41,7 +42,7 @@ export async function ProductPage({ slug }: ProductPageProps): Promise<ReactNode
       <ProductJsonLd product={product} siteUrl={getStoreEnv().siteUrl} />
       <ProductDetailView product={product} settings={settings} tabsContent={tabsContent} />
       <ReviewsSection slug={product.slug} productName={product.name} page={reviews} />
-      <RelatedProducts products={related} settings={settings} />
+      <RelatedProducts key={product.slug} products={related} settings={settings} />
     </main>
   )
 }

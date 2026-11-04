@@ -28,6 +28,24 @@
 }
 
 /*
+ * Contenedor angosto de las grillas de tarjetas (Ruling AT-2, pedido de Lucas del 2026-11-04): la
+ * tienda (título, barra y grilla) y los relacionados de la ficha. Deja 1424 px de contenido, o sea
+ * 5 tarjetas de 268,8 px (las de hoy a 1905 px) y 4 separaciones de 20 px, con el mismo margen
+ * lateral que `site-container`. Hasta 1616 px de pantalla no se nota; más ancho, se centra. Es la
+ * única excepción al contenedor único de MR-11: el encabezado y el pie no se mueven.
+ */
+:root {
+  --shop-max: 1424px;
+}
+
+@utility shop-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(var(--shop-max) + 2 * var(--site-gutter));
+  padding-inline: var(--site-gutter);
+}
+
+/*
  * Cursor de matecito (Ruling MR-29, el del diseño original: `docs/design/galpon-tienda-v3/
  * page-styles.css`), solo con puntero fino. Las reglas de cada elemento van en la capa `base`, así
  * un cursor puesto a propósito (`cursor-zoom-in`, `cursor-not-allowed`) sigue mandando; la clase

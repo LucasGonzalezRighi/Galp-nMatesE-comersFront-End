@@ -48,8 +48,37 @@ describe('site-container: el contenedor único de la tienda', () => {
   it('ningún módulo arma su propio contenedor: ni el viejo de 1280 px ni una copia del nuevo', () => {
     const offenders = sourceFiles().filter((path) => {
       const source = readFileSync(join(srcDir, path), 'utf8')
-      return source.includes('max-w-[1280px]') || source.includes('max-w-[1600px]')
+      return ['max-w-[1280px]', 'max-w-[1600px]', 'max-w-[1424px]'].some((copy) =>
+        source.includes(copy),
+      )
     })
     expect(offenders).toEqual([])
+  })
+})
+
+describe('shop-container: el contenedor angosto de las grillas de tarjetas (Ruling AT-2)', () => {
+  it('deja 1424 px de contenido (5 tarjetas de 268,8 px y 4 separaciones de 20 px)', () => {
+    expect(globals).toContain('--shop-max: 1424px;')
+    expect(5 * 268.8 + 4 * 20).toBeCloseTo(1424, 6)
+  })
+
+  it('va centrado y con el mismo margen lateral que site-container', () => {
+    const rule = utility('shop-container')
+    expect(rule).toContain('margin-inline: auto;')
+    expect(rule).toContain('width: 100%;')
+    expect(rule).toContain('max-width: calc(var(--shop-max) + 2 * var(--site-gutter));')
+    expect(rule).toContain('padding-inline: var(--site-gutter);')
+  })
+
+  it('lo usan la tienda (título, barra y grilla) y los relacionados de la ficha', () => {
+    const users = sourceFiles().filter((path) =>
+      /className="[^"]*\bshop-container\b/.test(readFileSync(join(srcDir, path), 'utf8')),
+    )
+    expect(users.map((path) => path.replaceAll('\\', '/')).sort()).toEqual([
+      'features/catalog/CatalogHero.tsx',
+      'features/catalog/CatalogToolbar.tsx',
+      'features/catalog/CatalogView.tsx',
+      'features/product/RelatedProducts.tsx',
+    ])
   })
 })

@@ -71,7 +71,7 @@ export function CatalogView({
         onQueryChange={onQueryChange}
         onOrderChange={onOrderChange}
       />
-      <div className="site-container pt-7">
+      <div className="shop-container pt-7">
         <CatalogResults
           products={visible}
           hasProducts={scope.products.length > 0}

@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { gotoStore } from '../support/store'
 import { expect, test } from '../support/test'
 
-/** Hileras completas que muestra la tienda antes de "Más productos" (Ruling MR-27). */
+/** Hileras completas que muestra la tienda antes de "Ver más productos" (Rulings MR-27 y AT-2). */
 const ROWS = 4
 
 /** Aire mínimo entre el final de la tienda y el pie: `clamp(96px, 10vw, 160px)`. */
@@ -94,7 +94,7 @@ async function expectClearOfFooter(page: Page): Promise<void> {
   await waitUntilStill(last)
   const lastBottom = await documentBottomOf(last)
   const storeBottom = await last.evaluate((card) => {
-    const box = card.closest('.site-container')?.getBoundingClientRect()
+    const box = card.closest('.shop-container')?.getBoundingClientRect()
     return box === undefined ? Number.NaN : box.bottom + window.scrollY
   })
   const footerTop = await documentTopOf(footer(page))
@@ -125,7 +125,7 @@ for (const viewport of VIEWPORTS) {
 
       await expect(cards(page)).toHaveCount(ROWS * columns)
       expect(await rowsOf(page)).toBe(ROWS)
-      const more = page.getByRole('button', { name: 'Más productos' })
+      const more = page.getByRole('button', { name: 'Ver más productos' })
       await expect(more).toBeVisible()
       const gridCenter = await cards(page)
         .first()
