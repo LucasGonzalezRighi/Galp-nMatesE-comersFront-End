@@ -47,7 +47,13 @@ Sin variables de entorno el dashboard arranca en **modo de prueba**: no necesita
 - **Sesión de 8 horas**, como la real. Si vence con una pantalla abierta, aparece "Tu sesión venció" con el formulario de ingreso sin salir de la pantalla: lo escrito se conserva y se vuelve a guardar después. Al navegar sin sesión se va a `/login?redirect=`.
 - **Persistencia**: los cambios y la sesión se guardan en `sessionStorage` (clave `galpon.admin.mock.v1`): sobreviven a las recargas y se pierden al cerrar la pestaña. Si el navegador no deja usar `sessionStorage` (navegación privada, políticas, cupo lleno), sigue en memoria y la barra avisa "Sin persistencia".
 - **Demora**: cada pedido a la API tarda entre 150 y 400 ms (`VITE_MOCK_LATENCY_MS=0` para no esperar).
-- **La tienda no ve estos cambios**: tienda y admin tienen bases simuladas separadas hasta que exista el back (ADR 0003). Un combo guardado acá aparece en la lista del admin al instante, pero no en la tienda: para verlo en la tienda de prueba hay que escribirlo contra su propia base (`POST /api/v1/admin/combos` de la tienda, ver su README).
+- **La tienda no ve estos cambios**: tienda y admin tienen bases simuladas separadas hasta que exista el back (ADR 0003). La barra lateral lo avisa siempre debajo de "Modo de prueba": "Lo que cambies acá no llega a la tienda: cada una tiene sus datos de prueba." (`APP_COPY.mockNotShared`). Un combo guardado acá aparece en la lista del admin al instante, pero no en la tienda: para verlo en la tienda de prueba hay que escribirlo contra su propia base (`POST /api/v1/admin/combos` de la tienda, ver su README). Lo mismo con los cueros y el stock de un producto: `POST /api/v1/__mock/products/{id}` de la tienda con `{ leathers, stock }`.
+
+### Cueros por producto (Ruling AT-5)
+
+En `/productos/nuevo` y `/productos/$id`, entre "Precio y stock" y "Estado", la sección **"Cueros"** (`ProductLeathersFields`) aparece solo si la línea elegida es de mates: cuatro casillas con su muestra de color (Negro, Marrón, Crudo y Borravino, en ese orden) dentro del grupo "Cueros que ofrece este mate". Los marcados son los que el cliente puede elegir en la ficha, el kit y los combos; sin ninguno, la tienda no muestra el selector. Un producto nuevo arranca sin cueros y los mates de fábrica con los cuatro. Si la línea no es de mates se manda `leathers: []` (`toAdminProductInput(values, group)`); mientras cargan las líneas vale el grupo del producto guardado, así guardar rápido no le borra los cueros a un mate. Un `422` en `leathers` (por ejemplo "Solo los mates llevan cuero") aparece debajo de las casillas. No hay virola: va en la descripción. La ayuda de "Destacado" dice "Aparece en «Los más vendidos» del inicio.".
+
+En el detalle de un pedido, una línea suelta muestra su `detail` tal cual (los pedidos anteriores conservan la virola: `GLP-09001` dice "Cuero negro · Alpaca cincelada") y un kit o un combo muestra sus piezas y, si tiene cuero, "Cuero Negro".
 
 ### Datos de demostración
 
@@ -173,5 +179,7 @@ npx playwright test --project=admin-desktop
 | `a11y.spec.ts`                                           | axe (sin violaciones serias ni críticas) en el ingreso, en cada pantalla con sesión, en el 404 y con los diálogos de una línea, de despacho y de sesión vencida; teclado en los diálogos y el foco al título después de archivar |
 | `mobile.spec.ts`                                         | A 390 × 844: "Menú" abre el cajón y navega; ninguna pantalla con scroll horizontal                                                                                                                                               |
 | `visual.spec.ts`                                         | Capturas `test-results/visual/admin-{pantalla}-{1440\|390}.png` para la lista de control                                                                                                                                         |
+
+`products.spec.ts` suma los cueros (Ruling AT-5): en el Mate Imperial Premium se desmarcan Crudo y Borravino, se guarda y al recargar quedan Negro y Marrón; la Yerba Canarias 1 kg no muestra la sección "Cueros".
 
 La lista de control visual está en [`docs/design/admin/CHECKLIST-P4.md`](../../docs/design/admin/CHECKLIST-P4.md), con sus desvíos: los que quedan abiertos (6 y 7) son para P5. Ninguna prueba está marcada con `test.fail` ni excluye reglas de axe.

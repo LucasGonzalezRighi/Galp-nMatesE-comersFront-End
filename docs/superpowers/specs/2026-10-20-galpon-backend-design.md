@@ -147,14 +147,14 @@ Las sesiones van en **Redis** (TTL de 8 h para el admin y 30 días para clientes
 | `inventory` | product_id (PK), on_hand, reserved, version | CHECK `0 ≤ reserved ≤ on_hand`. Disponible = `on_hand − reserved`. `version` sirve para bloqueo optimista |
 | `stock_reservations` | id, order_id, product_id, quantity, status (`active`\|`committed`\|`released`), expires_at | índice `(status, expires_at)` |
 
-Los cueros y las virolas son listas fijas del dominio, no tablas: se guardan como elección dentro de cada ítem del pedido.
+Los cueros son una lista fija del dominio, no una tabla: cada producto guarda los que ofrece (`products.leathers`, `text[]` con un CHECK contra la lista; solo los mates) y el cuero elegido se guarda dentro de cada ítem del pedido. Sin virola desde el 2026-11-04 (Ruling AT-5 del front): los pedidos anteriores la conservan en `options` y en `detail`.
 
 ### 4.3 Pedidos
 
 | Tabla | Columnas | Claves e índices |
 |---|---|---|
 | `orders` | id, number (`GLP-12345`), customer_id, status (enum del contrato), payment_status (enum normalizado), contact_email, contact_first_name, contact_last_name, contact_phone, shipping_method, shipping_address (jsonb, copia), shipping_cost_ars, items_gross_ars, kit_savings_ars, subtotal_ars, total_ars, kit_discount_percent (copia), access_token_hash (invitados), reserved_until, placed_at, paid_at, cancelled_at | `number` único; índices `(customer_id, placed_at)` y `(status, reserved_until)` |
-| `order_items` | id, order_id, line_type (`product`\|`kit`), product_id (null en kits), name, detail, quantity, unit_price_ars, kit_savings_ars, total_ars, options (jsonb: cuero y virola), position | FK `order_id`. **Todo se copia al comprar**: si después cambia el precio o el nombre, el pedido no se altera |
+| `order_items` | id, order_id, line_type (`product`\|`kit`), product_id (null en kits), name, detail, quantity, unit_price_ars, kit_savings_ars, total_ars, options (jsonb: `{ leather }` o null; los pedidos anteriores guardan también `ferrule`, que se ignora al leer), position | FK `order_id`. **Todo se copia al comprar**: si después cambia el precio o el nombre, el pedido no se altera |
 | `order_item_components` | order_item_id, role (`mate`\|`bombilla`\|`yerba`), product_id, name, unit_price_ars | PK `(order_item_id, role)` (las 3 piezas de un kit) |
 | `order_status_history` | id, order_id, from_status, to_status, actor (`system`\|`admin`\|`customer`\|`provider`), note, created_at | índice `(order_id, created_at)` |
 | `shipments` | order_id (PK), carrier, tracking_number, shipped_at, delivered_at | — |
