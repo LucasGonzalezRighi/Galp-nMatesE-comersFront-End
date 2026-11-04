@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ProductDetail } from '@galpon/api-client'
 import type { Leather } from '@galpon/domain'
-import { initialLeather, remainingQuantityFor } from '@galpon/domain'
+import { remainingQuantityFor, resolveLeather } from '@galpon/domain'
 import { Magnetic } from '../../components/motion'
 import { Button, QuantityStepper, Swatch } from '../../components/ui'
 import { asRoute } from '../../lib/routes'
@@ -52,7 +52,8 @@ function OptionHeading({ label, value }: { label: string; value: string }): Reac
 export function ProductPurchase({ product, contactEmail }: ProductPurchaseProps): ReactNode {
   const router = useRouter()
   const { lines } = useCart()
-  const [leather, setLeather] = useState<Leather | null>(() => initialLeather(product.leathers))
+  const [preferred, setLeather] = useState<Leather | null>(null)
+  const leather = resolveLeather(preferred, product.leathers)
   const [wanted, setWanted] = useState(1)
 
   const remaining = remainingQuantityFor(product.id, product.maxQuantity, lines)
