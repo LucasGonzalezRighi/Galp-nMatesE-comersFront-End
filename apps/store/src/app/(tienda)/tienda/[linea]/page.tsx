@@ -8,6 +8,14 @@ interface ShopLinePageProps {
   params: Promise<{ linea: string }>
 }
 
+/**
+ * Cada línea es una página estática completa: una vencida o nueva se regenera bloqueando, con el
+ * slug resuelto, y no a través de la App Shell vacía de la ruta. Sin esto, regenerar `categories`
+ * o `settings` la dejaba en 500 hasta reiniciar `next start` (el motivo está en la ficha de
+ * producto, `producto/[slug]/page.tsx`).
+ */
+export const ensureStatic = 'navigation'
+
 /** Una página estática por línea (con una de relleno que responde `notFound()` si no hay ninguna). */
 export function generateStaticParams(): Promise<{ linea: string }[]> {
   return getCatalogLineParams()

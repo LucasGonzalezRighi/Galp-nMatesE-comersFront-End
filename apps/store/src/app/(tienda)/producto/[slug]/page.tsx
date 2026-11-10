@@ -8,6 +8,19 @@ interface ProductRouteProps {
   params: Promise<{ slug: string }>
 }
 
+/**
+ * Cada ficha es una página estática completa. La página lee el slug fuera de `<Suspense>` (con él
+ * decide `notFound` o `permanentRedirect`), así que la App Shell de la ruta, con el slug sin
+ * resolver, queda vacía. Con Partial Prefetching, `next start` servía una ficha vencida (las
+ * etiquetas se regeneran con `expire: 0`) a través de esa App Shell; si también había vencido
+ * (`categories` y `settings` los lee el pie del layout), la regeneraba, la rechazaba por vacía y la
+ * ficha quedaba en 500 hasta reiniciar. Con `'navigation'`, una ficha vencida o nueva se regenera
+ * bloqueando con el slug resuelto, tanto la carga como la navegación del cliente, un slug
+ * desconocido sale 404 desde el primer pedido, y el build falla si la ficha lee datos sin caché o
+ * del pedido.
+ */
+export const ensureStatic = 'navigation'
+
 /** Una página estática por producto publicado; uno nuevo se genera la primera vez que se pide. */
 export function generateStaticParams(): Promise<{ slug: string }[]> {
   return getProductParams()
