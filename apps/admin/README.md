@@ -127,6 +127,7 @@ object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 - `vite preview` la manda sola (`vite.config.ts`, leyendo `VITE_API_BASE_URL` con `loadEnv`), junto con `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` (`ADMIN_SECURITY_HEADERS` en `src/lib/csp.ts`). `vite dev` no, porque Vite inyecta scripts inline para el HMR.
 - **El servidor que sirva `dist/` en producción tiene que mandar las mismas cabeceras**, más `Strict-Transport-Security` (no va en `vite preview` porque sirve `http://localhost`), y servir `index.html` para cualquier ruta (es una SPA).
+- **En el despliegue con Docker ya está hecho:** `Dockerfile` compila el dashboard (con `VITE_API_MODE=live` y los build args `VITE_API_BASE_URL` y `VITE_STORE_URL`) y lo sirve con un Caddy interno (`Caddyfile`): `index.html` para cualquier ruta, `/assets` con caché larga y las cabeceras de arriba, que `scripts/admin-caddy-headers.mjs` (raíz del repo) genera al construir la imagen a partir de `src/lib/csp.ts`. `Strict-Transport-Security` y el HTTPS los pone el proxy de entrada (`backend/deploy/Caddyfile`). El paso a paso está en `backend/docs/DESPLIEGUE.md`.
 - `buildAdminCsp(apiOrigin)` arma la CSP: se le puede pasar el origen (o una URL con ruta) de la API. `img-src data:` es para las fotos del modo de prueba y `blob:` para la vista previa de una subida; la subida en vivo va a `api.cloudinary.com` (ver `src/components/media/README.md`).
 
 ## Estructura

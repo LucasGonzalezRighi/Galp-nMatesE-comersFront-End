@@ -533,6 +533,16 @@ foco, sola y con la máquina libre, 5 de 5.
 sentidos. Una corrida de `npm test` tardó dos horas y 31 archivos no llegaron a arrancar, y la
 prueba del foco pasaba solo por la demora. Las suites completas se corren de a una.
 
+## B8 · Producción: tope de la caché de páginas e imágenes de Docker (2026-11-17)
+
+Parte del cierre del back (B8; el plan está en `backend/docs/superpowers/plans/2026-11-17-b8-produccion.md`). Lucas eligió un VPS con Docker, con Caddy delante y sin Cloudflare.
+
+- **Pista 13 cerrada con un tope de tamaño** (`apps/store/src/lib/route-cache-limit.ts`). `next start` guarda cada página que genera en `.next/server/route-cache`, también la 404 de un slug de forma válida que no existe, y Next 16.4.2 no trae un tope para esa carpeta (sí para el optimizador de imágenes). Al arrancar y cada minuto (`instrumentation.ts`, solo en `next start`) la tienda la mide y, si pasó `ROUTE_CACHE_MAX_MB` (256 MB por omisión; entre 16 y 102400), borra páginas enteras, las más viejas primero, hasta el 75 % del tope, sin tocar las escritas en los últimos 10 segundos, y lo avisa en el log. Se descartaron `experimental.isrFlushToDisk: false` (el optimizador de imágenes se queda sin caché de disco y en un VPS chico reprocesaría cada foto en cada visita) y `dynamicParams = false` (cada producto nuevo pediría recompilar).
+- **Visto con la tienda compilada** (modo de prueba, puerto 4410, `ROUTE_CACHE_MAX_MB=16`): una ficha inventada deja 6 archivos y 77,6 kB; después de pedir 300 la carpeta llegó a 22,8 MB y, en la pasada siguiente, el log dijo "se borraron 141 páginas guardadas" y quedó debajo del tope. Una ficha real, el inicio y una línea siguieron respondiendo 200, y una inventada ya borrada volvió a dar 404. El tope cuenta el tamaño de los archivos; lo que ocupan en disco es algo más (bloques), y entre dos pasadas la carpeta puede pasarse lo que entre en un minuto.
+- **Imágenes de Docker:** `apps/store/Dockerfile` con `docker-entrypoint.sh` (la tienda se compila dentro del contenedor en el primer arranque de cada versión, porque `next build` lee el catálogo del back y fija el rewrite, la CSP y las `NEXT_PUBLIC_*`) y `apps/admin/Dockerfile` con su `Caddyfile` (el dashboard compilado como archivos estáticos, con la CSP y las cabeceras de `src/lib/csp.ts`, que genera `scripts/admin-caddy-headers.mjs`). El compose, el proxy de entrada y la guía están en el back.
+- **La IP real:** el compose pone `TRUSTED_CLIENT_IP_HEADER=x-real-ip`; Caddy escribe esa cabecera con la IP del visitante y el back confía en la red interna.
+- **`next build` y el aviso de Next:** con Next 16.4.2, corrido por un agente, el primer `next build` termina con `SecurityFatalError` (las dos fallas conocidas de la 16.4.2) y pasa al reintentar. `docker-entrypoint.sh` reintenta una vez por las dudas. Actualizar Next sigue siendo un tema aparte.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
