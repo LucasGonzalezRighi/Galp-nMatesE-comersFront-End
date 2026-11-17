@@ -1,0 +1,16 @@
+# Lo que no entra a las imágenes de la tienda y del dashboard: dependencias y compilados de esta
+# máquina (se instalan y compilan adentro), informes de pruebas y cualquier archivo de entorno.
+.git
+.github
+.superpowers
+.claude
+**/node_modules
+**/.next
+**/dist
+**/dist-e2e
+coverage
+playwright-report
+test-results
+**/.env
+**/.env.*
+*.log
