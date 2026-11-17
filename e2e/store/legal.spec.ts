@@ -56,6 +56,25 @@ test.describe('tienda: páginas legales', () => {
       page.getByRole('heading', { level: 1, name: 'Términos y condiciones' }),
     ).toBeVisible()
   })
+
+  test('al imprimir, un enlace externo muestra su dirección entre paréntesis y uno interno no', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/privacidad')
+    const main = page.getByRole('main')
+    const external = main.locator('a[data-legal-external]').first()
+    const internal = main.locator('a[href^="/"]:not([data-legal-external])').first()
+    const afterContent = (link: typeof external): Promise<string> =>
+      link.evaluate((element) => getComputedStyle(element, '::after').content)
+    await expect(external).toHaveAttribute('href', /^https:\/\//)
+    expect(await afterContent(external)).toBe('none')
+
+    await page.emulateMedia({ media: 'print' })
+
+    const href = await external.getAttribute('href')
+    expect(await afterContent(external)).toBe(`" (${href ?? ''})"`)
+    expect(await afterContent(internal)).toBe('none')
+  })
 })
 
 // Cambia los datos del vendedor de la base simulada, que es una sola para los dos proyectos: va
@@ -98,6 +117,10 @@ test.describe('tienda: datos del vendedor en los legales y en el pie', () => {
     page,
     request,
   }) => {
+    // La visita anterior deja al navegador precargando el inicio; en un servidor recién levantado,
+    // esa primera regeneración puede terminar después de cambiar los ajustes y guardarse como
+    // vigente con el pie viejo. Se espera a que el inicio esté generado antes de cambiarlos.
+    await request.get('/')
     await changeMockSeller(request, SELLER)
     await gotoStore(page, '/terminos')
 
