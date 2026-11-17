@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { hasDistinctGroups, LEATHERS, slugify } from '@galpon/domain'
-import { comboFormSchema, imageFormSchema, settingsFormSchema } from '@galpon/schemas'
+import {
+  findLegalMarkers,
+  hasDistinctGroups,
+  LEATHERS,
+  LEGAL_MARKERS,
+  slugify,
+} from '@galpon/domain'
+import {
+  comboFormSchema,
+  imageFormSchema,
+  legalContentFormSchema,
+  settingsFormSchema,
+} from '@galpon/schemas'
 import {
   FIXTURE_CATEGORIES,
   FIXTURE_COMBOS,
@@ -151,7 +162,7 @@ describe('fixtures del diseño: catálogo', () => {
       url: '/mock-images/mate-imperial-premium.jpg',
       width: 960,
       height: 1280,
-      alt: 'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
+      alt: 'Calabaza marrón oscura con virola ancha plateada cincelada con rombos y base de patas con pelotitas doradas',
     })
   })
 
@@ -294,7 +305,7 @@ describe('fixtures del diseño: contenido y ajustes', () => {
       'retiro',
     ])
     expect(FIXTURE_CONTENT.faq.categories.map((category) => category.items.length)).toEqual([
-      3, 3, 3, 3, 3, 2,
+      3, 3, 3, 3, 4, 2,
     ])
   })
 
@@ -305,17 +316,6 @@ describe('fixtures del diseño: contenido y ajustes', () => {
     expect(yerba.descriptionNote).toBeNull()
     expect(yerba.materialsTitle).toBe('Contenido')
     expect(yerba.careTitle).toBe('Conservación')
-  })
-
-  it('los dos documentos legales son de ejemplo', () => {
-    const { terms, privacy } = FIXTURE_CONTENT.legal
-    expect(terms.title).toBe('Términos y condiciones')
-    expect(privacy.title).toBe('Política de privacidad')
-    for (const document of [terms, privacy]) {
-      expect(document.body).toBe(
-        'Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.',
-      )
-    }
   })
 
   it('los ajustes pasan settingsFormSchema', () => {
@@ -338,6 +338,193 @@ describe('fixtures del diseño: contenido y ajustes', () => {
     ])
     expect(Object.values(FIXTURE_SETTINGS.seller).every((value) => value === null)).toBe(true)
     expect(Object.keys(FIXTURE_SETTINGS.seller)).toHaveLength(8)
+  })
+})
+
+describe('fixtures del diseño: documentos legales', () => {
+  const { terms, privacy, cookies, returns } = FIXTURE_CONTENT.legal
+  const documents = { terms, privacy, cookies, returns }
+  /** Puntos de cada esquema (b) del informe de leyes; el 13 de privacidad no se escribe. */
+  const SECTIONS = { terms: 18, privacy: 13, cookies: 6, returns: 5 }
+  const INTERNAL_LINKS = new Set([
+    '/terminos',
+    '/privacidad',
+    '/cookies',
+    '/devoluciones',
+    '/arrepentimiento',
+    '/contacto',
+    '/cuenta',
+  ])
+
+  it('son cuatro, con su título y la fecha de esta ronda', () => {
+    expect(Object.keys(FIXTURE_CONTENT.legal)).toEqual(['terms', 'privacy', 'cookies', 'returns'])
+    expect(terms.title).toBe('Términos y condiciones')
+    expect(privacy.title).toBe('Política de privacidad')
+    expect(cookies.title).toBe('Política de cookies')
+    expect(returns.title).toBe('Cambios, devoluciones y arrepentimiento')
+    for (const document of Object.values(documents)) {
+      expect(document.updatedAt).toBe('2026-11-09')
+    }
+  })
+
+  it('cada uno pasa el schema del editor y usa solo marcadores que existen, nunca el teléfono', () => {
+    for (const [key, document] of Object.entries(documents)) {
+      expect(() => legalContentFormSchema.parse(document), key).not.toThrow()
+      const markers = findLegalMarkers(document.body)
+      expect(markers.unknown, key).toEqual([])
+      expect(
+        markers.known.every((marker) => LEGAL_MARKERS.includes(marker)),
+        key,
+      ).toBe(true)
+      expect(markers.known, key).not.toContain('telefono')
+    }
+  })
+
+  it('términos y privacidad nombran al vendedor con sus marcadores', () => {
+    for (const document of [terms, privacy]) {
+      expect(findLegalMarkers(document.body).known).toEqual(
+        expect.arrayContaining(['razon_social', 'cuit', 'domicilio', 'email']),
+      )
+    }
+  })
+
+  it('cada uno tiene una sección por punto de su esquema y mide menos de 60.000 caracteres', () => {
+    for (const [key, document] of Object.entries(documents)) {
+      const sections = document.body.split('\n').filter((line) => line.startsWith('## '))
+      expect(sections.length, key).toBeGreaterThanOrEqual(SECTIONS[key as keyof typeof SECTIONS])
+      expect(document.body.length, key).toBeLessThan(60_000)
+    }
+  })
+
+  it('ninguno es de ejemplo ni deja un dato de llave simple', () => {
+    for (const [key, document] of Object.entries(documents)) {
+      expect(document.body, key).not.toMatch(/Texto de ejemplo/i)
+      expect(document.body.replace(/\{\{[^{}]*\}\}/g, ''), key).not.toMatch(/[{}]/)
+    }
+  })
+
+  it('los enlaces van solo a páginas de la tienda o a https', () => {
+    for (const [key, document] of Object.entries(documents)) {
+      for (const match of document.body.matchAll(/\[[^\]]+\]\(([^)]*)\)/g)) {
+        const target = match[1] ?? ''
+        expect(
+          INTERNAL_LINKS.has(target) || target.startsWith('https://'),
+          `${key}: ${target}`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('privacidad: leyenda de la AAIP, plazos de los derechos y de conservación, sin "aceptás"', () => {
+    expect(privacy.body).toContain(
+      'LA AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.',
+    )
+    for (const text of [
+      '10 días corridos',
+      '5 días hábiles',
+      '48 horas',
+      '7 días',
+      '24 meses',
+      '90 días',
+      '10 años',
+    ]) {
+      expect(privacy.body).toContain(text)
+    }
+    expect(privacy.body).not.toMatch(/aceptás/i)
+  })
+
+  it('términos: sin aceptación por navegar, con la jurisdicción del consumidor y los plazos', () => {
+    expect(terms.body).not.toMatch(/por (la simple|el solo hecho de) naveg/i)
+    expect(terms.body).toMatch(/tu domicilio/)
+    expect(terms.body).toMatch(/negativa/)
+    expect(terms.body).toMatch(/ilustrativ/)
+    expect(terms.body).toContain('6 meses')
+    expect(terms.body).toContain('30 días corridos')
+  })
+
+  it('devoluciones: arrepentimiento sin costo, cambios a 30 días, garantía de 6 meses y el botón', () => {
+    for (const text of ['10 días corridos', 'sin costo', '30 días corridos', '6 meses']) {
+      expect(returns.body).toContain(text)
+    }
+    expect(returns.body).toContain('](/arrepentimiento)')
+  })
+
+  it('cookies: lo que guarda la tienda, Mercado Pago y nada de analítica ni publicidad', () => {
+    for (const text of [
+      '__Host-galpon_session',
+      '__Host-galpon_admin',
+      'galpon.cart',
+      'galpon.checkout',
+      'galpon.order',
+      'Mercado Pago',
+      'No usamos cookies de analítica ni de publicidad.',
+    ]) {
+      expect(cookies.body).toContain(text)
+    }
+  })
+})
+
+describe('fixtures del diseño: afirmaciones corregidas', () => {
+  const answer = (category: string, index: number) =>
+    FIXTURE_CONTENT.faq.categories.find((item) => item.id === category)?.items[index]
+
+  it('el bombillón no promete un filtro que no se tapa', () => {
+    expect(FIXTURE_CONTENT.home.scenes.find((scene) => scene.key === 'bombilla')?.text).toBe(
+      'Caño cincelado, pico de bronce y filtro tipo pala. En 15 y 18 cm.',
+    )
+  })
+
+  it('Nosotros no muestra un socio de relleno', () => {
+    expect(FIXTURE_CONTENT.about.partners.map((partner) => partner.name)).toEqual([
+      'Bruno Galimberti',
+    ])
+    expect(FIXTURE_CONTENT.home.stats.partners).toBe(2)
+  })
+
+  it('envíos, pagos y cambios dicen lo que hace el sistema', () => {
+    expect(answer('envios', 0)?.answer).toBe(
+      'Sí, enviamos a todo el país. El costo depende del método (domicilio, sucursal o retiro sin costo) y lo ves antes de pagar.',
+    )
+    expect(answer('pagos', 2)?.answer).toBe(
+      'Los datos de la tarjeta los carga y procesa Mercado Pago. Nosotros solo guardamos la marca y los últimos 4 dígitos.',
+    )
+    expect(answer('cambios', 0)?.answer).toBe(
+      'Sí, dentro de los 30 días corridos de recibido, sin uso y en su estado original. Escribinos a galpon.mates@gmail.com con tu número de pedido y coordinamos. Los cambios no limitan la garantía legal ni tu derecho de arrepentimiento.',
+    )
+    expect(answer('cambios', 3)).toEqual({
+      question: '¿Qué garantía tienen los productos?',
+      answer:
+        'Los mates y las bombillas nuevos tienen 6 meses de garantía legal por defectos (Ley 24.240). Si aparece una falla, escribinos: el traslado corre por nuestra cuenta. Más en Cambios y devoluciones.',
+    })
+    expect(FIXTURE_CONTENT.productTabs.shipping).toBe(
+      'Enviamos a todo el país: el costo depende del método y lo ves antes de pagar. También podés retirar sin costo. Tenés 10 días corridos para arrepentirte, 30 días corridos para cambios y 6 meses de garantía legal en mates y bombillas.',
+    )
+  })
+
+  it('el pie ya no trae el enlace de Defensa del Consumidor', () => {
+    expect(Object.keys(FIXTURE_CONTENT.footer)).not.toContain('consumerDefenseUrl')
+  })
+
+  it('la Serena es compuesta con hierbas y Ranchero y Galleta no promete cueros con pelo', () => {
+    expect(FIXTURE_PRODUCTS.find((product) => product.id === 'prd-yerba-serena')?.description).toBe(
+      'Canarias Serena, compuesta con hierbas. Paquete de 1 kg.',
+    )
+    expect(FIXTURE_CATEGORIES.find((category) => category.slug === 'ranchero')?.blurb).toBe(
+      'Formatos criollos y terminaciones cálidas.',
+    )
+  })
+
+  it('cada texto alternativo mide de 3 a 120 caracteres y no repite el nombre del producto', () => {
+    for (const product of FIXTURE_PRODUCTS) {
+      for (const image of product.images) {
+        const alt = image.alt.toLowerCase()
+        const name = product.name.toLowerCase()
+        expect(image.alt.length, image.url).toBeGreaterThanOrEqual(3)
+        expect(image.alt.length, image.url).toBeLessThanOrEqual(120)
+        expect(alt, image.url).not.toBe(name)
+        expect(alt.startsWith(name), image.url).toBe(false)
+      }
+    }
   })
 })
 

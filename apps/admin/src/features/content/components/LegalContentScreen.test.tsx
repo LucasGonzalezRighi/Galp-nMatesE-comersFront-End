@@ -90,6 +90,7 @@ describe('LegalContentScreen', () => {
   it('al cambiar el texto propone la fecha de hoy y guarda el documento entero', async () => {
     const user = userEvent.setup()
     const app = await createTestApp()
+    app.mockDb.db.content.legal.terms.updatedAt = '2026-10-01'
     await renderLegal(app)
 
     expect(screen.getByLabelText('Última actualización')).toHaveValue('2026-10-01')

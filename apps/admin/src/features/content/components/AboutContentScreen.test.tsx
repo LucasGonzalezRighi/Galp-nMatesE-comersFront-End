@@ -26,6 +26,9 @@ async function renderAbout(app: TestApp) {
   return result
 }
 
+/** Segundo socio que carga cada caso que lo necesita: el contenido de fábrica trae uno solo. */
+const SECOND_PARTNER = { name: 'Martín Sosa', role: 'Socio', photo: null }
+
 /** El `input type="file"` (oculto) de la foto de un socio. */
 function photoInput(partner: HTMLElement): HTMLInputElement {
   const input = partner.querySelector<HTMLInputElement>('input[type="file"]')
@@ -64,11 +67,12 @@ describe('AboutContentScreen', () => {
   it('valida antes de guardar: un socio sin nombre da "Requerido"', async () => {
     const user = userEvent.setup()
     const app = await createTestApp()
+    app.mockDb.db.content.about.partners.push({ ...SECOND_PARTNER })
     const before = structuredClone(app.mockDb.db.content.about)
     await renderAbout(app)
 
     const partners = screen.getByRole('region', { name: 'Socios' })
-    const second = within(partners).getByRole('group', { name: 'Nombre del socio' })
+    const second = within(partners).getByRole('group', { name: 'Martín Sosa' })
     await user.clear(within(second).getByLabelText('Nombre'))
     expect(second).toHaveAccessibleName('Socio 2')
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
@@ -80,10 +84,11 @@ describe('AboutContentScreen', () => {
   it('agrega un socio con foto nueva, que viaja como ImageInput, y quita otro', async () => {
     const user = userEvent.setup()
     const app = await createTestApp()
+    app.mockDb.db.content.about.partners.push({ ...SECOND_PARTNER })
     await renderAbout(app)
 
     const partners = screen.getByRole('region', { name: 'Socios' })
-    await user.click(within(partners).getByRole('button', { name: 'Quitar a Nombre del socio' }))
+    await user.click(within(partners).getByRole('button', { name: 'Quitar a Martín Sosa' }))
     await user.click(within(partners).getByRole('button', { name: 'Agregar socio' }))
     const added = within(partners).getByRole('group', { name: 'Socio 2' })
     expect(within(added).getByLabelText('Nombre')).toHaveFocus()

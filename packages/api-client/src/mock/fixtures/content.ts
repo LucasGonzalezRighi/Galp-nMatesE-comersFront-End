@@ -1,4 +1,8 @@
 import type { MockContent } from '../types'
+import { LEGAL_COOKIES } from './legal/cookies'
+import { LEGAL_PRIVACY } from './legal/privacy'
+import { LEGAL_RETURNS } from './legal/returns'
+import { LEGAL_TERMS } from './legal/terms'
 
 /**
  * Textos editables del diseño: inicio, Nosotros, preguntas frecuentes, pie, pestañas de la ficha
@@ -34,7 +38,7 @@ export const FIXTURE_CONTENT: MockContent = {
         key: 'bombilla',
         eyebrow: 'El bombillón',
         titleLines: ['Alpaca', 'y bronce.'],
-        text: 'Caño cincelado, pico de bronce y filtro tipo pala que no se tapa. En 15 y 18 cm.',
+        text: 'Caño cincelado, pico de bronce y filtro tipo pala. En 15 y 18 cm.',
         ctaLabel: 'Ver bombillones',
       },
       {
@@ -91,10 +95,7 @@ export const FIXTURE_CONTENT: MockContent = {
       titleLines: ['Dos socios.', 'Un galpón.', 'La ronda de siempre.'],
       text: 'Galpón nació entre dos socios que compartían la misma costumbre: un buen mate al lado. Hoy elegimos cada pieza, la revisamos a mano y la mandamos a todo el país.',
     },
-    partners: [
-      { name: 'Bruno Galimberti', role: 'Socio fundador', photo: null },
-      { name: 'Nombre del socio', role: 'Socio', photo: null },
-    ],
+    partners: [{ name: 'Bruno Galimberti', role: 'Socio fundador', photo: null }],
     quote:
       'No vendemos lo que no usaríamos. Cada mate pasa por nuestras manos antes de llegar a las tuyas.',
     stepsEyebrow: 'Cómo trabajamos',
@@ -123,7 +124,7 @@ export const FIXTURE_CONTENT: MockContent = {
           {
             question: '¿Hacen envíos a todo el país?',
             answer:
-              'Sí, enviamos a las 24 provincias. El costo y el plazo se calculan en el checkout con tu código postal, y podés elegir envío a domicilio o a sucursal.',
+              'Sí, enviamos a todo el país. El costo depende del método (domicilio, sucursal o retiro sin costo) y lo ves antes de pagar.',
           },
           {
             question: '¿Cuánto tarda en llegar mi pedido?',
@@ -154,7 +155,7 @@ export const FIXTURE_CONTENT: MockContent = {
           {
             question: '¿Es seguro pagar en la web?',
             answer:
-              'El pago lo procesa Mercado Pago. Nosotros nunca vemos ni guardamos los datos de tu tarjeta.',
+              'Los datos de la tarjeta los carga y procesa Mercado Pago. Nosotros solo guardamos la marca y los últimos 4 dígitos.',
           },
         ],
       },
@@ -207,7 +208,7 @@ export const FIXTURE_CONTENT: MockContent = {
           {
             question: '¿Puedo cambiar un producto?',
             answer:
-              'Sí, dentro de los 10 días de recibido, sin uso y en su estado original. Escribinos a galpon.mates@gmail.com con tu número de pedido y coordinamos.',
+              'Sí, dentro de los 30 días corridos de recibido, sin uso y en su estado original. Escribinos a galpon.mates@gmail.com con tu número de pedido y coordinamos. Los cambios no limitan la garantía legal ni tu derecho de arrepentimiento.',
           },
           {
             question: '¿Qué pasa si llegó dañado?',
@@ -218,6 +219,11 @@ export const FIXTURE_CONTENT: MockContent = {
             question: '¿Cómo me arrepiento de una compra?',
             answer:
               'Tenés 10 días corridos desde que recibís el producto para arrepentirte, sin dar explicaciones. Usá el Botón de arrepentimiento al pie de la página.',
+          },
+          {
+            question: '¿Qué garantía tienen los productos?',
+            answer:
+              'Los mates y las bombillas nuevos tienen 6 meses de garantía legal por defectos (Ley 24.240). Si aparece una falla, escribinos: el traslado corre por nuestra cuenta. Más en Cambios y devoluciones.',
           },
         ],
       },
@@ -243,7 +249,6 @@ export const FIXTURE_CONTENT: MockContent = {
     tagline: 'Hechos para compartir.',
     text: 'Mates, bombillones y yerba con envío a todo el país.',
     paymentMethods: ['Mercado Pago', 'Visa', 'Mastercard', 'American Express'],
-    consumerDefenseUrl: null,
   },
   productTabs: {
     mate: {
@@ -270,18 +275,12 @@ export const FIXTURE_CONTENT: MockContent = {
       care: 'Guardala en un lugar fresco y seco; una vez abierta, mejor en un frasco hermético.',
     },
     shipping:
-      'Enviamos a todo el país: calculás el costo en el checkout con tu código postal. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.',
+      'Enviamos a todo el país: el costo depende del método y lo ves antes de pagar. También podés retirar sin costo. Tenés 10 días corridos para arrepentirte, 30 días corridos para cambios y 6 meses de garantía legal en mates y bombillas.',
   },
   legal: {
-    terms: {
-      title: 'Términos y condiciones',
-      body: 'Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.',
-      updatedAt: '2026-10-01',
-    },
-    privacy: {
-      title: 'Política de privacidad',
-      body: 'Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.',
-      updatedAt: '2026-10-01',
-    },
+    terms: LEGAL_TERMS,
+    privacy: LEGAL_PRIVACY,
+    cookies: LEGAL_COOKIES,
+    returns: LEGAL_RETURNS,
   },
 }

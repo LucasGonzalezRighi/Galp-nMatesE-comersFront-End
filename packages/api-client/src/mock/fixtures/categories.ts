@@ -35,7 +35,7 @@ export const FIXTURE_CATEGORIES: readonly MockCategory[] = [
     slug: 'ranchero',
     name: 'Ranchero y Galleta',
     group: 'mate',
-    blurb: 'Formatos criollos, cueros con pelo y terminaciones cálidas.',
+    blurb: 'Formatos criollos y terminaciones cálidas.',
     position: 4,
     image: null,
   },
