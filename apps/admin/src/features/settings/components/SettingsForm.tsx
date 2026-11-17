@@ -19,6 +19,7 @@ import { toast } from '../../../components/ui/toast'
 import { UnsavedChangesGuard } from '../../../components/ui/UnsavedChangesGuard'
 import { SETTINGS_FIELDS, settingsFormValues, settingsInput } from '../settings-form-values'
 import { SETTINGS_COPY } from '../settings.copy'
+import { ConsumerLinksFields } from './ConsumerLinksFields'
 import { SellerFields } from './SellerFields'
 import { ShippingOptionFields } from './ShippingOptionFields'
 
@@ -30,10 +31,10 @@ export interface SettingsFormProps {
 
 /**
  * Formulario de ajustes (`settingsFormSchema`), en una sola página: "Kit", "Envíos", "Cuotas",
- * "Precio sin impuestos nacionales", "Vendedor y atención al cliente", "Contacto" y "Stock", con
- * `FormActions` abajo y `UnsavedChangesGuard`. Al guardar avisa "Ajustes guardados.", vuelve a
- * arrancar con lo guardado e invalida los ajustes y el resumen; un `422` va a cada campo y otro
- * error, o un `422` con alguna ruta que el formulario no dibuja, también a un toast.
+ * "Precio sin impuestos nacionales", "Vendedor y atención al cliente", "Defensa del consumidor",
+ * "Contacto" y "Stock", con `FormActions` abajo y `UnsavedChangesGuard`. Al guardar avisa
+ * "Ajustes guardados.", vuelve a arrancar con lo guardado e invalida los ajustes y el resumen; un
+ * `422` va a cada campo y otro error, o un `422` con alguna ruta que el formulario no dibuja, también a un toast.
  *
  * @param props - Ver {@link SettingsFormProps}.
  */
@@ -231,6 +232,13 @@ export function SettingsForm({ settings }: SettingsFormProps): ReactNode {
 
         <Section title={SETTINGS_COPY.seller.title} description={SETTINGS_COPY.seller.description}>
           <SellerFields />
+        </Section>
+
+        <Section
+          title={SETTINGS_COPY.consumer.title}
+          description={SETTINGS_COPY.consumer.description}
+        >
+          <ConsumerLinksFields />
         </Section>
 
         <Section title={SETTINGS_COPY.contact.title}>

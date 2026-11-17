@@ -12,8 +12,10 @@ export interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   /** Tamaño: `md` (36 px de alto mínimo) o `sm` (32 px). Por defecto `md`. */
   size?: ButtonSize
   /**
-   * Muestra un indicador, deshabilita el botón y lo marca como ocupado (`aria-busy`). El texto
-   * lo cambia quien lo usa a un gerundio ("Guardando…").
+   * Muestra un indicador y marca el botón como ocupado (`aria-busy`) y no disponible
+   * (`aria-disabled`, atenuado igual que deshabilitado). No usa `disabled`, así conserva el foco
+   * (WCAG 2.4.3): el clic, Enter, la barra y el envío del formulario no hacen nada mientras carga.
+   * El texto lo cambia quien lo usa a un gerundio ("Guardando…").
    */
   isLoading?: boolean
 }
@@ -35,6 +37,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     type = 'button',
     className,
     disabled,
+    onClick,
     children,
     ...props
   },
@@ -45,9 +48,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...props}
       ref={ref}
       type={type}
-      disabled={disabled === true || isLoading}
+      disabled={disabled}
+      aria-disabled={isLoading ? true : props['aria-disabled']}
       aria-busy={isLoading ? true : undefined}
-      className={cx(buttonClass(variant, size), className)}
+      onClick={(event) => {
+        // Cargando: ni el clic, ni Enter o la barra (que llegan como clic), ni el envío implícito
+        // del formulario (también un clic en el botón de enviar) hacen nada.
+        if (isLoading) {
+          event.preventDefault()
+          return
+        }
+        onClick?.(event)
+      }}
+      className={cx(
+        buttonClass(variant, size),
+        'aria-disabled:cursor-not-allowed aria-disabled:opacity-45',
+        className,
+      )}
     >
       {isLoading && <Spinner />}
       {children}

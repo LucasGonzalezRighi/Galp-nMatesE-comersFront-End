@@ -55,7 +55,22 @@ describe('Toaster', () => {
     expect(useToastStore.getState().toasts).toEqual([])
   })
 
-  it('con un Dialog modal abierto el visor sigue recibiendo el puntero', async () => {
+  it('el visor vacío no se come los clics: solo cada aviso recibe el puntero', async () => {
+    render(<Toaster />)
+    const viewport = screen.getByRole('region', { name: /^Avisos/ }).querySelector('ol')
+    expect(viewport).toHaveClass('pointer-events-none')
+    expect(viewport).not.toHaveClass('pointer-events-auto')
+
+    act(() => {
+      toast.success('Cambios guardados.')
+    })
+
+    expect((await screen.findByText('Cambios guardados.')).closest('li')).toHaveClass(
+      'pointer-events-auto',
+    )
+  })
+
+  it('con un Dialog modal abierto cada aviso sigue recibiendo el puntero', async () => {
     render(
       <>
         <Toaster />
@@ -69,8 +84,8 @@ describe('Toaster', () => {
       toast.error('No se pudo guardar.')
     })
 
-    const viewport = (await screen.findByText('No se pudo guardar.')).closest('ol')
+    const item = (await screen.findByText('No se pudo guardar.')).closest('li')
     expect(document.body.style.pointerEvents).toBe('none')
-    expect(viewport).toHaveClass('pointer-events-auto')
+    expect(item).toHaveClass('pointer-events-auto')
   })
 })

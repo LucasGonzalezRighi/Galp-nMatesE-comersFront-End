@@ -47,7 +47,8 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Guardar' })).toHaveClass('self-start')
   })
 
-  it('con isLoading se deshabilita, marca aria-busy, muestra el spinner y no dispara el clic', async () => {
+  it('con isLoading marca aria-disabled y aria-busy, muestra el spinner y no dispara el clic', async () => {
+    const user = userEvent.setup()
     const onClick = vi.fn()
     const { container } = render(
       <Button isLoading onClick={onClick}>
@@ -56,11 +57,54 @@ describe('Button', () => {
     )
 
     const button = screen.getByRole('button', { name: 'Guardando…' })
-    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).not.toHaveAttribute('disabled')
+    expect(button).toHaveClass('aria-disabled:opacity-45', 'aria-disabled:cursor-not-allowed')
     expect(button).toHaveAttribute('aria-busy', 'true')
     expect(container.querySelector('svg')).toHaveClass('animate-spin')
-    await userEvent.click(button)
+    await user.click(button)
+    button.focus()
+    await user.keyboard('{Enter}')
+    await user.keyboard(' ')
     expect(onClick).not.toHaveBeenCalled()
+    expect(button).toHaveFocus()
+  })
+
+  it('cargando conserva el foco y no envía el formulario, ni con el clic ni con Enter', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const { rerender } = render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSubmit()
+        }}
+      >
+        <input aria-label="Nombre" />
+        <Button type="submit">Guardar</Button>
+      </form>,
+    )
+    const button = screen.getByRole('button', { name: 'Guardar' })
+    button.focus()
+
+    rerender(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSubmit()
+        }}
+      >
+        <input aria-label="Nombre" />
+        <Button type="submit" isLoading>
+          Guardar
+        </Button>
+      </form>,
+    )
+    expect(button).toHaveFocus()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'x{Enter}')
+
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('sin isLoading no marca aria-busy ni muestra el spinner', () => {

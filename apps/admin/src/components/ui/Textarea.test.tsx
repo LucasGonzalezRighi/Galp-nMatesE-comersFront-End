@@ -38,7 +38,7 @@ describe('Textarea', () => {
 
     expect(screen.getByLabelText('Descripción')).toHaveClass(
       'bg-surface',
-      'border-divider',
+      'border-neutral-600',
       'min-h-[90px]',
       'resize-y',
     )

@@ -1,4 +1,4 @@
-import type { ShippingMethod } from '@galpon/domain'
+import type { SellerLegalField, ShippingMethod } from '@galpon/domain'
 
 /** Textos de la pantalla de ajustes. */
 export const SETTINGS_COPY = {
@@ -38,20 +38,44 @@ export const SETTINGS_COPY = {
     showNetPrice: 'Mostrar el precio sin impuestos nacionales',
     vatRate: 'Alícuota de IVA (%)',
     vatRateHint: 'Con decimales si hace falta: "21" o "10,5".',
-    taxCondition: 'Condición fiscal',
+    taxCondition: 'Condición frente al IVA',
   },
   seller: {
     title: 'Vendedor y atención al cliente',
     description: 'Disposición 954/2025',
     legalName: 'Razón social o nombre',
     cuit: 'CUIT',
-    address: 'Domicilio',
-    phone: 'Teléfono o canal alternativo',
+    address: 'Domicilio legal',
+    phone: 'Teléfono o canal alternativo (opcional)',
     supportArea: 'Área responsable',
     supportHours: 'Horario de atención',
     supportHoursHint: 'Si la atención es solo electrónica, al menos 8 horas en días hábiles.',
-    dataFiscalUrl: 'Link de Data Fiscal (ARCA)',
-    note: 'Estos datos se muestran en el pie y en Contacto. Revisalos con tu contador.',
+    dataFiscalUrl: 'Data Fiscal (ARCA)',
+    dataFiscalHint:
+      'Pegá el código que te da ARCA (Formulario 960/D, opción "Banner en sitio web") o solo su enlace. La tienda muestra el logo oficial en el pie.',
+    note: 'Estos datos se muestran en el pie, en Contacto y dentro de los textos legales. Revisalos con tu contador.',
+  },
+  consumer: {
+    title: 'Defensa del consumidor',
+    description: 'Ley 2244 (CABA) y Ventanilla Federal Única',
+    cabaUrl: 'Enlace de Defensa al Consumidor de la Ciudad',
+    nationalUrl: 'Enlace del formulario nacional de reclamos',
+    hint: 'Son los enlaces oficiales y la tienda los muestra siempre en el pie. Cambialos solo si el organismo cambia la dirección.',
+  },
+  /** Aviso de los datos legales del vendedor que faltan (`MissingLegalDataNotice`). */
+  missingLegal: {
+    title: 'Faltan datos legales del vendedor',
+    text: 'La tienda los muestra en el pie y dentro de los textos legales. Mientras falten, esos textos quedan incompletos.',
+    action: 'Completar en Ajustes',
+    labels: {
+      legalName: 'Razón social',
+      cuit: 'CUIT',
+      taxCondition: 'Condición frente al IVA',
+      address: 'Domicilio legal',
+      supportArea: 'Área responsable',
+      supportHours: 'Horario de atención',
+      dataFiscalUrl: 'Data Fiscal (ARCA)',
+    } satisfies Record<SellerLegalField, string>,
   },
   contact: {
     title: 'Contacto',

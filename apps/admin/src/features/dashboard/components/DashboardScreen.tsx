@@ -3,11 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import type { DashboardSummary } from '@galpon/api-client'
+import type { SellerData } from '@galpon/domain'
 import { adminDashboardQuery, adminSettingsQuery, useApiClient } from '@galpon/api-client/react'
 import { formatLongDate, formatPesos, pesos } from '@galpon/domain'
 import { buttonClass } from '../../../components/ui/button-class'
 import { ErrorState } from '../../../components/ui/ErrorState'
 import { PageHeader } from '../../../components/ui/PageHeader'
+import { MissingLegalDataNotice } from '../../settings'
 import { capitalizeFirst } from '../capitalize'
 import { DASHBOARD_COPY } from '../dashboard.copy'
 import { DashboardSkeleton } from './DashboardSkeleton'
@@ -76,13 +78,19 @@ const PENDING_REVIEWS_SEARCH = { estado: 'pendientes', pagina: 1 } as const
 interface SummaryContentProps {
   summary: DashboardSummary
   lowStockThreshold: number
+  /** Datos del vendedor de los ajustes, para el aviso de los datos legales que faltan. */
+  seller: SellerData
 }
 
-/** Las cifras, las alertas de pago y el poco stock, ya cargados. */
-function SummaryContent({ summary, lowStockThreshold }: SummaryContentProps): ReactNode {
+/**
+ * El aviso de los datos legales que faltan (con el enlace a Ajustes), las cifras, las alertas de
+ * pago y el poco stock, ya cargados.
+ */
+function SummaryContent({ summary, lowStockThreshold, seller }: SummaryContentProps): ReactNode {
   const linkClass = buttonClass('secondary', 'md')
   return (
     <>
+      <MissingLegalDataNotice seller={seller} withLink />
       <div className="flex flex-col gap-4">
         <h2 className="sr-only">{DASHBOARD_COPY.salesHeading}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -129,7 +137,7 @@ function SummaryContent({ summary, lowStockThreshold }: SummaryContentProps): Re
           />
         </div>
       </div>
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <PaymentAlertsSection alerts={summary.paymentAlerts} />
         <LowStockSection items={summary.lowStock} threshold={lowStockThreshold} />
       </div>
@@ -138,9 +146,10 @@ function SummaryContent({ summary, lowStockThreshold }: SummaryContentProps): Re
 }
 
 /**
- * Pantalla "Resumen" (`/`): la fecha de hoy, la nota del modo de prueba, las ventas de hoy y de
- * los últimos 7 días, lo que hay para despachar, moderar y leer (con sus enlaces), las alertas de
- * pago y los productos con poco stock (el umbral sale de los ajustes). Mientras carga muestra la
+ * Pantalla "Resumen" (`/`): la fecha de hoy, la nota del modo de prueba, el aviso de los datos
+ * legales del vendedor que faltan (`MissingLegalDataNotice` con el enlace a Ajustes), las ventas
+ * de hoy y de los últimos 7 días, lo que hay para despachar, moderar y leer (con sus enlaces),
+ * las alertas de pago y los productos con poco stock (el umbral sale de los ajustes). Mientras carga muestra la
  * forma de las tarjetas y, si falla, "No pudimos cargar el resumen." con "Reintentar". Sin
  * `today`, la fecha se actualiza cada minuto y al volver a la pestaña.
  *
@@ -167,7 +176,11 @@ export function DashboardScreen({ isMockMode, today }: DashboardScreenProps): Re
     content = <DashboardSkeleton />
   } else {
     content = (
-      <SummaryContent summary={summary.data} lowStockThreshold={settings.data.lowStockThreshold} />
+      <SummaryContent
+        summary={summary.data}
+        lowStockThreshold={settings.data.lowStockThreshold}
+        seller={settings.data.seller}
+      />
     )
   }
 

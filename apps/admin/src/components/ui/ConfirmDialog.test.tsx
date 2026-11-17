@@ -96,7 +96,7 @@ describe('ConfirmDialog', () => {
     await screen.findByRole('alertdialog')
 
     const confirm = screen.getByRole('button', { name: 'Archivar' })
-    expect(confirm).toBeDisabled()
+    expect(confirm).toHaveAttribute('aria-disabled', 'true')
     expect(confirm).toHaveAttribute('aria-busy', 'true')
     expect(confirm.querySelector('svg')).toHaveClass('animate-spin')
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()

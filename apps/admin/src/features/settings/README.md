@@ -4,15 +4,22 @@ Los ajustes de la tienda (`/ajustes`), en una sola página.
 
 ## Qué exporta (`index.ts`)
 
-- **`SettingsScreen()`**: carga los ajustes (`adminSettingsQuery`) y muestra `SettingsForm`,
-  con su esqueleto mientras carga y "No pudimos cargar los ajustes." con "Reintentar".
+- **`SettingsScreen()`**: carga los ajustes (`adminSettingsQuery`) y muestra el aviso de datos
+  legales faltantes (sin enlace) y `SettingsForm`, con su esqueleto mientras carga y "No pudimos
+  cargar los ajustes." con "Reintentar".
+- **`MissingLegalDataNotice({ seller, withLink })`**: `role="note"` "Faltan datos legales del
+  vendedor" con la lista de `missingSellerFields` (los 7 de `SELLER_LEGAL_FIELDS`; el teléfono es
+  opcional); nada si no falta ninguno. Mira los ajustes guardados, así cambia al guardar. El
+  Resumen lo usa con `withLink` ("Completar en Ajustes" a `/ajustes`).
 
 ## Formulario
 
 `SettingsForm` (`settingsFormSchema`, con `FormActions` y `UnsavedChangesGuard`), por secciones:
 "Kit", "Envíos" (`ShippingOptionFields`: una fila por método con su nombre fijo; con costo 0 la
-ayuda dice "Gratis"), "Cuotas", "Precio sin impuestos nacionales" (con la condición fiscal del
-vendedor), "Vendedor y atención al cliente" (`SellerFields`), "Contacto" y "Stock".
+ayuda dice "Gratis"), "Cuotas", "Precio sin impuestos nacionales" (con la "Condición frente al
+IVA" del vendedor), "Vendedor y atención al cliente" (`SellerFields`; "Data Fiscal (ARCA)" acepta
+el código entero de ARCA y se guarda solo su enlace), "Defensa del consumidor"
+(`ConsumerLinksFields`: los dos enlaces obligatorios, LA-4), "Contacto" y "Stock".
 
 Al guardar avisa "Ajustes guardados.", vuelve a arrancar con lo guardado e invalida los ajustes
 y el resumen. Un `422` va a cada campo por su ruta (`SETTINGS_FIELDS`: `seller.cuit`,

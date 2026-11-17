@@ -2,15 +2,22 @@ import { z } from 'zod'
 import type { LegalDocument } from '@galpon/api-client'
 
 /** Documento legal como va en la URL de Legales (`?documento=`). */
-export type LegalTab = 'terminos' | 'privacidad'
+export type LegalTab = 'terminos' | 'privacidad' | 'cookies' | 'devoluciones'
 
 /** Los documentos, en el orden de las pestañas. */
-export const LEGAL_TABS = ['terminos', 'privacidad'] as const satisfies readonly LegalTab[]
+export const LEGAL_TABS = [
+  'terminos',
+  'privacidad',
+  'cookies',
+  'devoluciones',
+] as const satisfies readonly LegalTab[]
 
 /** Documento de la API que edita cada pestaña. */
 export const LEGAL_TAB_DOCUMENTS: Readonly<Record<LegalTab, LegalDocument>> = {
   terminos: 'terms',
   privacidad: 'privacy',
+  cookies: 'cookies',
+  devoluciones: 'returns',
 }
 
 /** Búsqueda de `/contenido/legales`. */

@@ -51,4 +51,18 @@ describe('Tabs', () => {
     )
     expect(panel).toHaveAccessibleName('Aprobadas')
   })
+
+  it('el panel enfocable muestra el foco (WCAG 2.4.7): no lleva outline-none', () => {
+    render(<Tabs value="aprobadas" onValueChange={vi.fn()} label="Estado" items={items} />)
+
+    const panel = screen.getByRole('tabpanel')
+    expect(panel).toHaveAttribute('tabindex', '0')
+    expect(panel).not.toHaveClass('outline-none')
+    expect(panel).toHaveClass(
+      'focus-visible:outline-accent',
+      'rounded-md',
+      'focus-visible:outline-2',
+      'focus-visible:outline-offset-2',
+    )
+  })
 })

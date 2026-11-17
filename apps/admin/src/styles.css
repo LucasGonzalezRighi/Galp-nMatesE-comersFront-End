@@ -1,3 +1,18 @@
 @import 'tailwindcss';
 @import '@galpon/design-tokens/tokens.css';
 @import '@galpon/design-tokens/base.css';
+
+/*
+ * Foco no tapado (WCAG 2.4.11): al mover el foco, el navegador deja aire para la barra fija de
+ * "Guardar" (`FormActions`, abajo) y, hasta 1023 px, para el encabezado fijo del celular
+ * (`AdminLayout`, 56 px de alto).
+ */
+html {
+  scroll-padding-bottom: 80px;
+}
+
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-top: 64px;
+  }
+}

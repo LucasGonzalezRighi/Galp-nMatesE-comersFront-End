@@ -198,7 +198,7 @@ describe('OrderScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Pasar a preparación' }))
 
     const saving = await screen.findByRole('button', { name: 'Pasando a preparación…' })
-    expect(saving).toBeDisabled()
+    expect(saving).toHaveAttribute('aria-disabled', 'true')
     writes.release()
     expect(await screen.findByText('El pedido pasó a preparación.')).toBeInTheDocument()
   })

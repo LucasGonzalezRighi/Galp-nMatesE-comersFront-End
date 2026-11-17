@@ -108,6 +108,109 @@ describe('LegalContentScreen', () => {
     })
   })
 
+  it('tiene los cuatro documentos y "Política de cookies" carga y guarda el suyo', async () => {
+    const user = userEvent.setup()
+    const app = await createTestApp()
+    const otherBefore = structuredClone(app.mockDb.db.content.legal.terms)
+    const { router } = await renderLegal(app)
+
+    expect(
+      within(screen.getByRole('tablist', { name: 'Documento legal' }))
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual([
+      'Términos y condiciones',
+      'Política de privacidad',
+      'Política de cookies',
+      'Cambios y devoluciones',
+    ])
+
+    await user.click(screen.getByRole('tab', { name: 'Política de cookies' }))
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ documento: 'cookies' })
+    })
+    expect(await screen.findByDisplayValue('Política de cookies')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Política de cookies' })).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Texto'))
+    await user.type(screen.getByLabelText('Texto'), 'Solo usamos cookies necesarias.')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Contenido guardado.')).toBeInTheDocument()
+    expect(app.mockDb.db.content.legal.cookies).toMatchObject({
+      title: 'Política de cookies',
+      body: 'Solo usamos cookies necesarias.',
+    })
+    expect(app.mockDb.db.content.legal.terms).toEqual(otherBefore)
+  })
+
+  it('"Cambios y devoluciones" edita el documento de devoluciones', async () => {
+    const app = await createTestApp()
+    await renderLegal(app, '/contenido/legales?documento=devoluciones')
+
+    expect(screen.getByRole('tab', { name: 'Cambios y devoluciones' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByLabelText('Título')).toHaveValue(app.mockDb.db.content.legal.returns.title)
+  })
+
+  it('la ayuda explica el formato y lista los 8 datos del vendedor con su valor de hoy', async () => {
+    const app = await createTestApp()
+    await renderLegal(app)
+
+    const help = screen.getByRole('region', { name: 'Cómo escribir el texto' })
+    expect(
+      within(help)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'Dejá una línea en blanco entre párrafos.',
+      'Una línea que empieza con ## es el título de una sección; las que empiezan con - arman una lista.',
+      'Un enlace se escribe [texto](/ruta) o [texto](https://…).',
+    ])
+    const markers = screen.getByRole('region', { name: 'Datos del vendedor' })
+    expect(
+      within(markers).getByText(
+        'Escribí el código tal cual y la tienda lo reemplaza por el dato cargado en Ajustes.',
+      ),
+    ).toBeInTheDocument()
+    const items = await within(markers).findAllByRole('listitem')
+    expect(items.map((item) => item.querySelector('code')?.textContent)).toEqual([
+      '{{razon_social}}',
+      '{{cuit}}',
+      '{{condicion_iva}}',
+      '{{domicilio}}',
+      '{{email}}',
+      '{{telefono}}',
+      '{{area_atencion}}',
+      '{{horario_atencion}}',
+    ])
+    expect(items[2]).toHaveTextContent('Condición frente al IVA')
+    expect(await within(markers).findAllByText('Falta cargarlo en Ajustes')).toHaveLength(7)
+    expect(items[4]).toHaveTextContent('Email de contacto')
+    expect(items[4]).toHaveTextContent('galpon.mates@gmail.com')
+  })
+
+  it('un dato que no existe ({{cuitt}}) se marca bajo el texto y no se guarda', async () => {
+    const user = userEvent.setup()
+    const app = await createTestApp()
+    const before = structuredClone(app.mockDb.db.content.legal.terms)
+    await renderLegal(app)
+
+    await user.clear(screen.getByLabelText('Texto'))
+    await user.click(screen.getByLabelText('Texto'))
+    await user.paste('CUIT: {{cuitt}}')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(
+      await screen.findByText(
+        'El dato {{cuitt}} no existe. Revisá la lista de datos del vendedor.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Texto')).toHaveAttribute('aria-invalid', 'true')
+    expect(app.mockDb.db.content.legal.terms).toEqual(before)
+  })
+
   it('no pisa una fecha que se cambió a mano', async () => {
     const user = userEvent.setup()
     const app = await createTestApp()

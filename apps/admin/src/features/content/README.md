@@ -10,9 +10,15 @@ frecuentes, pestañas de la ficha, pie y legales). `/contenido` redirige a `/con
   **`ProductTabsContentScreen`**, **`FooterContentScreen`**: sin props; cada una pide su página
   con `adminContentQuery(api, página)` y la guarda entera con su servicio `updateAdmin…Content`.
 - **`LegalContentScreen({ tab, onTabChange })`**: pestañas "Términos y condiciones" ·
-  "Política de privacidad". `tab` es `?documento=` ya validado; `onTabChange` cambia la URL.
-- **`legalSearchSchema`** y **`LEGAL_SEARCH_DEFAULTS`** (`?documento=terminos|privacidad`, con
-  `.catch`): la ruta los usa en `validateSearch` y `stripSearchParams`.
+  "Política de privacidad" · "Política de cookies" · "Cambios y devoluciones" (`LEGAL_TABS` →
+  `LEGAL_TAB_DOCUMENTS`: `terms`, `privacy`, `cookies`, `returns`). `tab` es `?documento=` ya
+  validado; `onTabChange` cambia la URL. Debajo del aviso, `LegalHelp`: cómo se escribe el texto
+  (LA-1) y los 8 marcadores `{{clave}}` con su nombre y el valor de hoy (`legalMarkerValues` sobre
+  `adminSettingsQuery`) o "Falta cargarlo en Ajustes". La tienda reemplaza los marcadores; el
+  editor guarda el texto tal cual y una clave que no existe se marca bajo el texto.
+- **`legalSearchSchema`** y **`LEGAL_SEARCH_DEFAULTS`**
+  (`?documento=terminos|privacidad|cookies|devoluciones`, con `.catch`): la ruta los usa en
+  `validateSearch` y `stripSearchParams`.
 
 ## Cómo está armada cada pantalla
 

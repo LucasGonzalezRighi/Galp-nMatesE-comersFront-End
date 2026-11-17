@@ -123,8 +123,8 @@ describe('ProductScreen', () => {
     expect(screen.getByLabelText(/^Precio$/)).toHaveValue('$39.999')
     expect(screen.getByRole('radio', { name: 'Publicado' })).toBeChecked()
     expect(altTexts()).toEqual([
-      'Mate Imperial Premium con virola de alpaca cincelada y base con pelotitas de bronce',
-      'Mate Imperial Premium con virola cincelada, base con pelotitas de bronce y una bombilla de pico de bronce al costado',
+      'Calabaza marrón oscura con virola ancha plateada cincelada con rombos y base de patas con pelotitas doradas',
+      'Mate de cuero negro texturado con virola plateada de ondas, patas con pelotitas doradas y una bombilla al costado',
     ])
     expect(await screen.findAllByText('Ver el texto de Mates')).toHaveLength(2)
   })
@@ -512,7 +512,10 @@ describe('ProductScreen', () => {
 
     await user.click(screen.getByRole('button', { name: 'Volver a publicar' }))
 
-    expect(await screen.findByRole('button', { name: 'Publicando…' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Publicando…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
     release()
     expect(await screen.findByText('Producto publicado de nuevo.')).toBeInTheDocument()
     expect(stored(app).status).toBe('published')

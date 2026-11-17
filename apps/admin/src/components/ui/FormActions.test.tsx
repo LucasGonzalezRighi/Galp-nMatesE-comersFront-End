@@ -46,7 +46,7 @@ describe('FormActions', () => {
     renderInForm({ isDirty: true, isSubmitting: true, onDiscard: vi.fn() })
 
     const submit = screen.getByRole('button', { name: 'Guardando…' })
-    expect(submit).toBeDisabled()
+    expect(submit).toHaveAttribute('aria-disabled', 'true')
     expect(submit).toHaveAttribute('aria-busy', 'true')
     expect(submit.querySelector('svg')).toHaveClass('animate-spin')
     expect(screen.getByRole('button', { name: 'Descartar' })).toBeDisabled()

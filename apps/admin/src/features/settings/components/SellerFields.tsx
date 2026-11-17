@@ -7,10 +7,11 @@ import { SETTINGS_COPY } from '../settings.copy'
 
 /**
  * Datos del vendedor y de la atención al cliente (Disposición 954/2025): razón social, CUIT
- * (viene con guiones, `formatCuit`), domicilio, teléfono o canal alternativo, área responsable,
- * horario de atención y el link de Data Fiscal, con la nota de dónde se muestran. La condición
- * fiscal, también del vendedor, va en "Precio sin impuestos nacionales". Va dentro del
- * `FormProvider` de `SettingsForm`.
+ * (viene con guiones, `formatCuit`), domicilio legal, teléfono o canal alternativo (opcional),
+ * área responsable, horario de atención y Data Fiscal, con la nota de dónde se muestran. Data
+ * Fiscal es texto libre: acepta el código entero que entrega ARCA y el schema guarda solo su
+ * enlace (`extractDataFiscalUrl`). La condición frente al IVA, también del vendedor, va en
+ * "Precio sin impuestos nacionales". Va dentro del `FormProvider` de `SettingsForm`.
  */
 export function SellerFields(): ReactNode {
   const {
@@ -54,14 +55,15 @@ export function SellerFields(): ReactNode {
         </Field>
         <Field
           label={copy.dataFiscalUrl}
+          hint={copy.dataFiscalHint}
           error={sellerErrors?.dataFiscalUrl?.message}
           className="sm:col-span-2"
         >
           {(control) => (
             <TextInput
               {...control}
-              type="url"
-              autoComplete="url"
+              autoComplete="off"
+              spellCheck={false}
               {...register('seller.dataFiscalUrl')}
             />
           )}

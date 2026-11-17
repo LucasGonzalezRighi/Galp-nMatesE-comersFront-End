@@ -16,7 +16,7 @@ describe('Select', () => {
 
     const select = screen.getByLabelText('Material')
     expect(select).toBeInstanceOf(HTMLSelectElement)
-    expect(select).toHaveClass('min-h-9', 'bg-surface', 'border-divider')
+    expect(select).toHaveClass('min-h-9', 'bg-surface', 'border-neutral-600')
   })
 
   it('el placeholder es la primera opción, deshabilitada y elegida mientras no haya valor', () => {

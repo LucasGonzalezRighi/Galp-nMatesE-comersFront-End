@@ -31,7 +31,8 @@ export interface TabsProps {
 /**
  * Pestañas controladas sobre Radix `Tabs`: se recorren con las flechas, la elegida lleva un
  * filete `accent` abajo y cada una puede mostrar un número. El panel (`tabpanel`) siempre está,
- * vacío si no hay `children`, porque cada pestaña lo nombra en `aria-controls`.
+ * vacío si no hay `children`, porque cada pestaña lo nombra en `aria-controls`. El panel es una
+ * parada de Tab y muestra el foco con el mismo contorno `accent` que las pestañas (WCAG 2.4.7).
  *
  * @param props - Ver {@link TabsProps}.
  * @throws {RangeError} Si no hay pestañas, `value` no es una de ellas o algún `count` no es un
@@ -76,7 +77,10 @@ export function Tabs({ value, onValueChange, label, items, children }: TabsProps
           </RadixTabs.Trigger>
         ))}
       </RadixTabs.List>
-      <RadixTabs.Content value={value} className="outline-none">
+      <RadixTabs.Content
+        value={value}
+        className="focus-visible:outline-accent rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
         {children}
       </RadixTabs.Content>
     </RadixTabs.Root>

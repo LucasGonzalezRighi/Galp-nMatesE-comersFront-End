@@ -116,6 +116,51 @@ describe('DashboardScreen', () => {
     )
   })
 
+  it('avisa arriba de las ventas los 7 datos legales que faltan, con el enlace a Ajustes', async () => {
+    await setup()
+
+    const notice = await screen.findByRole('note')
+    expect(within(notice).getByText('Faltan datos legales del vendedor')).toBeInTheDocument()
+    expect(
+      within(notice)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'Razón social',
+      'CUIT',
+      'Condición frente al IVA',
+      'Domicilio legal',
+      'Área responsable',
+      'Horario de atención',
+      'Data Fiscal (ARCA)',
+    ])
+    expect(within(notice).getByRole('link', { name: 'Completar en Ajustes' })).toHaveAttribute(
+      'href',
+      '/ajustes',
+    )
+    const sales = screen.getByRole('heading', { level: 2, name: 'Ventas' })
+    expect(notice.compareDocumentPosition(sales) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('con los datos legales cargados no muestra el aviso', async () => {
+    const app = await createTestApp()
+    app.mockDb.db.settings.seller = {
+      legalName: 'Galpón Mates S. R. L.',
+      cuit: '20123456786',
+      taxCondition: 'Responsable inscripto',
+      address: 'Av. Siempreviva 742, CABA',
+      phone: null,
+      supportArea: 'Atención al cliente',
+      supportHours: 'Lunes a viernes de 9 a 17',
+      dataFiscalUrl: 'https://qr.afip.gob.ar/?qr=abc123',
+    }
+    await setup(app)
+
+    await screen.findByRole('region', { name: 'Para despachar' })
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+    expect(screen.queryByText('Faltan datos legales del vendedor')).not.toBeInTheDocument()
+  })
+
   it('sin alertas ni poco stock lo dice', async () => {
     const app = await createTestApp({ demo: false })
     for (const product of app.mockDb.db.products) product.stock = 50

@@ -5,6 +5,7 @@ import { ErrorState } from '../../../components/ui/ErrorState'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { Skeleton } from '../../../components/ui/Skeleton'
 import { SETTINGS_COPY } from '../settings.copy'
+import { MissingLegalDataNotice } from './MissingLegalDataNotice'
 import { SettingsForm } from './SettingsForm'
 
 /** Tarjetas grises con la forma de las secciones del formulario, mientras carga. */
@@ -28,8 +29,9 @@ function SettingsSkeleton(): ReactNode {
 }
 
 /**
- * Pantalla `/ajustes`: carga los ajustes (`adminSettingsQuery`) y muestra `SettingsForm`, con
- * su esqueleto mientras carga y "No pudimos cargar los ajustes." con "Reintentar" si falla.
+ * Pantalla `/ajustes`: carga los ajustes (`adminSettingsQuery`) y muestra, arriba del formulario,
+ * el aviso de los datos legales que faltan (`MissingLegalDataNotice`, sin enlace) y
+ * `SettingsForm`, con su esqueleto mientras carga y "No pudimos cargar los ajustes." con "Reintentar" si falla.
  */
 export function SettingsScreen(): ReactNode {
   const api = useApiClient()
@@ -38,8 +40,15 @@ export function SettingsScreen(): ReactNode {
   // El error solo reemplaza al formulario si nunca hubo datos: una recarga en segundo plano que
   // falla (sesión vencida, corte de red) lo deja como está, con lo escrito.
   let content: ReactNode
-  if (settings.data !== undefined) content = <SettingsForm settings={settings.data} />
-  else if (settings.isError) {
+  if (settings.data !== undefined) {
+    // El aviso mira los ajustes guardados (no lo que se escribe): cambia al guardar.
+    content = (
+      <>
+        <MissingLegalDataNotice seller={settings.data.seller} withLink={false} />
+        <SettingsForm settings={settings.data} />
+      </>
+    )
+  } else if (settings.isError) {
     content = (
       <ErrorState
         title={SETTINGS_COPY.loadError}

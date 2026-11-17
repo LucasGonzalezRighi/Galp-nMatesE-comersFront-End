@@ -1,4 +1,6 @@
 import type { ProductGroup, StoryScene } from '@galpon/api-client'
+import type { LegalMarker } from '@galpon/domain'
+import { LEGAL_MARKERS } from '@galpon/domain'
 
 /** Textos de las pantallas de Contenido. */
 export const CONTENT_COPY = {
@@ -111,10 +113,51 @@ export const CONTENT_COPY = {
   legalTabs: 'Documento legal',
   terms: 'Términos y condiciones',
   privacy: 'Política de privacidad',
+  cookies: 'Política de cookies',
+  returns: 'Cambios y devoluciones',
   updatedAt: 'Última actualización',
   updatedAtHint: 'Al cambiar el texto se propone la fecha de hoy.',
   legalWarning: 'Revisá los textos legales con un profesional antes de publicarlos.',
+  /** Título de la ayuda del formato de un documento legal. */
+  legalHelpTitle: 'Cómo escribir el texto',
+  /** Los renglones de la ayuda del formato, en orden. */
+  legalHelpLines: [
+    'Dejá una línea en blanco entre párrafos.',
+    'Una línea que empieza con ## es el título de una sección; las que empiezan con - arman una lista.',
+    'Un enlace se escribe [texto](/ruta) o [texto](https://…).',
+  ],
+  /** Título de la lista de marcadores de los datos del vendedor. */
+  legalMarkersTitle: 'Datos del vendedor',
+  legalMarkersHint:
+    'Escribí el código tal cual y la tienda lo reemplaza por el dato cargado en Ajustes.',
+  /** Nombre de cada marcador `{{clave}}`. */
+  legalMarkers: {
+    razon_social: 'Razón social',
+    cuit: 'CUIT',
+    condicion_iva: 'Condición frente al IVA',
+    domicilio: 'Domicilio legal',
+    email: 'Email de contacto',
+    telefono: 'Teléfono',
+    area_atencion: 'Área responsable',
+    horario_atencion: 'Horario de atención',
+  } satisfies Record<LegalMarker, string>,
+  /** Valor de hoy de un marcador cuyo dato falta. */
+  markerMissing: 'Falta cargarlo en Ajustes',
 } as const
+
+/**
+ * Código de un marcador como se escribe en el texto de un documento legal.
+ *
+ * @param marker - Clave de `LEGAL_MARKERS`.
+ * @returns Por ejemplo `{{cuit}}`.
+ * @throws {RangeError} Si `marker` no es una clave de `LEGAL_MARKERS`.
+ */
+export function legalMarkerCode(marker: LegalMarker): string {
+  if (!LEGAL_MARKERS.some((known) => known === marker)) {
+    throw new RangeError(`"${marker}" no es un dato del vendedor de los textos legales.`)
+  }
+  return `{{${marker}}}`
+}
 
 /**
  * Valida que un texto no esté vacío.

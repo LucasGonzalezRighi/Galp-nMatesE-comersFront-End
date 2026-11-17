@@ -6,7 +6,8 @@ import {
 } from '../../../features/content'
 
 /**
- * Ruta `/contenido/legales`: los documentos legales, con el elegido en `?documento=terminos|privacidad`
+ * Ruta `/contenido/legales`: los cuatro documentos legales, con el elegido en
+ * `?documento=terminos|privacidad|cookies|devoluciones`
  * (validado con `legalSearchSchema`; los términos, por omisión, no quedan en la URL).
  */
 export const Route = createFileRoute('/_authenticated/contenido/legales')({

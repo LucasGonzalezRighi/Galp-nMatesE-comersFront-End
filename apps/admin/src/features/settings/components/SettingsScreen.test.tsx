@@ -44,17 +44,45 @@ describe('SettingsScreen', () => {
     await setup()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Ajustes' })).toBeInTheDocument()
-    for (const title of [
+    expect(
+      screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
+    ).toEqual([
       'Kit',
       'Envíos',
       'Cuotas',
       'Precio sin impuestos nacionales',
       'Vendedor y atención al cliente',
+      'Defensa del consumidor',
       'Contacto',
       'Stock',
-    ]) {
-      expect(screen.getByRole('heading', { level: 2, name: title })).toBeInTheDocument()
-    }
+    ])
+    expect(screen.getByRole('textbox', { name: /^Condición frente al IVA/ })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /^Domicilio legal/ })).toBeInTheDocument()
+    expect(
+      screen.getByRole('textbox', { name: /^Teléfono o canal alternativo \(opcional\)/ }),
+    ).toBeInTheDocument()
+    const dataFiscal = screen.getByRole('textbox', { name: /^Data Fiscal \(ARCA\)/ })
+    expect(dataFiscal).not.toHaveAttribute('type', 'url')
+    expect(dataFiscal).toHaveAccessibleDescription(
+      'Pegá el código que te da ARCA (Formulario 960/D, opción "Banner en sitio web") o solo su enlace. La tienda muestra el logo oficial en el pie.',
+    )
+    const consumer = screen.getByRole('region', { name: 'Defensa del consumidor' })
+    expect(within(consumer).getByText('Ley 2244 (CABA) y Ventanilla Federal Única')).toBeVisible()
+    expect(
+      within(consumer).getByRole('textbox', {
+        name: /^Enlace de Defensa al Consumidor de la Ciudad/,
+      }),
+    ).toHaveValue('https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor')
+    expect(
+      within(consumer).getByRole('textbox', {
+        name: /^Enlace del formulario nacional de reclamos/,
+      }),
+    ).toHaveValue('https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario')
+    expect(
+      within(consumer).getByText(
+        'Son los enlaces oficiales y la tienda los muestra siempre en el pie. Cambialos solo si el organismo cambia la dirección.',
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: /^Descuento del kit/ })).toHaveValue('10')
     expect(
       screen.getByText('De 0 a 30. Se aplica a la suma de las tres piezas.'),
@@ -74,7 +102,7 @@ describe('SettingsScreen', () => {
     )
     expect(
       screen.getByText(
-        'Estos datos se muestran en el pie y en Contacto. Revisalos con tu contador.',
+        'Estos datos se muestran en el pie, en Contacto y dentro de los textos legales. Revisalos con tu contador.',
       ),
     ).toBeInTheDocument()
   })
@@ -88,6 +116,77 @@ describe('SettingsScreen', () => {
     expect(await screen.findByText('CUIT inválido')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: /^CUIT/ })).toHaveAttribute('aria-invalid', 'true')
     expect(app.mockDb.db.settings.seller.cuit).toBeNull()
+  })
+
+  it('avisa los 7 datos legales que faltan y el aviso se actualiza al guardar', async () => {
+    const { user } = await setup()
+
+    const notice = screen.getByRole('note')
+    expect(within(notice).getByText('Faltan datos legales del vendedor')).toBeInTheDocument()
+    expect(
+      within(notice).getByText(
+        'La tienda los muestra en el pie y dentro de los textos legales. Mientras falten, esos textos quedan incompletos.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(notice)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'Razón social',
+      'CUIT',
+      'Condición frente al IVA',
+      'Domicilio legal',
+      'Área responsable',
+      'Horario de atención',
+      'Data Fiscal (ARCA)',
+    ])
+    expect(within(notice).queryByRole('link')).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: /^Razón social/ }), 'Galpón Mates S. R. L.')
+    await user.type(screen.getByRole('textbox', { name: /^CUIT/ }), '20-12345678-6')
+    // Sin guardar, el aviso sigue con lo guardado.
+    expect(within(screen.getByRole('note')).getAllByRole('listitem')).toHaveLength(7)
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Ajustes guardados.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(within(screen.getByRole('note')).getAllByRole('listitem')).toHaveLength(5)
+    })
+    expect(within(screen.getByRole('note')).queryByText('CUIT')).not.toBeInTheDocument()
+  })
+
+  it('el código de ARCA pegado se guarda como su enlace', async () => {
+    const { app, user } = await setup()
+    const dataFiscal = screen.getByRole('textbox', { name: /^Data Fiscal \(ARCA\)/ })
+
+    await user.click(dataFiscal)
+    await user.paste(
+      '<a href="https://qr.afip.gob.ar/?qr=abc123" target="_F960AFIPInfo"><img src="https://www.afip.gob.ar/images/f960/DATAWEB.jpg" border="0"></a>',
+    )
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Ajustes guardados.')).toBeInTheDocument()
+    expect(app.mockDb.db.settings.seller.dataFiscalUrl).toBe('https://qr.afip.gob.ar/?qr=abc123')
+    await waitFor(() => {
+      expect(dataFiscal).toHaveValue('https://qr.afip.gob.ar/?qr=abc123')
+    })
+  })
+
+  it('el enlace de Defensa al Consumidor de la Ciudad es obligatorio', async () => {
+    const { app, user } = await setup()
+    const caba = screen.getByRole('textbox', {
+      name: /^Enlace de Defensa al Consumidor de la Ciudad/,
+    })
+
+    await user.clear(caba)
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText('Requerido')).toBeInTheDocument()
+    expect(caba).toHaveAttribute('aria-invalid', 'true')
+    expect(app.mockDb.db.settings.consumerLinks.cabaUrl).toBe(
+      'https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor',
+    )
   })
 
   it('guarda el IVA con decimales, un envío gratis y el CUIT, y los vuelve a cargar', async () => {

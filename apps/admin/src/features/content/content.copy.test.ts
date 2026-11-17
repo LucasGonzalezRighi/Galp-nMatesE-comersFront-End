@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { LegalMarker } from '@galpon/domain'
+import { LEGAL_MARKERS } from '@galpon/domain'
 import { combinedLoadState } from './content-load-state'
 import {
   actionLabel,
+  CONTENT_COPY,
+  legalMarkerCode,
   positionLabel,
   questionName,
   questionsListLabel,
@@ -10,7 +14,7 @@ import {
   removePaymentMethodLabel,
   unpublishedProductLabel,
 } from './content.copy'
-import { legalSearchSchema } from './legal-search'
+import { LEGAL_TAB_DOCUMENTS, LEGAL_TABS, legalSearchSchema } from './legal-search'
 
 describe('textos de Contenido', () => {
   it('arma los nombres de los campos y de los botones', () => {
@@ -34,6 +38,12 @@ describe('textos de Contenido', () => {
     expect(() => questionName(1, '')).toThrow(RangeError)
     expect(() => questionsListLabel(' ')).toThrow(RangeError)
     expect(() => unpublishedProductLabel('')).toThrow(RangeError)
+  })
+
+  it('nombra los 8 marcadores de los textos legales y arma su código', () => {
+    expect(Object.keys(CONTENT_COPY.legalMarkers)).toEqual([...LEGAL_MARKERS])
+    expect(legalMarkerCode('cuit')).toBe('{{cuit}}')
+    expect(() => legalMarkerCode('cuitt' as LegalMarker)).toThrow(RangeError)
   })
 })
 
@@ -60,10 +70,16 @@ describe('combinedLoadState', () => {
 })
 
 describe('legalSearchSchema', () => {
-  it('acepta los dos documentos y vuelve a los términos con cualquier otro valor', () => {
-    expect(legalSearchSchema.parse({ documento: 'privacidad' })).toEqual({
-      documento: 'privacidad',
-    })
+  it('acepta los cuatro documentos y vuelve a los términos con cualquier otro valor', () => {
+    for (const documento of ['terminos', 'privacidad', 'cookies', 'devoluciones']) {
+      expect(legalSearchSchema.parse({ documento })).toEqual({ documento })
+    }
+    expect(LEGAL_TABS.map((tab) => LEGAL_TAB_DOCUMENTS[tab])).toEqual([
+      'terms',
+      'privacy',
+      'cookies',
+      'returns',
+    ])
     expect(legalSearchSchema.parse({ documento: 'otro' })).toEqual({ documento: 'terminos' })
     expect(legalSearchSchema.parse({})).toEqual({ documento: 'terminos' })
   })

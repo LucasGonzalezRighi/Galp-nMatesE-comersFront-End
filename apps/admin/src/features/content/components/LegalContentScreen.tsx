@@ -23,6 +23,7 @@ import { LEGAL_TAB_DOCUMENTS, LEGAL_TABS } from '../legal-search'
 import { useSaveContent } from '../use-save-content'
 import { ContentLayout } from './ContentLayout'
 import { ContentLoader } from './ContentLoader'
+import { LegalHelp } from './LegalHelp'
 import { TextField } from './TextField'
 
 /** Campo de texto del formulario de un documento legal. */
@@ -32,6 +33,8 @@ const LegalText = TextField<LegalContentFormInput>
 const TAB_LABELS: Readonly<Record<LegalTab, string>> = {
   terminos: CONTENT_COPY.terms,
   privacidad: CONTENT_COPY.privacy,
+  cookies: CONTENT_COPY.cookies,
+  devoluciones: CONTENT_COPY.returns,
 }
 
 /** Pestañas de los documentos, en orden. */
@@ -132,9 +135,12 @@ export interface LegalContentScreenProps {
 }
 
 /**
- * Pantalla `/contenido/legales`: pestañas "Términos y condiciones" y "Política de privacidad"
- * (`?documento=terminos|privacidad`), el aviso de revisarlos con un profesional y el formulario del
- * documento elegido (título, última actualización y texto).
+ * Pantalla `/contenido/legales`: pestañas "Términos y condiciones", "Política de privacidad",
+ * "Política de cookies" y "Cambios y devoluciones"
+ * (`?documento=terminos|privacidad|cookies|devoluciones`), el aviso de revisarlos con un
+ * profesional, la ayuda del formato y de los datos del vendedor (`LegalHelp`) y el formulario del
+ * documento elegido (título, última actualización y texto; un dato `{{clave}}` que no existe se
+ * marca bajo el texto).
  *
  * @param props - Ver {@link LegalContentScreenProps}.
  */
@@ -156,6 +162,7 @@ export function LegalContentScreen({ tab, onTabChange }: LegalContentScreenProps
         />
         {CONTENT_COPY.legalWarning}
       </p>
+      <LegalHelp />
       <Tabs
         value={tab}
         onValueChange={(value) => {

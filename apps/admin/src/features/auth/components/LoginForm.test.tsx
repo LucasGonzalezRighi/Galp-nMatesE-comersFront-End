@@ -140,7 +140,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Ingresar' }))
 
     const sending = await screen.findByRole('button', { name: 'Ingresando…' })
-    expect(sending).toBeDisabled()
+    expect(sending).toHaveAttribute('aria-disabled', 'true')
     expect(sending).toHaveAttribute('aria-busy', 'true')
     expect(sending).toHaveClass('min-h-9')
     release()

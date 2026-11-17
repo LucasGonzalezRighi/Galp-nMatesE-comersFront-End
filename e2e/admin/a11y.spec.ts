@@ -141,4 +141,59 @@ test.describe('dashboard: accesibilidad (axe)', () => {
     await expireSession(page)
     expect(await seriousViolations(page)).toEqual([])
   })
+
+  for (const target of [
+    { path: '/resenas', heading: 'Reseñas' },
+    { path: '/mensajes', heading: 'Mensajes' },
+  ]) {
+    test(`teclado: en ${target.heading} el panel de pestañas muestra el foco (2.4.7)`, async ({
+      page,
+    }) => {
+      await logInAsAdmin(page)
+      await gotoAdmin(page, target)
+      await page.getByRole('tab', { selected: true }).focus()
+      await page.keyboard.press('Tab')
+      const panel = page.getByRole('tabpanel')
+      await expect(panel).toBeFocused()
+      const outline = await panel.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return { style: style.outlineStyle, width: style.outlineWidth }
+      })
+      expect(outline.style).not.toBe('none')
+      expect(outline.width).toBe('2px')
+    })
+  }
+
+  test('reflow: el Resumen a 320 px no tiene scroll horizontal (1.4.10)', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 })
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/', heading: 'Resumen' })
+    await expect(page.getByRole('heading', { name: 'Poco stock' })).toBeVisible()
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(320)
+  })
+
+  test('teclado: en el celular el encabezado no tapa el foco al volver con Mayús+Tab (2.4.11)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await logInAsAdmin(page)
+    await gotoAdmin(page, { path: '/mensajes', heading: 'Mensajes' })
+    const unreadOnly = page.getByRole('checkbox', { name: 'Solo sin leer' })
+    // Desde el final de la página, hacia atrás hasta "Solo sin leer".
+    await page.keyboard.press('End')
+    await page.locator('main a, main button, main [tabindex="0"]').last().focus()
+    for (let step = 0; step < 60; step += 1) {
+      if (await unreadOnly.evaluate((element) => element === document.activeElement)) break
+      await page.keyboard.press('Shift+Tab')
+    }
+    await expect(unreadOnly).toBeFocused()
+    const header = await page.locator('header').first().boundingBox()
+    const box = await unreadOnly.boundingBox()
+    expect(header).not.toBeNull()
+    expect(box).not.toBeNull()
+    if (header !== null && box !== null) {
+      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height)
+    }
+  })
 })

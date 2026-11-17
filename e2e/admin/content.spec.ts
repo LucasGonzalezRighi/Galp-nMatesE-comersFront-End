@@ -60,4 +60,27 @@ test.describe('dashboard: contenido', () => {
     await confirm.getByRole('button', { name: 'Salir sin guardar' }).click()
     await expect(screenHeading(page, 'Ajustes')).toBeVisible()
   })
+
+  test('edita la "Política de cookies", la guarda y sigue ahí después de recargar', async ({
+    page,
+  }) => {
+    const body = 'Solo usamos las cookies necesarias.\n\n## Contacto\n\nEscribinos a {{email}}.'
+    await gotoAdmin(page, { path: '/contenido/legales', heading: 'Contenido' })
+    await expect(page.getByRole('region', { name: 'Datos del vendedor' })).toBeVisible()
+    await page.getByRole('tab', { name: 'Política de cookies' }).click()
+    await expect(page).toHaveURL(/documento=cookies/)
+    const text = page.getByRole('textbox', { name: 'Texto' })
+    await expect(page.getByRole('textbox', { name: 'Título' })).toHaveValue('Política de cookies')
+    await text.fill(body)
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(toast(page, 'Contenido guardado.')).toBeVisible()
+
+    await page.reload()
+    await expect(screenHeading(page, 'Contenido')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Política de cookies' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    await expect(page.getByRole('textbox', { name: 'Texto' })).toHaveValue(body)
+  })
 })

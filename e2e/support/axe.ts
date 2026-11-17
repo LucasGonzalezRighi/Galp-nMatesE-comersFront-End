@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-/** Reglas de WCAG 2.0 y 2.1 de nivel A y AA. */
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+/** Reglas de WCAG 2.0, 2.1 y 2.2 de nivel A y AA. */
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa']
 
 /** Una violación de accesibilidad que informa axe. */
 type Violation = Awaited<ReturnType<AxeBuilder['analyze']>>['violations'][number]

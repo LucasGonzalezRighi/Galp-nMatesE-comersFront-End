@@ -11,13 +11,13 @@ describe('TextInput', () => {
     expect(screen.getByLabelText('Nombre')).toHaveAttribute('type', 'text')
   })
 
-  it('tiene las medidas de .input: alto 36, fondo surface, borde divider y estados de foco y error', () => {
+  it('tiene las medidas de .input: alto 36, fondo surface, borde neutral-600 y estados de foco y error', () => {
     render(<TextInput aria-label="Nombre" className="max-w-xs" />)
 
     expect(screen.getByLabelText('Nombre')).toHaveClass(
       'min-h-9',
       'bg-surface',
-      'border-divider',
+      'border-neutral-600',
       'rounded-md',
       'text-sm',
       'focus-visible:border-accent',
