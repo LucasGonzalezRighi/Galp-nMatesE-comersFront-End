@@ -125,8 +125,8 @@ function ActionError({ message }: ActionErrorProps): ReactNode {
 
 /** Acción para volver a pagar el mismo pedido o, si ya no sirve, uno nuevo. */
 interface RetryPayment {
-  /** Prepara el nuevo intento; con `cancelFirst` cancela antes el intento anterior. */
-  retry: (cancelFirst: boolean) => void
+  /** Prepara el nuevo intento: cancela antes el intento anterior (sin intento activo no hace nada). */
+  retry: () => void
   /** Si está preparando el intento. */
   busy: boolean
   /** Error para mostrar, o `null`. */
@@ -135,7 +135,8 @@ interface RetryPayment {
 
 /**
  * Vuelve al paso de pago con el mismo pedido (`/checkout?pedido=…`) si sigue reservado y el
- * carrito no cambió; si no, olvida el pedido y vuelve al checkout para crear uno nuevo (spec 14.2).
+ * carrito no cambió, cancelando antes el intento anterior (es la única cancelación: el checkout no
+ * cancela al cargar); si no, olvida el pedido y vuelve al checkout para crear uno nuevo (spec 14.2).
  *
  * @param order - Pedido actual.
  * @param onConflict - Se llama si la API dice que el pedido ya se pagó o venció.
@@ -147,7 +148,7 @@ function useRetryPayment(order: Order, onConflict: () => void): RetryPayment {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function retry(cancelFirst: boolean): Promise<void> {
+  async function retry(): Promise<void> {
     const session = readOrderSession()
     const expired = Date.parse(order.reservedUntil) <= Date.now()
     const cartChanged = hasHydrated && session?.cartHash !== cartHash(lines)
@@ -159,7 +160,8 @@ function useRetryPayment(order: Order, onConflict: () => void): RetryPayment {
     setBusy(true)
     setError(null)
     try {
-      if (cancelFirst) await cancelPayment(api, order.number)
+      // El clic es lo que cancela el intento anterior; `/checkout?pedido=` no cancela nada al cargar.
+      await cancelPayment(api, order.number)
       router.push(asRoute(`/checkout?pedido=${encodeURIComponent(order.number)}`))
     } catch (cause) {
       setBusy(false)
@@ -169,8 +171,8 @@ function useRetryPayment(order: Order, onConflict: () => void): RetryPayment {
   }
 
   return {
-    retry: (cancelFirst) => {
-      void retry(cancelFirst)
+    retry: () => {
+      void retry()
     },
     busy,
     error,
@@ -297,7 +299,7 @@ function ActionRequiredPanel({
           size="lg"
           loading={payment.busy}
           onClick={() => {
-            payment.retry(true)
+            payment.retry()
           }}
         >
           {RESULT_COPY.actionRequired.payAgain}
@@ -335,7 +337,7 @@ function RejectedPanel({ order, refresh }: PanelProps): ReactNode {
         size="lg"
         loading={payment.busy}
         onClick={() => {
-          payment.retry(true)
+          payment.retry()
         }}
       >
         {RESULT_COPY.rejected.retry}
@@ -356,7 +358,7 @@ function UnpaidPanel({ order, refresh }: PanelProps): ReactNode {
         size="lg"
         loading={payment.busy}
         onClick={() => {
-          payment.retry(false)
+          payment.retry()
         }}
       >
         {RESULT_COPY.unpaid.pay}

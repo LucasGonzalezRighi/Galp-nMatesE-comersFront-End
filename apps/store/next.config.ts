@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next'
-import { PHASE_DEVELOPMENT_SERVER } from 'next/constants'
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { buildContentSecurityPolicy, SIMULATED_PAYMENT_PATH } from './src/lib/csp'
 import { parseStoreEnv } from './src/lib/env'
+import { STORE_IMAGES } from './src/lib/images'
 
 /**
  * Configuración de Next.js de la tienda.
@@ -11,11 +12,18 @@ import { parseStoreEnv } from './src/lib/env'
  * lugar de compilar una tienda que apunta al mock. Los `rewrites` y las cabeceras se fijan en el
  * build: `API_MODE` tiene que estar definido al compilar.
  *
+ * En producción `API_MODE` es obligatoria (ver `parseStoreEnv`). En la fase de build no se exige
+ * acá porque `next typegen` (`npm run typecheck`) carga la configuración en esa misma fase sin
+ * compilar ni servir nada; `next build` igual falla al prerenderizar (las páginas leen
+ * `getStoreEnv`) y `next start` no arranca.
+ *
  * @param phase - Fase de Next.js que carga la configuración.
  * @throws {EnvError} Si el entorno no es válido.
  */
 export default function nextConfig(phase: string): NextConfig {
-  const env = parseStoreEnv(process.env)
+  const env = parseStoreEnv(process.env, {
+    requireModeInProduction: phase !== PHASE_PRODUCTION_BUILD,
+  })
   const isDev = phase === PHASE_DEVELOPMENT_SERVER
   const contentSecurityPolicy = buildContentSecurityPolicy({ isDev, apiOrigin: env.apiBaseUrl })
   const simulatorContentSecurityPolicy = buildContentSecurityPolicy({
@@ -32,6 +40,8 @@ export default function nextConfig(phase: string): NextConfig {
     // Con dos root layouts (`(tienda)` y `(simulador)`), la 404 de las rutas desconocidas la arma
     // `app/global-not-found.tsx`.
     experimental: { globalNotFound: true },
+    // Acotado a lo que muestra la tienda: cada alias de una imagen dejaba otra entrada en el caché.
+    images: STORE_IMAGES,
     turbopack: {
       rules: { '*.css': { loaders: ['@tailwindcss/turbopack'], as: '*.css' } },
     },

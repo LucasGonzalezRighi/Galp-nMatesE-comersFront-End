@@ -109,12 +109,8 @@ export const accountRoutes: readonly MockRoute[] = [
       createdAt: ctx.now.toISOString(),
     }
     ctx.db.customers.push(customer)
-    // Los pedidos de invitado hechos con el mismo email pasan a la cuenta nueva.
-    for (const order of ctx.db.orders) {
-      if (order.ownerId === null && order.customer.email === customer.email) {
-        order.ownerId = customer.id
-      }
-    }
+    // Como el back: los pedidos de invitado hechos con el mismo email no pasan a la cuenta nueva,
+    // porque registrarse no prueba que el email sea de quien se registra.
     return withSessionCookie(ctx, json(toCustomer(customer), 201), startSession(ctx, customer.id))
   }),
 

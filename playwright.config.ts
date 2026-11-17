@@ -19,7 +19,9 @@ const isCi = Boolean(process.env.CI)
  * accesibilidad con axe, celular y capturas para las listas de control). La prueba de las etiquetas
  * de caché corre aparte, al final (proyecto `store-revalidation`).
  *
- * Prueban lo compilado, no el servidor de desarrollo, así que hay que correr `npm run build` antes:
+ * Prueban lo compilado, no el servidor de desarrollo, así que hay que correr `npm run build` antes,
+ * con `API_MODE=mock` y `MOCK_ALLOWED_IN_PRODUCTION=true` (la tienda en producción no arranca sin
+ * `API_MODE`; el CI las pone en el job de E2E):
  * se levantan los dos servidores aunque se pida un solo proyecto. Fuera del CI reutilizan los
  * servidores que ya estén levantados en esos puertos.
  */
@@ -62,6 +64,8 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run start -w @galpon/store',
+      // `next start` corre en producción: con la API simulada hace falta permitirlo a propósito.
+      env: { API_MODE: 'mock', MOCK_ALLOWED_IN_PRODUCTION: 'true' },
       url: STORE_URL,
       reuseExistingServer: !isCi,
       timeout: 120_000,

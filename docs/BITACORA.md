@@ -364,6 +364,26 @@ Plan el 2026-10-27, con los Rulings P4-10 a P4-12. La Task 0 (pre-wire A) corri�
 
 **Para el back**: la lista "Cueros, virola y relacionados: lo que tiene que implementar el back" de `docs/api/README.md` (B6 · B-85: Prisma y semilla, `catalog`, relacionados hasta 30, `orders`, el admin de productos con cueros y stock y la etiqueta `products` a la tienda). Hasta entonces, el stock y los cueros que se cambian en el dashboard no llegan a la tienda.
 
+## Seguridad del front: arreglos de la auditoría
+
+Pistas de `security-audit-skill/galpon-frontend/run-1` (`findings.json`, numeradas en ese orden; ninguna venía confirmada). Cada una se releyó en el código; las reales, con test en rojo, arreglo en la raíz y verde.
+
+**Tanda P: lo que afecta producción (tienda y dashboard)** (2026-11-17, rama `fix/seguridad-front`):
+
+- **1 · El registro del mock adoptaba los pedidos de invitado con el mismo email:** real. El mock hace lo mismo que el back: una cuenta nueva nunca ve pedidos hechos como invitado. La bajada de `/cuenta/registro` (`account.copy.ts`) ya no lo promete, ni el TSDoc de `register` ni el README de `api-client`.
+- **2 · `mailto:` de "Responder por email" (mensajes):** real. `lib/mailto.ts` del dashboard (`buildMailto`) codifica con `encodeURIComponent` el destinatario, el asunto y el cuerpo; un `?`, `&` o `%` en el email ya no agrega campos al borrador.
+- **3 · `mailto:` del cliente en el detalle del pedido:** real. Usa el mismo `buildMailto`.
+- **4 · Alias sin límite en el optimizador de imágenes:** real (`next.config` no tenía `images`). `lib/images.ts`: patrones locales solo para lo que pasa por `next/image`, sin búsqueda y sin `%`; anchos hasta 1920 px (la foto más ancha); calidad 75; caché de disco de hasta 256 MB. Queda: un alias con fragmento, `?` vacío o `..` sigue pasando (Next compara la ruta ya normalizada); lo acota el tope de disco.
+- **5 · El rewrite `/api/v1` reenviaba las cabeceras de reenvío del cliente:** real (el proxy de Next 16.4.2 no usa `xfwd`). `proxy.ts` corre también en `/api/v1/*`: borra `x-forwarded-for`, `x-real-ip` y `forwarded` y, con `TRUSTED_CLIENT_IP_HEADER`, pone `x-forwarded-for` con el valor de esa cabecera. Documentado en el README de la tienda y en `.env.example`, con `TRUST_PROXY` del back.
+- **6 · Cerrar o cambiar de sesión dejaba el checkout y el token del pedido en `sessionStorage`:** real. `resetAccountState` llama a `clearCheckoutSession` (store en memoria, `galpon.checkout` y `galpon.order`). Candidato de cerrar sesión: `LogoutButton` refresca el router y navega con reemplazo, y las páginas de `/cuenta` salen con `Cache-Control: no-store` desde el proxy.
+- **7 · `/checkout?pedido=` cancelaba el intento de pago al cargar:** real. El checkout ya no cancela; "Pagar" de "No completaste el pago" cancela con el clic, como "Probar con otro medio" y "Volver a pagar".
+- **8 · `/cuenta` sin sesión consultaba al back:** falsa en lo decidido: sin cookie de sesión el proxy ya redirigía a ingresar sin llamar al back (verificado con la tienda compilada). Se acepta el resto: con una cookie inventada la página consulta `/me` y el back responde 401; la tienda no puede validar la sesión sin él y los límites son del back.
+- **9 · Sin `API_MODE` la tienda corría en modo de prueba en silencio:** real. Con `NODE_ENV=production` `parseStoreEnv` exige `API_MODE`, y `mock` solo pasa con `MOCK_ALLOWED_IN_PRODUCTION=true`, que al arrancar avisa en el log que es inseguro. `next typegen` no lo exige (comparte fase con el build, que igual falla al prerenderizar). `playwright.config.ts` y el job de E2E del CI ponen las dos variables.
+- **12 · El webhook de revalidación no acotaba largo de etiqueta ni cuerpo:** real. Cuerpo de hasta 8 kB (413, también sin `Content-Length`) y etiquetas de hasta 100 caracteres en `REVALIDATE_TAG_PATTERN` (422).
+- **13 · `/producto` y `/tienda` desconocidas dejaban una entrada de caché cada una:** real (`.next/server/route-cache`). El proxy reescribe los slugs con otra forma o de más de 80 caracteres (`lib/slug.ts`) a la 404 de su sección (`/producto/_` o `/tienda/_`): una sola página guardada para todos, sin consultar la API. Queda como riesgo: un slug con forma válida que no existe sigue dejando su entrada (404 cacheada); acotarlo pide `dynamicParams = false` (y perder las fichas nuevas sin rebuild) o un tope del caché de Next.
+- **14 · lefthook corría prettier y eslint con `npx` a secas:** real. `npx --no-install`.
+- **16 · `openapi-typescript` con `npx` fuera de la lockfile:** real. Devdependency exacta (7.13.0) de `@galpon/api-client`, con integridad en la lockfile, y `npx --no-install` en `api:generate` y `api:check`. Su peer TypeScript 5 queda solo para él en `packages/api-client/node_modules`, así que el `typecheck` del paquete corre el `tsc` de la raíz. ADR 0007 anotado. Un test de `scripts/` vigila que ningún script ni hook baje paquetes con `npx`.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

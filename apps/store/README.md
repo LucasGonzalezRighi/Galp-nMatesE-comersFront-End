@@ -84,6 +84,8 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 
 `apps/store/.env.example` documenta cada variable. Se validan con `parseStoreEnv` (`src/lib/env.ts`) al cargar `next.config.ts`, así que `dev`, `build`, `start` y `typegen` fallan con un mensaje en español si algo no cierra, por ejemplo `API_MODE=live` sin `API_BASE_URL`. Para configurar algo, copiá el archivo a `apps/store/.env.local`.
 
+**En producción** (`next build` y `next start`, que corren con `NODE_ENV=production`) `API_MODE` es obligatoria: sin ella la tienda no arranca, con un mensaje que lo dice. `API_MODE=mock` en producción solo pasa con `MOCK_ALLOWED_IN_PRODUCTION=true`, y al arrancar avisa en el log que es inseguro: la API simulada no tiene autenticación real y su admin usa credenciales publicadas. Es para las pruebas de punta a punta (`playwright.config.ts` y el CI la ponen); nunca en un sitio público. `next typegen` (`npm run typecheck`) no la exige.
+
 | Variable                            | Modo de prueba          | En vivo                          |
 | ----------------------------------- | ----------------------- | -------------------------------- |
 | `API_MODE`                          | `mock` (por defecto)    | `live`                           |
@@ -94,6 +96,8 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | opcional                | opcional por ahora               |
 | `NEXT_PUBLIC_SITE_URL`              | `http://localhost:3000` | el dominio público               |
 | `MOCK_LATENCY_MS`                   | `150-400`               | no se usa                        |
+| `MOCK_ALLOWED_IN_PRODUCTION`        | `true` solo en los E2E  | no se usa                        |
+| `TRUSTED_CLIENT_IP_HEADER`          | opcional                | la cabecera con la IP real       |
 
 ## Pasar a vivo
 
@@ -104,6 +108,15 @@ Cambiar variables y volver a compilar, sin tocar código:
 3. `npm run build -w @galpon/store`: los _rewrites_ y las cabeceras de seguridad se fijan en el build, así que `API_MODE` tiene que estar definido al compilar.
 
 En vivo, `/api/v1/*` se reescribe hacia `API_BASE_URL/api/v1/*` (mismo dominio para el navegador: sin CORS y con cookie propia) y el servidor consulta el backend directo. `/api/mock/v1` responde 404.
+
+### IP del cliente para los límites del backend
+
+El backend limita por IP el login, el registro, los pedidos y los formularios. Todo lo del navegador le llega por el _rewrite_ de `/api/v1`, así que la IP que ve es la del servidor de la tienda, salvo que confíe en `X-Forwarded-For`:
+
+- El proxy de la tienda (`src/proxy.ts`) **borra** `x-forwarded-for`, `x-real-ip` y `forwarded` que mande el cliente en `/api/v1/*`: si no, cualquiera inventaría una IP por pedido y salteaba los límites.
+- Con `TRUSTED_CLIENT_IP_HEADER` (el nombre de la cabecera donde el proxy de la plataforma escribe la IP real, pisando lo que mande el navegador; por ejemplo `cf-connecting-ip` detrás de Cloudflare) la tienda pone `x-forwarded-for` con ese valor. Sin ella no manda ninguna.
+- En el backend, `TRUST_PROXY` tiene que listar la IP (o la red) del servidor de la tienda y la de cualquier proxy entre los dos: así Express toma la IP del cliente de `X-Forwarded-For` y los límites cuentan por cliente (ver "Proxies de confianza" en el README del back). Sin `TRUSTED_CLIENT_IP_HEADER` en la tienda, los pedidos llegan sin IP del cliente y el back los cuenta como de la tienda.
+- Las lecturas que hace el servidor de la tienda (`lib/api.server.ts`, por ejemplo las de `/cuenta`) no llevan la IP del cliente.
 
 ## Caché y revalidación
 
@@ -117,7 +130,7 @@ curl -X POST localhost:3000/api/revalidate \
 ```
 
 - Etiquetas válidas: `products`, `categories`, `settings`, `combos`, `product:{slug}`, `reviews:{slug}` y `content:{página}`.
-- Secreto inválido responde 401; una etiqueta inválida, 422.
+- Secreto inválido responde 401; un cuerpo de más de 8 kB, 413; más de 50 etiquetas, una etiqueta inválida o de más de 100 caracteres, 422.
 - `content:*` se regenera con el perfil `'max'` (se sirve lo anterior mientras tanto); el resto vence al instante.
 - En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché (ignora las etiquetas que no cumplen el formato de arriba): por ejemplo, un combo creado con `POST /api/v1/admin/combos` contra la tienda (login de prueba y `X-CSRF-Token`) se ve en la próxima carga del inicio. El dashboard en modo de prueba tiene su propia base y no avisa a la tienda (ADR 0003).
 
@@ -130,6 +143,11 @@ En los E2E, `gotoStore` (de `e2e/support/store.ts`) salta la intro al abrir el i
 ## Seguridad
 
 `next.config.ts` agrega a todas las respuestas la política de seguridad de contenido (CSP, sección 16 del spec; en desarrollo suma `'unsafe-eval'`), `X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security` y `Permissions-Policy`. Con `API_MODE=live`, el origen del backend se agrega a `connect-src`.
+
+- **Optimizador de imágenes** (`src/lib/images.ts`): solo las rutas locales que pasan por `next/image`, sin búsqueda, anchos hasta 1920 px, calidad 75 y un tope de 256 MB para el caché de disco.
+- **Proxy** (`src/proxy.ts`): limpia las cabeceras de reenvío en `/api/v1/*` (ver "IP del cliente para los límites del backend"), reescribe las fichas y las líneas con un slug que no tiene la forma de uno del contrato a la 404 de su sección (`/producto/_` o `/tienda/_`: una sola página para todas, así no se genera ni se guarda una por cada dirección inventada) y pone `Cache-Control: no-store` en las páginas de `/cuenta`.
+- **Cambiar de sesión** (`resetAccountState`: ingresar, crear la cuenta, cambiar la contraseña o cerrar sesión) olvida el checkout y el pedido en curso de la pestaña (`galpon.checkout` y `galpon.order` de `sessionStorage`); al cerrar sesión, además, se refresca el router y se vuelve al inicio con reemplazo.
+- **Webhook de revalidación:** cuerpo de hasta 8 kB y etiquetas de hasta 100 caracteres.
 
 ## Estructura
 

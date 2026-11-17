@@ -17,6 +17,29 @@ export interface StoreEnv {
   mpPublicKey: string | null
   /** Nombre de la cuenta de Cloudinary (`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`); `null` si no se cargó. */
   cloudinaryCloudName: string | null
+  /**
+   * `true` si es un servidor de producción (`NODE_ENV=production`) con la API simulada: solo pasa
+   * con `MOCK_ALLOWED_IN_PRODUCTION=true` (las pruebas de punta a punta), y el arranque avisa en el
+   * log que es inseguro.
+   */
+  mockInProduction: boolean
+  /**
+   * Cabecera (en minúsculas) donde el proxy de la plataforma escribe la IP del cliente
+   * (`TRUSTED_CLIENT_IP_HEADER`, por ejemplo `cf-connecting-ip`); `null` si no se configuró. El
+   * proxy de la tienda copia su valor a `x-forwarded-for` en `/api/v1/*`.
+   */
+  trustedClientIpHeader: string | null
+}
+
+/** Opciones de {@link parseStoreEnv}. */
+export interface ParseStoreEnvOptions {
+  /**
+   * Exigir `API_MODE` en producción (`NODE_ENV=production`); por omisión `true`. `next.config.ts`
+   * lo apaga en la fase de build, que comparten `next build` y `next typegen` (`npm run
+   * typecheck`): el build igual falla al prerenderizar, porque las páginas leen
+   * {@link getStoreEnv}, y `next start` no arranca.
+   */
+  requireModeInProduction?: boolean
 }
 
 /** Origen de la tienda mientras se desarrolla. */
@@ -33,6 +56,9 @@ const MIN_LIVE_SECRET_LENGTH = 32
 
 /** Una cuenta de Cloudinary: letras, números, guiones y guiones bajos. */
 const CLOUD_NAME_PATTERN = /^[a-z0-9_-]+$/i
+
+/** Nombre de una cabecera HTTP (un `token` de la RFC 9110). */
+const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9a-z-]+$/i
 
 /**
  * Error de configuración: junta todos los problemas de las variables de entorno, en español, para
@@ -106,17 +132,31 @@ function parseMockLatency(value: string): number | readonly [number, number] | n
 /**
  * Valida las variables de entorno de la tienda.
  *
- * Una variable vacía cuenta como ausente. En modo de prueba (`API_MODE=mock`, lo normal) alcanza
- * con no definir nada; en vivo exigen `API_BASE_URL`, `NEXT_PUBLIC_MP_PUBLIC_KEY` y un
- * `REVALIDATE_SECRET` de 32 caracteres o más.
+ * Una variable vacía cuenta como ausente. Mientras se desarrolla, el modo de prueba (`API_MODE=mock`)
+ * es el de omisión y alcanza con no definir nada; en vivo exigen `API_BASE_URL`,
+ * `NEXT_PUBLIC_MP_PUBLIC_KEY` y un `REVALIDATE_SECRET` de 32 caracteres o más. En producción
+ * (`NODE_ENV=production`) `API_MODE` es obligatoria, y `mock` solo pasa con
+ * `MOCK_ALLOWED_IN_PRODUCTION=true`: la API simulada no tiene autenticación real.
  *
  * @param source - Las variables, normalmente `process.env`.
+ * @param options - Ver {@link ParseStoreEnvOptions}.
  * @throws {EnvError} Con todos los problemas encontrados, en español.
  */
-export function parseStoreEnv(source: Readonly<Record<string, string | undefined>>): StoreEnv {
+export function parseStoreEnv(
+  source: Readonly<Record<string, string | undefined>>,
+  options: ParseStoreEnvOptions = {},
+): StoreEnv {
   const problems: string[] = []
 
-  const modeText = readVariable(source, 'API_MODE') ?? 'mock'
+  const isProduction = readVariable(source, 'NODE_ENV') === 'production'
+  const guardsProduction = isProduction && (options.requireModeInProduction ?? true)
+  const declaredMode = readVariable(source, 'API_MODE')
+  if (guardsProduction && declaredMode === undefined) {
+    problems.push(
+      'API_MODE es obligatoria en producción (NODE_ENV=production): "live" para el backend real, o "mock" con MOCK_ALLOWED_IN_PRODUCTION=true solo para pruebas',
+    )
+  }
+  const modeText = declaredMode ?? 'mock'
   const apiMode: ApiMode | null = modeText === 'mock' || modeText === 'live' ? modeText : null
   if (apiMode === null) problems.push('API_MODE tiene que ser "mock" o "live"')
   const publicMode = readVariable(source, 'NEXT_PUBLIC_API_MODE')
@@ -124,6 +164,12 @@ export function parseStoreEnv(source: Readonly<Record<string, string | undefined
     problems.push('NEXT_PUBLIC_API_MODE tiene que ser igual a API_MODE')
   }
   const isLive = apiMode === 'live'
+  const mockInProduction = isProduction && apiMode === 'mock'
+  if (guardsProduction && declaredMode === 'mock' && source.MOCK_ALLOWED_IN_PRODUCTION !== 'true') {
+    problems.push(
+      'API_MODE=mock en producción necesita MOCK_ALLOWED_IN_PRODUCTION=true: la API simulada no tiene autenticación real',
+    )
+  }
 
   let apiBaseUrl: string | null = null
   const baseUrlText = readVariable(source, 'API_BASE_URL')
@@ -190,6 +236,17 @@ export function parseStoreEnv(source: Readonly<Record<string, string | undefined
     )
   }
 
+  const headerText = readVariable(source, 'TRUSTED_CLIENT_IP_HEADER')
+  const trustedClientIpHeader =
+    headerText !== undefined && HEADER_NAME_PATTERN.test(headerText)
+      ? headerText.toLowerCase()
+      : null
+  if (headerText !== undefined && trustedClientIpHeader === null) {
+    problems.push(
+      'TRUSTED_CLIENT_IP_HEADER tiene que ser el nombre de una cabecera, por ejemplo cf-connecting-ip',
+    )
+  }
+
   if (apiMode === null || problems.length > 0) throw new EnvError(problems)
   return {
     apiMode,
@@ -199,6 +256,8 @@ export function parseStoreEnv(source: Readonly<Record<string, string | undefined
     siteUrl,
     mpPublicKey,
     cloudinaryCloudName,
+    mockInProduction,
+    trustedClientIpHeader,
   }
 }
 

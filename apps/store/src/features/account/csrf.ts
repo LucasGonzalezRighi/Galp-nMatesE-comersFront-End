@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { ApiClient } from '@galpon/api-client'
+import { clearCheckoutSession } from '@/features/checkout'
 import { isApiError } from '@galpon/api-client'
 import { customerCsrfQuery, queryKeys } from '@galpon/api-client/react'
 
@@ -56,11 +57,14 @@ export async function withCsrf<T>(
 /**
  * Olvida el token y los datos de la cuenta después de iniciar o cerrar sesión, crear la cuenta o
  * cambiar la contraseña: la API rota la cookie y el token, y los datos son de otra sesión. Las
- * consultas en pantalla (por ejemplo, la sesión del encabezado) se vuelven a pedir.
+ * consultas en pantalla (por ejemplo, la sesión del encabezado) se vuelven a pedir. También olvida
+ * el checkout y el pedido en curso de la pestaña (`clearCheckoutSession`): contacto, dirección y
+ * token de pedido del cliente anterior.
  *
  * @param queryClient - Cliente de TanStack Query.
  */
 export async function resetAccountState(queryClient: QueryClient): Promise<void> {
   currentToken = undefined
+  clearCheckoutSession()
   await queryClient.resetQueries({ queryKey: queryKeys.account() })
 }

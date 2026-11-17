@@ -178,38 +178,21 @@ describe('mis datos', () => {
 })
 
 describe('mis pedidos', () => {
-  it('los pedidos de invitado con el mismo email se asocian al registrarse', async () => {
+  it('una cuenta nueva no ve los pedidos de invitado hechos con el mismo email', async () => {
     const mock = createCheckoutApi()
     const guest = await placeOrder(mock)
-    await placeOrder(mock, {
-      customer: { email: 'otra@ejemplo.com', firstName: 'Ana', lastName: 'Gil', phone: null },
-    })
     mock.setOrderToken(undefined)
     await signUp(mock)
-    const page = await listMyOrders(mock.api)
-    expect(page).toEqual({
-      items: [
-        {
-          number: guest.order.number,
-          createdAt: guest.order.createdAt,
-          status: 'pending_payment',
-          paymentStatus: 'none',
-          totalArs: 46499,
-          itemCount: 1,
-        },
-      ],
+
+    await expect(listMyOrders(mock.api)).resolves.toEqual({
+      items: [],
       page: 1,
       pageSize: 10,
-      total: 1,
+      total: 0,
     })
-    await expect(getMyOrder(mock.api, guest.order.number)).resolves.toMatchObject({
-      number: guest.order.number,
-    })
-    await expect(getOrder(mock.api, guest.order.number)).resolves.toMatchObject({
-      number: guest.order.number,
-    })
-    const other = mock.db.orders[1]?.number ?? ''
-    await expect(getMyOrder(mock.api, other)).rejects.toMatchObject({ status: 404 })
+    await expect(getMyOrder(mock.api, guest.order.number)).rejects.toMatchObject({ status: 404 })
+    await expect(getOrder(mock.api, guest.order.number)).rejects.toMatchObject({ status: 404 })
+    expect(mock.db.orders[0]?.ownerId).toBeNull()
   })
 
   it('un pedido hecho con la sesión iniciada queda en la cuenta', async () => {

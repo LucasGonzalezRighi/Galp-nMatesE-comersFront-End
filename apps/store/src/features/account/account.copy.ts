@@ -46,7 +46,7 @@ export const ACCOUNT_COPY = {
   register: {
     title: 'Creá tu cuenta.',
     intro:
-      'Si ya compraste como invitado con este email, tus pedidos aparecen en tu cuenta apenas la creás.',
+      'Guardá tus direcciones y seguí desde acá los pedidos que hagas con la sesión iniciada. Las compras que ya hiciste como invitado no pasan a la cuenta.',
     submit: 'Crear cuenta',
     emailTaken: 'Ya hay una cuenta con este email. Ingresá o recuperá tu contraseña.',
     haveAccount: '¿Ya tenés cuenta?',

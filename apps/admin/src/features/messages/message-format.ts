@@ -1,4 +1,5 @@
 import type { ContactMessage } from '@galpon/api-client'
+import { buildMailto } from '../../lib/mailto'
 import { MESSAGES_COPY, withdrawalSubject } from './messages.copy'
 
 /**
@@ -6,11 +7,11 @@ import { MESSAGES_COPY, withdrawalSubject } from './messages.copy'
  * consulta a Galpón Mates" o "Tu solicitud de arrepentimiento {código}".
  *
  * @param message - Email, tipo y código del mensaje.
- * @returns El enlace, con el asunto codificado.
+ * @returns El enlace, con el email y el asunto codificados ({@link buildMailto}).
  * @throws {RangeError} Si el email está vacío o un arrepentimiento no tiene código.
  * @example
  * replyMailto({ email: 'ana@example.com', kind: 'contact', code: null })
- * // "mailto:ana@example.com?subject=Tu%20consulta%20a%20Galp%C3%B3n%20Mates"
+ * // "mailto:ana%40example.com?subject=Tu%20consulta%20a%20Galp%C3%B3n%20Mates"
  */
 export function replyMailto(message: Pick<ContactMessage, 'email' | 'kind' | 'code'>): string {
   if (message.email.trim() === '') {
@@ -20,7 +21,7 @@ export function replyMailto(message: Pick<ContactMessage, 'email' | 'kind' | 'co
     message.kind === 'withdrawal'
       ? withdrawalSubject(message.code ?? '')
       : MESSAGES_COPY.contactSubject
-  return `mailto:${message.email}?subject=${encodeURIComponent(subject)}`
+  return buildMailto(message.email, { subject })
 }
 
 /**

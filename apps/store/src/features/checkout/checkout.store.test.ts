@@ -4,10 +4,12 @@ import type { ContactValues, ShippingValues } from './checkout.store'
 import {
   CHECKOUT_STORAGE_KEY,
   CHECKOUT_STORAGE_VERSION,
+  clearCheckoutSession,
   ensureCheckoutHydrated,
   resetCheckoutStore,
   useCheckoutStore,
 } from './checkout.store'
+import { ORDER_SESSION_KEY, saveOrderSession } from './order-session'
 
 const CONTACT: ContactValues = {
   email: 'lucia@ejemplo.com',
@@ -32,6 +34,39 @@ function storeRaw(state: unknown): void {
 beforeEach(() => {
   sessionStorage.clear()
   resetCheckoutStore()
+})
+
+describe('clearCheckoutSession', () => {
+  it('olvida el checkout en memoria y en sessionStorage, y el pedido de la pestaña', () => {
+    ensureCheckoutHydrated()
+    useCheckoutStore.getState().saveContact(CONTACT)
+    useCheckoutStore.getState().saveShipping(SHIPPING)
+    useCheckoutStore.getState().setOrder({ number: 'GLP-00001', fingerprint: 'x' })
+    saveOrderSession({ number: 'GLP-00001', orderToken: 'token', cartHash: 'abc' })
+
+    clearCheckoutSession()
+
+    expect(useCheckoutStore.getState()).toMatchObject({
+      step: 0,
+      contact: null,
+      shipping: null,
+      attempt: null,
+      order: null,
+    })
+    expect(sessionStorage.getItem(CHECKOUT_STORAGE_KEY)).toBeNull()
+    expect(sessionStorage.getItem(ORDER_SESSION_KEY)).toBeNull()
+  })
+
+  it('también sin hidratar (otra página de la tienda): borra lo guardado y no lo vuelve a leer', () => {
+    storeRaw({ step: 2, contact: CONTACT, shipping: SHIPPING, attempt: null, order: null })
+
+    clearCheckoutSession()
+    expect(sessionStorage.getItem(CHECKOUT_STORAGE_KEY)).toBeNull()
+    ensureCheckoutHydrated()
+
+    expect(useCheckoutStore.getState()).toMatchObject({ step: 0, contact: null, shipping: null })
+    expect(sessionStorage.getItem(CHECKOUT_STORAGE_KEY) ?? '').not.toContain(CONTACT.email)
+  })
 })
 
 describe('checkout.store', () => {

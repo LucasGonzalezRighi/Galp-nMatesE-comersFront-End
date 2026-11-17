@@ -51,7 +51,7 @@ Para que las dos apps usen el backend local en vez de la API simulada: copiá `a
 
 - Para levantar una sola app: `npm run dev:store` o `npm run dev:admin`.
 - La tienda y el dashboard **no comparten datos de prueba**: lo que se cambia en el dashboard no se ve en la tienda hasta que exista el backend real.
-- La primera vez que se genera el contrato (`npm run api:generate`) `npx` descarga `openapi-typescript`, así que hace falta conexión.
+- `npm run api:generate` y `npm run api:check` usan el `openapi-typescript` instalado (devDependency de `@galpon/api-client`, fijado en la lockfile): no descargan nada.
 
 ## Scripts
 
@@ -84,7 +84,7 @@ Las pruebas de `e2e/` (Playwright, configuradas en `playwright.config.ts`) corre
 - **Dashboard** (`e2e/admin`, en Chrome de escritorio): los flujos de cada pantalla (ingreso, sesión vencida mientras se edita, productos con fotos, líneas, pedidos, reseñas, mensajes, contenido, ajustes y mi cuenta), axe en todas las pantallas y en los diálogos de una línea, de despacho y de sesión vencida, el teclado en los diálogos (`a11y.spec.ts`), el celular a 390 px sin scroll horizontal (`mobile.spec.ts`) y las capturas a 1440 y 390 px (`visual.spec.ts`). El detalle está en el [README del dashboard](apps/admin/README.md#e2e-playwright).
 - Todos los tests importan `test` de `e2e/support/test.ts`, que suma un fixture automático (`cspGuard`): si la consola de la página informa una violación de la CSP, el test falla.
 
-Para correrlas: `npm run build`, `npx playwright install chromium` (la primera vez) y `npm run test:e2e`. Playwright levanta la tienda (`npm run start -w @galpon/store`) y el dashboard (`npm run preview -w @galpon/admin`), o reutiliza los que ya estén en los puertos 3000 y 5173.
+Para correrlas: `npm run build` con `API_MODE=mock` y `MOCK_ALLOWED_IN_PRODUCTION=true` (la tienda compilada corre en producción y sin `API_MODE` no arranca; ver el [README de la tienda](apps/store/README.md#variables-de-entorno)), `npx playwright install chromium` (la primera vez) y `npm run test:e2e`, que le pasa las dos variables a `next start`. Playwright levanta la tienda (`npm run start -w @galpon/store`) y el dashboard (`npm run preview -w @galpon/admin`), o reutiliza los que ya estén en los puertos 3000 y 5173.
 
 El CI (`.github/workflows/ci.yml`, Node 24) corre en cada pull request y en cada push a `main`, y cancela la corrida anterior de la misma rama. El job `checks` hace `npm ci`, `api:lint`, `api:check`, `lint`, `typecheck` y `test:coverage`. El job `e2e`, que arranca cuando `checks` sale bien, instala Chromium, compila y corre `test:e2e`, y sube el informe de Playwright como artefacto por 7 días. Todavía no corrió: lo hará cuando Lucas suba el repo.
 
@@ -134,7 +134,7 @@ Las versiones son **exactas** (sin `^` ni `~`) y salen de un único archivo, [`s
 3. Declararlo en el `package.json` del workspace que lo usa con **esa misma versión**. Los paquetes propios (`@galpon/*`) se declaran con `"*"`, y en `peerDependencies` va `^` más la versión.
 4. Correr `npm install` y después `npm run lint`: el chequeo falla si algún `package.json` se desvía.
 
-Mientras no estén soportados por las herramientas del repo, no se sube a TypeScript 7, ESLint 10 ni jsdom 30 ([ADR 0007](docs/adr/0007-typescript-6-eslint-9-y-opciones.md)). `openapi-typescript` no se instala: se ejecuta con `npx` en los scripts `api:*`.
+Mientras no estén soportados por las herramientas del repo, no se sube a TypeScript 7, ESLint 10 ni jsdom 30 ([ADR 0007](docs/adr/0007-typescript-6-eslint-9-y-opciones.md)). `openapi-typescript` (7.13.0) es devDependency de `@galpon/api-client`: su peer pide TypeScript 5, así que npm deja un TypeScript 5.9.3 solo para él en `packages/api-client/node_modules`; por eso el `typecheck` de ese paquete corre el `tsc` de la raíz (`node ../../node_modules/typescript/bin/tsc`) y no el `tsc` a secas, que sería el 5.
 
 ### Avisos de `npm audit`
 
