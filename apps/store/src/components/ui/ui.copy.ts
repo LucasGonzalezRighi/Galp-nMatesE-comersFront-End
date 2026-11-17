@@ -26,3 +26,13 @@ export const INSTALLMENTS_COPY = {
   cft: 'CFT',
   tea: 'TEA',
 } as const
+
+/** Piezas del aviso de datos de los formularios (`DataNotice`, LS-4). */
+export const DATA_NOTICE_COPY = {
+  /** Los derechos, después del propósito. */
+  rights: 'Podés pedir ver, corregir o borrar tus datos.',
+  /** Lo que va antes del enlace. */
+  more: 'Más en la',
+  /** Texto del enlace a `/privacidad`. */
+  privacyLink: 'Política de privacidad',
+} as const

@@ -1,10 +1,9 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { Customer } from '@galpon/api-client'
-import { asRoute } from '@/lib/routes'
+import { DataNotice } from '@/components/ui'
 import { checkoutContactSchema, toFieldErrors } from '@galpon/schemas'
 import type { ContactValues } from './checkout.store'
 import { CHECKOUT_COPY } from './checkout.copy'
@@ -103,15 +102,12 @@ export function ContactStep({ saved, customer, onSubmit }: ContactStepProps): Re
           className="col-span-full"
         />
         <p className="col-span-full m-0 text-[12.5px] text-neutral-500">
-          {CHECKOUT_COPY.contactNote}{' '}
-          <span>
-            {CHECKOUT_COPY.privacyBefore}{' '}
-            <Link href={asRoute('/privacidad')} className="text-accent underline">
-              {CHECKOUT_COPY.privacyLink}
-            </Link>
-            .
-          </span>
+          {CHECKOUT_COPY.contactNote}
         </p>
+        <DataNotice
+          purpose={CHECKOUT_COPY.dataPurpose}
+          className="col-span-full text-[12.5px] text-neutral-500"
+        />
       </div>
       <StepActions />
     </form>

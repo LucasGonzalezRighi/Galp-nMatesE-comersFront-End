@@ -22,7 +22,7 @@ export const LEGAL_TERMS: LegalContent = {
       '- Email: {{email}}.',
       '- Atención: {{area_atencion}}, {{horario_atencion}}.',
     ].join('\n'),
-    'Al pie de cada página están el acceso a Data Fiscal de ARCA y los enlaces a Defensa del Consumidor.',
+    'Al pie de cada página están los enlaces a Defensa del Consumidor y, cuando está disponible, el acceso a Data Fiscal de ARCA.',
 
     '## Cuándo se aplican estos términos',
     'Mirar la tienda no te obliga a nada. Estos términos se aplican a tu compra cuando confirmás el pedido con el botón "Pagar". Antes de pagar podés leerlos en esta página y guardarlos o imprimirlos con el botón "Imprimir o guardar como PDF".',

@@ -21,7 +21,10 @@ export const REVIEWS_COPY = {
   /** Texto que acompaña a las estrellas mientras no se elige ninguna. */
   pickRating: 'Elegí una puntuación',
   /** Etiqueta del campo del nombre. */
-  name: 'Nombre',
+  name: 'Nombre (opcional)',
+  /** Ayuda del campo del nombre (LS-4: el nombre se publica). */
+  nameHint:
+    'Podés poner solo tu nombre de pila o tus iniciales. Si lo dejás vacío, se publica como "Anónimo".',
   /** Pista del campo del nombre. */
   namePlaceholder: 'Cómo querés que aparezca',
   /** Etiqueta del campo del texto. */
@@ -30,14 +33,19 @@ export const REVIEWS_COPY = {
   textPlaceholder: 'Calidad, terminaciones, envío…',
   /** Nombre accesible del campo trampa contra bots. */
   honeypot: 'No completar este campo',
-  /** Aviso de privacidad (spec 14.6): lo que se hace con los datos, antes del link. */
-  privacyBefore: 'Usamos tu nombre y tu reseña solo para publicarla en esta página. Más en nuestra',
-  /** Texto del link a la política de privacidad. */
+  /** Aviso de publicación (LS-4, tabla (c)): lo que va antes del enlace a Contacto. */
+  publishNotice:
+    'Tu nombre y tu reseña se publican en esta página. Las revisamos antes de publicarlas y no rechazamos ninguna por ser negativa. Si después querés que la borremos, escribinos desde',
+  /** Texto del enlace a `/contacto`. */
+  contactLink: 'Contacto',
+  /** Lo que va antes del enlace a la política de privacidad. */
+  privacyMore: 'Más en la',
+  /** Texto del enlace a la política de privacidad. */
   privacyLink: 'Política de privacidad',
   /** Botón que cierra el formulario sin enviar. */
   cancel: 'Cancelar',
   /** Botón que envía la reseña. */
-  submit: 'Publicar reseña',
+  submit: 'Publicar mi reseña',
   /** Botón mientras se envía. */
   sending: 'Enviando…',
   /** Confirmación del envío (la reseña queda pendiente de revisión). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildContentSecurityPolicy } from './csp'
+import { buildContentSecurityPolicy, CSP_ALLOWED_SOURCES, TRACKER_HOST_PATTERN } from './csp'
 
 /** Devuelve el valor de una directiva de la política, o `undefined` si no está. */
 function directive(policy: string, name: string): string | undefined {
@@ -29,7 +29,7 @@ describe('buildContentSecurityPolicy', () => {
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com",
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com",
+        "img-src 'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com https://www.afip.gob.ar",
         "font-src 'self'",
         "connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com",
         "frame-src 'self' https://*.mercadopago.com https://*.mercadolibre.com https:",
@@ -40,6 +40,35 @@ describe('buildContentSecurityPolicy', () => {
         'upgrade-insecure-requests',
       ].join('; '),
     )
+  })
+
+  it('img-src suma solo el origen del logo de Data Fiscal (LA-5)', () => {
+    expect(directive(production, 'img-src')).toBe(
+      "'self' data: blob: https://res.cloudinary.com https://*.mlstatic.com https://*.mercadopago.com https://www.afip.gob.ar",
+    )
+  })
+
+  it('toda fuente con host está en CSP_ALLOWED_SOURCES y ninguna es de analítica ni publicidad (LS-9)', () => {
+    const keywords = new Set([
+      "'self'",
+      "'unsafe-inline'",
+      "'unsafe-eval'",
+      "'none'",
+      'data:',
+      'blob:',
+      'https:',
+    ])
+    const sources = production
+      .split('; ')
+      .flatMap((part) => part.split(' ').slice(1))
+      .filter((source) => !keywords.has(source))
+    expect(sources.length).toBeGreaterThan(0)
+    for (const source of sources) {
+      expect(CSP_ALLOWED_SOURCES).toContain(source)
+      expect(source).not.toMatch(TRACKER_HOST_PATTERN)
+    }
+    for (const source of CSP_ALLOWED_SOURCES) expect(source).not.toMatch(TRACKER_HOST_PATTERN)
+    expect('https://www.googletagmanager.com').toMatch(TRACKER_HOST_PATTERN)
   })
 
   it("frame-src incluye 'self' para el 3-D Secure simulado, que es una página de la tienda", () => {

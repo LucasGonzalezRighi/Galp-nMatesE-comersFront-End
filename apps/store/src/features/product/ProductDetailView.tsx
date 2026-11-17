@@ -107,7 +107,7 @@ export function ProductDetailView({
           </p>
           <div aria-hidden="true" className="h-px" style={DIVIDER_STYLE} />
           <ProductPurchase product={product} contactEmail={settings.contactEmail} />
-          <ProductGuarantees />
+          <ProductGuarantees group={product.group} />
           <ProductTabs tabs={buildProductTabs(product, tabsContent)} />
         </div>
       </section>

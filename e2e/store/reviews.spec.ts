@@ -14,7 +14,7 @@ test.describe('tienda: reseñas', () => {
     await page
       .getByLabel('Reseña', { exact: true })
       .fill('Llegó rápido y la terminación es hermosa.')
-    await page.getByRole('button', { name: 'Publicar reseña' }).click()
+    await page.getByRole('button', { name: 'Publicar mi reseña' }).click()
 
     await expect(page.getByText('Gracias, tu reseña se publica cuando la revisemos')).toBeVisible()
     // Queda pendiente de aprobación: todavía no aparece en la lista pública.
@@ -24,8 +24,8 @@ test.describe('tienda: reseñas', () => {
   test('sin puntuación ni texto marca los campos y no envía', async ({ page }) => {
     await gotoStore(page, '/producto/mate-imperial-premium')
     await page.getByRole('button', { name: 'Escribir una reseña' }).click()
-    await page.getByRole('button', { name: 'Publicar reseña' }).click()
+    await page.getByRole('button', { name: 'Publicar mi reseña' }).click()
     await expect(page.getByText('Gracias, tu reseña se publica cuando la revisemos')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Publicar reseña' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Publicar mi reseña' })).toBeVisible()
   })
 })

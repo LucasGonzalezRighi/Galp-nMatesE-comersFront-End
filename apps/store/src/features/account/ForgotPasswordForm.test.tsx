@@ -13,8 +13,8 @@ describe('ForgotPasswordForm', () => {
   it('muestra el aviso de privacidad con link a /privacidad antes del botón (spec 14.6)', () => {
     render(createAccountTestApi().wrap(<ForgotPasswordForm />))
 
-    const link = screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })
-    expect(screen.getByText(new RegExp(ACCOUNT_COPY.privacyBefore))).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Política de privacidad' })
+    expect(screen.getByText(new RegExp(ACCOUNT_COPY.forgot.dataPurpose))).toBeInTheDocument()
     expect(link).toHaveAttribute('href', '/privacidad')
     const submit = screen.getByRole('button', { name: ACCOUNT_COPY.forgot.submit })
     expect(link.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

@@ -210,7 +210,7 @@ export function ReviewForm({ slug, productName, onClose }: ReviewFormProps): Rea
               )}
             </div>
           </div>
-          <Field label={REVIEWS_COPY.name} error={errors.authorName}>
+          <Field label={REVIEWS_COPY.name} hint={REVIEWS_COPY.nameHint} error={errors.authorName}>
             {(control) => (
               <Input
                 {...control}
@@ -255,8 +255,12 @@ export function ReviewForm({ slug, productName, onClose }: ReviewFormProps): Rea
               />
             </label>
           </div>
-          <p className="m-0 text-[12px] text-neutral-400">
-            {REVIEWS_COPY.privacyBefore}{' '}
+          <p data-review-notice="" className="m-0 text-[12px] text-neutral-400">
+            {REVIEWS_COPY.publishNotice}{' '}
+            <Link href={asRoute('/contacto')} className="text-accent underline">
+              {REVIEWS_COPY.contactLink}
+            </Link>
+            . {REVIEWS_COPY.privacyMore}{' '}
             <Link href={asRoute('/privacidad')} className="text-accent underline">
               {REVIEWS_COPY.privacyLink}
             </Link>

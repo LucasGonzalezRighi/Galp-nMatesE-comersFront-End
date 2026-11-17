@@ -21,10 +21,8 @@ export const ACCOUNT_COPY = {
   phoneHint: 'Con el código de área, sin 0 ni 15.',
   resetToken: 'Código del enlace',
 
-  /** Aviso de privacidad de los formularios que piden datos (spec 14.6): lo que se hace con ellos, antes del link. */
-  privacyBefore: 'Usamos tus datos solo para gestionar tu cuenta y tus pedidos. Más en nuestra',
-  /** Texto del link a la política de privacidad. */
-  privacyLink: 'Política de privacidad',
+  /** Para qué usamos los datos del registro, el perfil y las direcciones (`DataNotice`, LS-4). */
+  dataPurpose: 'Usamos tus datos para crear tu cuenta y gestionar tus pedidos.',
 
   /** Errores generales de los formularios (spec 9.7). */
   networkError: 'No pudimos conectar, probá de nuevo',
@@ -51,6 +49,10 @@ export const ACCOUNT_COPY = {
     emailTaken: 'Ya hay una cuenta con este email. Ingresá o recuperá tu contraseña.',
     haveAccount: '¿Ya tenés cuenta?',
     login: 'Ingresá',
+    /** Debajo del aviso de datos: lo que va antes del enlace a `/terminos`. */
+    termsBefore: 'Antes de crear tu cuenta podés leer los',
+    /** Texto del enlace a `/terminos`. */
+    termsLink: 'Términos y condiciones',
   },
 
   /** `/cuenta/recuperar`. */
@@ -62,6 +64,8 @@ export const ACCOUNT_COPY = {
     sentText:
       'Si hay una cuenta con ese email, te llega un enlace para elegir una contraseña nueva. Puede tardar unos minutos.',
     back: 'Volver a ingresar',
+    /** Para qué usamos el email (`DataNotice`, LS-4). */
+    dataPurpose: 'Usamos tu email solo para mandarte el enlace.',
   },
 
   /** `/cuenta/restablecer`. */
@@ -99,6 +103,20 @@ export const ACCOUNT_COPY = {
     profileTitle: 'Tus datos',
     profileSubmit: 'Guardar cambios',
     profileSaved: 'Guardamos tus datos.',
+  },
+
+  /** `/cuenta`: eliminar la cuenta (LA-6, LS-5). */
+  deleteAccount: {
+    title: 'Eliminar mi cuenta',
+    text: 'Borramos tus datos de la cuenta y tus direcciones, y cerramos tus sesiones. Los pedidos que hiciste se conservan sin tu cuenta, con los datos mínimos del comprobante, porque la ley nos obliga a guardarlos.',
+    open: 'Eliminar mi cuenta',
+    dialogTitle: '¿Eliminar tu cuenta?',
+    dialogText: 'No se puede deshacer. Para confirmar, escribí tu contraseña.',
+    password: 'Contraseña actual',
+    confirm: 'Sí, eliminar mi cuenta',
+    cancel: 'Cancelar',
+    deleting: 'Eliminando…',
+    done: 'Eliminamos tu cuenta',
   },
 
   /** `/cuenta/pedidos`. */

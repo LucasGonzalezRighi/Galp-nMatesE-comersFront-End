@@ -1,3 +1,4 @@
+import { TRACKER_HOST_PATTERN } from '../../apps/store/src/lib/csp'
 import { gotoStore, STORE_SCREENS } from '../support/store'
 import { expect, test } from '../support/test'
 
@@ -12,6 +13,8 @@ test.describe('tienda: política de seguridad de contenido', () => {
       expect(policy).toContain("default-src 'self'")
       expect(policy).toContain("object-src 'none'")
       expect(policy).toContain("frame-ancestors 'none'")
+      // Ninguna fuente de analítica ni de publicidad (LS-9).
+      expect(policy).not.toMatch(TRACKER_HOST_PATTERN)
       await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible()
       await gotoStore(page, screen.path)
     })

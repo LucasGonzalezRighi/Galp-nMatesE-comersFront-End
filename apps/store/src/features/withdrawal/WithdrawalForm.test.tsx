@@ -112,12 +112,16 @@ describe('WithdrawalForm', () => {
 
   it('muestra el aviso de privacidad con el link a /privacidad (spec 14.6)', () => {
     const api = createTestApi()
-    render(api.wrap(<WithdrawalForm />))
+    const { container } = render(api.wrap(<WithdrawalForm />))
 
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull()
+    expect(container.querySelector('[data-data-notice]')).toHaveTextContent(
+      'Usamos tus datos solo para gestionar tu solicitud. Podés pedir ver, corregir o borrar tus datos. Más en la Política de privacidad.',
+    )
     expect(
       screen.getByText(/Usamos tus datos solo para gestionar tu solicitud/),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: WITHDRAWAL_COPY.privacyLink })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
       'href',
       '/privacidad',
     )

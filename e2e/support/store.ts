@@ -1,5 +1,6 @@
-import type { Page } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import type { SellerData } from '@galpon/domain'
 
 /** Una pantalla de la tienda que recorren las pruebas de navegación, accesibilidad y control visual. */
 export interface StoreScreen {
@@ -28,6 +29,8 @@ export const STORE_SCREENS: readonly StoreScreen[] = [
   { name: 'withdrawal', path: '/arrepentimiento', heading: 'Botón de arrepentimiento' },
   { name: 'terms', path: '/terminos', heading: 'Términos y condiciones' },
   { name: 'privacy', path: '/privacidad', heading: 'Política de privacidad' },
+  { name: 'cookies', path: '/cookies', heading: 'Política de cookies' },
+  { name: 'returns', path: '/devoluciones', heading: 'Cambios, devoluciones y arrepentimiento' },
 ]
 
 /** La capa de la intro del inicio y del telón entre páginas (Ruling MR-29). */
@@ -91,4 +94,33 @@ export async function gotoStore(
     )
     .toBe(true)
   if (options.intro !== 'keep' && new URL(page.url()).pathname === '/') await settleIntro(page)
+}
+
+/** Vendedor sin ningún dato cargado: como queda la base simulada de fábrica. */
+export const EMPTY_SELLER: SellerData = {
+  legalName: null,
+  cuit: null,
+  taxCondition: null,
+  address: null,
+  phone: null,
+  supportArea: null,
+  supportHours: null,
+  dataFiscalUrl: null,
+}
+
+/**
+ * Reemplaza los datos del vendedor en la API simulada de la tienda compilada
+ * (`POST /api/v1/__mock/settings`), que regenera la caché de los ajustes. La base es una sola para
+ * todos los proyectos de Playwright: quien la cambia la vuelve a {@link EMPTY_SELLER} al terminar.
+ *
+ * @param request - Contexto de pedidos de Playwright (con el `baseURL` de la tienda).
+ * @param seller - Los ocho datos del vendedor.
+ * @throws {Error} Si la API simulada no responde 200.
+ */
+export async function changeMockSeller(
+  request: APIRequestContext,
+  seller: SellerData,
+): Promise<void> {
+  const response = await request.post('/api/v1/__mock/settings', { data: { seller } })
+  expect(response.status(), await response.text()).toBe(200)
 }

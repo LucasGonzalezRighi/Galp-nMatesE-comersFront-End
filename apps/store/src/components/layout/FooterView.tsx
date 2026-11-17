@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr/Envelope'
 import Link from 'next/link'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
+import { DATA_FISCAL_LOGO_URL } from '@galpon/domain'
 import { asRoute } from '../../lib/routes'
 import { Tag } from '../ui'
 import { FooterRise, FooterRow } from './FooterRise'
@@ -69,6 +70,32 @@ export function sellerLines(seller: PublicSettings['seller']): string[] {
     .filter((line) => line !== '')
 }
 
+/** Props de {@link ConsumerLink}. */
+interface ConsumerLinkProps {
+  /** Dirección del organismo (de los ajustes, `consumerLinks`). */
+  href: string
+  /** Los tres renglones: el organismo (destacado), para qué sirve y "Ingrese aquí". */
+  lines: readonly [string, string, string]
+}
+
+/** Enlace externo a Defensa del Consumidor, en tres renglones (LA-4). */
+function ConsumerLink({ href, lines }: ConsumerLinkProps): ReactNode {
+  const [agency, purpose, action] = lines
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex max-w-[260px] flex-col no-underline"
+    >
+      <span className="group-hover:text-foreground text-neutral-300">{agency}</span>
+      <span>{purpose}</span>
+      <span className="text-accent-300 group-hover:text-accent-200">{action}</span>
+      <span className="sr-only">{LAYOUT_COPY.newTab}</span>
+    </a>
+  )
+}
+
 /** Props de {@link FooterView}. */
 export interface FooterViewProps {
   /** Textos del pie (`FooterContent`). */
@@ -81,8 +108,9 @@ export interface FooterViewProps {
 
 /**
  * Pie de página (spec 9.5, 9.6 y 14.6): frase, bajada y mail; columnas Tienda (las líneas), Ayuda
- * (con el "Botón de arrepentimiento" destacado), Galpón y Legales; datos del vendedor y link a
- * Data Fiscal; "© año Galpón Mates", medios de pago y, 64 px más abajo (la bombilla del logo no
+ * (con el "Botón de arrepentimiento" destacado), Galpón y Legales; los datos del vendedor que haya,
+ * los enlaces de Defensa del Consumidor (siempre) y el logo de Data Fiscal (con el enlace cargado);
+ * "© año Galpón Mates", medios de pago y, 64 px más abajo (la bombilla del logo no
  * toca los medios de pago), el logo grande con recorte, que se ilumina de abajo hacia arriba
  * ({@link FooterWordmark}).
  *
@@ -152,7 +180,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
                 <Link href={asRoute('/preguntas-frecuentes#envios')} className={COLUMN_LINK}>
                   {LAYOUT_COPY.shipping}
                 </Link>
-                <Link href={asRoute('/preguntas-frecuentes#cambios')} className={COLUMN_LINK}>
+                <Link href={asRoute('/devoluciones')} className={COLUMN_LINK}>
                   {LAYOUT_COPY.returns}
                 </Link>
                 <Link href={asRoute('/contacto')} className={COLUMN_LINK}>
@@ -189,30 +217,59 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
                 <Link href={asRoute('/privacidad')} className={COLUMN_LINK}>
                   {LAYOUT_COPY.privacy}
                 </Link>
+                <Link href={asRoute('/cookies')} className={COLUMN_LINK}>
+                  {LAYOUT_COPY.cookies}
+                </Link>
               </nav>
             </FooterRow>
           </div>
         </div>
-        {seller.length === 0 && dataFiscalUrl === null ? null : (
-          <FooterRow
-            index={2}
-            className="mt-12 flex flex-col gap-1 text-[12px] leading-[1.6] text-neutral-500"
-          >
-            {seller.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
+        {/*
+         * Datos del vendedor (los que hay), los enlaces de Defensa del Consumidor (siempre, LA-4) y
+         * el logo de Data Fiscal (solo con el enlace cargado, LA-5).
+         */}
+        <FooterRow
+          index={2}
+          className="mt-12 flex flex-wrap items-start justify-between gap-x-12 gap-y-6 text-[12px] leading-[1.6] text-neutral-500"
+        >
+          {seller.length === 0 ? null : (
+            <div className="flex max-w-[520px] flex-col gap-1">
+              {seller.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
+            <nav aria-label={LAYOUT_COPY.consumerTitle} className="flex flex-wrap gap-x-8 gap-y-4">
+              <ConsumerLink
+                href={settings.consumerLinks.cabaUrl}
+                lines={LAYOUT_COPY.consumerCaba}
+              />
+              <ConsumerLink
+                href={settings.consumerLinks.nationalUrl}
+                lines={LAYOUT_COPY.consumerNational}
+              />
+            </nav>
             {dataFiscalUrl === null ? null : (
               <a
                 href={dataFiscalUrl}
-                target="_blank"
+                target="_F960AFIPInfo"
                 rel="noopener noreferrer"
-                className="text-accent-300 hover:text-accent-200 self-start no-underline"
+                className="inline-block shrink-0"
               >
-                {LAYOUT_COPY.dataFiscal}
+                {/* El logo lo sirve ARCA (`img-src` de la CSP); `next/image` no aplica. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={DATA_FISCAL_LOGO_URL}
+                  width={239}
+                  height={327}
+                  alt={LAYOUT_COPY.dataFiscalAlt}
+                  className="block h-auto w-[44px]"
+                />
               </a>
             )}
-          </FooterRow>
-        )}
+          </div>
+        </FooterRow>
         <FooterRow
           index={3}
           className="relative z-20 flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-500"

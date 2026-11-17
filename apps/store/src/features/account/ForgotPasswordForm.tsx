@@ -71,7 +71,7 @@ export function ForgotPasswordForm(): ReactNode {
       <Field label={ACCOUNT_COPY.email} error={errors.email?.message}>
         {(control) => <Input {...control} {...field('email')} type="email" autoComplete="email" />}
       </Field>
-      <PrivacyNotice />
+      <PrivacyNotice purpose={ACCOUNT_COPY.forgot.dataPurpose} />
       <FormError message={errors.root?.server?.message} />
       <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
         {isSubmitting ? ACCOUNT_COPY.submitting : ACCOUNT_COPY.forgot.submit}

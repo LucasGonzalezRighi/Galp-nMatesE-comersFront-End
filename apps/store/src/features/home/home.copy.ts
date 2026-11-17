@@ -36,7 +36,7 @@ export const HOME_COPY = {
   /** Cifras: rótulos de las cuatro cifras. */
   statPieces: 'Piezas en catálogo',
   statLines: 'Líneas de producto',
-  statProvinces: 'Provincias con envío',
+  statProvinces: 'Jurisdicciones con envío: todo el país',
   statPartners: 'Socios detrás de cada pedido',
   /** Bloque del kit: las tres piezas y el resumen. */
   kitMate: 'Mate',

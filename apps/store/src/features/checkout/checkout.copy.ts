@@ -19,12 +19,13 @@ export const CHECKOUT_COPY = {
   phone: 'Teléfono (opcional, para el correo)',
   phonePlaceholder: '11 2345 6789',
   contactNote: 'Te enviamos la confirmación y el seguimiento a este email.',
-  privacyBefore: 'Usamos tus datos solo para gestionar tu pedido. Más en nuestra',
-  privacyLink: 'Política de privacidad',
+  /** Para qué usamos los datos del checkout (`DataNotice`, LS-4). */
+  dataPurpose: 'Usamos tus datos para gestionar y entregar tu pedido.',
   /** Paso 2, Envío. */
   shippingMethod: 'Método de envío',
   shippingNote: 'Costos fijos por método; el valor final se confirma antes de pagar.',
-  noShippingOptions: 'No hay métodos de envío disponibles por ahora. Escribinos y lo resolvemos.',
+  noShippingOptions:
+    'No hay métodos de envío disponibles por ahora. Escribinos y te respondemos por mail.',
   free: 'Gratis',
   savedAddress: 'Usar una dirección guardada',
   savedAddressPlaceholder: 'Elegí una dirección…',
@@ -42,19 +43,19 @@ export const CHECKOUT_COPY = {
   mpHint: 'Tarjetas, dinero en cuenta y más',
   cardLabel: 'Tarjeta de crédito o débito',
   cardHint: 'Visa, Mastercard, American Express',
-  mpNote:
-    'Te llevamos a Mercado Pago para completar el pago de forma segura y volvés acá con la confirmación.',
-  processedBy: 'Pago procesado por Mercado Pago. No guardamos los datos de tu tarjeta.',
+  mpNote: 'Te llevamos a Mercado Pago para completar el pago y volvés acá con la confirmación.',
+  processedBy:
+    'Pago procesado por Mercado Pago. De tu tarjeta solo guardamos la marca y los últimos 4 dígitos.',
   withdrawal:
     'Tenés 10 días corridos desde que recibís el producto para arrepentirte de la compra, sin costo.',
   withdrawalLink: 'Botón de arrepentimiento',
   termsBefore: 'Al pagar aceptás los',
-  termsLink: 'Términos',
-  termsAnd: 'y la',
+  termsLink: 'Términos y condiciones',
+  privacyLead: 'Cómo usamos tus datos:',
   termsPrivacyLink: 'Política de privacidad',
   creatingOrder: 'Confirmando tu pedido…',
   connectingMp: 'Conectando con Mercado Pago…',
-  processing: 'Procesando pago seguro…',
+  processing: 'Procesando el pago…',
   conflictTitle: 'Algo cambió en tu carrito',
   conflictText:
     'Actualizamos el resumen con los valores de ahora. Revisalo y confirmá de nuevo: todavía no te cobramos nada.',

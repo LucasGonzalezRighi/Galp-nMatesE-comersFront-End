@@ -8,7 +8,7 @@ import { buildPageMetadata } from '@/lib/seo'
 /** Título y descripción de la página (el título lleva la plantilla "· Galpón Mates"). */
 export const metadata: Metadata = buildPageMetadata({
   title: 'Contacto',
-  description: 'Escribinos por mail: te respondemos a la brevedad.',
+  description: 'Escribinos por mail y te respondemos.',
   path: '/contacto',
   siteUrl: getStoreEnv().siteUrl,
 })

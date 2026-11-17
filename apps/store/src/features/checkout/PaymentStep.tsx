@@ -116,8 +116,8 @@ function LegalNotice(): ReactNode {
         {CHECKOUT_COPY.termsBefore}{' '}
         <Link href={asRoute('/terminos')} className="text-accent underline">
           {CHECKOUT_COPY.termsLink}
-        </Link>{' '}
-        {CHECKOUT_COPY.termsAnd}{' '}
+        </Link>
+        . {CHECKOUT_COPY.privacyLead}{' '}
         <Link href={asRoute('/privacidad')} className="text-accent underline">
           {CHECKOUT_COPY.termsPrivacyLink}
         </Link>

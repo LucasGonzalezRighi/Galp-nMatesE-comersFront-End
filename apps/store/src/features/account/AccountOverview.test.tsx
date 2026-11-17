@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getMe, listMyAddresses, listMyOrders } from '@galpon/api-client'
 import { ACCOUNT_COPY } from './account.copy'
 import { AccountOverview } from './AccountOverview'
 import { createAccountTestApi, signUp } from './test/support'
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/cuenta',
+  useSearchParams: () => new URLSearchParams(),
+}))
 
 afterEach(cleanup)
 
@@ -22,9 +28,14 @@ describe('AccountOverview', () => {
       testApi.wrap(<AccountOverview customer={customer} orders={orders} addresses={addresses} />),
     )
 
-    expect(screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
       'href',
       '/privacidad',
     )
+    const sections = screen.getAllByRole('heading', { level: 2 })
+    expect(sections.at(-1)).toHaveTextContent(ACCOUNT_COPY.deleteAccount.title)
+    expect(
+      screen.getByRole('button', { name: ACCOUNT_COPY.deleteAccount.open }),
+    ).toBeInTheDocument()
   })
 })

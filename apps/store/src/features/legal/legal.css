@@ -1,0 +1,46 @@
+/*
+ * Impresión de las páginas legales (LS-2: el documento se imprime o se guarda como PDF). Solo vale
+ * cuando la página tiene un documento legal (`[data-legal-page]`): queda el documento solo, en
+ * blanco y negro, sin el encabezado, el pie, el botón de imprimir ni las capas flotantes (carrito,
+ * avisos, búsqueda, intro). Los enlaces externos muestran su dirección entre paréntesis.
+ */
+@media print {
+  html:has([data-legal-page]),
+  html:has([data-legal-page]) body,
+  html:has([data-legal-page]) body * {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html:has([data-legal-page]) body header,
+  html:has([data-legal-page]) body footer,
+  html:has([data-legal-page]) [data-legal-print],
+  html:has([data-legal-page]) body > :not(:has([data-legal-page])),
+  html:has([data-legal-page]) [role='dialog'],
+  html:has([data-legal-page]) [aria-live],
+  html:has([data-legal-page]) .fixed {
+    display: none !important;
+  }
+
+  html:has([data-legal-page]) [data-legal-page] {
+    max-width: none;
+    padding: 0;
+  }
+
+  html:has([data-legal-page]) [data-legal-page] * {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  html:has([data-legal-page]) [data-legal-page] h2 {
+    break-after: avoid;
+  }
+
+  html:has([data-legal-page]) [data-legal-external]::after {
+    content: ' (' attr(href) ')';
+    word-break: break-all;
+  }
+}

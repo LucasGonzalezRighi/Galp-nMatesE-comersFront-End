@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { DrawCheck } from '@/components/motion'
+import { DataNotice } from '@/components/ui'
 import { asRoute } from '@/lib/routes'
 import { ACCOUNT_COPY } from './account.copy'
 
@@ -27,16 +28,31 @@ export function FormError({ message }: FormErrorProps): ReactNode {
   )
 }
 
+/** Props de {@link PrivacyNotice}. */
+interface PrivacyNoticeProps {
+  /** Para qué se usan los datos; por omisión, los de la cuenta (`ACCOUNT_COPY.dataPurpose`). */
+  purpose?: string
+}
+
 /**
- * Aviso breve de privacidad con link a `/privacidad` (spec 14.6), que va sobre el botón de los
- * formularios de la cuenta que piden datos.
+ * Aviso de datos (LS-4, {@link DataNotice}) que va sobre el botón de los formularios de la cuenta
+ * que piden datos.
+ *
+ * @param props - Ver {@link PrivacyNoticeProps}.
  */
-export function PrivacyNotice(): ReactNode {
+export function PrivacyNotice({
+  purpose = ACCOUNT_COPY.dataPurpose,
+}: PrivacyNoticeProps): ReactNode {
+  return <DataNotice purpose={purpose} />
+}
+
+/** Enlace a los términos debajo del aviso de datos del registro. */
+export function RegisterTermsNote(): ReactNode {
   return (
     <p className="m-0 text-[12px] text-neutral-400">
-      {ACCOUNT_COPY.privacyBefore}{' '}
-      <Link href={asRoute('/privacidad')} className="text-accent underline">
-        {ACCOUNT_COPY.privacyLink}
+      {ACCOUNT_COPY.register.termsBefore}{' '}
+      <Link href={asRoute('/terminos')} className="text-accent underline">
+        {ACCOUNT_COPY.register.termsLink}
       </Link>
       .
     </p>

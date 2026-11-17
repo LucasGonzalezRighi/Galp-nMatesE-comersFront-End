@@ -19,7 +19,7 @@ describe('AddressBook', () => {
 
     await userEvent.setup().click(screen.getByRole('button', { name: COPY.add }))
 
-    expect(screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
       'href',
       '/privacidad',
     )

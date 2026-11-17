@@ -6,7 +6,7 @@ export const CONTACT_COPY = {
   title: 'Escribinos.',
   /** Bajada de la página. */
   intro:
-    'Toda la atención es por mail. Si tuviste un problema con tu pedido, contanos y lo resolvemos.',
+    'Toda la atención es por mail. Si tuviste un problema con tu pedido, contanos qué pasó y te respondemos.',
   /** Botón que copia el email. */
   copy: 'Copiar',
   /** Botón después de copiar. */
@@ -18,7 +18,7 @@ export const CONTACT_COPY = {
   /** Accesos a las preguntas frecuentes que más se consultan. */
   shortcuts: [
     { label: 'Envíos y seguimiento', href: '/preguntas-frecuentes#envios' },
-    { label: 'Cambios y devoluciones', href: '/preguntas-frecuentes#cambios' },
+    { label: 'Cambios y devoluciones', href: '/devoluciones' },
     { label: 'Cómo curar tu mate', href: '/preguntas-frecuentes#curado' },
   ],
   /** Rótulos de los datos de atención del vendedor (Disposición 954/2025, spec 14.6). */
@@ -33,10 +33,8 @@ export const CONTACT_COPY = {
   reason: 'Motivo',
   message: 'Mensaje',
   messagePlaceholder: 'Contanos qué pasó o qué necesitás',
-  /** Aviso de privacidad (spec 9.5 y 14.6): lo que se hace con los datos, antes del link. */
-  privacyBefore: 'Usamos tus datos solo para responderte. Más en nuestra',
-  /** Texto del link a la política de privacidad. */
-  privacyLink: 'Política de privacidad',
+  /** Para qué usamos los datos del formulario (`DataNotice`, LS-4). */
+  dataPurpose: 'Usamos tus datos solo para responderte.',
   /** Texto del botón de envío. */
   submit: 'Enviar mensaje',
   /** Texto del botón mientras se envía. */

@@ -50,7 +50,7 @@ describe('ContactPage', () => {
     )
     expect(screen.getByRole('link', { name: 'Cambios y devoluciones' })).toHaveAttribute(
       'href',
-      '/preguntas-frecuentes#cambios',
+      '/devoluciones',
     )
     expect(screen.getByRole('link', { name: 'Cómo curar tu mate' })).toHaveAttribute(
       'href',

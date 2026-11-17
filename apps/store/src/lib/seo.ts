@@ -34,6 +34,8 @@ export const INFO_PAGE_PATHS = [
   '/arrepentimiento',
   '/terminos',
   '/privacidad',
+  '/cookies',
+  '/devoluciones',
 ] as const
 
 /** Rutas que los buscadores no tienen que recorrer: la API y las páginas privadas del cliente. */

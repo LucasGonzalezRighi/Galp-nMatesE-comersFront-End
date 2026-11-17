@@ -34,9 +34,21 @@ export const LAYOUT_COPY = {
   /** Footer: links legales. */
   terms: 'Términos y condiciones',
   privacy: 'Política de privacidad',
-  consumerDefense: 'Defensa del consumidor',
-  /** Footer: datos del vendedor. */
-  dataFiscal: 'Data Fiscal (ARCA)',
+  cookies: 'Política de cookies',
+  /** Footer: nombre accesible de los enlaces de Defensa del Consumidor (LA-4). */
+  consumerTitle: 'Defensa del consumidor',
+  /** Footer: enlace a Defensa del Consumidor de CABA, con la leyenda de la Ley 2244 art. 2, en tres renglones. */
+  consumerCaba: [
+    'Dirección General de Defensa y Protección al Consumidor',
+    'Para consultas y/o denuncias',
+    'Ingrese aquí',
+  ],
+  /** Footer: enlace a Defensa de las y los Consumidores de la Nación, en tres renglones. */
+  consumerNational: ['Defensa de las y los Consumidores', 'Para reclamos', 'Ingrese aquí'],
+  /** Footer: aviso para lectores de pantalla en los enlaces externos. */
+  newTab: '(se abre en otra pestaña)',
+  /** Footer: texto alternativo del logo de Data Fiscal (LA-5). */
+  dataFiscalAlt: 'Data Fiscal: datos del vendedor en ARCA',
   /** Footer: marca del año ("© 2026 Galpón Mates"). */
   brand: 'Galpón Mates',
   /** Footer: rótulo de los medios de pago. */

@@ -1,3 +1,4 @@
+import { DATA_FISCAL_LOGO_ORIGIN } from '@galpon/domain'
 import { parseHttpOrigin } from './env'
 
 /** Opciones de {@link buildContentSecurityPolicy}. */
@@ -13,6 +14,38 @@ export interface ContentSecurityPolicyOptions {
    */
   framedBySelf?: boolean
 }
+
+/** Mercado Pago: sus subdominios. */
+const MERCADO_PAGO = 'https://*.mercadopago.com'
+
+/** Mercado Libre (el 3-D Secure y el checkout de Mercado Pago pasan por ahí). */
+const MERCADO_LIBRE = 'https://*.mercadolibre.com'
+
+/** Los estáticos de Mercado Libre y Mercado Pago (scripts e imágenes del SDK). */
+const MLSTATIC = 'https://*.mlstatic.com'
+
+/**
+ * Toda fuente con host (`https://…`) que la política de la tienda puede nombrar, sin contar el
+ * origen del backend (`apiOrigin`): Mercado Pago, Cloudinary y el logo de Data Fiscal de ARCA
+ * (LA-5). Las palabras clave (`'self'`, `'unsafe-inline'`) y los esquemas (`data:`, `blob:`,
+ * `https:`) no cuentan. Ninguna es de analítica ni de publicidad (LS-9).
+ */
+export const CSP_ALLOWED_SOURCES: readonly string[] = [
+  'https://sdk.mercadopago.com',
+  'https://api.mercadopago.com',
+  MERCADO_PAGO,
+  MERCADO_LIBRE,
+  MLSTATIC,
+  'https://res.cloudinary.com',
+  DATA_FISCAL_LOGO_ORIGIN,
+]
+
+/**
+ * Hosts de analítica, publicidad y seguimiento que la tienda no usa (LS-9): la prueba de que
+ * ninguna fuente de la política coincide con este patrón.
+ */
+export const TRACKER_HOST_PATTERN =
+  /google-analytics|googletagmanager|doubleclick|googlesyndication|facebook|hotjar|clarity|segment|tiktok|linkedin/i
 
 /** Ruta del simulador de Mercado Pago del modo de prueba; la única que la tienda puede embeber. */
 export const SIMULATED_PAYMENT_PATH = '/checkout/mp-simulado'
@@ -35,9 +68,9 @@ export function buildContentSecurityPolicy(options: ContentSecurityPolicyOptions
       `apiOrigin tiene que ser un origen http(s) sin ruta (por ejemplo "https://api.galponmates.com.ar") o null, y recibió ${JSON.stringify(options.apiOrigin)}`,
     )
   }
-  const mercadoPago = 'https://*.mercadopago.com'
-  const mercadoLibre = 'https://*.mercadolibre.com'
-  const mlstatic = 'https://*.mlstatic.com'
+  const mercadoPago = MERCADO_PAGO
+  const mercadoLibre = MERCADO_LIBRE
+  const mlstatic = MLSTATIC
   return [
     "default-src 'self'",
     [
@@ -48,7 +81,8 @@ export function buildContentSecurityPolicy(options: ContentSecurityPolicyOptions
       mlstatic,
     ].join(' '),
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: https://res.cloudinary.com ${mlstatic} ${mercadoPago}`,
+    // El logo de Data Fiscal lo sirve ARCA (LA-5).
+    `img-src 'self' data: blob: https://res.cloudinary.com ${mlstatic} ${mercadoPago} ${DATA_FISCAL_LOGO_ORIGIN}`,
     "font-src 'self'",
     [
       "connect-src 'self' https://api.mercadopago.com",

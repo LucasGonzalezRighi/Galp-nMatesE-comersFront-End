@@ -20,10 +20,8 @@ export const WITHDRAWAL_COPY = {
   orderNumberPlaceholder: 'GLP-12345',
   comment: 'Comentario (opcional)',
   commentPlaceholder: 'Si querés, contanos algo más',
-  /** Aviso de privacidad (spec 14.6): lo que se hace con los datos, antes del link. */
-  privacyBefore: 'Usamos tus datos solo para gestionar tu solicitud. Más en nuestra',
-  /** Texto del link a la política de privacidad. */
-  privacyLink: 'Política de privacidad',
+  /** Para qué usamos los datos del formulario (`DataNotice`, LS-4). */
+  dataPurpose: 'Usamos tus datos solo para gestionar tu solicitud.',
   /** Texto del botón de envío. */
   submit: 'Solicitar arrepentimiento',
   /** Texto del botón mientras se envía. */

@@ -99,6 +99,16 @@ describe('buildProductJsonLd', () => {
     })
   })
 
+  it('la marca va solo en los mates: una yerba y un bombillón no la llevan', () => {
+    expect(buildProductJsonLd(detail({ group: 'mate' }), SITE_URL)).toHaveProperty('brand')
+    expect(
+      buildProductJsonLd(detail({ group: 'yerba', name: 'Yerba Canarias 1 kg' }), SITE_URL),
+    ).not.toHaveProperty('brand')
+    expect(
+      buildProductJsonLd(detail({ group: 'bombilla', name: 'Bombillón 100 % alpaca' }), SITE_URL),
+    ).not.toHaveProperty('brand')
+  })
+
   it('un producto agotado figura sin stock', () => {
     const data = buildProductJsonLd(detail({ isSoldOut: true, isPurchasable: false }), SITE_URL)
 

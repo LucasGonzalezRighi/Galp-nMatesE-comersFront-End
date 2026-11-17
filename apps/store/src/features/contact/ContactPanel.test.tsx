@@ -45,10 +45,14 @@ describe('Contacto: formulario', () => {
 
   it('muestra el aviso de privacidad con el link a /privacidad (spec 14.6)', () => {
     const api = createTestApi()
-    render(api.wrap(<ContactPanel />))
+    const { container } = render(api.wrap(<ContactPanel />))
 
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull()
+    expect(container.querySelector('[data-data-notice]')).toHaveTextContent(
+      'Usamos tus datos solo para responderte. Podés pedir ver, corregir o borrar tus datos. Más en la Política de privacidad.',
+    )
     expect(screen.getByText(/Usamos tus datos solo para responderte/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: CONTACT_COPY.privacyLink })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
       'href',
       '/privacidad',
     )

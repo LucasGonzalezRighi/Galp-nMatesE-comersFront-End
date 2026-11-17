@@ -228,6 +228,22 @@ describe('Checkout', () => {
     )
   })
 
+  it('el paso de contacto muestra el aviso de datos con enlace a /privacidad y sin casillas (LS-4)', async () => {
+    const testApi = createCheckoutApi()
+    addYerba(testApi.db)
+    renderCheckout(testApi)
+
+    const notice = await screen.findByText(/^Usamos tus datos para gestionar y entregar tu pedido./)
+    expect(notice).toHaveTextContent(
+      'Usamos tus datos para gestionar y entregar tu pedido. Podés pedir ver, corregir o borrar tus datos. Más en la Política de privacidad.',
+    )
+    expect(within(notice).getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    )
+    expect(document.querySelector('input[type="checkbox"]')).toBeNull()
+  })
+
   it('al avanzar con errores el primer campo tiembla y recibe el foco', async () => {
     const user = userEvent.setup()
     const testApi = createCheckoutApi()
@@ -684,6 +700,10 @@ describe('Checkout', () => {
       const terms = screen.getByRole('link', { name: CHECKOUT_COPY.termsLink })
       expect(terms).toHaveAttribute('href', '/terminos')
       expect(terms.closest('p')).toHaveTextContent(CHECKOUT_COPY.termsBefore)
+      expect(terms.closest('p')).toHaveTextContent(
+        'Al pagar aceptás los Términos y condiciones. Cómo usamos tus datos: Política de privacidad.',
+      )
+      expect(document.querySelector('input[type="checkbox"]')).toBeNull()
       const privacy = screen.getByRole('link', { name: CHECKOUT_COPY.termsPrivacyLink })
       expect(privacy).toHaveAttribute('href', '/privacidad')
       expectBefore(withdrawal, payButton)

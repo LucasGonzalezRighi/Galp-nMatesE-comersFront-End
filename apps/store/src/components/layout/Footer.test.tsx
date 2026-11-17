@@ -3,6 +3,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Category, FooterContent, PublicSettings } from '@galpon/api-client'
+import { DATA_FISCAL_LOGO_URL } from '@galpon/domain'
 import { mockReducedMotion } from '../motion/test/support'
 import {
   registerFooterStage,
@@ -152,14 +153,75 @@ describe('FooterView', () => {
     for (const method of content.paymentMethods) expect(screen.getByText(method)).toBeVisible()
   })
 
-  it('sin datos del vendedor no dibuja ese bloque', () => {
+  it('"Cambios y devoluciones" lleva a /devoluciones, Legales suma cookies y el Botón de arrepentimiento sigue en Ayuda', () => {
     render(<FooterView content={content} settings={settings} categories={categories} />)
 
-    expect(screen.queryByText(/CUIT/)).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Data Fiscal (ARCA)' })).toBeNull()
+    const help = screen.getByRole('navigation', { name: 'Ayuda' })
+    expect(within(help).getByRole('link', { name: 'Cambios y devoluciones' })).toHaveAttribute(
+      'href',
+      '/devoluciones',
+    )
+    expect(within(help).getByRole('link', { name: 'Botón de arrepentimiento' })).toBeVisible()
+    const legal = screen.getByRole('navigation', { name: 'Legales' })
+    expect(within(legal).getByRole('link', { name: 'Política de cookies' })).toHaveAttribute(
+      'href',
+      '/cookies',
+    )
   })
 
-  it('con datos del vendedor muestra los que hay y el link a Data Fiscal', () => {
+  it('sin datos del vendedor: los dos enlaces de Defensa del Consumidor y ningún logo', () => {
+    const { container } = render(
+      <FooterView content={content} settings={settings} categories={categories} />,
+    )
+
+    expect(screen.queryByText(/CUIT/)).toBeNull()
+    const consumer = screen.getByRole('navigation', { name: 'Defensa del consumidor' })
+    const links = within(consumer).getAllByRole('link')
+    expect(links).toHaveLength(2)
+    const [caba, national] = links
+    expect(caba).toHaveAttribute('href', settings.consumerLinks.cabaUrl)
+    expect(caba).toHaveTextContent(
+      'Dirección General de Defensa y Protección al Consumidor' +
+        'Para consultas y/o denuncias' +
+        'Ingrese aquí' +
+        '(se abre en otra pestaña)',
+    )
+    expect(caba?.children).toHaveLength(4)
+    expect(national).toHaveAttribute('href', settings.consumerLinks.nationalUrl)
+    expect(national).toHaveTextContent(
+      'Defensa de las y los ConsumidoresPara reclamosIngrese aquí(se abre en otra pestaña)',
+    )
+    for (const link of links) {
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('[data-footer-row="2"]')).not.toBeNull()
+  })
+
+  it('con dataFiscalUrl: un enlace con el logo de Data Fiscal', () => {
+    render(
+      <FooterView
+        content={content}
+        settings={{
+          ...settings,
+          seller: { ...emptySeller, dataFiscalUrl: 'https://qr.afip.gob.ar/?qr=abc123' },
+        }}
+        categories={categories}
+      />,
+    )
+
+    const logo = screen.getByRole('img', { name: 'Data Fiscal: datos del vendedor en ARCA' })
+    expect(logo).toHaveAttribute('src', DATA_FISCAL_LOGO_URL)
+    expect(logo).toHaveAttribute('width', '239')
+    expect(logo).toHaveAttribute('height', '327')
+    const link = logo.closest('a')
+    expect(link).toHaveAttribute('href', 'https://qr.afip.gob.ar/?qr=abc123')
+    expect(link).toHaveAttribute('target', '_F960AFIPInfo')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('con datos del vendedor muestra los que hay', () => {
     render(
       <FooterView
         content={content}
@@ -184,10 +246,6 @@ describe('FooterView', () => {
     ).toBeVisible()
     expect(screen.getByText('Av. Siempreviva 742, Neuquén')).toBeVisible()
     expect(screen.getByText('Lunes a viernes de 9 a 18')).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Data Fiscal (ARCA)' })).toHaveAttribute(
-      'href',
-      'https://example.com/data-fiscal',
-    )
   })
 })
 
@@ -338,18 +396,27 @@ describe('FooterView: el pie que sube por encima de las reseñas', () => {
     expect(root.style.getPropertyValue('--footer-h')).toBe('')
   })
 
-  it('las filas van en orden: la frase con el mail, los cuatro grupos de links y el copyright', () => {
+  it('las filas van en orden: la frase con el mail, los cuatro grupos de links, Defensa del Consumidor y el copyright', () => {
     const { container } = render(
       <FooterView content={content} settings={settings} categories={categories} />,
     )
 
     const all = rows(container)
-    expect(all.map((row) => row.dataset.footerRow)).toEqual(['0', '1', '1.25', '1.5', '1.75', '3'])
+    expect(all.map((row) => row.dataset.footerRow)).toEqual([
+      '0',
+      '1',
+      '1.25',
+      '1.5',
+      '1.75',
+      '2',
+      '3',
+    ])
     expect(all[0]).toHaveTextContent(content.tagline)
     expect(all[1]).toHaveTextContent('Tienda')
     expect(all[4]).toHaveTextContent('Legales')
-    expect(all[5]).toHaveTextContent('Galpón Mates')
-    expect(all[5]).toHaveTextContent('Visa')
+    expect(all[5]).toHaveTextContent('Para reclamos')
+    expect(all[6]).toHaveTextContent('Galpón Mates')
+    expect(all[6]).toHaveTextContent('Visa')
     // La línea en diagonal de arriba es decorativa.
     expect(container.querySelector('.site-footer-line')).toHaveAttribute('aria-hidden', 'true')
   })

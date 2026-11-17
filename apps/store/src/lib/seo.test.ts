@@ -103,6 +103,8 @@ describe('buildSitemapEntries', () => {
     expect(urls).toContain('https://galponmates.com.ar/tienda/yerbas')
     expect(urls).toContain('https://galponmates.com.ar/producto/mate-imperial-premium')
     expect(urls).toContain('https://galponmates.com.ar/producto/bombillon-curvo')
+    expect(urls).toContain('https://galponmates.com.ar/cookies')
+    expect(urls).toContain('https://galponmates.com.ar/devoluciones')
     for (const path of INFO_PAGE_PATHS) {
       expect(urls).toContain(`https://galponmates.com.ar${path}`)
     }

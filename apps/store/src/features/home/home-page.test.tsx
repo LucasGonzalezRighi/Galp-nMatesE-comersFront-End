@@ -225,7 +225,9 @@ describe('HomeStats', () => {
     renderSection(<HomeStats data={data} />)
     expect(screen.getByText('Piezas en catálogo').previousElementSibling).toHaveTextContent('27')
     expect(screen.getByText('Líneas de producto').previousElementSibling).toHaveTextContent('6')
-    expect(screen.getByText('Provincias con envío').previousElementSibling).toHaveTextContent('24')
+    expect(
+      screen.getByText('Jurisdicciones con envío: todo el país').previousElementSibling,
+    ).toHaveTextContent('24')
     expect(
       screen.getByText('Socios detrás de cada pedido').previousElementSibling,
     ).toHaveTextContent('2')

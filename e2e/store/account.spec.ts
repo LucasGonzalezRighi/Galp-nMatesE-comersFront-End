@@ -83,6 +83,40 @@ test.describe('tienda: compra con cuenta', () => {
   })
 })
 
+test.describe('tienda: eliminar la cuenta', () => {
+  test.slow()
+
+  test('registro, eliminar la cuenta con la contraseña y ya no se puede ingresar', async ({
+    page,
+  }, testInfo) => {
+    const buyer = buyerFor(testInfo, 'Julieta')
+    await register(page, buyer)
+
+    const main = page.getByRole('main')
+    await expect(main.getByRole('heading', { level: 2, name: 'Eliminar mi cuenta' })).toBeVisible()
+    await main.getByRole('button', { name: 'Eliminar mi cuenta' }).click()
+    const dialog = page.getByRole('dialog', { name: '¿Eliminar tu cuenta?' })
+    await expect(dialog).toBeVisible()
+
+    // Con la contraseña equivocada el diálogo sigue abierto y avisa bajo el campo.
+    await dialog.getByLabel('Contraseña actual').fill('otra-clave-123')
+    await dialog.getByRole('button', { name: 'Sí, eliminar mi cuenta' }).click()
+    await expect(dialog.getByText('La contraseña no es correcta')).toBeVisible()
+
+    await dialog.getByLabel('Contraseña actual').fill(PASSWORD)
+    await dialog.getByRole('button', { name: 'Sí, eliminar mi cuenta' }).click()
+    await page.waitForURL((url) => url.pathname === '/')
+    await expect(page.getByText('Eliminamos tu cuenta').first()).toBeVisible()
+
+    await gotoStore(page, '/cuenta/ingresar')
+    const login = page.getByRole('main')
+    await login.getByLabel('Email').fill(buyer.email)
+    await login.getByLabel('Contraseña', { exact: true }).fill(PASSWORD)
+    await login.getByRole('button', { name: 'Ingresar', exact: true }).click()
+    await expect(login.getByText('Email o contraseña incorrectos.')).toBeVisible()
+  })
+})
+
 test.describe('tienda: accesibilidad de la cuenta (axe)', () => {
   // Con movimiento reducido todo queda en su estado final: axe no mide el contraste de un
   // elemento a medio aparecer.
@@ -106,6 +140,11 @@ test.describe('tienda: accesibilidad de la cuenta (axe)', () => {
   }, testInfo) => {
     await register(page, buyerFor(testInfo, 'Martina'))
     expect(await seriousViolations(page), 'Resumen de la cuenta').toEqual([])
+
+    await page.getByRole('main').getByRole('button', { name: 'Eliminar mi cuenta' }).click()
+    await expect(page.getByRole('dialog', { name: '¿Eliminar tu cuenta?' })).toBeVisible()
+    expect(await seriousViolations(page), 'Eliminar mi cuenta').toEqual([])
+    await page.keyboard.press('Escape')
 
     await addAddress(page)
     expect(await seriousViolations(page), 'Direcciones').toEqual([])

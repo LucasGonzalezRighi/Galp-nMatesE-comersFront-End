@@ -68,6 +68,21 @@ describe('ReviewForm', () => {
     )
   })
 
+  it('el nombre es opcional, con su ayuda, y el aviso de publicación enlaza a Contacto y a Privacidad (LS-4)', () => {
+    renderForm()
+
+    const name = screen.getByRole('textbox', { name: 'Nombre (opcional)' })
+    expect(name).toHaveAccessibleDescription(
+      'Podés poner solo tu nombre de pila o tus iniciales. Si lo dejás vacío, se publica como "Anónimo".',
+    )
+    expect(document.querySelector('[data-review-notice]')).toHaveTextContent(
+      'Tu nombre y tu reseña se publican en esta página. Las revisamos antes de publicarlas y no rechazamos ninguna por ser negativa. Si después querés que la borremos, escribinos desde Contacto. Más en la Política de privacidad.',
+    )
+    expect(screen.getByRole('link', { name: 'Contacto' })).toHaveAttribute('href', '/contacto')
+    expect(screen.getByRole('button', { name: 'Publicar mi reseña' })).toBeInTheDocument()
+    expect(document.querySelector('input[type="checkbox"]')).toBeNull()
+  })
+
   it('las estrellas muestran su palabra al pasar el mouse y al elegirlas', async () => {
     const user = renderForm()
 
@@ -84,7 +99,7 @@ describe('ReviewForm', () => {
   it('con los campos vacíos marca los errores y no envía nada', async () => {
     const user = renderForm()
 
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     expect(screen.getByText('Elegí una puntuación de 1 a 5 estrellas.')).toBeVisible()
     expect(screen.getByText('Contanos un poco más (mínimo 10 caracteres)')).toBeVisible()
@@ -95,7 +110,7 @@ describe('ReviewForm', () => {
 
   it('el error de un campo desaparece al corregirlo', async () => {
     const user = renderForm()
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     await user.click(screen.getByRole('radio', { name: '5 estrellas' }))
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), TEXT)
@@ -109,7 +124,7 @@ describe('ReviewForm', () => {
 
     await user.click(screen.getByRole('radio', { name: '5 estrellas' }))
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), 'Lindo')
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     expect(screen.getByText('Contanos un poco más (mínimo 10 caracteres)')).toBeVisible()
     expect(screen.queryByText('Elegí una puntuación de 1 a 5 estrellas.')).toBeNull()
@@ -120,9 +135,9 @@ describe('ReviewForm', () => {
     const user = renderForm()
 
     await user.click(screen.getByRole('radio', { name: '5 estrellas' }))
-    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Martina R.')
+    await user.type(screen.getByRole('textbox', { name: 'Nombre (opcional)' }), 'Martina R.')
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), TEXT)
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     expect(await screen.findByText(THANKS)).toBeVisible()
     expect(mock.db.reviews).toHaveLength(reviewsBefore + 1)
@@ -142,7 +157,7 @@ describe('ReviewForm', () => {
 
     await user.click(screen.getByRole('radio', { name: '4 estrellas' }))
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), TEXT)
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     await screen.findByText(THANKS)
     expect(mock.db.reviews.at(-1)).toMatchObject({ authorName: 'Anónimo', rating: 4 })
@@ -154,7 +169,7 @@ describe('ReviewForm', () => {
     await user.click(screen.getByRole('radio', { name: '5 estrellas' }))
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), TEXT)
     await user.type(honeypot(), 'https://spam.example')
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     await screen.findByText(THANKS)
     expect(mock.db.reviews).toHaveLength(reviewsBefore)
@@ -173,14 +188,14 @@ describe('ReviewForm', () => {
 
     await user.click(screen.getByRole('radio', { name: '5 estrellas' }))
     await user.type(screen.getByRole('textbox', { name: 'Reseña' }), TEXT)
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No pudimos conectar, probá de nuevo',
     )
-    expect(screen.getByRole('button', { name: 'Publicar reseña' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Publicar mi reseña' })).toBeEnabled()
 
-    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }))
+    await user.click(screen.getByRole('button', { name: 'Publicar mi reseña' }))
     expect(await screen.findByText(THANKS)).toBeVisible()
   })
 

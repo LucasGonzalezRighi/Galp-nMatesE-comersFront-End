@@ -26,13 +26,19 @@ export const PRODUCT_COPY = {
   consultSubject: 'Consulta:',
   /** Nombre accesible del bloque de garantías. */
   guaranteesLabel: 'Garantías de compra',
-  /** Garantías: título y detalle de cada una (Cambios y Arrepentimiento van por separado, spec 14.6). */
+  /**
+   * Garantías: título y detalle de cada una (Cambios, Garantía legal y Arrepentimiento van por
+   * separado, spec 14.6 y LA-7).
+   */
   guarantees: {
     shipping: { title: 'Envío a todo el país', detail: 'Calculalo en el checkout' },
-    payment: { title: 'Pago seguro', detail: 'Con Mercado Pago' },
-    exchange: { title: 'Cambios', detail: '10 días, sin uso' },
+    payment: { title: 'Pago con Mercado Pago', detail: 'Tarjetas, dinero en cuenta y más' },
+    exchange: { title: 'Cambios', detail: '30 días corridos, sin uso' },
+    warranty: { title: 'Garantía legal', detail: '6 meses por defectos (Ley 24.240)' },
     withdrawal: { title: 'Arrepentimiento', detail: '10 días corridos, sin causa y sin costo' },
   },
+  /** Enlace a `/devoluciones`, debajo de las garantías. */
+  policyLink: 'Cómo funcionan los cambios, la garantía y el arrepentimiento',
   /** Nombre accesible de las pestañas. */
   tabsLabel: 'Información del producto',
   /** Pestaña de la descripción. */

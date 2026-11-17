@@ -34,14 +34,24 @@ async function fillAndSubmit(email: string): Promise<void> {
 }
 
 describe('RegisterForm', () => {
-  it('muestra el aviso de privacidad con link a /privacidad (spec 14.6)', () => {
-    render(createAccountTestApi().wrap(<RegisterForm />))
+  it('muestra el aviso de datos con link a /privacidad, el enlace a los términos y ninguna casilla (LS-4)', () => {
+    const { container } = render(createAccountTestApi().wrap(<RegisterForm />))
 
-    expect(screen.getByText(new RegExp(ACCOUNT_COPY.privacyBefore))).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: ACCOUNT_COPY.privacyLink })).toHaveAttribute(
+    expect(
+      screen.getByText(/^Usamos tus datos para crear tu cuenta y gestionar tus pedidos\./),
+    ).toHaveTextContent(
+      'Podés pedir ver, corregir o borrar tus datos. Más en la Política de privacidad.',
+    )
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
       'href',
       '/privacidad',
     )
+    expect(screen.getByText(/^Antes de crear tu cuenta podés leer los/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Términos y condiciones' })).toHaveAttribute(
+      'href',
+      '/terminos',
+    )
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull()
   })
 
   it('crea la cuenta, abre la sesión y lleva a /cuenta', async () => {

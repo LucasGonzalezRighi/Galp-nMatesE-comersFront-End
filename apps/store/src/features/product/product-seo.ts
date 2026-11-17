@@ -99,7 +99,8 @@ export function buildProductJsonLd(
     sku: product.code,
     category: product.categoryName,
     url,
-    brand: { '@type': 'Brand', name: BRAND_NAME },
+    // La marca propia solo en los mates: las bombillas y la yerba son de otros fabricantes.
+    ...(product.group === 'mate' ? { brand: { '@type': 'Brand', name: BRAND_NAME } } : null),
     ...(product.images.length > 0
       ? { image: product.images.map((image) => absoluteUrl(image.url, siteUrl)) }
       : null),

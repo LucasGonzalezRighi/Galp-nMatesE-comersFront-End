@@ -27,6 +27,7 @@ export {
   ResetPasswordPage,
 } from './AccountShells'
 export { AddressBook } from './AddressBook'
+export { DeleteAccount } from './DeleteAccount'
 export { readCsrfToken, resetAccountState, withCsrf } from './csrf'
 export { OrderDetail, OrderNotFound } from './OrderDetail'
 export { OrdersList } from './OrdersList'

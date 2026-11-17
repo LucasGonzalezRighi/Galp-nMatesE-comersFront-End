@@ -15,6 +15,7 @@ import { formatDate, formatPesos, pesos } from '@galpon/domain'
 import { checkoutContactSchema } from '@galpon/schemas'
 import { ACCOUNT_COPY, ORDER_STATUS_LABELS } from './account.copy'
 import { withCsrf } from './csrf'
+import { DeleteAccount } from './DeleteAccount'
 import { showSubmitError } from './form-errors'
 import { FORM_CARD, FormError, PrivacyNotice } from './form-parts'
 import { formatAddressLines } from './format-address'
@@ -125,7 +126,8 @@ export interface AccountOverviewProps {
 
 /**
  * Página `/cuenta`: saludo, el último pedido, la dirección predeterminada (o los estados vacíos
- * "Todavía no hiciste pedidos" / "No tenés direcciones guardadas") y el formulario de datos.
+ * "Todavía no hiciste pedidos" / "No tenés direcciones guardadas"), el formulario de datos y, al
+ * final, "Eliminar mi cuenta" ({@link DeleteAccount}).
  * Al guardar los datos se actualiza la sesión, así el encabezado muestra el nombre nuevo.
  *
  * @param props - Ver {@link AccountOverviewProps}.
@@ -190,6 +192,7 @@ export function AccountOverview({ customer, orders, addresses }: AccountOverview
         </div>
       </div>
       <ProfileForm customer={current} />
+      <DeleteAccount />
     </section>
   )
 }

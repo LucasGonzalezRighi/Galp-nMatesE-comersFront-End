@@ -14,7 +14,7 @@ import { registerSchema } from '@galpon/schemas'
 import { ACCOUNT_COPY } from './account.copy'
 import { resetAccountState, withCsrf } from './csrf'
 import { showSubmitError } from './form-errors'
-import { FORM_CARD, FormError, PrivacyNotice } from './form-parts'
+import { FORM_CARD, FormError, PrivacyNotice, RegisterTermsNote } from './form-parts'
 import { safeReturnPath } from './return-path'
 
 /** Campos que la API puede marcar con error. */
@@ -92,6 +92,7 @@ export function RegisterForm(): ReactNode {
         )}
       </Field>
       <PrivacyNotice />
+      <RegisterTermsNote />
       <FormError message={errors.root?.server?.message} />
       <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
         {isSubmitting ? ACCOUNT_COPY.submitting : ACCOUNT_COPY.register.submit}

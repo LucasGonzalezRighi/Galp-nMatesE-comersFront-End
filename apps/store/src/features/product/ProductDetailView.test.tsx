@@ -143,14 +143,29 @@ describe('ProductDetailView', () => {
     expect(screen.queryByText(/cuotas sin interés/)).toBeNull()
   })
 
-  it('las garantías muestran Cambios y Arrepentimiento por separado', () => {
+  it('las garantías muestran Cambios, Garantía legal y Arrepentimiento por separado, con el enlace a /devoluciones', () => {
     renderView()
 
     const guarantees = screen.getByRole('list', { name: 'Garantías de compra' })
     const items = within(guarantees).getAllByRole('listitem')
-    expect(items).toHaveLength(4)
-    expect(items[2]).toHaveTextContent('Cambios10 días, sin uso')
-    expect(items[3]).toHaveTextContent('Arrepentimiento10 días corridos, sin causa y sin costo')
+    expect(items).toHaveLength(5)
+    expect(items[1]).toHaveTextContent('Pago con Mercado PagoTarjetas, dinero en cuenta y más')
+    expect(items[2]).toHaveTextContent('Cambios30 días corridos, sin uso')
+    expect(items[3]).toHaveTextContent('Garantía legal6 meses por defectos (Ley 24.240)')
+    expect(items[4]).toHaveTextContent('Arrepentimiento10 días corridos, sin causa y sin costo')
+    expect(
+      screen.getByRole('link', {
+        name: 'Cómo funcionan los cambios, la garantía y el arrepentimiento',
+      }),
+    ).toHaveAttribute('href', '/devoluciones')
+  })
+
+  it('una yerba no muestra la garantía legal', () => {
+    renderView(detail({ group: 'yerba' }))
+
+    const guarantees = screen.getByRole('list', { name: 'Garantías de compra' })
+    expect(within(guarantees).getAllByRole('listitem')).toHaveLength(4)
+    expect(within(guarantees).queryByText('Garantía legal')).toBeNull()
   })
 
   it('las pestañas muestran la descripción con su nota y cambian con el mouse y el teclado', async () => {
