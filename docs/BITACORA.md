@@ -419,6 +419,80 @@ Pistas de `security-audit-skill/galpon-frontend/run-1` (`findings.json`, numerad
 - **Candidato · controles:** arreglado y probado (fallan 4 y 4); compilada, sin secreto, con otro y por `/api/mock/v1` dan 404, y con el secreto 200.
 - **Al cierre:** `typecheck` y `lint` en verde; `npm test`, 328 archivos y 4532 pruebas. E2E contra la tienda compilada (4310) y el admin (5310): store-desktop 207 pasan, 2 se saltean y 4 fallan por carga con 4 workers (el encabezado sobre el pase, la tecla de la intro y las capturas del inicio a 1440 y 1905 px), que pasan de a uno (la del inicio a 1905 px, sola, en 27,5 de sus 30 s); store-mobile 106 pasan y 107 se saltean a propósito; admin-desktop 124 pasan; store-revalidation 3 pasan.
 
+## Ronda legal, datos del vendedor y accesibilidad (2026-11-09 a 2026-11-17)
+
+**Pedido de Lucas**: que la tienda cumpla lo que la ley le pide a un vendedor online de CABA y que sea accesible, sin cambiar lo que él ya decidió. Salió de tres informes del workspace `2026-11-04-legal-seguridad` del back (leyes, datos de terceros y afirmaciones, accesibilidad) y de las decisiones LS-1 a LS-11 de su `rulings.md`. Se trabajó en el worktree `frontend-legal` (rama `feat/legal-accesibilidad`), en cuatro olas; la ronda de seguridad del front se unió a la rama antes de la integración. **No es asesoramiento legal: los cuatro textos esperan la revisión de un abogado** (esta nota va acá, nunca en la web).
+
+**Rulings** (LS, del back; LS-1 son decisiones finales de Lucas):
+
+- **LS-1**: el Botón de arrepentimiento queda solo en el pie; "Los más vendidos" queda como título; las 18 reseñas de ejemplo quedan como están, con su sello "Compra verificada" y sumando al puntaje. Cambios a 30 días corridos. Jurisdicción: CABA.
+- **LS-2**: cuatro documentos editables (`terms`, `privacy`, `cookies`, `returns`), redactados completos en las fixtures, con "Última actualización" e impresión; los datos del negocio salen de los ajustes y la tienda nunca muestra un marcador crudo.
+- **LS-3**: datos del vendedor en Ajustes y en el pie, Data Fiscal con el logo oficial (solo ese host de imagen en la CSP) y los enlaces de Defensa del Consumidor siempre visibles.
+- **LS-4**: avisos del art. 6 en cada formulario, sin casillas; el texto del paso de pago y el de la reseña.
+- **LS-5**: plazos de conservación del back y "Eliminar mi cuenta" (`DELETE /me` con la contraseña).
+- **LS-6**: mails transaccionales (back, B7). **LS-7**: afirmaciones que el sistema desmiente o no puede comprobar, y textos alternativos que describen la foto. **LS-8**: los 19 arreglos de accesibilidad de la tienda y los 8 del dashboard, con WCAG 2.2 en axe. **LS-9**: sin banner de cookies y una prueba que falla si la CSP suma analítica o publicidad. **LS-10**: el `docs/LANZAMIENTO-LEGAL.md` del back (la lista de abajo es su insumo). **LS-11**: la auditoría de seguridad va aparte.
+
+**Decisiones del plan** (LA, desarrollan los LS):
+
+- **LA-1 · Formato**: el cuerpo es texto plano con bloques, `## Título`, listas `- ` y enlaces `[texto](/ruta)` o `https://`; nada de HTML.
+- **LA-2 · Marcadores**: `{{clave}}` con las 8 claves de `LEGAL_MARKERS`; los resuelve la tienda al dibujar; sin el dato, "a completar por el vendedor" fuera de producción y vacío en producción. "Galpón Mates" va literal.
+- **LA-3 · Datos del vendedor**: sin campos nuevos; el email es `contactEmail`; los 7 "datos legales" son `SELLER_LEGAL_FIELDS` (el teléfono es opcional).
+- **LA-4 · Defensa del Consumidor**: los enlaces pasan del pie a `consumerLinks` de los ajustes, obligatorios y con los valores de fábrica.
+- **LA-5 · Data Fiscal**: `seller.dataFiscalUrl` es el `href` del código de ARCA (el campo acepta el código entero); el logo es siempre `DATA_FISCAL_LOGO_URL` y la CSP suma solo `https://www.afip.gob.ar` a `img-src`.
+- **LA-6 · Eliminar la cuenta**: `DELETE /me` con `{ password }`, `204` o `422` `invalid_password`; se puede siempre.
+- **LA-7 · Afirmaciones**: la lista exacta de las Tasks 2 y 3; A1 a A4 quedan porque los mails de B7 las vuelven ciertas.
+- **LA-8 · Accesibilidad**: bordes `neutral-600`, botón que carga con `aria-disabled`, textos chicos del pie en `neutral-400`, `scroll-padding` contra el encabezado, animaciones infinitas cortadas a 5 s o menos, axe falla con `serious` y `critical`. Nada toca LS-1.
+- **LA-9 · Olas**: W1 contrato ∥ textos; W2 tienda ∥ dashboard; W3 accesibilidad de la tienda; W4 integración.
+
+**Qué quedó** (plan `db42d57`): `113c72e` los cuatro textos de fábrica, las afirmaciones corregidas y los textos alternativos; `232c24d` contrato, dominio, schemas, cliente y simulación (cuatro documentos, marcadores, `consumerLinks`, `DELETE /me`, `POST /__mock/settings`); `7e33bef` los puertos 4410 y 5410; `52db00c` la tienda (páginas legales con impresión, pie con el vendedor, Data Fiscal y Defensa del Consumidor, avisos, garantía legal, "Eliminar mi cuenta"); `d28a52c` el dashboard (cuatro documentos con la ayuda de marcadores, vendedor, "Defensa del consumidor", el aviso de datos faltantes y sus 8 arreglos); `fd4600b` y `9433933` los 19 arreglos de la tienda y sus E2E; `5b56b59` y `8460547` la unión con la ronda de seguridad. La integración cerró cinco menores de las revisiones: `5ef81c5` (los legales no enlazan `/\host` y dos títulos iguales no repiten el id), `1cc7d56` (el borde del grupo de motivos de contacto pasa a `neutral-600`, WCAG 1.4.11), `bb0a921` (el paso del checkout que se restaura al hidratar ya no se roba el foco) y `0a9de83` (test de la regla de impresión de los enlaces externos y un arreglo del E2E del pie del vendedor); después, este documento, los README, el spec y la lista del back en `docs/api/README.md`.
+
+**Lecciones**:
+
+- Un servidor recién levantado puede guardar como vigente una página regenerada con datos viejos: en `legal.spec.ts`, el navegador precargaba el inicio desde `/terminos` (la primera regeneración del inicio, lenta en frío) y, si los ajustes cambiaban mientras tanto, esa regeneración terminaba después de la invalidación y quedaba como la versión buena de `/` hasta su próximo vencimiento. Con otros procesos que ya habían pedido el inicio no pasaba, por eso no se vio en las olas anteriores. El test ahora espera al inicio generado antes de cambiar los ajustes. En vivo el caso es raro (un cambio de ajustes justo durante la primera regeneración de una página), pero si alguna vez el pie no muestra un dato recién guardado, se arregla con otra revalidación de `settings`.
+- `next build` de esta versión frena la primera compilación con un aviso de seguridad y pasa al reintentar: no se actualizó Next (en estas rondas no se instala nada); lo decide Lucas.
+
+**Visto**: tienda y dashboard compilados en modo de prueba en el 4410 y el 5410. `npm test` (333 archivos, 4669 pruebas), `lint`, `typecheck`, `format:check` y `api:check` en verde. E2E de los cuatro proyectos con 2 procesos (`store-desktop`, `store-mobile`, `admin-desktop` y `store-revalidation`): 501 pasan, 119 se saltean a propósito y ninguno falla; `legal.spec.ts`, `keyboard.spec.ts` y los dos `a11y.spec.ts` (WCAG 2.0, 2.1 y 2.2 A y AA) incluidos, con 0 violaciones serias o críticas en las dos apps. A mano sobre lo compilado: ningún `{{` ni "Texto de ejemplo" en el HTML de las cuatro legales; la CSP de `/` tiene `https://www.afip.gob.ar` solo en `img-src`; el Botón de arrepentimiento está en el pie y no en el encabezado, el menú del celular ni la ficha; las 18 reseñas de ejemplo, su sello y "Los más vendidos" no cambiaron respecto de `main`. Capturas `final-390-{inicio-pie,terminos,devoluciones,ficha,checkout-pago,cuenta,resena}.png`, `final-1440-{inicio-pie,privacidad,cookies,ficha,admin-legales,admin-ajustes,admin-resumen}.png`, `final-1905-{inicio-pie,terminos}.png` y `final-terminos.pdf` en `.superpowers/sdd/2026-11-09-legal-accesibilidad/captures/` (fuera del repo): el pie de 1440 con los datos del vendedor y el logo de Data Fiscal, los de 390 y 1905 sin datos.
+
+**Para el back**: la subsección "Legales, vendedor y cuenta: lo que tiene que implementar el back" de `docs/api/README.md` (B7 ya está implementado en `7cf27fa`; Lucas corre `npm run db:migrate`; una base ya sembrada no recibe los textos nuevos de términos y privacidad).
+
+### Lista para el dueño, el abogado y el contador
+
+Consolidada de los informes de las Tasks 2 y 3 y de `research-leyes.md`; el back la copia a `docs/LANZAMIENTO-LEGAL.md`.
+
+**Lucas, en el dashboard (antes de salir a producción)**
+
+- Cargar en Ajustes los datos del vendedor (razón social, CUIT, condición frente al IVA, domicilio legal, área y horario de atención) y el código de Data Fiscal de ARCA (F. 960/D, "Banner en sitio web"): los textos legales y el pie dependen de ellos; el Resumen avisa cuáles faltan.
+- Confirmar los dos enlaces de Defensa del Consumidor: el de CABA (`https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor`) no se pudo verificar (daba 403) y es el que indica la "Cartelería obligatoria" del GCBA; el nacional es el formulario de la Ventanilla Federal Única.
+- En una base del back ya sembrada, resembrar o editar en el dashboard los textos de términos y privacidad (siguen con "Texto de ejemplo") y el contenido corregido.
+
+**Dueño**
+
+- Afirmaciones sin confirmar (informe de datos §4.B), que quedan como están: envío a todo el país; plazo "3 a 6 días hábiles"; "apenas se acredita el pago"; "con seguimiento, a cualquier provincia"; "3 cuotas sin interés" configuradas de verdad en Mercado Pago; los medios de pago habilitados; artesanal, cincelado y cosido a mano; los materiales (alpaca, bronce, aluminio, cuero vacuno, calabaza curable, acero); "100 % alpaca"; "Imperial Térmico"; las medidas de 15 y 18 cm; "Dos socios" y la revisión a mano; dónde se retira; los 4 cueros en los 16 mates; el compromiso de escribir para coordinar el retiro; el horario de atención.
+- Las 7 fichas cuya descripción no coincide con la foto (§5.3; no se tocaron): Imperial Premium (la foto 2 es otro mate: cuero negro y virola de ondas); Imperial Criollo ("marrón" contra una funda clara, sin pie); Torpedo Virola de Alpaca Cincelada ("borravino" y base de alpaca contra un mate negro con patas; arrastra al combo "Torpedo completo"); Torpedo Crudo con Base y Anillos (sin virola ni anillos); Torpedo Alpaca Cincelada c/Cuero (el "repujado" no se ve); Ranchero Manchas Blancas (cuero contra una pieza blanca con manchas naturales); Bombillón Alpaca Pico Loro 18 cm (la foto muestra un mate y tres bombillones).
+- El origen de `camionero-criollo.jpg` (foto publicitaria distinta de las demás), de `mate-imperial-premium.jpg` y de `mate-interior.png`, y la cesión escrita de las fotos.
+- El número de inscripción en el Registro Nacional de Bases de Datos (la política de privacidad no lo escribe hasta tenerlo).
+- Quién paga el envío de un cambio (devoluciones y términos no lo dicen).
+- Los proveedores (transporte, alojamiento, base de datos, correo transaccional y de atención, hoy Gmail), sus países y los contratos: con eso la política los nombra y suma las garantías de transferencia internacional (Disp. 60/2016 o Res. AAIP 198/2023).
+- El plazo de conservación de los registros del servidor (IP y navegador), el plazo de respuesta a reclamos y, si corresponde, el RNPA de la yerba en su ficha.
+- `/nosotros`: el segundo socio (se sacó "Nombre del socio" del contenido de fábrica; "Dos socios" sigue) y el consentimiento escrito del socio publicado.
+- Los criterios de moderación de reseñas escritos en términos (sin insultos, datos de terceros ni contenido ajeno al producto): confirmar que son los suyos.
+- La marca en el INPI.
+
+**Abogado** (revisión de los cuatro textos: términos, privacidad, cookies y devoluciones)
+
+- Qué decir del sello "Compra verificada" de las reseñas de ejemplo (hoy no se define ni se comenta; LS-1 es final).
+- Los criterios que fijó el plan y tiene que confirmar: edad mínima de 18 años para comprar y crear la cuenta; el estado del producto en el arrepentimiento ("en el estado en que lo recibiste"); la yerba fuera de la garantía legal de 6 meses (cambio o devolución si llega abierta, vencida o en mal estado) y la excepción del "paquete de yerba que ya abriste" en el arrepentimiento.
+- La redacción del riesgo del transporte, el resumen de las opciones del art. 17 de la Ley 24.240 y el certificado de garantía del art. 14 en una venta online.
+- Si la Ley CABA 3281 alcanza a una tienda online sin local (los cambios a 30 días ya la cubrirían) y el alcance de la Ley CABA 1845.
+- El enlace a la AAIP sin domicilio ni teléfono (no verificados) y la falta de un criterio oficial de la AAIP sobre cookies; si Mercado Pago actúa como responsable o como encargado y qué cookies deja MercadoPago.js.
+- La base normativa del enlace nacional y el anexo del Decreto CABA 1384/2007 (diseño y ubicación del enlace de la Ley 2244).
+- Un plazo en días para el reembolso del arrepentimiento (el texto dice "sin demoras"; la norma dice "recíproca y simultánea").
+
+**Contador**
+
+- El tipo de comprobante que se entrega (términos no lo nombra) y el plazo fiscal de conservación (privacidad dice 10 años).
+- El cálculo del "Precio sin impuestos nacionales" (y si cambia siendo monotributista) y si la leyenda va en mayúsculas.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.

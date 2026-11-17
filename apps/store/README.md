@@ -151,6 +151,16 @@ curl -X POST localhost:3000/api/revalidate \
 
 En los E2E, `gotoStore` (de `e2e/support/store.ts`) salta la intro al abrir el inicio: despacha un evento `wheel` en `window` (lo único que lo escucha es el proveedor de la transición) y espera a que la capa `[data-intro]` se vaya. Las pruebas de la intro piden `{ intro: 'keep' }`, y las que navegan por el menú esperan el telón con `settleIntro`.
 
+## Páginas legales
+
+`/terminos`, `/privacidad`, `/cookies` y `/devoluciones` (Rulings LS-2 y LS-3) usan `LegalRoute` de `features/legal`: leen el documento (`getLegalContent(document)`, etiquetas `content:legal` y `content:legal-{document}`) y los ajustes públicos, y lo dibujan con "Última actualización" y el botón "Imprimir o guardar como PDF".
+
+- **Formato** (LA-1, `parseLegalBody`): bloques separados por una línea en blanco; `## Título` abre una sección con `id` = `slugify(título)` (con `-2`, `-3`… si se repite); un bloque de líneas con `- ` es una lista; lo demás es un párrafo. Enlaces `[texto](destino)` solo a `/ruta` interna (no `//host` ni `/\host`) o a `https://…` (se abren en otra pestaña); cualquier otro destino queda como texto. Nada de HTML.
+- **Marcadores** (LA-2): `{{razon_social}}`, `{{cuit}}`, `{{condicion_iva}}`, `{{domicilio}}`, `{{email}}`, `{{telefono}}`, `{{area_atencion}}` y `{{horario_atencion}}` (`LEGAL_MARKERS`) se resuelven al dibujar con `resolveLegalMarkers` y los ajustes (`seller` y `contactEmail`). La página nunca muestra `{{` ni `}}`: sin el dato dice "a completar por el vendedor" y, en producción (`NODE_ENV=production` con `API_MODE=live`), queda vacío. La tienda compilada en modo de prueba no es producción.
+- **Impresión** (`legal.css`): con `[data-legal-page]` en el `main`, `@media print` deja solo el documento en blanco y negro (sin encabezado, pie, botón, diálogos ni capas fijas) y los enlaces externos muestran su dirección entre paréntesis.
+- **Pie**: la fila de los datos del vendedor (si están cargados), "Defensa del consumidor" con los dos enlaces de `consumerLinks` (siempre; el de CABA con las tres líneas de la Ley 2244) y el logo de Data Fiscal (`DATA_FISCAL_LOGO_URL`) solo con `seller.dataFiscalUrl`.
+- **En modo de prueba** los datos del vendedor se cambian con `POST /api/v1/__mock/settings` (`{ seller?, consumerLinks? }`, con el secreto de los controles; `changeMockSeller` de `e2e/support/store.ts`).
+
 ## Seguridad
 
 `next.config.ts` agrega a todas las respuestas la política de seguridad de contenido (CSP, sección 16 del spec; en desarrollo suma `'unsafe-eval'`), `X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security` y `Permissions-Policy`. Con `API_MODE=live`, el origen del backend se agrega a `connect-src`.
@@ -159,6 +169,7 @@ En los E2E, `gotoStore` (de `e2e/support/store.ts`) salta la intro al abrir el i
 - **Proxy** (`src/proxy.ts`): limpia las cabeceras de reenvío en `/api/v1/*` (ver "IP del cliente para los límites del backend"), reescribe las fichas y las líneas con un slug que no tiene la forma de uno del contrato a la 404 de su sección (`/producto/_` o `/tienda/_`: una sola página para todas, así no se genera ni se guarda una por cada dirección inventada) y pone `Cache-Control: no-store` en las páginas de `/cuenta`.
 - **Cambiar de sesión** (`resetAccountState`: ingresar, crear la cuenta, cambiar la contraseña o cerrar sesión) olvida el checkout y el pedido en curso de la pestaña (`galpon.checkout` y `galpon.order` de `sessionStorage`); al cerrar sesión, además, se refresca el router y se vuelve al inicio con reemplazo.
 - **Webhook de revalidación:** cuerpo de hasta 8 kB y etiquetas de hasta 100 caracteres.
+- **CSP y Data Fiscal** (LA-5): `img-src` suma solo `https://www.afip.gob.ar` (el logo de ARCA). Toda fuente de la política tiene que estar en `CSP_ALLOWED_SOURCES` y ninguna puede coincidir con `TRACKER_HOST_PATTERN` (`src/lib/csp.test.ts`): es la prueba de LS-9, que falla si alguien suma un dominio de analítica o publicidad sin un banner de consentimiento.
 
 ## Estructura
 
