@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_MOCK_CONTROL_SECRET } from './e2e/support/mock-controls'
 
 /** Origen donde se sirve la tienda compilada (`npm run start -w @galpon/store`). */
 const STORE_URL = 'http://localhost:3000'
@@ -23,7 +24,9 @@ const isCi = Boolean(process.env.CI)
  * con `API_MODE=mock` y `MOCK_ALLOWED_IN_PRODUCTION=true` (la tienda en producción no arranca sin
  * `API_MODE`; el CI las pone en el job de E2E):
  * se levantan los dos servidores aunque se pida un solo proyecto. Fuera del CI reutilizan los
- * servidores que ya estén levantados en esos puertos.
+ * servidores que ya estén levantados en esos puertos: una tienda levantada a mano necesita además
+ * `MOCK_CONTROL_SECRET` con el valor de `E2E_MOCK_CONTROL_SECRET` (`e2e/support/mock-controls.ts`)
+ * para que respondan los controles de escenarios.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -64,8 +67,13 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run start -w @galpon/store',
-      // `next start` corre en producción: con la API simulada hace falta permitirlo a propósito.
-      env: { API_MODE: 'mock', MOCK_ALLOWED_IN_PRODUCTION: 'true' },
+      // `next start` corre en producción: con la API simulada hace falta permitirlo a propósito, y
+      // los controles de escenarios (`/api/v1/__mock/…`) solo responden con su secreto.
+      env: {
+        API_MODE: 'mock',
+        MOCK_ALLOWED_IN_PRODUCTION: 'true',
+        MOCK_CONTROL_SECRET: E2E_MOCK_CONTROL_SECRET,
+      },
       url: STORE_URL,
       reuseExistingServer: !isCi,
       timeout: 120_000,

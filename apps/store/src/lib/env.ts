@@ -29,6 +29,18 @@ export interface StoreEnv {
    * proxy de la tienda copia su valor a `x-forwarded-for` en `/api/v1/*`.
    */
   trustedClientIpHeader: string | null
+  /**
+   * Contraseña del admin de la API simulada (`MOCK_ADMIN_PASSWORD`, solo en modo de prueba); `null`
+   * si no se definió: entonces es la de fábrica fuera de producción y, en producción, el admin de la
+   * API simulada queda cerrado (ver `storeMockAdminPassword`).
+   */
+  mockAdminPassword: string | null
+  /**
+   * Secreto de los controles de escenarios de la API simulada (`MOCK_CONTROL_SECRET`, solo en modo
+   * de prueba); `null` si no se definió. En producción los controles solo andan con él en la
+   * cabecera `X-Mock-Control-Secret` (ver `allowsMockControls`).
+   */
+  mockControlSecret: string | null
 }
 
 /** Opciones de {@link parseStoreEnv}. */
@@ -51,8 +63,15 @@ const DEV_REVALIDATE_SECRET = 'dev-only-revalidate-secret-change-me-0000'
 /** Latencia por omisión de la API de prueba, en milisegundos. */
 const DEFAULT_MOCK_LATENCY_MS = [150, 400] as const
 
-/** Largo mínimo del secreto de `/api/revalidate` en vivo. */
+/** Largo mínimo del secreto de `/api/revalidate` en vivo y del de los controles de prueba. */
 const MIN_LIVE_SECRET_LENGTH = 32
+
+/**
+ * Contraseña del admin de la API simulada: de 10 a 128 caracteres, con al menos una letra y un
+ * número. Es la regla de `passwordSchema` de `@galpon/schemas`, escrita acá porque este módulo lo
+ * carga `next.config.ts`; 128 es además el máximo que acepta el login.
+ */
+const MOCK_ADMIN_PASSWORD_PATTERN = /^(?=.*\p{L})(?=.*\d).{10,128}$/su
 
 /** Una cuenta de Cloudinary: letras, números, guiones y guiones bajos. */
 const CLOUD_NAME_PATTERN = /^[a-z0-9_-]+$/i
@@ -136,7 +155,9 @@ function parseMockLatency(value: string): number | readonly [number, number] | n
  * es el de omisión y alcanza con no definir nada; en vivo exigen `API_BASE_URL`,
  * `NEXT_PUBLIC_MP_PUBLIC_KEY` y un `REVALIDATE_SECRET` de 32 caracteres o más. En producción
  * (`NODE_ENV=production`) `API_MODE` es obligatoria, y `mock` solo pasa con
- * `MOCK_ALLOWED_IN_PRODUCTION=true`: la API simulada no tiene autenticación real.
+ * `MOCK_ALLOWED_IN_PRODUCTION=true`: la API simulada no tiene autenticación real. En modo de prueba
+ * se leen además `MOCK_ADMIN_PASSWORD` (de 10 a 128 caracteres, con letras y números) y
+ * `MOCK_CONTROL_SECRET` (32 caracteres o más); en vivo se ignoran.
  *
  * @param source - Las variables, normalmente `process.env`.
  * @param options - Ver {@link ParseStoreEnvOptions}.
@@ -247,6 +268,20 @@ export function parseStoreEnv(
     )
   }
 
+  const isMock = apiMode === 'mock'
+  const mockAdminPassword = isMock ? (readVariable(source, 'MOCK_ADMIN_PASSWORD') ?? null) : null
+  if (mockAdminPassword !== null && !MOCK_ADMIN_PASSWORD_PATTERN.test(mockAdminPassword)) {
+    problems.push(
+      'MOCK_ADMIN_PASSWORD tiene que tener de 10 a 128 caracteres, con letras y números',
+    )
+  }
+  const mockControlSecret = isMock ? (readVariable(source, 'MOCK_CONTROL_SECRET') ?? null) : null
+  if (mockControlSecret !== null && mockControlSecret.length < MIN_LIVE_SECRET_LENGTH) {
+    problems.push(
+      `MOCK_CONTROL_SECRET tiene que tener ${String(MIN_LIVE_SECRET_LENGTH)} caracteres o más`,
+    )
+  }
+
   if (apiMode === null || problems.length > 0) throw new EnvError(problems)
   return {
     apiMode,
@@ -258,6 +293,8 @@ export function parseStoreEnv(
     cloudinaryCloudName,
     mockInProduction,
     trustedClientIpHeader,
+    mockAdminPassword,
+    mockControlSecret,
   }
 }
 

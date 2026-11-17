@@ -1,8 +1,10 @@
 import 'server-only'
 import { revalidateTag } from 'next/cache'
 import type { ApiFetch } from '@galpon/api-client'
+import type { MockDbOptions } from '@galpon/api-client/mock'
 import { createMockFetch, DEFAULT_MOCK_DB_OPTIONS, getGlobalMockDb } from '@galpon/api-client/mock'
 import { getStoreEnv } from './env'
+import { allowsMockControls, passwordResetNotice, storeMockAdminPassword } from './mock-access'
 import { revalidateValidTags } from './revalidate'
 
 let mockFetch: ApiFetch | undefined
@@ -22,15 +24,28 @@ function serverLatency(latency: number | readonly [number, number]): number {
  * mismos datos; las funciones `'use cache'` también lo usan porque corren durante el build.
  *
  * Cuando una escritura cambia datos con caché, regenera las etiquetas con `revalidateTag`; las
- * que no cumplen `REVALIDATE_TAG_PATTERN` se ignoran.
+ * que no cumplen `REVALIDATE_TAG_PATTERN` se ignoran. El admin de la API simulada entra con
+ * `MOCK_ADMIN_PASSWORD` o, fuera de producción, con la contraseña de fábrica; los controles de
+ * escenarios responden en producción solo con `MOCK_CONTROL_SECRET`; y el enlace para cambiar la
+ * contraseña, que en vivo llega por mail, se escribe en el log del servidor.
  */
 export function getStoreMockFetch(): ApiFetch {
-  mockFetch ??= createMockFetch({
-    getDb: () => getGlobalMockDb(DEFAULT_MOCK_DB_OPTIONS),
-    latencyMs: serverLatency(getStoreEnv().mockLatencyMs),
+  if (mockFetch !== undefined) return mockFetch
+  const env = getStoreEnv()
+  const dbOptions: MockDbOptions = {
+    adminEmail: DEFAULT_MOCK_DB_OPTIONS.adminEmail,
+    adminPassword: storeMockAdminPassword(env, DEFAULT_MOCK_DB_OPTIONS.adminPassword),
+  }
+  mockFetch = createMockFetch({
+    getDb: () => getGlobalMockDb(dbOptions),
+    latencyMs: serverLatency(env.mockLatencyMs),
     onInvalidate: (tags) => {
       revalidateValidTags(tags, revalidateTag)
     },
+    onPasswordReset: (mail) => {
+      process.stdout.write(`${passwordResetNotice(env.siteUrl, mail)}\n`)
+    },
+    allowControl: (request) => allowsMockControls(env, request),
   })
   return mockFetch
 }

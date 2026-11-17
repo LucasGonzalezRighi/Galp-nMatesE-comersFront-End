@@ -74,18 +74,17 @@ export interface MockExpireOrderResult {
 }
 
 /**
- * Rutas internas del modo de prueba para armar escenarios (pedido vencido, precio, stock o cueros
- * que cambian), fuera del contrato. Las usan los tests de extremo a extremo, que solo llegan a la base
- * del servidor por HTTP.
+ * Controles de escenarios: rutas internas del modo de prueba, fuera del contrato y sin sesión, que
+ * cambian la base para armar un escenario (pedido vencido, precio, stock o cueros que cambian). Las
+ * usan los tests de extremo a extremo, que solo llegan a la base del servidor por HTTP. Quién puede
+ * usarlas lo decide `allowControl` de `createMockFetch` (la tienda las cierra en producción).
  *
  * - `POST /__mock/orders/{number}/expire`: vence la reserva del pedido pendiente, libera su stock
  *   y cancela su intento de pago activo; `409` si el pedido ya no está pendiente de pago.
  * - `POST /__mock/products/{id}` con `{ priceArs?, stock?, leathers? }`: cambia el precio, el
  *   stock o los cueros del producto y avisa que cambió el catálogo.
- * - `POST /__mock/media` con `{ folder, dataUrl, width, height }`: registra una foto reducida del
- *   dashboard en lugar de subirla a Cloudinary (ver `MOCK_MEDIA_ROUTE`).
  */
-export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
+export const SCENARIO_CONTROL_ROUTES: readonly MockRoute[] = [
   {
     method: 'POST',
     path: MOCK_EXPIRE_ORDER_PATH,
@@ -134,5 +133,15 @@ export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
       return json(result)
     },
   },
+]
+
+/**
+ * Rutas internas del modo de prueba, fuera del contrato: los controles de escenarios
+ * ({@link SCENARIO_CONTROL_ROUTES}) y `POST /__mock/media` con `{ folder, dataUrl, width, height }`,
+ * que registra una foto reducida del dashboard en lugar de subirla a Cloudinary (ver
+ * `MOCK_MEDIA_ROUTE`; pide la sesión del admin).
+ */
+export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
+  ...SCENARIO_CONTROL_ROUTES,
   MOCK_MEDIA_ROUTE,
 ]

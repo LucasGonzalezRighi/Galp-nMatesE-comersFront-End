@@ -2,7 +2,9 @@ import { averageRating, ratingDistribution } from '@galpon/domain'
 import { reviewSchema } from '@galpon/schemas'
 import type { FeaturedReview } from '../../generated/schema'
 import type { MockRoute } from '../router'
+import type { MockDb, MockReview } from '../types'
 import { json, notFound } from '../http'
+import { MOCK_DB_LIMITS } from '../limits'
 import { approvedReviews, findBySlug, publishedProducts, toReview } from '../mappers'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
@@ -11,6 +13,17 @@ import { readPublicForm } from './forms'
 
 /** Reseñas por página en la ficha del producto. */
 export const REVIEWS_PAGE_SIZE = 10
+
+/**
+ * Guarda una reseña pendiente al final; pasadas `MOCK_DB_LIMITS.pendingReviews` pendientes descarta
+ * las pendientes más viejas. Las aprobadas y las ocultas no se tocan: son las que muestra la tienda.
+ */
+function savePendingReview(db: MockDb, review: MockReview): void {
+  const pending = db.reviews.filter((candidate) => candidate.status === 'pending')
+  const excess = pending.length + 1 - MOCK_DB_LIMITS.pendingReviews
+  const dropped = new Set(pending.slice(0, Math.max(0, excess)))
+  db.reviews = [...db.reviews.filter((candidate) => !dropped.has(candidate)), review]
+}
 
 /** Rutas públicas de reseñas: las de un producto, las destacadas del inicio y enviar una nueva. */
 export const reviewsRoutes: readonly MockRoute[] = [
@@ -47,7 +60,7 @@ export const reviewsRoutes: readonly MockRoute[] = [
     // La reseña queda pendiente: no se muestra ni cuenta hasta que el admin la apruebe, y nunca
     // es "compra verificada" porque el visitante no demostró haber comprado.
     if (!form.trapped) {
-      ctx.db.reviews.push({
+      savePendingReview(ctx.db, {
         id: `rev-${randomUuid()}`,
         productId: product.id,
         authorName: form.data.authorName,

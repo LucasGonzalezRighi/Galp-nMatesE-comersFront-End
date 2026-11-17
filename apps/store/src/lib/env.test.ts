@@ -31,6 +31,8 @@ describe('parseStoreEnv', () => {
       cloudinaryCloudName: null,
       mockInProduction: false,
       trustedClientIpHeader: null,
+      mockAdminPassword: null,
+      mockControlSecret: null,
     })
   })
 
@@ -199,6 +201,53 @@ describe('parseStoreEnv en producción (NODE_ENV=production)', () => {
       apiMode: 'mock',
       mockInProduction: true,
     })
+  })
+})
+
+describe('MOCK_ADMIN_PASSWORD', () => {
+  it('por omisión es null', () => {
+    expect(parseStoreEnv({}).mockAdminPassword).toBeNull()
+  })
+
+  it('con 10 a 128 caracteres, letras y números, queda como contraseña del admin simulado', () => {
+    expect(parseStoreEnv({ MOCK_ADMIN_PASSWORD: ' mate-amargo-2027 ' }).mockAdminPassword).toBe(
+      'mate-amargo-2027',
+    )
+  })
+
+  it.each(['corta-1', 'sin-numeros-nunca', '12345678901', `a1${'x'.repeat(127)}`])(
+    '"%s" no sirve y tira',
+    (password) => {
+      expect(problemsOf({ MOCK_ADMIN_PASSWORD: password })).toEqual([
+        'MOCK_ADMIN_PASSWORD tiene que tener de 10 a 128 caracteres, con letras y números',
+      ])
+    },
+  )
+
+  it('en vivo se ignora', () => {
+    expect(parseStoreEnv({ ...liveEnv, MOCK_ADMIN_PASSWORD: 'corta' }).mockAdminPassword).toBeNull()
+  })
+})
+
+describe('MOCK_CONTROL_SECRET', () => {
+  it('por omisión es null', () => {
+    expect(parseStoreEnv({}).mockControlSecret).toBeNull()
+  })
+
+  it('con 32 caracteres o más queda como secreto de los controles', () => {
+    expect(parseStoreEnv({ MOCK_CONTROL_SECRET: 's'.repeat(32) }).mockControlSecret).toBe(
+      's'.repeat(32),
+    )
+  })
+
+  it('más corto tira', () => {
+    expect(problemsOf({ MOCK_CONTROL_SECRET: 's'.repeat(31) })).toEqual([
+      'MOCK_CONTROL_SECRET tiene que tener 32 caracteres o más',
+    ])
+  })
+
+  it('en vivo se ignora', () => {
+    expect(parseStoreEnv({ ...liveEnv, MOCK_CONTROL_SECRET: 'corto' }).mockControlSecret).toBeNull()
   })
 })
 

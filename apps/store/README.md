@@ -20,7 +20,7 @@ Sin ninguna variable de entorno la tienda arranca en modo de prueba (`API_MODE=m
 - **Servidor.** Los Server Components y las funciones `'use cache'` hablan con la API simulada de `@galpon/api-client/mock` en el mismo proceso (`src/lib/mock.server.ts`). Esas funciones corren también durante el build, por eso la base simulada vive en el mismo proceso y no detrás de una red.
 - **Navegador.** Siempre habla con `/api/v1` de su propio dominio (`src/lib/api.browser.ts`). Un _rewrite_ lleva `/api/v1/*` a `/api/mock/v1/*`, un route handler que responde con la misma base simulada.
 - **Latencia.** La API simulada demora 150 ms por pedido (el mínimo de `MOCK_LATENCY_MS`, fija en el proceso de Next porque `Math.random()` es un valor inestable para el prerender de Cache Components; el admin sí usa el rango). `MOCK_LATENCY_MS=0` la quita.
-- **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos).
+- **Datos.** La base simulada vive en la memoria del servidor: se reinicia al reiniciar `dev` o `start`. La tienda y el dashboard no comparten datos de prueba (son procesos distintos). Es una sola para todos los que visitan la tienda, así que cada colección que crece con pedidos de visitantes tiene un tope y descarta lo más viejo (`MOCK_DB_LIMITS`: sesiones, clientes, pedidos, mensajes, reseñas pendientes…; el detalle, en el README de `@galpon/api-client`), y cada cuerpo se lee hasta 64 kB (`413` si pasa).
 - **Fotos.** Las del catálogo de prueba están en `public/mock-images/`, con el slug del producto como nombre: 16 productos tienen (el detalle, en el README de `@galpon/api-client`) y el resto muestra el marco punteado. El admin tiene la misma copia en su `public/`.
 - **Mate 3D del inicio.** La escena de three.js está en `src/features/home/mate3d/` (su README explica los módulos de `scene/`, el estado, los momentos y cómo ajustar un keyframe, la pared de la montañita y el chorro) y la monta `MateStage`. Sus texturas están en `public/hero/3d/` (el interior curado, el frente del paquete de Canarias y `yerba-albedo.jpg`, la foto real de la yerba) y las fotos de fondo de las tres paradas, nítidas y apenas oscurecidas, en `public/hero/world/` (`pieces.jpg`, que también es el respaldo sin WebGL, `bombilla.jpg` y `ritual.jpg`). El yerbal del Manifiesto es `public/hero/world/yerbal.jpg`. `MateStage` baja aparte (`next/dynamic` sin SSR), así three.js no llega al celular.
 - **Portada donde no hay mate 3D** (Ruling IC-8). En el celular, la tableta, las ventanas de menos de 700 px de alto, con menos movimiento o si al contenido le falta una de las dos escenas, el inicio arranca con la portada del v4 (`HeroCarousel`): "Encontrá tu mate." y cinco piezas apiladas (`heroSlides`: la del hero, dos bombillas, una yerba y otro mate destacado) que se cambian con las flechas, los puntos o deslizando más de 50 px, sin avance solo. Debajo de 768 px la pila es plana; desde 768 px gira como en el v4. El servidor siempre dibuja esta portada: en escritorio con 3D la tapan la tapa del servidor y la intro hasta que se monta `MateStage` (si el 3D todavía no bajó se ve un fondo liso, nunca el carrusel).
@@ -66,9 +66,9 @@ En modo de prueba se compra de punta a punta sin Mercado Pago ni backend. Agreg�
 
 Las cuotas también son simuladas: hasta 3 sin interés (CFT 0,00 %) y, además, 6 y 12 con un CFT de ejemplo de 45,90 % (TEA 38,00 %).
 
-**Cuenta de cliente.** No hay una cuenta sembrada: registrate en `/cuenta/registro` con cualquier email (la cuenta vive en la memoria del servidor y se pierde al reiniciarlo). Con la sesión iniciada, el checkout completa el contacto y ofrece las direcciones guardadas, y el pedido aparece en `/cuenta/pedidos`. Para probar "¿Olvidaste tu contraseña?" no se manda ningún mail: pedí el enlace en `/cuenta/recuperar` y abrí `/cuenta/restablecer?token=RESET-OK` (cambia la contraseña de la última cuenta que lo pidió).
+**Cuenta de cliente.** No hay una cuenta sembrada: registrate en `/cuenta/registro` con cualquier email (la cuenta vive en la memoria del servidor y se pierde al reiniciarlo). Con la sesión iniciada, el checkout completa el contacto y ofrece las direcciones guardadas, y el pedido aparece en `/cuenta/pedidos`. Para probar "¿Olvidaste tu contraseña?" no se manda ningún mail: pedí el enlace en `/cuenta/recuperar` y la tienda escribe en su log (la terminal de `dev` o `start`) la línea `[modo de prueba] Enlace para cambiar la contraseña de …` con el enlace. Como en el back, el token es al azar, sirve una sola vez, vence a los 60 minutos y un pedido nuevo anula el anterior.
 
-**Rutas de control.** Para armar escenarios difíciles de provocar a mano (las usan los E2E). Solo existen en modo de prueba:
+**Rutas de control.** Para armar escenarios difíciles de provocar a mano (las usan los E2E). Solo existen en modo de prueba y, como no piden sesión, en producción (`next start`) responden 404 salvo que la tienda tenga `MOCK_CONTROL_SECRET` y el pedido traiga ese secreto en `X-Mock-Control-Secret` (los E2E lo mandan solos). Con `npm run dev` andan sin secreto:
 
 ```bash
 # Vence ya la reserva de un pedido pendiente (libera el stock): el resultado dice "El pedido venció".
@@ -76,6 +76,15 @@ curl -X POST localhost:3000/api/v1/__mock/orders/GLP-10001/expire
 # Cambia el precio o el stock de un producto: si cambia antes de elegir el medio de pago, el
 # checkout responde con "Algo cambió en tu carrito" y "Confirmar de nuevo".
 curl -X POST localhost:3000/api/v1/__mock/products/prd-imperial-calabaza   -H 'Content-Type: application/json' -d '{"priceArs": 26999, "stock": 20}'
+# Contra `next start` con MOCK_CONTROL_SECRET, los dos llevan además el secreto:
+#   -H "X-Mock-Control-Secret: $MOCK_CONTROL_SECRET"
+```
+
+**Admin de la API simulada.** Las rutas `/api/v1/admin/*` de la tienda escriben en la base del servidor (sirve, por ejemplo, para crear un combo y verlo en el inicio). El login (`POST /api/v1/admin/auth/login`) usa la cuenta de fábrica del README raíz solo fuera de producción; en producción, solo la contraseña de `MOCK_ADMIN_PASSWORD` (sin ella, el admin queda cerrado). Como en el back, la sesión va en la cookie `galpon_admin` que pone el login (otro ingreso la reemplaza) y cada escritura lleva además `X-CSRF-Token`. Con `curl`, guardá la cookie con `-c` y mandala con `-b`:
+
+```bash
+curl -c admin.txt -X POST localhost:3000/api/v1/admin/auth/login -H 'Content-Type: application/json' -d '{"email":"…","password":"…"}'
+curl -b admin.txt localhost:3000/api/v1/admin/orders
 ```
 
 Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren todos estos caminos: `npm run build && npm run test:e2e`.
@@ -84,7 +93,7 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 
 `apps/store/.env.example` documenta cada variable. Se validan con `parseStoreEnv` (`src/lib/env.ts`) al cargar `next.config.ts`, así que `dev`, `build`, `start` y `typegen` fallan con un mensaje en español si algo no cierra, por ejemplo `API_MODE=live` sin `API_BASE_URL`. Para configurar algo, copiá el archivo a `apps/store/.env.local`.
 
-**En producción** (`next build` y `next start`, que corren con `NODE_ENV=production`) `API_MODE` es obligatoria: sin ella la tienda no arranca, con un mensaje que lo dice. `API_MODE=mock` en producción solo pasa con `MOCK_ALLOWED_IN_PRODUCTION=true`, y al arrancar avisa en el log que es inseguro: la API simulada no tiene autenticación real y su admin usa credenciales publicadas. Es para las pruebas de punta a punta (`playwright.config.ts` y el CI la ponen); nunca en un sitio público. `next typegen` (`npm run typecheck`) no la exige.
+**En producción** (`next build` y `next start`, que corren con `NODE_ENV=production`) `API_MODE` es obligatoria: sin ella la tienda no arranca, con un mensaje que lo dice. `API_MODE=mock` en producción solo pasa con `MOCK_ALLOWED_IN_PRODUCTION=true`, y al arrancar avisa en el log que es inseguro: la API simulada no tiene autenticación real y todos los que la visitan comparten una sola base. Ahí su admin solo abre con `MOCK_ADMIN_PASSWORD` y sus rutas de control solo con `MOCK_CONTROL_SECRET`. Es para las pruebas de punta a punta (`playwright.config.ts` y el CI la ponen); nunca en un sitio público. `next typegen` (`npm run typecheck`) no la exige.
 
 | Variable                            | Modo de prueba          | En vivo                          |
 | ----------------------------------- | ----------------------- | -------------------------------- |
@@ -97,6 +106,8 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 | `NEXT_PUBLIC_SITE_URL`              | `http://localhost:3000` | el dominio público               |
 | `MOCK_LATENCY_MS`                   | `150-400`               | no se usa                        |
 | `MOCK_ALLOWED_IN_PRODUCTION`        | `true` solo en los E2E  | no se usa                        |
+| `MOCK_ADMIN_PASSWORD`               | opcional                | se ignora                        |
+| `MOCK_CONTROL_SECRET`               | los E2E                 | se ignora                        |
 | `TRUSTED_CLIENT_IP_HEADER`          | opcional                | la cabecera con la IP real       |
 
 ## Pasar a vivo
@@ -132,7 +143,7 @@ curl -X POST localhost:3000/api/revalidate \
 - Etiquetas válidas: `products`, `categories`, `settings`, `combos`, `product:{slug}`, `reviews:{slug}` y `content:{página}`.
 - Secreto inválido responde 401; un cuerpo de más de 8 kB, 413; más de 50 etiquetas, una etiqueta inválida o de más de 100 caracteres, 422.
 - `content:*` se regenera con el perfil `'max'` (se sirve lo anterior mientras tanto); el resto vence al instante.
-- En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché (ignora las etiquetas que no cumplen el formato de arriba): por ejemplo, un combo creado con `POST /api/v1/admin/combos` contra la tienda (login de prueba y `X-CSRF-Token`) se ve en la próxima carga del inicio. El dashboard en modo de prueba tiene su propia base y no avisa a la tienda (ADR 0003).
+- En modo de prueba, la API simulada llama a `revalidateTag` directamente después de cada escritura que cambia datos con caché (ignora las etiquetas que no cumplen el formato de arriba): por ejemplo, un combo creado con `POST /api/v1/admin/combos` contra la tienda (la cookie del login de prueba y `X-CSRF-Token`, ver "Admin de la API simulada") se ve en la próxima carga del inicio. Sin sesión de admin, lo que cambia la página de todos son las compras (un pago aprobado descuenta stock, como en vivo) y las rutas de control, cerradas en producción. El dashboard en modo de prueba tiene su propia base y no avisa a la tienda (ADR 0003).
 
 ## Intro, telón y cursor
 

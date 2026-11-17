@@ -187,3 +187,44 @@ describe('POST /__mock/products/{id}', () => {
     expect((await control(mock, productPath('prd-no-existe'), { stock: 1 })).status).toBe(404)
   })
 })
+
+describe('allowControl: quién puede usar los controles', () => {
+  it('si dice que no, los dos controles responden 404 y no cambian nada', async () => {
+    const mock = createCheckoutApi({ allowControl: () => false })
+    const { order } = await placeOrder(mock)
+
+    const expire = await control(mock, expirePath(order.number))
+    expect(expire.status).toBe(404)
+    const change = await control(mock, productPath('prd-imperial-premium'), { stock: 0 })
+    expect(change.status).toBe(404)
+    expect(await change.json()).toMatchObject({ type: 'not_found', status: 404 })
+
+    expect(mock.db.orders[0]?.status).toBe('pending_payment')
+    const mate = mock.db.products.find((product) => product.id === 'prd-imperial-premium')
+    expect(mate?.stock).toBe(12)
+    await expect(quoteCart(mock.api, { items: [MATE] })).resolves.toBeDefined()
+  })
+
+  it('recibe el pedido: con la cabecera que espera, el control anda', async () => {
+    const allowControl = vi.fn(
+      (request: Request) => request.headers.get('X-Mock-Control-Secret') === 'secreto',
+    )
+    const mock = createCheckoutApi({ allowControl })
+    const denied = await control(mock, productPath('prd-imperial-premium'), { stock: 3 })
+    expect(denied.status).toBe(404)
+    const allowed = await mock.raw(productPath('prd-imperial-premium'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Mock-Control-Secret': 'secreto' },
+      body: JSON.stringify({ stock: 3 }),
+    })
+    expect(allowed.status).toBe(200)
+    expect(allowControl).toHaveBeenCalledTimes(2)
+  })
+
+  it('no se consulta para las demás rutas', async () => {
+    const allowControl = vi.fn(() => false)
+    const mock = createCheckoutApi({ allowControl })
+    await placeOrder(mock)
+    expect(allowControl).not.toHaveBeenCalled()
+  })
+})

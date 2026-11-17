@@ -108,6 +108,9 @@ export function createAdminApi(
     getDb: () => mockDb.db,
     latencyMs: env.mockLatencyMs,
     now,
+    // La API simulada corre en esta pestaña y la usa solo ella: el navegador no deja mandarle la
+    // cookie de la sesión del admin a un `fetch` en memoria.
+    singleClient: true,
     onMutation: () => {
       mockDb.persist()
     },

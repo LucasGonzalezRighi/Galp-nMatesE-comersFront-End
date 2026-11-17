@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CartItemInput, CreateOrderResult } from '../../generated/schema'
 import { getOrder } from '../../services'
+import { MOCK_DB_LIMITS } from '../limits'
 import { createCheckoutApi, orderInput, placeOrder, postOrder, START } from '../test/checkout-api'
 import { randomUuid } from '../uuid'
 
@@ -214,6 +215,67 @@ describe('POST /orders', () => {
     const response = await postOrder(mock, orderInput({ website: 'https://spam.example' }))
     expect(response.status).toBe(201)
     expect(mock.db.orders).toHaveLength(0)
+  })
+
+  it('para la idempotencia guarda solo el SHA-256 del cuerpo, aunque traiga claves de más', async () => {
+    const mock = createCheckoutApi()
+    const key = randomUuid()
+    const body = { ...orderInput(), relleno: 'x'.repeat(10_000) }
+    const first = await postOrder(mock, body, key)
+    expect(first.status).toBe(201)
+    const fingerprint = mock.db.orders[0]?.creation.fingerprint
+    expect(fingerprint).toMatch(/^[0-9a-f]{64}$/)
+    expect(JSON.stringify(mock.db.orders)).not.toContain('xxxxxxxxxx')
+
+    const replay = await postOrder(mock, body, key)
+    expect(replay.status).toBe(201)
+    expect(((await replay.json()) as CreateOrderResult).order.number).toBe(
+      ((await first.json()) as CreateOrderResult).order.number,
+    )
+    expect((await postOrder(mock, orderInput(), key)).status).toBe(422)
+    expect(mock.db.orders).toHaveLength(1)
+  })
+})
+
+describe('números de pedido', () => {
+  it('después de GLP-99999 vuelve a GLP-10001 en vez de fallar con 500', async () => {
+    const mock = createCheckoutApi()
+    await placeOrder(mock)
+    const [only] = mock.db.orders
+    if (only === undefined) throw new Error('Falta el pedido')
+    only.number = 'GLP-99999'
+    const { order } = await placeOrder(mock)
+    expect(order.number).toBe('GLP-10001')
+    await expect(placeOrder(mock)).resolves.toMatchObject({ order: { number: 'GLP-10002' } })
+  })
+
+  it('al dar la vuelta saltea los números que siguen en la base', async () => {
+    const mock = createCheckoutApi()
+    await placeOrder(mock)
+    await placeOrder(mock)
+    const [, newest] = mock.db.orders
+    if (newest === undefined) throw new Error('Falta el pedido')
+    newest.number = 'GLP-99999'
+    const { order } = await placeOrder(mock)
+    expect(order.number).toBe('GLP-10002')
+  })
+
+  it('guarda hasta MOCK_DB_LIMITS.orders pedidos: uno nuevo descarta el más viejo', async () => {
+    const mock = createCheckoutApi()
+    const { order } = await placeOrder(mock)
+    const [template] = mock.db.orders
+    if (template === undefined) throw new Error('Falta el pedido')
+    mock.db.orders = Array.from({ length: MOCK_DB_LIMITS.orders }, (_, index) => ({
+      ...structuredClone(template),
+      number: `GLP-${String(20_000 + index)}`,
+      status: 'expired' as const,
+      reservation: [],
+    }))
+    const created = await placeOrder(mock)
+    expect(mock.db.orders).toHaveLength(MOCK_DB_LIMITS.orders)
+    expect(mock.db.orders[0]?.number).toBe('GLP-20001')
+    expect(mock.db.orders.at(-1)?.number).toBe(created.order.number)
+    expect(created.order.number).not.toBe(order.number)
   })
 })
 

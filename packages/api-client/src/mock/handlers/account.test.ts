@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AddressBookInput } from '../../generated/schema'
+import type { MockCustomer, MockPasswordResetMail } from '../types'
 import {
   createMyAddress,
   deleteMyAddress,
@@ -17,8 +18,9 @@ import {
   updateMe,
   updateMyAddress,
 } from '../../services'
+import { MOCK_DB_LIMITS } from '../limits'
 import { createCheckoutApi, placeOrder } from '../test/checkout-api'
-import { MOCK_PASSWORD_RESET_TOKEN } from './account'
+import { PASSWORD_RESET_TTL_MS } from './account'
 import { DEFAULT_CUSTOMER_SESSION_COOKIE } from './customer-session'
 
 const ACCOUNT = {
@@ -140,22 +142,164 @@ describe('contraseña', () => {
     await expect(forgotPassword(mock.api, { email: 'nadie@ejemplo.com' })).resolves.toBeUndefined()
   })
 
-  it('reset con el token de prueba cambia la contraseña; otro token es 422', async () => {
-    const mock = createCheckoutApi()
+  it('forgot de una cuenta que existe manda el enlace con un token al azar y guarda solo su hash', async () => {
+    const mails: MockPasswordResetMail[] = []
+    const mock = createCheckoutApi({ onPasswordReset: (mail) => mails.push(mail) })
+    await signUp(mock)
+    await forgotPassword(mock.api, { email: 'nadie@ejemplo.com' })
+    expect(mails).toEqual([])
+
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    const [first, second] = mails
+    expect(first).toEqual({
+      email: ACCOUNT.email,
+      token: expect.stringMatching(/^rt_[0-9a-f]{64}$/) as unknown,
+      expiresAt: new Date(Date.parse('2026-10-26T15:00:00Z') + PASSWORD_RESET_TTL_MS).toISOString(),
+    })
+    expect(second?.token).not.toBe(first?.token)
+    const stored = JSON.stringify(mock.db.customers)
+    expect(stored).not.toContain(first?.token)
+    expect(stored).not.toContain(second?.token)
+    expect(mock.db.customers[0]?.passwordReset?.tokenHash).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('reset con el token del enlace cambia la contraseña y cierra las sesiones; el token constante de antes no sirve', async () => {
+    const mails: MockPasswordResetMail[] = []
+    const mock = createCheckoutApi({ onPasswordReset: (mail) => mails.push(mail) })
     await signUp(mock)
     await logout(mock.api)
     await refreshCsrf(mock)
     await forgotPassword(mock.api, { email: ACCOUNT.email })
-    await expect(
-      resetPassword(mock.api, { token: 'otro', password: 'nueva-clave-2026' }),
-    ).rejects.toMatchObject({ status: 422, fieldErrors: { token: expect.any(String) as unknown } })
-    await resetPassword(mock.api, {
-      token: MOCK_PASSWORD_RESET_TOKEN,
-      password: 'nueva-clave-2026',
-    })
+    for (const token of ['otro', 'RESET-OK']) {
+      await expect(
+        resetPassword(mock.api, { token, password: 'nueva-clave-2026' }),
+      ).rejects.toMatchObject({
+        status: 422,
+        fieldErrors: { token: expect.any(String) as unknown },
+      })
+    }
+    await resetPassword(mock.api, { token: mails[0]?.token ?? '', password: 'nueva-clave-2026' })
     await expect(
       login(mock.api, { email: ACCOUNT.email, password: 'nueva-clave-2026' }),
     ).resolves.toMatchObject({ email: ACCOUNT.email })
+  })
+
+  it('el token es de un solo uso, vence a los 60 minutos y un pedido nuevo anula el anterior', async () => {
+    const mails: MockPasswordResetMail[] = []
+    const mock = createCheckoutApi({ onPasswordReset: (mail) => mails.push(mail) })
+    await signUp(mock)
+    const reset = (token: string | undefined, password: string) =>
+      resetPassword(mock.api, { token: token ?? '', password })
+
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    await reset(mails.at(-1)?.token, 'primera-clave-2026')
+    await refreshCsrf(mock)
+    await expect(reset(mails.at(-1)?.token, 'segunda-clave-2026')).rejects.toMatchObject({
+      status: 422,
+    })
+
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    const replaced = mails.at(-1)?.token
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    await expect(reset(replaced, 'segunda-clave-2026')).rejects.toMatchObject({ status: 422 })
+
+    mock.advance(61)
+    await expect(reset(mails.at(-1)?.token, 'segunda-clave-2026')).rejects.toMatchObject({
+      status: 422,
+    })
+    await refreshCsrf(mock)
+    await expect(
+      login(mock.api, { email: ACCOUNT.email, password: 'primera-clave-2026' }),
+    ).resolves.toMatchObject({ email: ACCOUNT.email })
+  })
+
+  it('el token cambia la contraseña de su cuenta, no la del último que pidió el cambio', async () => {
+    const mails: MockPasswordResetMail[] = []
+    const mock = createCheckoutApi({ onPasswordReset: (mail) => mails.push(mail) })
+    const victim = { ...ACCOUNT, email: 'vera@ejemplo.com', password: 'original-clave-1' }
+    await signUp(mock, victim)
+    await logout(mock.api)
+    await signUp(mock)
+    await forgotPassword(mock.api, { email: ACCOUNT.email })
+    await forgotPassword(mock.api, { email: victim.email })
+
+    await resetPassword(mock.api, {
+      token: mails.find((mail) => mail.email === ACCOUNT.email)?.token ?? '',
+      password: 'cambiada-clave-2',
+    })
+    await refreshCsrf(mock)
+    await expect(
+      login(mock.api, { email: victim.email, password: 'cambiada-clave-2' }),
+    ).rejects.toMatchObject({ status: 401 })
+    await expect(
+      login(mock.api, { email: victim.email, password: victim.password }),
+    ).resolves.toMatchObject({ email: victim.email })
+  })
+})
+
+/** Cliente de relleno para llenar la base hasta el tope. */
+function fillerCustomer(index: number): MockCustomer {
+  return {
+    id: `cus-${String(index + 1).padStart(4, '0')}`,
+    email: `relleno-${String(index)}@ejemplo.com`,
+    firstName: 'Relleno',
+    lastName: 'Prueba',
+    phone: null,
+    password: 'relleno-clave-1',
+    addresses: [],
+    passwordReset: null,
+    createdAt: '2026-10-01T12:00:00.000Z',
+  }
+}
+
+describe('topes de la base', () => {
+  it('guarda hasta MOCK_DB_LIMITS.customerSessions sesiones: una nueva descarta la más vieja', async () => {
+    const mock = createCheckoutApi()
+    const expiresAt = '2026-10-27T15:00:00.000Z'
+    mock.db.customerSessions = Array.from({ length: MOCK_DB_LIMITS.customerSessions }, (_, i) => ({
+      id: `ses-${String(i)}`,
+      customerId: null,
+      csrfToken: `csrf-${String(i)}`,
+      expiresAt,
+    }))
+    await refreshCsrf(mock)
+    expect(mock.db.customerSessions).toHaveLength(MOCK_DB_LIMITS.customerSessions)
+    expect(mock.db.customerSessions[0]?.id).toBe('ses-1')
+    expect(mock.db.customerSessions.at(-1)?.id).toBe(
+      mock.cookies.get(DEFAULT_CUSTOMER_SESSION_COOKIE),
+    )
+  })
+
+  it('guarda hasta MOCK_DB_LIMITS.customers clientes: el alta nueva descarta el más viejo y no repite el id', async () => {
+    const mock = createCheckoutApi()
+    mock.db.customers = Array.from({ length: MOCK_DB_LIMITS.customers }, (_, i) =>
+      fillerCustomer(i),
+    )
+    await signUp(mock)
+    expect(mock.db.customers).toHaveLength(MOCK_DB_LIMITS.customers)
+    expect(mock.db.customers[0]?.email).toBe('relleno-1@ejemplo.com')
+    const ids = mock.db.customers.map((customer) => customer.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    await expect(getMe(mock.api)).resolves.toMatchObject({ email: ACCOUNT.email })
+  })
+
+  it('guarda hasta MOCK_DB_LIMITS.addressesPerCustomer direcciones por cliente: descarta la más vieja', async () => {
+    const mock = createCheckoutApi()
+    await signUp(mock)
+    const first = await createMyAddress(mock.api, { ...HOME, isDefault: false })
+    for (let i = 1; i < MOCK_DB_LIMITS.addressesPerCustomer; i += 1) {
+      await createMyAddress(mock.api, {
+        ...HOME,
+        label: `Dirección ${String(i)}`,
+        isDefault: false,
+      })
+    }
+    const last = await createMyAddress(mock.api, { ...HOME, label: 'La nueva', isDefault: false })
+    const list = await listMyAddresses(mock.api)
+    expect(list).toHaveLength(MOCK_DB_LIMITS.addressesPerCustomer)
+    expect(list.map((address) => address.id)).not.toContain(first.id)
+    expect(list.map((address) => address.id)).toContain(last.id)
   })
 })
 

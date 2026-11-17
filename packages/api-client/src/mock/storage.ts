@@ -60,10 +60,13 @@ function hasTextFields(value: unknown, names: readonly string[]): value is Recor
   return isRecord(value) && names.every((name) => typeof value[name] === 'string')
 }
 
-/** Indica si `value` es una sesión del administrador con sus tres textos y un vencimiento que es fecha. */
+/**
+ * Indica si `value` es una sesión del administrador con sus textos (el id de su cookie, el email y
+ * el token CSRF) y un vencimiento que es fecha.
+ */
 function isAdminSession(value: unknown): value is MockAdminSession {
   return (
-    hasTextFields(value, ['email', 'csrfToken', 'expiresAt']) &&
+    hasTextFields(value, ['id', 'email', 'csrfToken', 'expiresAt']) &&
     !Number.isNaN(Date.parse(value.expiresAt ?? ''))
   )
 }

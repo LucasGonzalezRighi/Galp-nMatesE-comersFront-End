@@ -35,6 +35,8 @@ Credenciales de prueba del dashboard:
 - Email: `admin@galponmates.com.ar`
 - Contraseña: `galpon-demo-2026`
 
+Son de fábrica y públicas: sirven en el dashboard de prueba y en el admin de la API simulada de la tienda (`/api/v1/admin/*`) solo fuera de producción. Una tienda compilada (`next start`) con `API_MODE=mock` deja ese admin cerrado salvo que se le dé otra contraseña con `MOCK_ADMIN_PASSWORD` (ver el README de la tienda).
+
 Notas:
 
 - Los puertos son fijos (3000 y 5173); si alguno está ocupado, el comando falla.

@@ -54,8 +54,9 @@ Guardar, borrar u ordenar invalida `queryKeys.adminCombos()`: el dashboard se ve
   tienda (`storefront-sync`), que hoy no existe.
 - **En modo de prueba:** el dashboard y la tienda no comparten base (ADR 0003): lo que se guarda
   acá vive en el `sessionStorage` del navegador y la tienda no lo ve. Para probar la tienda, las
-  escrituras van contra la base de la tienda (`/api/v1/admin/combos` del servidor de Next, con el
-  login de prueba y `X-CSRF-Token`).
+  escrituras van contra la base de la tienda (`/api/v1/admin/combos` del servidor de Next, con la
+  cookie del login de prueba y `X-CSRF-Token`; ver "Admin de la API simulada" en el README de la
+  tienda).
 
 ## Archivos
 

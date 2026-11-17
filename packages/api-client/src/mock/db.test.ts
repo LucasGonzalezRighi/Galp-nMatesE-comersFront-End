@@ -33,7 +33,7 @@ afterEach(() => {
 describe('createMockDb', () => {
   it('siembra los fixtures, la cuenta del admin y las listas vacías', () => {
     const db = createMockDb(OPTIONS)
-    expect(db.version).toBe(5)
+    expect(db.version).toBe(6)
     expect(db.media).toEqual({})
     expect(db.products.every((product) => product.updatedAt === product.createdAt)).toBe(true)
     expect(db.categories).toHaveLength(6)
@@ -142,6 +142,7 @@ describe('createPersistentMockDb', () => {
     const first = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     first.db.settings.kitDiscountPercent = 15
     first.db.adminSession = {
+      id: 'sesion-de-prueba',
       email: OPTIONS.adminEmail,
       csrfToken: 'token-de-prueba',
       expiresAt: '2026-10-21T15:00:00Z',
@@ -169,7 +170,7 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), version: 0, products: [] }))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.isPersistent).toBe(true)
-    expect(handle.db.version).toBe(5)
+    expect(handle.db.version).toBe(6)
     expect(handle.db.products).toHaveLength(27)
   })
 
@@ -241,14 +242,23 @@ describe('createPersistentMockDb', () => {
       'una contraseña del admin que no es un texto',
       { adminAccount: { email: 'a@b.c', password: 5 } },
     ],
-    ['una sesión sin token CSRF', { adminSession: { email: 'a@b.c', expiresAt: SESSION_EXPIRES } }],
+    [
+      'una sesión sin token CSRF',
+      { adminSession: { id: 'sesion', email: 'a@b.c', expiresAt: SESSION_EXPIRES } },
+    ],
+    [
+      'una sesión sin el id de su cookie (las de antes de atarla a la cookie)',
+      { adminSession: { email: 'a@b.c', csrfToken: 'token', expiresAt: SESSION_EXPIRES } },
+    ],
     [
       'una sesión con el email que no es un texto',
-      { adminSession: { email: null, csrfToken: 'token', expiresAt: SESSION_EXPIRES } },
+      {
+        adminSession: { id: 'sesion', email: null, csrfToken: 'token', expiresAt: SESSION_EXPIRES },
+      },
     ],
     [
       'una sesión con un vencimiento que no es una fecha',
-      { adminSession: { email: 'a@b.c', csrfToken: 'token', expiresAt: 'mañana' } },
+      { adminSession: { id: 'sesion', email: 'a@b.c', csrfToken: 'token', expiresAt: 'mañana' } },
     ],
     ['una sesión que es un arreglo', { adminSession: [] }],
     ['fotos que son un arreglo', { media: [] }],

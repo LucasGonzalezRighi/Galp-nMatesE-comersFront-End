@@ -2,6 +2,7 @@ import { contactSchema, withdrawalSchema } from '@galpon/schemas'
 import type { MockRoute } from '../router'
 import type { MockDb, MockMessage } from '../types'
 import { json } from '../http'
+import { keepNewest, MOCK_DB_LIMITS, nextSequentialId } from '../limits'
 import { route } from '../router'
 import { readPublicForm } from './forms'
 
@@ -13,7 +14,19 @@ const WITHDRAWAL_CODE_DIGITS = 6
 
 /** Identificador del próximo mensaje de la bandeja (`msg-0001`, `msg-0002`…). */
 function nextMessageId(db: MockDb): string {
-  return `msg-${String(db.messages.length + 1).padStart(4, '0')}`
+  return nextSequentialId(
+    'msg-',
+    db.messages.map((message) => message.id),
+    4,
+  )
+}
+
+/**
+ * Guarda un mensaje al final de la bandeja; pasados `MOCK_DB_LIMITS.messages` descarta los más
+ * viejos.
+ */
+function saveMessage(db: MockDb, entry: MockMessage): void {
+  db.messages = keepNewest([...db.messages, entry], MOCK_DB_LIMITS.messages)
 }
 
 /**
@@ -51,7 +64,7 @@ export const contactRoutes: readonly MockRoute[] = [
         createdAt: ctx.now.toISOString(),
         read: false,
       }
-      ctx.db.messages.push(entry)
+      saveMessage(ctx.db, entry)
     }
     return new Response(null, { status: 202 })
   }),
@@ -73,7 +86,7 @@ export const contactRoutes: readonly MockRoute[] = [
         createdAt: ctx.now.toISOString(),
         read: false,
       }
-      ctx.db.messages.push(entry)
+      saveMessage(ctx.db, entry)
     }
     return json({ code }, 201)
   }),

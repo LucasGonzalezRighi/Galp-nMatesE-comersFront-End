@@ -1,6 +1,6 @@
 import type { paths } from '../generated/schema'
 import type { HttpMethod } from './http'
-import type { MockDb } from './types'
+import type { MockDb, MockPasswordResetMail } from './types'
 import { isHttpMethod } from './http'
 
 /** Lo que recibe cada handler de la API simulada. */
@@ -18,9 +18,14 @@ export interface MockContext {
   /** Nombre de la cookie de sesión de la tienda (`galpon_session` por omisión). */
   customerSessionCookie: string
   /**
-   * Lee el cuerpo como JSON.
+   * `true` si el `fetch` simulado atiende a un solo cliente en su mismo navegador (el dashboard):
+   * la sesión del admin abierta es la de ese cliente y no se busca su cookie.
+   */
+  singleClient: boolean
+  /**
+   * Lee el cuerpo como JSON, sin pasar del tope de la ruta (64 kB salvo que diga otro).
    *
-   * @throws {ResponseError} Con un `422` si el cuerpo no es JSON válido.
+   * @throws {ResponseError} Con un `413` si pasa el tope y con un `422` si no es JSON válido.
    */
   body<T>(): Promise<T>
   /**
@@ -29,6 +34,13 @@ export interface MockContext {
    * @param tags - Etiquetas de caché a invalidar.
    */
   invalidate(tags: readonly string[]): void
+  /**
+   * Hace las veces del mail con el enlace para cambiar la contraseña: se lo pasa a
+   * `onPasswordReset` de `createMockFetch`.
+   *
+   * @param mail - A quién va, el token del enlace y su vencimiento.
+   */
+  sendPasswordReset(mail: MockPasswordResetMail): void
 }
 
 /** Función que atiende una ruta de la API simulada. */
@@ -42,6 +54,11 @@ export interface MockRoute {
   path: string
   /** Quien la atiende. */
   handler: MockHandler
+  /**
+   * Tope del cuerpo en bytes; por omisión 64 kB (`MAX_MOCK_BODY_BYTES`). Solo lo suben las rutas
+   * que exigen la sesión del admin antes de leer el cuerpo.
+   */
+  maxBodyBytes?: number
 }
 
 /** Resultado de encontrar la ruta de un pedido. */
@@ -58,15 +75,23 @@ export interface RouteMatch {
  * @param method - Método HTTP.
  * @param path - Ruta tal como está en `docs/api/openapi.yaml`.
  * @param handler - Quien atiende el pedido.
+ * @param options - `maxBodyBytes`: tope del cuerpo de esta ruta (ver {@link MockRoute}).
  * @throws {RangeError} Si el método no es HTTP del contrato.
  */
-export function route(method: HttpMethod, path: keyof paths, handler: MockHandler): MockRoute {
+export function route(
+  method: HttpMethod,
+  path: keyof paths,
+  handler: MockHandler,
+  options: { maxBodyBytes?: number } = {},
+): MockRoute {
   if (!isHttpMethod(method)) {
     throw new RangeError(
       `El método "${String(method)}" no es uno de GET, POST, PUT, PATCH o DELETE.`,
     )
   }
-  return { method, path, handler }
+  return options.maxBodyBytes === undefined
+    ? { method, path, handler }
+    : { method, path, handler, maxBodyBytes: options.maxBodyBytes }
 }
 
 /** Separa una ruta en segmentos, sin la barra final; `null` si algún segmento está vacío. */

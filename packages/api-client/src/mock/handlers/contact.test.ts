@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { requestWithdrawal, sendContactMessage } from '../../services'
 import { createMockApi, rawRequest } from '../../test/mock-api'
+import { MOCK_DB_LIMITS } from '../limits'
 
 /** Hora fija de los pedidos, para comprobar la fecha con que se guarda cada mensaje. */
 const NOW = new Date('2026-10-21T15:00:00.000Z')
@@ -267,5 +268,33 @@ describe('POST /withdrawals', () => {
       ],
     })
     expect(mock.db.messages).toEqual([])
+  })
+})
+
+describe('tope de la bandeja', () => {
+  it('guarda hasta MOCK_DB_LIMITS.messages mensajes: uno nuevo descarta el más viejo y no repite el id', async () => {
+    const mock = createMockApi({ now: () => NOW })
+    mock.db.messages = Array.from({ length: MOCK_DB_LIMITS.messages }, (_, index) => ({
+      id: `msg-${String(index + 1).padStart(4, '0')}`,
+      kind: 'contact' as const,
+      name: 'Relleno',
+      email: 'relleno@ejemplo.com',
+      orderNumber: null,
+      reason: 'Otro' as const,
+      message: 'Mensaje de relleno para llegar al tope.',
+      code: null,
+      createdAt: '2026-10-20T15:00:00.000Z',
+      read: true,
+    }))
+    await sendContactMessage(mock.api, VALID_CONTACT)
+    await requestWithdrawal(mock.api, VALID_WITHDRAWAL)
+    expect(mock.db.messages).toHaveLength(MOCK_DB_LIMITS.messages)
+    expect(mock.db.messages[0]?.id).toBe('msg-0003')
+    const ids = mock.db.messages.map((message) => message.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.slice(-2)).toEqual([
+      `msg-${String(MOCK_DB_LIMITS.messages + 1)}`,
+      `msg-${String(MOCK_DB_LIMITS.messages + 2)}`,
+    ])
   })
 })

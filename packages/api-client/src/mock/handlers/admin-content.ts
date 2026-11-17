@@ -12,6 +12,7 @@ import {
 import type { AboutContent, AdminSettings, Image } from '../../generated/schema'
 import type { MockContext, MockRoute } from '../router'
 import type { MockContent, MockDb } from '../types'
+import { MAX_MOCK_ADMIN_BODY_BYTES } from '../body'
 import { json, notFound, ResponseError } from '../http'
 import { resolveImage } from '../mappers'
 import { route } from '../router'
@@ -40,6 +41,12 @@ interface PlainPageRoute<K extends PlainPage> {
 /** Documentos legales del contrato. */
 const LEGAL_DOCUMENTS = ['terms', 'privacy'] as const
 
+/**
+ * Tope del cuerpo de los `PUT` de contenido: el FAQ entero y cada documento legal pasan de 64 kB, y
+ * el cuerpo se lee después de exigir la sesión del admin.
+ */
+const CONTENT_BODY = { maxBodyBytes: MAX_MOCK_ADMIN_BODY_BYTES }
+
 /** Documento legal de la ruta (`{document}`). */
 function legalDocument(ctx: MockContext): (typeof LEGAL_DOCUMENTS)[number] {
   const document = LEGAL_DOCUMENTS.find((candidate) => candidate === ctx.params.document)
@@ -56,13 +63,18 @@ function plainPageRoutes<K extends PlainPage>(page: PlainPageRoute<K>): MockRout
       requireAdmin(ctx, { csrf: false })
       return json(ctx.db.content[page.key])
     }),
-    route('PUT', page.path, async (ctx) => {
-      requireAdmin(ctx, { csrf: true })
-      const content = parseOrFail(page.schema, await ctx.body())
-      ctx.db.content[page.key] = content
-      ctx.invalidate([page.tag])
-      return json(content)
-    }),
+    route(
+      'PUT',
+      page.path,
+      async (ctx) => {
+        requireAdmin(ctx, { csrf: true })
+        const content = parseOrFail(page.schema, await ctx.body())
+        ctx.db.content[page.key] = content
+        ctx.invalidate([page.tag])
+        return json(content)
+      },
+      CONTENT_BODY,
+    ),
   ]
 }
 
@@ -126,14 +138,19 @@ export const adminContentRoutes: readonly MockRoute[] = [
     requireAdmin(ctx, { csrf: false })
     return json(ctx.db.content.about)
   }),
-  route('PUT', '/admin/content/about', async (ctx) => {
-    requireAdmin(ctx, { csrf: true })
-    const input = parseOrFail(aboutContentFormSchema, await ctx.body())
-    const about = aboutContent(input, ctx.db)
-    ctx.db.content.about = about
-    ctx.invalidate(['content:about'])
-    return json(about)
-  }),
+  route(
+    'PUT',
+    '/admin/content/about',
+    async (ctx) => {
+      requireAdmin(ctx, { csrf: true })
+      const input = parseOrFail(aboutContentFormSchema, await ctx.body())
+      const about = aboutContent(input, ctx.db)
+      ctx.db.content.about = about
+      ctx.invalidate(['content:about'])
+      return json(about)
+    },
+    CONTENT_BODY,
+  ),
 
   ...plainPageRoutes({
     key: 'faq',
@@ -158,14 +175,19 @@ export const adminContentRoutes: readonly MockRoute[] = [
     requireAdmin(ctx, { csrf: false })
     return json(ctx.db.content.legal[legalDocument(ctx)])
   }),
-  route('PUT', '/admin/content/legal/{document}', async (ctx) => {
-    requireAdmin(ctx, { csrf: true })
-    const document = legalDocument(ctx)
-    const legal = parseOrFail(legalContentFormSchema, await ctx.body())
-    ctx.db.content.legal[document] = legal
-    ctx.invalidate([`content:legal-${document}`])
-    return json(legal)
-  }),
+  route(
+    'PUT',
+    '/admin/content/legal/{document}',
+    async (ctx) => {
+      requireAdmin(ctx, { csrf: true })
+      const document = legalDocument(ctx)
+      const legal = parseOrFail(legalContentFormSchema, await ctx.body())
+      ctx.db.content.legal[document] = legal
+      ctx.invalidate([`content:legal-${document}`])
+      return json(legal)
+    },
+    CONTENT_BODY,
+  ),
 
   route('GET', '/admin/settings', (ctx) => {
     requireAdmin(ctx, { csrf: false })
