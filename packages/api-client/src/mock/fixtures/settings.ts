@@ -1,9 +1,10 @@
-import { DEFAULT_SHIPPING_OPTIONS } from '@galpon/domain'
+import { DEFAULT_CONSUMER_LINKS, DEFAULT_SHIPPING_OPTIONS } from '@galpon/domain'
 import type { AdminSettings } from '../../generated/schema'
 
 /**
  * Ajustes de ejemplo de la tienda: el descuento del kit, los envíos y las cuotas del diseño, con
- * IVA al 21 % y los datos del vendedor todavía sin cargar.
+ * IVA al 21 %, los datos del vendedor todavía sin cargar y los enlaces de fábrica a Defensa del
+ * Consumidor.
  */
 export const FIXTURE_SETTINGS: AdminSettings = {
   kitDiscountPercent: 10,
@@ -24,4 +25,5 @@ export const FIXTURE_SETTINGS: AdminSettings = {
     supportHours: null,
     dataFiscalUrl: null,
   },
+  consumerLinks: { ...DEFAULT_CONSUMER_LINKS },
 }

@@ -1,5 +1,6 @@
 import type { ApiClient } from '../client'
 import type {
+  AccountDeletion,
   Address,
   AddressBookInput,
   CsrfToken,
@@ -100,6 +101,19 @@ export function getMe(api: ApiClient): Promise<Customer> {
  */
 export function updateMe(api: ApiClient, input: CustomerUpdate): Promise<Customer> {
   return unwrap(api.PATCH('/me', { body: input }))
+}
+
+/**
+ * Elimina la cuenta del cliente después de confirmar la contraseña (`DELETE /me`). La respuesta
+ * borra la cookie de sesión; los pedidos quedan sin vínculo a la cuenta.
+ *
+ * @param api - Cliente de la API (con `getCsrfToken`).
+ * @param input - La contraseña actual.
+ * @throws {ApiError} Con `validation` (`password`, `invalid_password`) si la contraseña no es
+ *   correcta y con `unauthorized` si no hay sesión.
+ */
+export function deleteMe(api: ApiClient, input: AccountDeletion): Promise<void> {
+  return unwrapVoid(api.DELETE('/me', { body: input }))
 }
 
 /**

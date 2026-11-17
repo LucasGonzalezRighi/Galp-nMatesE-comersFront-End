@@ -33,7 +33,7 @@ afterEach(() => {
 describe('createMockDb', () => {
   it('siembra los fixtures, la cuenta del admin y las listas vacías', () => {
     const db = createMockDb(OPTIONS)
-    expect(db.version).toBe(5)
+    expect(db.version).toBe(6)
     expect(db.media).toEqual({})
     expect(db.products.every((product) => product.updatedAt === product.createdAt)).toBe(true)
     expect(db.categories).toHaveLength(6)
@@ -169,7 +169,7 @@ describe('createPersistentMockDb', () => {
     storage.setItem(KEY, JSON.stringify({ ...createMockDb(OPTIONS), version: 0, products: [] }))
     const handle = createPersistentMockDb({ ...OPTIONS, storage, key: KEY })
     expect(handle.isPersistent).toBe(true)
-    expect(handle.db.version).toBe(5)
+    expect(handle.db.version).toBe(6)
     expect(handle.db.products).toHaveLength(27)
   })
 

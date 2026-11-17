@@ -246,7 +246,7 @@ export function adminContentQuery<P extends AdminContentPage>(api: ApiClient, pa
  * Consulta de un documento legal para editarlo.
  *
  * @param api - Cliente de la API.
- * @param document - `terms` o `privacy`.
+ * @param document - `terms`, `privacy`, `cookies` o `returns`.
  */
 export function adminLegalContentQuery(api: ApiClient, document: LegalDocument) {
   return queryOptions({

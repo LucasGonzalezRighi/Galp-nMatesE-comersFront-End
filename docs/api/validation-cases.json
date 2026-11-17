@@ -197,13 +197,13 @@
       "schema": "checkoutContactSchema",
       "input": {
         "email": "lucia@example.com",
-        "firstName": "Lucia\u0301",
+        "firstName": "Luciá",
         "lastName": "Gómez"
       },
       "valid": true,
       "output": {
         "email": "lucia@example.com",
-        "firstName": "Lucia\u0301",
+        "firstName": "Luciá",
         "lastName": "Gómez"
       }
     },
@@ -2868,6 +2868,42 @@
       }
     },
     {
+      "field": "Eliminar la cuenta",
+      "name": "Eliminar la cuenta: con la contraseña",
+      "schema": "deleteAccountSchema",
+      "input": {
+        "password": "mate-amargo-2026"
+      },
+      "valid": true,
+      "output": {
+        "password": "mate-amargo-2026"
+      }
+    },
+    {
+      "field": "Eliminar la cuenta",
+      "name": "Eliminar la cuenta: sin contraseña",
+      "schema": "deleteAccountSchema",
+      "input": {
+        "password": ""
+      },
+      "valid": false,
+      "errors": {
+        "password": "Requerido"
+      }
+    },
+    {
+      "field": "Eliminar la cuenta",
+      "name": "Eliminar la cuenta: de 129 caracteres",
+      "schema": "deleteAccountSchema",
+      "input": {
+        "password": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "valid": false,
+      "errors": {
+        "password": "Máximo 128 caracteres"
+      }
+    },
+    {
       "field": "Admin · producto: nombre",
       "name": "Admin · producto: nombre: un nombre",
       "schema": "productFormSchema",
@@ -4752,6 +4788,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -4796,6 +4836,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -4844,6 +4888,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -4888,6 +4936,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -4936,6 +4988,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -4980,6 +5036,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5028,6 +5088,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5080,6 +5144,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5132,6 +5200,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5184,6 +5256,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5228,6 +5304,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5276,6 +5356,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5320,6 +5404,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5368,6 +5456,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5412,6 +5504,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5460,6 +5556,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5512,6 +5612,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5564,6 +5668,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5616,6 +5724,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5660,6 +5772,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5708,6 +5824,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5752,6 +5872,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5800,6 +5924,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -5844,6 +5972,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -5892,6 +6024,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5944,6 +6080,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -5996,6 +6136,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -6155,6 +6299,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -6199,6 +6347,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -6247,6 +6399,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -6291,6 +6447,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -6339,6 +6499,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -6383,6 +6547,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -6431,6 +6599,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": true,
@@ -6475,6 +6647,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       }
     },
@@ -6523,6 +6699,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -6575,6 +6755,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -6627,6 +6811,10 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
@@ -6679,11 +6867,483 @@
           "supportArea": null,
           "supportHours": null,
           "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
         }
       },
       "valid": false,
       "errors": {
         "seller.cuit": "CUIT inválido"
+      }
+    },
+    {
+      "field": "Admin · enlaces de Defensa del Consumidor",
+      "name": "Admin · enlaces de Defensa del Consumidor: los de fábrica",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      },
+      "valid": true,
+      "output": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      }
+    },
+    {
+      "field": "Admin · enlaces de Defensa del Consumidor",
+      "name": "Admin · enlaces de Defensa del Consumidor: el de CABA vacío",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": " ",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      },
+      "valid": false,
+      "errors": {
+        "consumerLinks.cabaUrl": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · enlaces de Defensa del Consumidor",
+      "name": "Admin · enlaces de Defensa del Consumidor: el nacional sin http",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": null
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "www.argentina.gob.ar/produccion/defensadelconsumidor"
+        }
+      },
+      "valid": false,
+      "errors": {
+        "consumerLinks.nationalUrl": "Ingresá una URL válida, con http:// o https://"
+      }
+    },
+    {
+      "field": "Admin · Data Fiscal",
+      "name": "Admin · Data Fiscal: un enlace",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": "https://qr.afip.gob.ar/?qr=abc123"
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      },
+      "valid": true,
+      "output": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": "https://qr.afip.gob.ar/?qr=abc123"
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      }
+    },
+    {
+      "field": "Admin · Data Fiscal",
+      "name": "Admin · Data Fiscal: el código de ARCA pegado entero guarda solo el enlace",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": "<a href=\"https://qr.afip.gob.ar/?qr=abc123\" target=\"_F960AFIPInfo\"><img src=\"https://www.afip.gob.ar/images/f960/DATAWEB.jpg\" border=\"0\"></a>"
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      },
+      "valid": true,
+      "output": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": "https://qr.afip.gob.ar/?qr=abc123"
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      }
+    },
+    {
+      "field": "Admin · Data Fiscal",
+      "name": "Admin · Data Fiscal: un texto sin enlace",
+      "schema": "settingsFormSchema",
+      "input": {
+        "kitDiscountPercent": 10,
+        "shippingOptions": [
+          {
+            "method": "home",
+            "costArs": 4500,
+            "eta": "3 a 5 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "branch",
+            "costArs": 3200,
+            "eta": "4 a 6 días hábiles",
+            "enabled": true
+          },
+          {
+            "method": "pickup",
+            "costArs": 0,
+            "eta": "Coordinamos el día y la hora",
+            "enabled": false
+          }
+        ],
+        "installments": {
+          "maxWithoutInterest": 6,
+          "showOnProduct": true
+        },
+        "contactEmail": "hola@galponmates.com.ar",
+        "lowStockThreshold": 3,
+        "vatRatePercent": 21,
+        "priceDisplay": {
+          "showNetPrice": true
+        },
+        "seller": {
+          "legalName": null,
+          "cuit": null,
+          "taxCondition": null,
+          "address": null,
+          "phone": null,
+          "supportArea": null,
+          "supportHours": null,
+          "dataFiscalUrl": "Data Fiscal de ARCA"
+        },
+        "consumerLinks": {
+          "cabaUrl": "https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor",
+          "nationalUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario"
+        }
+      },
+      "valid": false,
+      "errors": {
+        "seller.dataFiscalUrl": "Ingresá una URL válida, con http:// o https://"
       }
     },
     {
@@ -7963,37 +8623,32 @@
     },
     {
       "field": "Admin · pie de página",
-      "name": "Admin · pie de página: con el enlace a Defensa del Consumidor",
+      "name": "Admin · pie de página: frase, texto y medios de pago",
       "schema": "footerContentFormSchema",
       "input": {
         "tagline": "Hechos para compartir.",
         "text": "Mates, bombillones y yerba con envío a todo el país.",
-        "paymentMethods": ["Mercado Pago", "Visa"],
-        "consumerDefenseUrl": "https://www.argentina.gob.ar/produccion/defensadelconsumidor"
+        "paymentMethods": ["Mercado Pago", "Visa"]
       },
       "valid": true
     },
     {
       "field": "Admin · pie de página",
-      "name": "Admin · pie de página: sin enlace: vacío queda en null",
+      "name": "Admin · pie de página: sin frase",
       "schema": "footerContentFormSchema",
       "input": {
-        "tagline": "Hechos para compartir.",
+        "tagline": " ",
         "text": "Mates, bombillones y yerba con envío a todo el país.",
-        "paymentMethods": ["Mercado Pago", "Visa"],
-        "consumerDefenseUrl": " "
+        "paymentMethods": ["Mercado Pago", "Visa"]
       },
-      "valid": true,
-      "output": {
-        "tagline": "Hechos para compartir.",
-        "text": "Mates, bombillones y yerba con envío a todo el país.",
-        "paymentMethods": ["Mercado Pago", "Visa"],
-        "consumerDefenseUrl": null
+      "valid": false,
+      "errors": {
+        "tagline": "Requerido"
       }
     },
     {
       "field": "Admin · pie de página",
-      "name": "Admin · pie de página: enlace sin http y 11 medios de pago",
+      "name": "Admin · pie de página: 11 medios de pago",
       "schema": "footerContentFormSchema",
       "input": {
         "tagline": "Hechos para compartir.",
@@ -8010,12 +8665,10 @@
           "Visa",
           "Visa",
           "Visa"
-        ],
-        "consumerDefenseUrl": "www.argentina.gob.ar"
+        ]
       },
       "valid": false,
       "errors": {
-        "consumerDefenseUrl": "Ingresá una URL válida, con http:// o https://",
         "paymentMethods": "Máximo 10 medios de pago"
       }
     },
@@ -8177,6 +8830,31 @@
       "errors": {
         "title": "Requerido",
         "body": "Requerido"
+      }
+    },
+    {
+      "field": "Admin · documento legal",
+      "name": "Admin · documento legal: con un título de sección y un dato del vendedor",
+      "schema": "legalContentFormSchema",
+      "input": {
+        "title": "Términos y condiciones",
+        "updatedAt": "2026-11-09",
+        "body": "## Quién vende\n\nEste sitio es de {{razon_social}}.\n\n- Envíos a todo el país."
+      },
+      "valid": true
+    },
+    {
+      "field": "Admin · documento legal",
+      "name": "Admin · documento legal: con un dato que no existe",
+      "schema": "legalContentFormSchema",
+      "input": {
+        "title": "Términos y condiciones",
+        "updatedAt": "2026-11-09",
+        "body": "CUIT: {{cuitt}}."
+      },
+      "valid": false,
+      "errors": {
+        "body": "El dato {{cuitt}} no existe. Revisá la lista de datos del vendedor."
       }
     }
   ]

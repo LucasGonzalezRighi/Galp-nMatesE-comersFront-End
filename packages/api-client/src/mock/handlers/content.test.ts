@@ -8,6 +8,7 @@ import {
   getProductTabsContent,
 } from '../../services'
 import { createMockApi, rawRequest } from '../../test/mock-api'
+import { FIXTURE_CONTENT } from '../fixtures/content'
 
 describe('rutas de contenido', () => {
   it('devuelve cada contenido de la base', async () => {
@@ -23,6 +24,8 @@ describe('rutas de contenido', () => {
     const mock = createMockApi()
     expect(await getLegalContent(mock.api, 'terms')).toEqual(mock.db.content.legal.terms)
     expect(await getLegalContent(mock.api, 'privacy')).toEqual(mock.db.content.legal.privacy)
+    expect(await getLegalContent(mock.api, 'cookies')).toEqual(FIXTURE_CONTENT.legal.cookies)
+    expect(await getLegalContent(mock.api, 'returns')).toEqual(FIXTURE_CONTENT.legal.returns)
     const response = await rawRequest(mock, '/content/legal/otros')
     expect(response.status).toBe(404)
     expect(await response.json()).toMatchObject({ type: 'not_found', status: 404 })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { findLegalMarkers } from '@galpon/domain'
 import { imageFormSchema, slugSchema } from './admin'
 import { MESSAGES } from './messages'
 
@@ -179,29 +180,14 @@ export type FaqContentFormInput = z.input<typeof faqContentFormSchema>
 /** Preguntas ya normalizadas, listas para `PUT /admin/content/faq`. */
 export type FaqContentForm = z.output<typeof faqContentFormSchema>
 
-/** Enlace a Defensa del Consumidor: http o https, hasta 2048 caracteres; vacío queda en `null`. */
-const consumerDefenseUrlSchema = z
-  .string({ error: MESSAGES.required })
-  .trim()
-  .nullable()
-  .transform((value) => (value === '' ? null : value))
-  .pipe(
-    z
-      .string()
-      .max(2048, MESSAGES.max(2048))
-      .pipe(z.url({ protocol: /^https?$/, error: MESSAGES.invalidUrl }))
-      .nullable(),
-  )
-
 /**
- * Pie de página (`FooterContent`): frase hasta 80, texto hasta 300, hasta 10 medios de pago (de
- * hasta 40) y el enlace a Defensa del Consumidor (http o https) o `null`.
+ * Pie de página (`FooterContent`): frase hasta 80, texto hasta 300 y hasta 10 medios de pago (de
+ * hasta 40). Los enlaces a Defensa del Consumidor están en los ajustes (`consumerLinks`).
  */
 export const footerContentFormSchema = z.object({
   tagline: text(80),
   text: text(300),
   paymentMethods: z.array(text(40)).max(10, MESSAGES.maxItems(10, 'medios de pago')),
-  consumerDefenseUrl: consumerDefenseUrlSchema,
 })
 
 /** Pie como lo arma el formulario. */
@@ -255,7 +241,8 @@ function isCalendarDate(value: string): boolean {
 
 /**
  * Documento legal (`LegalContent`): título hasta 120, fecha de actualización `AAAA-MM-DD` y el
- * cuerpo, de 1 a 60.000 caracteres.
+ * cuerpo, de 1 a 60.000 caracteres, cuyos marcadores `{{clave}}` tienen que usar claves de
+ * `LEGAL_MARKERS` (si no, `body` falla con `MESSAGES.unknownLegalMarker` de la primera desconocida).
  */
 export const legalContentFormSchema = z.object({
   title: text(120),
@@ -264,7 +251,12 @@ export const legalContentFormSchema = z.object({
     .trim()
     .min(1, { error: MESSAGES.required, abort: true })
     .refine(isCalendarDate, { error: MESSAGES.invalidDate }),
-  body: text(60_000),
+  body: text(60_000).refine((body) => findLegalMarkers(body).unknown.length === 0, {
+    error: (issue) =>
+      MESSAGES.unknownLegalMarker(
+        typeof issue.input === 'string' ? (findLegalMarkers(issue.input).unknown[0] ?? '') : '',
+      ),
+  }),
 })
 
 /** Documento legal como lo arma el formulario. */

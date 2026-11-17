@@ -107,7 +107,6 @@ export const CONTENT_COPY = {
   paymentMethods: 'Medios de pago',
   paymentMethod: 'Medio de pago',
   addPaymentMethod: 'Agregar medio de pago',
-  consumerDefense: 'Link a Defensa del Consumidor (opcional)',
   /** Nombre accesible de las pestañas de Legales. */
   legalTabs: 'Documento legal',
   terms: 'Términos y condiciones',

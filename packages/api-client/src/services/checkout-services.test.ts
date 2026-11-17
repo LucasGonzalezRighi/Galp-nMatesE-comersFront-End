@@ -21,6 +21,7 @@ import {
   quoteShipping,
   register,
   resetPassword,
+  deleteMe,
   updateMe,
   updateMyAddress,
 } from '.'
@@ -161,6 +162,14 @@ const cases: Case[] = [
   },
   { name: 'getMe', run: getMe, method: 'GET', path: '/me' },
   {
+    name: 'deleteMe',
+    run: (api) => deleteMe(api, { password: 'mate-amargo-2026' }),
+    method: 'DELETE',
+    path: '/me',
+    body: { password: 'mate-amargo-2026' },
+    status: 204,
+  },
+  {
     name: 'updateMe',
     run: (api) => updateMe(api, { phone: null }),
     method: 'PATCH',
@@ -226,6 +235,20 @@ describe('servicios de checkout y cuenta', () => {
       if (body !== undefined) await expect(request.json()).resolves.toEqual(body)
     },
   )
+})
+
+describe('deleteMe', () => {
+  it('manda DELETE /me con el cuerpo y el token CSRF', async () => {
+    const { fetch, requests } = createFakeFetch(() => new Response(null, { status: 204 }))
+    const api = createApiClient({ baseUrl: 'http://x/api/v1', fetch, getCsrfToken: () => 'tok' })
+    await expect(deleteMe(api, { password: 'mate-amargo-2026' })).resolves.toBeUndefined()
+    const [request] = requests
+    if (request === undefined) throw new Error('No se hizo ningún pedido')
+    expect(request.method).toBe('DELETE')
+    expect(new URL(request.url).pathname).toBe('/api/v1/me')
+    expect(request.headers.get('X-CSRF-Token')).toBe('tok')
+    await expect(request.json()).resolves.toEqual({ password: 'mate-amargo-2026' })
+  })
 })
 
 describe('validación de entradas de checkout y cuenta', () => {

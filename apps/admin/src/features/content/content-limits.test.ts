@@ -30,12 +30,6 @@ function expectMaxItems(schema: z.ZodType, max: number, item: unknown): void {
   expect(schema.safeParse(Array.from({ length: max + 1 }, () => item)).success).toBe(false)
 }
 
-/** Una URL https de `length` caracteres. */
-function urlOfLength(length: number): string {
-  const base = 'https://a.ar/'
-  return `${base}${'a'.repeat(length - base.length)}`
-}
-
 // Los límites de `content-limits.ts` copian los de `@galpon/schemas`, que no los exporta: estos
 // tests avisan si un schema cambia y la copia queda vieja.
 describe('límites de Contenido', () => {
@@ -103,9 +97,6 @@ describe('límites de Contenido', () => {
     expectMaxLength(footer.text, FOOTER_LIMITS.text)
     expectMaxItems(footer.paymentMethods, FOOTER_LIMITS.paymentMethods, 'Mercado Pago')
     expectMaxLength(footer.paymentMethods.element, FOOTER_LIMITS.paymentMethod)
-    const maxUrl = FOOTER_LIMITS.consumerDefenseUrl
-    expect(footer.consumerDefenseUrl.safeParse(urlOfLength(maxUrl)).success).toBe(true)
-    expect(footer.consumerDefenseUrl.safeParse(urlOfLength(maxUrl + 1)).success).toBe(false)
 
     const tabs = productTabsContentFormSchema.shape
     expectMaxLength(tabs.mate.shape.descriptionNote, PRODUCT_TABS_LIMITS.descriptionNote)

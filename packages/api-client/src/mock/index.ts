@@ -14,6 +14,7 @@ export type {
   MockExpireOrderResult,
   MockProductChangeInput,
   MockProductChangeResult,
+  MockSettingsChangeInput,
 } from './handlers/mock-controls'
 export type { HttpMethod } from './http'
 export type { MockFetchOptions } from './mock-fetch'
@@ -64,6 +65,7 @@ export {
   MOCK_CONTROL_ROUTES,
   MOCK_EXPIRE_ORDER_PATH,
   MOCK_PRODUCT_PATH,
+  MOCK_SETTINGS_PATH,
 } from './handlers/mock-controls'
 export { createMockFetch } from './mock-fetch'
 export { BACKEND_ONLY_OPERATIONS, PENDING_OPERATIONS } from './pending'

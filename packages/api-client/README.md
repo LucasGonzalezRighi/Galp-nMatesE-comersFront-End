@@ -17,7 +17,7 @@ Cuando cambia el contrato: editá el YAML, corré `npm run api:lint`, `npm run a
 
 ## Alineación con `domain`
 
-`src/contract-alignment.ts` solo tiene aserciones de tipos, sin código en tiempo de ejecución. Compara cada enum del contrato (`ProductGroup`, `ProductStatus`, `ComboStatus`, `Leather`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`, `Province`) con el de `@galpon/domain`, y `ContactReason` con el de `@galpon/schemas`. También compara `CartItemOptions` (el cuero elegido de una línea del carrito) con `CartLineOptions` del dominio. Si un valor cambia de un lado y no del otro, `npm run typecheck` falla en la línea del enum desfasado.
+`src/contract-alignment.ts` solo tiene aserciones de tipos, sin código en tiempo de ejecución. Compara cada enum del contrato (`ProductGroup`, `ProductStatus`, `ComboStatus`, `Leather`, `ProductSortOrder`, `ShippingMethod`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`, `Province`) con el de `@galpon/domain`, y `ContactReason` con el de `@galpon/schemas`. También compara `CartItemOptions` (el cuero elegido de una línea del carrito) con `CartLineOptions` del dominio, el documento de `getLegalContent` con `LegalDocument` (los cuatro de `LEGAL_DOCUMENTS`) y `PublicSettings.seller` con `SellerData`. Si un valor cambia de un lado y no del otro, `npm run typecheck` falla en la línea del enum desfasado.
 
 ## Cliente
 
@@ -153,10 +153,11 @@ El login usa el email y la contraseña de `DEFAULT_MOCK_DB_OPTIONS`, abre una se
 
 Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardholderName, lastFour })`: lleva el titular de prueba y los últimos 4 dígitos, nunca el número entero. El simulador de Mercado Pago es una ruta interna, fuera del contrato: `POST /api/v1/__mock/mercadopago/resolve` (`MOCK_MERCADOPAGO_RESOLVE_PATH`) con `{ number, intent, result }` (`intent: null` es el intento activo, por ejemplo el desafío 3-D Secure; `result`: `approved`, `pending` o `rejected`) aplica el resultado y devuelve `{ returnUrl: '/checkout/resultado?pedido=GLP-…' }`.
 
-**Controles para probar escenarios.** Otras dos rutas internas, también fuera del contrato (`MOCK_CONTROL_ROUTES`), para los tests de extremo a extremo, que solo llegan a la base del servidor por HTTP (en la tienda, `/api/v1/__mock/…`):
+**Controles para probar escenarios.** Otras tres rutas internas, también fuera del contrato (`MOCK_CONTROL_ROUTES`), para los tests de extremo a extremo, que solo llegan a la base del servidor por HTTP (en la tienda, `/api/v1/__mock/…`):
 
 - `POST /__mock/orders/{number}/expire` (`MOCK_EXPIRE_ORDER_PATH`) vence la reserva del pedido ahora: pasa a `expired`, libera el stock y cancela el intento de pago activo (`409 order_not_pending` si ya no esperaba el pago).
 - `POST /__mock/products/{id}` (`MOCK_PRODUCT_PATH`) con `{ priceArs?, stock?, leathers? }` cambia el precio, el stock o los cueros del producto (al menos un campo; los cueros se guardan sin repetir y en el orden de `LEATHERS`, y la respuesta los devuelve) y avisa que cambió el catálogo. Sirve para provocar `409 price_changed`, `total_changed` y `stock_changed` antes de pagar, y para probar la conciliación del cuero del carrito.
+- `POST /__mock/settings` (`MOCK_SETTINGS_PATH`) con `{ seller?, consumerLinks? }` (al menos uno y nada más) reemplaza entero los datos del vendedor o los enlaces a Defensa del Consumidor, validados con las reglas de `settingsFormSchema` (el CUIT queda en 11 dígitos), avisa que cambiaron los ajustes (`settings`) y responde los ajustes públicos. Sirve para probar las páginas legales y el pie con los datos cargados.
 
 **Dashboard (P4).** Todas las rutas `/admin/*` piden la sesión del admin (`401`) y las escrituras, además, el token CSRF (`403 csrf_invalid`).
 
@@ -194,7 +195,7 @@ Los campos simulados de tarjeta arman el token con `createMockCardToken({ cardho
 
 ## Exports
 
-`package.json` declara cinco puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia, los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers, `createMockCardToken`, `MOCK_MERCADOPAGO_RESOLVE_PATH`, `MOCK_PASSWORD_RESET_TOKEN`, `DEFAULT_CUSTOMER_SESSION_COOKIE` las rutas de control `MOCK_CONTROL_ROUTES`, `MOCK_EXPIRE_ORDER_PATH` y `MOCK_PRODUCT_PATH`, `postMockMedia` y `MOCK_MEDIA_PATH`, y `FIXTURE_ADMIN_DEMO`), `./mock/card-token` (solo `createMockCardToken`, `parseMockCardToken` y `MOCK_CARD_HOLDERS`, sin la base ni los handlers: es lo que usan los campos de tarjeta simulados del navegador para no arrastrar el modo de prueba entero) y `./mock/session-cookie` (solo `DEFAULT_CUSTOMER_SESSION_COOKIE`: lo importa `proxy.ts`, que corre también en vivo, y por eso no puede traer la base ni los handlers del modo de prueba).
+`package.json` declara cinco puntos de entrada: `.` (`src/index.ts`: cliente, errores, servicios y los tipos del contrato), `./react` (`ApiClientProvider`, `useApiClient`, `queryKeys` y las consultas) y `./mock` (modo de prueba: `createMockFetch`, la base simulada, su persistencia, los tipos `MockRoute`, `MockContext` y `HttpMethod` para escribir handlers, `createMockCardToken`, `MOCK_MERCADOPAGO_RESOLVE_PATH`, `MOCK_PASSWORD_RESET_TOKEN`, `DEFAULT_CUSTOMER_SESSION_COOKIE` las rutas de control `MOCK_CONTROL_ROUTES`, `MOCK_EXPIRE_ORDER_PATH`, `MOCK_PRODUCT_PATH` y `MOCK_SETTINGS_PATH`, `postMockMedia` y `MOCK_MEDIA_PATH`, y `FIXTURE_ADMIN_DEMO`), `./mock/card-token` (solo `createMockCardToken`, `parseMockCardToken` y `MOCK_CARD_HOLDERS`, sin la base ni los handlers: es lo que usan los campos de tarjeta simulados del navegador para no arrastrar el modo de prueba entero) y `./mock/session-cookie` (solo `DEFAULT_CUSTOMER_SESSION_COOKIE`: lo importa `proxy.ts`, que corre también en vivo, y por eso no puede traer la base ni los handlers del modo de prueba).
 
 ## Tests
 

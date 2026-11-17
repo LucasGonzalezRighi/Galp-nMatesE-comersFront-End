@@ -42,6 +42,8 @@ export const SETTINGS_FIELDS: readonly FieldPath<SettingsFormInput>[] = [
   'vatRatePercent',
   'priceDisplay.showNetPrice',
   ...SELLER_FIELDS.map((field) => `seller.${field}` as const),
+  'consumerLinks.cabaUrl',
+  'consumerLinks.nationalUrl',
 ]
 
 /**
@@ -74,8 +76,8 @@ function cuitText(cuit: string | null): string {
 
 /**
  * Valores del formulario a partir de los ajustes guardados: los envíos en el orden de
- * `SHIPPING_METHODS` y sin su nombre (que no se edita), el CUIT con guiones (`formatCuit`) y cada
- * dato del vendedor sin cargar como texto vacío.
+ * `SHIPPING_METHODS` y sin su nombre (que no se edita), el CUIT con guiones (`formatCuit`), cada
+ * dato del vendedor sin cargar como texto vacío y los enlaces a Defensa del Consumidor.
  *
  * @param settings - Ajustes como los devuelve la API.
  * @returns Los valores iniciales para `settingsFormSchema`.
@@ -106,12 +108,14 @@ export function settingsFormValues(settings: AdminSettings): SettingsFormInput {
       supportHours: seller.supportHours ?? '',
       dataFiscalUrl: seller.dataFiscalUrl ?? '',
     },
+    consumerLinks: { ...settings.consumerLinks },
   }
 }
 
 /**
  * Ajustes para `PUT /admin/settings` a partir del formulario ya validado: cada envío vuelve con
- * su nombre fijo (el back conserva el suyo de todos modos).
+ * su nombre fijo (el back conserva el suyo de todos modos); el vendedor y los enlaces a Defensa
+ * del Consumidor van tal cual.
  *
  * @param form - Ajustes validados por `settingsFormSchema`.
  * @returns Los ajustes completos que pide `updateAdminSettings`.

@@ -84,6 +84,10 @@ const publicSettings: PublicSettings = {
     taxCondition: null,
   },
   shippingOptions: [],
+  consumerLinks: {
+    cabaUrl: 'https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor',
+    nationalUrl: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario',
+  },
 }
 
 beforeEach(() => {

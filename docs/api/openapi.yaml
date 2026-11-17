@@ -404,7 +404,9 @@ paths:
       operationId: getLegalContent
       tags: [content]
       summary: Obtener un documento legal
-      description: Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+      description: >-
+        Devuelve los términos y condiciones (`terms`), la política de privacidad (`privacy`), la política de cookies (`cookies`) o la política de cambios y devoluciones (`returns`). El cuerpo llega con los marcadores `{{clave}}` sin resolver: los
+        reemplaza la tienda con los datos del vendedor de `GET /settings/public`.
       security: []
       parameters:
         - $ref: '#/components/parameters/LegalDocument'
@@ -1141,6 +1143,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteMe
+      tags: [account]
+      summary: Eliminar mi cuenta
+      description: >-
+        Elimina la cuenta del cliente con la sesión iniciada, después de confirmar la contraseña. Se
+        puede siempre, haya o no pedidos en curso. Anonimiza al cliente (ya no puede ingresar con ese
+        email y contraseña), borra sus direcciones y cierra todas sus sesiones; sus pedidos quedan
+        sin vínculo a la cuenta, con los datos mínimos del comprobante que la ley obliga a guardar.
+        No vuelve a vincular nada. Una contraseña equivocada responde `422` con
+        `{ field: 'password', code: 'invalid_password', message: 'La contraseña no es correcta' }`.
+      security:
+        - customerSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeletion'
+      responses:
+        '204':
+          description: Cuenta eliminada; la respuesta borra la cookie de sesión.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2511,7 +2546,7 @@ paths:
       tags: [admin]
       summary: Obtener un documento legal
       description: >-
-        Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+        Devuelve los términos y condiciones (`terms`), la política de privacidad (`privacy`), la política de cookies (`cookies`) o la política de cambios y devoluciones (`returns`), con los marcadores `{{clave}}` sin resolver.
       security:
         - adminSession: []
       parameters:
@@ -2536,7 +2571,12 @@ paths:
       tags: [admin]
       summary: Guardar un documento legal
       description: >-
-        Reemplaza el documento legal: el cuerpo lleva el documento completo.
+        Reemplaza el documento legal: el cuerpo lleva el documento completo y se guarda tal cual,
+        con sus marcadores. Un marcador `{{clave}}` con una clave que no está en `LEGAL_MARKERS` de
+        `@galpon/domain` responde `422` en `body`, con el `code` de las reglas de forma (`custom`) y
+        el mensaje `El dato {{clave}} no existe. Revisá la lista de datos del vendedor.`
+        (`MESSAGES.unknownLegalMarker`; la primera clave desconocida). Invalida la etiqueta
+        `content:legal-{document}`.
       security:
         - adminSession: []
           csrfToken: []
@@ -2839,10 +2879,13 @@ components:
       name: document
       in: path
       required: true
-      description: 'Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).'
+      description: >-
+        Documento legal: `terms` (términos y condiciones), `privacy` (política de privacidad),
+        `cookies` (política de cookies) o `returns` (cambios y devoluciones). Copia `LEGAL_DOCUMENTS`
+        de `@galpon/domain`.
       schema:
         type: string
-        enum: [terms, privacy]
+        enum: [terms, privacy, cookies, returns]
       example: terms
     IdempotencyKey:
       name: Idempotency-Key
@@ -3800,6 +3843,7 @@ components:
         - contactEmail
         - priceDisplay
         - seller
+        - consumerLinks
       properties:
         kitDiscountPercent:
           type: integer
@@ -3873,12 +3917,12 @@ components:
               example: Responsable inscripto
             address:
               type: [string, 'null']
-              description: Domicilio del vendedor.
+              description: Domicilio legal del vendedor.
               maxLength: 200
               example: Av. Siempreviva 742, Neuquén
             phone:
               type: [string, 'null']
-              description: Teléfono o canal alternativo de atención.
+              description: Teléfono o canal alternativo de atención; es opcional (los documentos legales de fábrica no lo usan).
               maxLength: 60
               example: '+54 9 299 123 4567'
             supportArea:
@@ -3896,8 +3940,33 @@ components:
               format: uri
               maxLength: 2048
               pattern: '^https?://'
-              description: Enlace a Data Fiscal (ARCA), con http o https.
-              example: https://example.com/data-fiscal
+              description: >-
+                El `href` del código de Data Fiscal que entrega ARCA (F. 960/D, "Banner en sitio
+                web"), con http o https. El logo es siempre `DATA_FISCAL_LOGO_URL` de
+                `@galpon/domain`; sin enlace, la tienda no lo muestra.
+              example: https://qr.afip.gob.ar/?qr=abc123
+        consumerLinks:
+          type: object
+          description: >-
+            Enlaces a Defensa del Consumidor que el pie muestra siempre: el de la Ciudad de Buenos
+            Aires (con la leyenda de la Ley 2244, art. 2) y el nacional. Los valores de fábrica son
+            `DEFAULT_CONSUMER_LINKS` de `@galpon/domain`.
+          required: [cabaUrl, nationalUrl]
+          properties:
+            cabaUrl:
+              type: string
+              format: uri
+              maxLength: 2048
+              pattern: '^https?://'
+              description: Defensa del Consumidor de la Ciudad de Buenos Aires, con http o https.
+              example: https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor
+            nationalUrl:
+              type: string
+              format: uri
+              maxLength: 2048
+              pattern: '^https?://'
+              description: Formulario de reclamos de Defensa del Consumidor de la Nación, con http o https.
+              example: https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario
     SectionHeading:
       type: object
       description: Encabezado de una sección del inicio.
@@ -4348,13 +4417,13 @@ components:
                       type: string
                       maxLength: 2000
                       description: Respuesta, hasta 2000 caracteres.
-                      example: Sí, enviamos a las 24 provincias. Podés elegir envío a domicilio o a sucursal.
+                      example: Sí, enviamos a todo el país. Podés elegir envío a domicilio o a sucursal.
     FooterContent:
       type: object
       description: >-
         Textos editables del pie de página. Los límites son los de `footerContentFormSchema` de
         `@galpon/schemas`.
-      required: [tagline, text, paymentMethods, consumerDefenseUrl]
+      required: [tagline, text, paymentMethods]
       properties:
         tagline:
           type: string
@@ -4374,18 +4443,10 @@ components:
             type: string
             maxLength: 40
           example: [Mercado Pago, Visa, Mastercard, American Express]
-        consumerDefenseUrl:
-          type: [string, 'null']
-          format: uri
-          maxLength: 2048
-          pattern: '^https?://'
-          description: Enlace a Defensa del Consumidor (http o https), o `null` si no se muestra.
-          example: https://www.argentina.gob.ar/produccion/defensadelconsumidor
       example:
         tagline: Hechos para compartir.
         text: Mates, bombillones y yerba con envío a todo el país.
         paymentMethods: [Mercado Pago, Visa, Mastercard, American Express]
-        consumerDefenseUrl: null
     ProductTabsGroupContent:
       type: object
       description: Textos de las pestañas de la ficha para un grupo de producto.
@@ -4434,12 +4495,12 @@ components:
           type: string
           maxLength: 2000
           description: Texto de la pestaña de envío y cambios, igual para todos los grupos; hasta 2000 caracteres.
-          example: Enviamos a todo el país y calculás el costo en el checkout. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.
+          example: Enviamos a todo el país y el costo lo ves antes de pagar. También podés retirar sin costo. Tenés 10 días corridos para arrepentirte y 30 para cambios.
     LegalContent:
       type: object
       description: >-
-        Documento legal (términos y condiciones o política de privacidad). Los límites son los de
-        `legalContentFormSchema` de `@galpon/schemas`.
+        Documento legal (términos y condiciones, privacidad, cookies o cambios y devoluciones). Los
+        límites son los de `legalContentFormSchema` de `@galpon/schemas`.
       required: [title, updatedAt, body]
       properties:
         title:
@@ -4456,8 +4517,16 @@ components:
           type: string
           minLength: 1
           maxLength: 60000
-          description: Texto del documento, con los párrafos separados por una línea en blanco; de 1 a 60.000 caracteres.
-          example: "Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.\n\nSegundo párrafo."
+          description: >-
+            Texto plano del documento, de 1 a 60.000 caracteres. Bloques separados por una línea en
+            blanco: `## Título` abre una sección; un bloque de líneas que empiezan con `- ` es una
+            lista; lo demás es un párrafo (los saltos simples se conservan). Enlace en línea
+            `[texto](destino)` con destino `/ruta` interna o `https://…` (cualquier otro destino se
+            muestra como texto). Sin negritas, tablas ni HTML. Los marcadores `{{clave}}` (claves de
+            `LEGAL_MARKERS` de `@galpon/domain`: `razon_social`, `cuit`, `condicion_iva`,
+            `domicilio`, `email`, `telefono`, `area_atencion` y `horario_atencion`) se guardan y se
+            sirven tal cual; los resuelve la tienda al dibujar con los datos del vendedor.
+          example: "## Quién vende\n\nEste sitio es de {{razon_social}}, CUIT {{cuit}}.\n\n- Envíos a todo el país.\n- Cambios dentro de los 30 días corridos."
     OrderStatus:
       type: string
       description: >-
@@ -5591,6 +5660,17 @@ components:
         cftPercent: 45.9
         teaPercent: 38
         label: 6 cuotas de $8.317 (CFT 45,90 %)
+    AccountDeletion:
+      type: object
+      description: Confirmación para eliminar la cuenta. Es `deleteAccountSchema` de `@galpon/schemas`.
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Contraseña actual del cliente, de 1 a 128 caracteres.
+          example: mate-amargo-2026
     ReviewInput:
       type: object
       description: Reseña que envía un visitante.
@@ -5606,7 +5686,7 @@ components:
         authorName:
           type: [string, 'null']
           maxLength: 40
-          description: Nombre con el que firma, o `null` para firmar como "Anónimo".
+          description: Nombre con el que firma (puede ser un nombre de pila o iniciales), o `null` para firmar como "Anónimo".
           example: Paula N.
         text:
           type: string

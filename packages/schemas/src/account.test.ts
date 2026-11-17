@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { AddressBookEntry, AddressBookEntryInput } from './account'
 import {
   addressBookEntrySchema,
+  deleteAccountSchema,
   forgotPasswordSchema,
   loginPasswordSchema,
   loginSchema,
@@ -114,6 +115,20 @@ describe('loginPasswordSchema', () => {
   it('acepta hasta 128 caracteres y rechaza uno más', () => {
     expect(loginPasswordSchema.safeParse('a'.repeat(128)).success).toBe(true)
     expect(messagesOf(loginPasswordSchema, 'a'.repeat(129))).toEqual(['Máximo 128 caracteres'])
+  })
+})
+
+describe('deleteAccountSchema', () => {
+  it('pide la contraseña actual, sin la regla de una contraseña nueva', () => {
+    expect(deleteAccountSchema.parse({ password: 'corta' })).toEqual({ password: 'corta' })
+  })
+  it('sin contraseña da "Requerido" y con 129 caracteres, el máximo', () => {
+    expect(issuesOf(deleteAccountSchema, { password: '' })).toEqual([
+      { path: ['password'], message: 'Requerido' },
+    ])
+    expect(issuesOf(deleteAccountSchema, { password: 'a'.repeat(129) })).toEqual([
+      { path: ['password'], message: 'Máximo 128 caracteres' },
+    ])
   })
 })
 

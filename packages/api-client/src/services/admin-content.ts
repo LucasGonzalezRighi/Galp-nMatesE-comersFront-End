@@ -1,3 +1,4 @@
+import { isLegalDocument, LEGAL_DOCUMENTS } from '@galpon/domain'
 import type { ApiClient } from '../client'
 import type {
   AboutContent,
@@ -12,7 +13,10 @@ import type {
 } from '../generated/schema'
 import { unwrap } from '../unwrap'
 
-/** Documento legal del dashboard: `terms` (términos y condiciones) o `privacy` (privacidad). */
+/**
+ * Documento legal del dashboard: `terms`, `privacy`, `cookies` o `returns`. Sale del contrato y
+ * `contract-alignment.ts` comprueba que es el `LegalDocument` de `@galpon/domain`.
+ */
 export type LegalDocument = operations['getAdminLegalContent']['parameters']['path']['document']
 
 /** Páginas de contenido editables del dashboard y lo que devuelve cada una. */
@@ -41,18 +45,15 @@ export const ADMIN_CONTENT_PAGES = [
   'product-tabs',
 ] as const satisfies readonly AdminContentPage[]
 
-/** Documentos legales. */
-const LEGAL_DOCUMENTS: readonly string[] = ['terms', 'privacy']
-
 /**
- * Comprueba que el documento legal sea `terms` o `privacy`.
+ * Comprueba que el documento legal sea uno de `LEGAL_DOCUMENTS` de `@galpon/domain`.
  *
  * @throws {RangeError} Si es otro.
  */
 function assertLegalDocument(document: LegalDocument): void {
-  if (!LEGAL_DOCUMENTS.includes(document)) {
+  if (!isLegalDocument(document)) {
     throw new RangeError(
-      `El documento legal tiene que ser "terms" o "privacy", y recibió ${JSON.stringify(document)}`,
+      `El documento legal tiene que ser ${LEGAL_DOCUMENTS.map((d) => `"${d}"`).join(', ')}; se recibió ${JSON.stringify(document)}.`,
     )
   }
 }
@@ -182,8 +183,8 @@ export function updateAdminProductTabsContent(
  * Trae un documento legal para editarlo.
  *
  * @param api - Cliente de la API.
- * @param document - `terms` o `privacy`.
- * @throws {RangeError} Si `document` no es ninguno de los dos.
+ * @param document - `terms`, `privacy`, `cookies` o `returns`.
+ * @throws {RangeError} Si `document` no es ninguno de ellos.
  * @throws {ApiError} Si la llamada falla (`unauthorized` si no hay sesión).
  */
 export function getAdminLegalContent(
@@ -198,10 +199,10 @@ export function getAdminLegalContent(
  * Guarda un documento legal entero.
  *
  * @param api - Cliente de la API (con `getCsrfToken`).
- * @param document - `terms` o `privacy`.
+ * @param document - `terms`, `privacy`, `cookies` o `returns`.
  * @param input - Título, fecha de actualización (`AAAA-MM-DD`) y cuerpo.
  * @returns Lo guardado, ya normalizado.
- * @throws {RangeError} Si `document` no es ninguno de los dos.
+ * @throws {RangeError} Si `document` no es ninguno de ellos.
  * @throws {ApiError} Con `validation` por campo, `unauthorized` y `forbidden` (`csrf_invalid`).
  */
 export function updateAdminLegalContent(

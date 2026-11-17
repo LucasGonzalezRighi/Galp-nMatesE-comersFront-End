@@ -35,24 +35,19 @@ describe('FooterContentScreen', () => {
     const methods = screen.getByRole('group', { name: 'Medios de pago' })
     expect(within(methods).getByLabelText('Medio de pago 1')).toHaveValue('Mercado Pago')
     expect(within(methods).getByLabelText('Medio de pago 4')).toHaveValue('American Express')
-    expect(screen.getByLabelText('Link a Defensa del Consumidor (opcional)')).toHaveValue('')
+    expect(screen.queryByLabelText(/Defensa del Consumidor/)).toBeNull()
   })
 
-  it('valida el link a Defensa del Consumidor', async () => {
+  it('valida la frase y no guarda', async () => {
     const user = userEvent.setup()
     const app = await createTestApp()
     const before = structuredClone(app.mockDb.db.content.footer)
     await renderFooter(app)
 
-    await user.type(
-      screen.getByLabelText('Link a Defensa del Consumidor (opcional)'),
-      'autoconsumo.gob.ar',
-    )
+    await user.clear(screen.getByLabelText('Frase'))
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
-    expect(
-      await screen.findByText('Ingresá una URL válida, con http:// o https://'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Requerido')).toBeInTheDocument()
     expect(app.mockDb.db.content.footer).toEqual(before)
   })
 
@@ -91,10 +86,6 @@ describe('FooterContentScreen', () => {
     await user.click(within(methods).getByRole('button', { name: 'Agregar medio de pago' }))
     await user.type(within(methods).getByLabelText('Medio de pago 5'), 'Naranja X')
     await user.click(within(methods).getByRole('button', { name: 'Quitar el medio de pago 2' }))
-    await user.type(
-      screen.getByLabelText('Link a Defensa del Consumidor (opcional)'),
-      'https://www.argentina.gob.ar/produccion/defensadelconsumidor',
-    )
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     expect(await screen.findByText('Contenido guardado.')).toBeInTheDocument()
@@ -102,7 +93,6 @@ describe('FooterContentScreen', () => {
       tagline: 'Hechos para compartir.',
       text: 'Mates, bombillones y yerba con envío a todo el país.',
       paymentMethods: ['Mercado Pago', 'Mastercard', 'American Express', 'Naranja X'],
-      consumerDefenseUrl: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor',
     })
   })
 })

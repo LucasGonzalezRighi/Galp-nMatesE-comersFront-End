@@ -189,16 +189,6 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
                 <Link href={asRoute('/privacidad')} className={COLUMN_LINK}>
                   {LAYOUT_COPY.privacy}
                 </Link>
-                {content.consumerDefenseUrl === null ? null : (
-                  <a
-                    href={content.consumerDefenseUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={COLUMN_LINK}
-                  >
-                    {LAYOUT_COPY.consumerDefense}
-                  </a>
-                )}
               </nav>
             </FooterRow>
           </div>

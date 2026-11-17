@@ -1,6 +1,6 @@
 import type * as Domain from '@galpon/domain'
 import type { ContactReason as SchemaContactReason } from '@galpon/schemas'
-import type { components } from './generated/schema'
+import type { components, operations } from './generated/schema'
 
 /** Es `true` solo si `A` y `B` son exactamente el mismo tipo (no alcanza con que se asignen). */
 type Equals<A, B> =
@@ -17,7 +17,9 @@ type S = components['schemas']
  * Comprueba en compilación que los enums del contrato OpenAPI son idénticos a los de
  * `@galpon/domain` (y el motivo de contacto, a los de `@galpon/schemas`), incluidos los destinos
  * de un pedido que ofrece el admin, los usos de una foto y los estados de un combo, y que el cuero
- * elegido de una línea del carrito (`CartItemOptions`) es el `CartLineOptions` del dominio.
+ * elegido de una línea del carrito (`CartItemOptions`) es el `CartLineOptions` del dominio, que
+ * los documentos legales (`LegalDocument`) son los de `LEGAL_DOCUMENTS` y que los datos del
+ * vendedor de los ajustes públicos son el `SellerData` del dominio.
  *
  * Solo hay aserciones de tipos, sin código en tiempo de ejecución: si alguien cambia un valor de
  * un lado y no del otro, `npm run typecheck` falla en la línea del enum que se desfasó.
@@ -37,4 +39,8 @@ export type ContractAlignment = [
   Assert<Equals<S['OrderStatusChange']['status'], Domain.AdminOrderTarget>>,
   Assert<Equals<S['MediaSignatureInput']['purpose'], Domain.MediaPurpose>>,
   Assert<Equals<S['CartItemOptions'], Domain.CartLineOptions>>,
+  Assert<
+    Equals<operations['getLegalContent']['parameters']['path']['document'], Domain.LegalDocument>
+  >,
+  Assert<Equals<S['PublicSettings']['seller'], Domain.SellerData>>,
 ]

@@ -101,7 +101,7 @@ describe('content-form-values', () => {
     expect(productTabsContentFormSchema.parse(productTabsFormValues(productTabs))).toEqual(
       productTabs,
     )
-    expect(footerFormValues(footer).consumerDefenseUrl).toBe('')
+    expect(footerFormValues(footer)).not.toHaveProperty('consumerDefenseUrl')
     expect(footerContentFormSchema.parse(footerFormValues(footer))).toEqual(footer)
     expect(legalContentFormSchema.parse(legalFormValues(legal.terms))).toEqual(legal.terms)
   })

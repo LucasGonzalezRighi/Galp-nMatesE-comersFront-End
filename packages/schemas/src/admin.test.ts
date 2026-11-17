@@ -85,6 +85,10 @@ const validSettings = {
   vatRatePercent: 21,
   priceDisplay: { showNetPrice: true },
   seller: noSeller,
+  consumerLinks: {
+    cabaUrl: 'https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor',
+    nationalUrl: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario',
+  },
 }
 
 /** Copia de la configuración válida con un campo de primer nivel cambiado. */
@@ -744,6 +748,59 @@ describe('settingsFormSchema', () => {
       expect(issuesOf(settingsFormSchema, sellerWith({ dataFiscalUrl: long }))).toEqual([
         { path: ['seller', 'dataFiscalUrl'], message: 'Máximo 2048 caracteres' },
       ])
+    })
+
+    it('del código de ARCA pegado entero se queda con el enlace', () => {
+      const code =
+        '<a href="https://qr.afip.gob.ar/?qr=abc123" target="_F960AFIPInfo"><img src="https://www.afip.gob.ar/images/f960/DATAWEB.jpg" border="0"></a>'
+      expect(
+        settingsFormSchema.parse(sellerWith({ dataFiscalUrl: code })).seller.dataFiscalUrl,
+      ).toBe('https://qr.afip.gob.ar/?qr=abc123')
+    })
+  })
+
+  describe('consumerLinks', () => {
+    const links = validSettings.consumerLinks
+
+    it('recorta los enlaces', () => {
+      expect(
+        settingsFormSchema.parse(
+          settingsWith({ consumerLinks: { ...links, cabaUrl: ` ${links.cabaUrl} ` } }),
+        ).consumerLinks,
+      ).toEqual(links)
+    })
+
+    it('los dos son obligatorios', () => {
+      expect(
+        issuesOf(
+          settingsFormSchema,
+          settingsWith({ consumerLinks: { cabaUrl: ' ', nationalUrl: '' } }),
+        ),
+      ).toEqual([
+        { path: ['consumerLinks', 'cabaUrl'], message: 'Requerido' },
+        { path: ['consumerLinks', 'nationalUrl'], message: 'Requerido' },
+      ])
+    })
+
+    it.each(['www.argentina.gob.ar', 'ftp://ejemplo.com', 'javascript:alert(1)'])(
+      'rechaza el enlace %j',
+      (nationalUrl) => {
+        expect(
+          issuesOf(settingsFormSchema, settingsWith({ consumerLinks: { ...links, nationalUrl } })),
+        ).toEqual([
+          {
+            path: ['consumerLinks', 'nationalUrl'],
+            message: 'Ingresá una URL válida, con http:// o https://',
+          },
+        ])
+      },
+    )
+
+    it('limita cada enlace a 2048 caracteres', () => {
+      const cabaUrl = `https://ejemplo.com/${'a'.repeat(2048)}`
+      expect(
+        issuesOf(settingsFormSchema, settingsWith({ consumerLinks: { ...links, cabaUrl } })),
+      ).toEqual([{ path: ['consumerLinks', 'cabaUrl'], message: 'Máximo 2048 caracteres' }])
     })
   })
 

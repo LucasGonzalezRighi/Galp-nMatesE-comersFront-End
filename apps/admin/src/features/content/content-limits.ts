@@ -88,8 +88,6 @@ export const FOOTER_LIMITS = {
   paymentMethods: 10,
   /** Un medio de pago. */
   paymentMethod: 40,
-  /** Link a Defensa del Consumidor. */
-  consumerDefenseUrl: 2048,
 } as const
 
 /** Pestañas de la ficha (`productTabsContentFormSchema`). */

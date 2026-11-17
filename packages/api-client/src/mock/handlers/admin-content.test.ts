@@ -83,9 +83,10 @@ describe('contenido del admin', () => {
     await updateAdminFaqContent(mock.api, FIXTURE_CONTENT.faq)
     const footer = await updateAdminFooterContent(mock.api, {
       ...FIXTURE_CONTENT.footer,
-      consumerDefenseUrl: '',
+      tagline: '  Hechos para compartir.  ',
     })
-    expect(footer.consumerDefenseUrl).toBeNull()
+    expect(footer.tagline).toBe('Hechos para compartir.')
+    expect(footer).not.toHaveProperty('consumerDefenseUrl')
     await updateAdminProductTabsContent(mock.api, FIXTURE_CONTENT.productTabs)
     await updateAdminLegalContent(mock.api, 'terms', {
       ...FIXTURE_CONTENT.legal.terms,
@@ -152,19 +153,51 @@ describe('contenido del admin', () => {
     ])
   })
 
-  it('un documento legal que no es terms ni privacy responde 404', async () => {
+  it('acepta los cuatro documentos legales', async () => {
+    const mock = await createAdminDemoApi()
+    for (const document of ['terms', 'privacy', 'cookies', 'returns'] as const) {
+      await expect(getAdminLegalContent(mock.api, document)).resolves.toEqual(
+        FIXTURE_CONTENT.legal[document],
+      )
+    }
+    await updateAdminLegalContent(mock.api, 'returns', FIXTURE_CONTENT.legal.returns)
+    expect(mock.invalidated).toEqual([['content:legal-returns']])
+  })
+
+  it('un documento legal con un dato que no existe responde 422 en body y no guarda', async () => {
+    const mock = await createAdminDemoApi()
+    const error = await updateAdminLegalContent(mock.api, 'cookies', {
+      ...FIXTURE_CONTENT.legal.cookies,
+      body: 'Responsable: {{razon_social}}, CUIT {{cuitt}}.',
+    }).catch((caught: unknown) => caught)
+    expect(error).toMatchObject({
+      status: 422,
+      problem: {
+        errors: [
+          {
+            field: 'body',
+            message: 'El dato {{cuitt}} no existe. Revisá la lista de datos del vendedor.',
+          },
+        ],
+      },
+    })
+    expect(mock.db.content.legal.cookies).toEqual(FIXTURE_CONTENT.legal.cookies)
+    expect(mock.invalidated).toEqual([])
+  })
+
+  it('un documento legal que no existe responde 404', async () => {
     const mock = await createAdminDemoApi()
     for (const method of ['GET', 'PUT'] as const) {
-      const response = await rawRequest(mock, '/admin/content/legal/cookies', {
+      const response = await rawRequest(mock, '/admin/content/legal/legal', {
         method,
         headers: { 'X-CSRF-Token': mock.db.adminSession?.csrfToken ?? '' },
         ...(method === 'PUT' ? { body: JSON.stringify(FIXTURE_CONTENT.legal.terms) } : {}),
       })
       expect(response.status).toBe(404)
     }
-    expect(() => getAdminLegalContent(mock.api, 'cookies' as never)).toThrow(RangeError)
+    expect(() => getAdminLegalContent(mock.api, 'legal' as never)).toThrow(RangeError)
     expect(() =>
-      updateAdminLegalContent(mock.api, 'cookies' as never, FIXTURE_CONTENT.legal.terms),
+      updateAdminLegalContent(mock.api, 'legal' as never, FIXTURE_CONTENT.legal.terms),
     ).toThrow(RangeError)
   })
 })

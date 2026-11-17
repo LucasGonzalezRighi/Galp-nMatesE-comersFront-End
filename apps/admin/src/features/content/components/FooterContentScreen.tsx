@@ -85,12 +85,6 @@ function FooterForm({ content }: FooterFormProps): ReactNode {
             max={FOOTER_LIMITS.paymentMethods}
             maxLength={FOOTER_LIMITS.paymentMethod}
           />
-          <FooterText
-            name="consumerDefenseUrl"
-            label={CONTENT_COPY.consumerDefense}
-            type="url"
-            maxLength={FOOTER_LIMITS.consumerDefenseUrl}
-          />
         </Section>
         <FormActions
           isDirty={isDirty}

@@ -286,6 +286,7 @@ export function toPublicSettings(settings: AdminSettings): PublicSettings {
     contactEmail: settings.contactEmail,
     priceDisplay: settings.priceDisplay,
     seller: settings.seller,
+    consumerLinks: settings.consumerLinks,
   }
 }
 

@@ -98,7 +98,7 @@ export function faqFormValues(content: FaqContent): FaqContentFormInput {
 }
 
 /**
- * Valores iniciales del formulario del pie: sin enlace a Defensa del Consumidor, el campo vacío.
+ * Valores iniciales del formulario del pie: una copia, con su propia lista de medios de pago.
  *
  * @param content - Pie como lo devuelve la API.
  * @returns Los valores del formulario.
@@ -107,7 +107,6 @@ export function footerFormValues(content: FooterContent): FooterContentFormInput
   return {
     ...content,
     paymentMethods: [...content.paymentMethods],
-    consumerDefenseUrl: content.consumerDefenseUrl ?? '',
   }
 }
 

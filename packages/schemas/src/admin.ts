@@ -5,6 +5,7 @@ import {
   COMBO_MAX_ITEMS,
   COMBO_MIN_ITEMS,
   COMBO_STATUSES,
+  extractDataFiscalUrl,
   LEATHERS,
   MAX_IMAGES,
   MAX_KIT_DISCOUNT_PERCENT,
@@ -256,12 +257,25 @@ const shippingOptionFormSchema = z.object({
   enabled: z.boolean(),
 })
 
-/** Dirección web del vendedor (Data Fiscal): solo http o https, hasta 2048 caracteres. */
-const dataFiscalUrlSchema = z
+/** Dirección web http o https, recortada, hasta 2048 caracteres. */
+const httpUrlSchema = z
   .string()
   .trim()
   .max(2048, MESSAGES.max(2048))
   .pipe(z.url({ protocol: /^https?$/, error: MESSAGES.invalidUrl }))
+
+/**
+ * Data Fiscal del vendedor: acepta el código entero que entrega ARCA (se queda con su `href`) o
+ * solo la URL; después, http o https y hasta 2048 caracteres.
+ */
+const dataFiscalUrlSchema = z.string().transform(extractDataFiscalUrl).pipe(httpUrlSchema)
+
+/** Enlace obligatorio a Defensa del Consumidor: recortado, http o https, hasta 2048 caracteres. */
+const consumerLinkSchema = z
+  .string({ error: MESSAGES.required })
+  .trim()
+  .min(1, { error: MESSAGES.required, abort: true })
+  .pipe(httpUrlSchema)
 
 /**
  * Formulario de ajustes del dashboard.
@@ -272,7 +286,10 @@ const dataFiscalUrlSchema = z
  * - `lowStockThreshold`: entero de 0 a 999.
  * - `vatRatePercent`: de 0 a 100, admite decimales (10,5).
  * - `seller`: datos del vendedor (Disp. 954/2025). Cada uno es texto o `null`; vacío queda en
- *   `null`. El CUIT sale con 11 dígitos y `dataFiscalUrl` es una URL http o https.
+ *   `null`. El CUIT sale con 11 dígitos y `dataFiscalUrl` es una URL http o https (si se pega el
+ *   código de ARCA, se queda con su `href`).
+ * - `consumerLinks`: enlaces obligatorios a Defensa del Consumidor de CABA y de la Nación, http o
+ *   https.
  */
 export const settingsFormSchema = z.object({
   kitDiscountPercent: boundedInt(0, MAX_KIT_DISCOUNT_PERCENT),
@@ -299,6 +316,10 @@ export const settingsFormSchema = z.object({
     supportArea: sellerText(80),
     supportHours: sellerText(120),
     dataFiscalUrl: emptyAsNull(dataFiscalUrlSchema),
+  }),
+  consumerLinks: z.object({
+    cabaUrl: consumerLinkSchema,
+    nationalUrl: consumerLinkSchema,
   }),
 })
 

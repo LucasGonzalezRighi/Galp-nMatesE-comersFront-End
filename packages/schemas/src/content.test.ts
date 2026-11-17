@@ -100,7 +100,6 @@ const validFooter = {
   tagline: 'Hechos para compartir.',
   text: 'Mates, bombillones y yerba con envío a todo el país.',
   paymentMethods: ['Mercado Pago', 'Visa'],
-  consumerDefenseUrl: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor',
 }
 
 const tabsGroup = {
@@ -382,32 +381,10 @@ describe('footerContentFormSchema', () => {
     expect(footerContentFormSchema.parse(validFooter)).toEqual(validFooter)
   })
 
-  it.each([null, '', '   '])('sin enlace a Defensa del Consumidor %j queda en null', (url) => {
+  it('ya no lleva el enlace a Defensa del Consumidor (está en los ajustes)', () => {
     expect(
-      footerContentFormSchema.parse({ ...validFooter, consumerDefenseUrl: url }).consumerDefenseUrl,
-    ).toBeNull()
-  })
-
-  it.each(['ftp://example.com', 'www.example.com', 'no es una url'])(
-    'rechaza el enlace %j',
-    (url) => {
-      expect(
-        issuesOf(footerContentFormSchema, { ...validFooter, consumerDefenseUrl: url }),
-      ).toEqual([
-        { path: ['consumerDefenseUrl'], message: 'Ingresá una URL válida, con http:// o https://' },
-      ])
-    },
-  )
-
-  it('el enlace admite hasta 2048 caracteres', () => {
-    const base = 'https://example.com/'
-    const url = base + 'a'.repeat(2048 - base.length)
-    expect(issuesOf(footerContentFormSchema, { ...validFooter, consumerDefenseUrl: url })).toEqual(
-      [],
-    )
-    expect(
-      issuesOf(footerContentFormSchema, { ...validFooter, consumerDefenseUrl: `${url}a` }),
-    ).toEqual([{ path: ['consumerDefenseUrl'], message: 'Máximo 2048 caracteres' }])
+      footerContentFormSchema.parse({ ...validFooter, consumerDefenseUrl: 'https://x.com' }),
+    ).toEqual(validFooter)
   })
 
   it('admite hasta 10 medios de pago, también ninguno', () => {
@@ -454,5 +431,27 @@ describe('legalContentFormSchema', () => {
 
   it('acepta el 29 de febrero de un año bisiesto', () => {
     expect(issuesOf(legalContentFormSchema, { ...validLegal, updatedAt: '2028-02-29' })).toEqual([])
+  })
+
+  it('acepta los marcadores de datos del vendedor', () => {
+    const body = '## Quién vende\n\n{{razon_social}}, CUIT {{ cuit }}, {{horario_atencion}}.'
+    expect(issuesOf(legalContentFormSchema, { ...validLegal, body })).toEqual([])
+  })
+
+  it('rechaza el cuerpo con un marcador que no existe y nombra el primero', () => {
+    expect(
+      issuesOf(legalContentFormSchema, { ...validLegal, body: '{{cuit}} {{cuitt}} {{otro}}' }),
+    ).toEqual([
+      {
+        path: ['body'],
+        message: 'El dato {{cuitt}} no existe. Revisá la lista de datos del vendedor.',
+      },
+    ])
+  })
+
+  it('un marcador vacío también es desconocido', () => {
+    expect(issuesOf(legalContentFormSchema, { ...validLegal, body: 'Hola {{ }}' })).toEqual([
+      { path: ['body'], message: 'El dato {{}} no existe. Revisá la lista de datos del vendedor.' },
+    ])
   })
 })

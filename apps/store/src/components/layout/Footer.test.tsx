@@ -18,7 +18,6 @@ const content: FooterContent = {
   tagline: 'Hechos para compartir.',
   text: 'Mates, bombillones y yerba con envío a todo el país.',
   paymentMethods: ['Mercado Pago', 'Visa', 'Mastercard', 'American Express'],
-  consumerDefenseUrl: null,
 }
 
 const emptySeller: PublicSettings['seller'] = {
@@ -39,6 +38,10 @@ const settings: PublicSettings = {
   priceDisplay: { showNetPrice: true },
   seller: emptySeller,
   shippingOptions: [],
+  consumerLinks: {
+    cabaUrl: 'https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor',
+    nationalUrl: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario',
+  },
 }
 
 const categories: Category[] = [
@@ -137,29 +140,6 @@ describe('FooterView', () => {
       'lg:gap-x-[clamp(24px,20vw_-_226px,48px)]',
     )
     expect(row?.children[1]?.children).toHaveLength(4)
-  })
-
-  it('el link de Defensa del Consumidor aparece solo si hay dirección y abre afuera', () => {
-    const { rerender } = render(
-      <FooterView content={content} settings={settings} categories={categories} />,
-    )
-    expect(screen.queryByRole('link', { name: 'Defensa del consumidor' })).toBeNull()
-
-    rerender(
-      <FooterView
-        content={{
-          ...content,
-          consumerDefenseUrl: 'https://www.argentina.gob.ar/defensadelconsumidor',
-        }}
-        settings={settings}
-        categories={categories}
-      />,
-    )
-
-    const link = screen.getByRole('link', { name: 'Defensa del consumidor' })
-    expect(link).toHaveAttribute('href', 'https://www.argentina.gob.ar/defensadelconsumidor')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
 
   it('muestra el año actual (calculado en el cliente), la marca y los medios de pago', () => {

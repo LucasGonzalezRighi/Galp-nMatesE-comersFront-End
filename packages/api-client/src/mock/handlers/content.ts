@@ -1,3 +1,4 @@
+import { isLegalDocument } from '@galpon/domain'
 import type { MockRoute } from '../router'
 import { json, notFound } from '../http'
 import { route } from '../router'
@@ -10,8 +11,8 @@ export const contentRoutes: readonly MockRoute[] = [
   route('GET', '/content/footer', ({ db }) => json(db.content.footer)),
   route('GET', '/content/product-tabs', ({ db }) => json(db.content.productTabs)),
   route('GET', '/content/legal/{document}', ({ db, params }) => {
-    const document = params.document
-    if (document !== 'terms' && document !== 'privacy') {
+    const document = params.document ?? ''
+    if (!isLegalDocument(document)) {
       return notFound('No existe ese documento legal.')
     }
     return json(db.content.legal[document])

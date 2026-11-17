@@ -97,6 +97,16 @@ const readCases: ReadCase[] = [
     path: '/api/v1/content/legal/privacy',
   },
   {
+    name: 'getLegalContent (cookies)',
+    run: (api) => getLegalContent(api, 'cookies'),
+    path: '/api/v1/content/legal/cookies',
+  },
+  {
+    name: 'getLegalContent (returns)',
+    run: (api) => getLegalContent(api, 'returns'),
+    path: '/api/v1/content/legal/returns',
+  },
+  {
     name: 'getPublicSettings',
     run: (api) => getPublicSettings(api),
     path: '/api/v1/settings/public',
@@ -471,9 +481,10 @@ describe('validación de entradas', () => {
   )
 
   it('getLegalContent rechaza un documento que no existe', async () => {
-    const document = 'cookies' as unknown as 'terms'
-    await expect(getLegalContent(api, document)).rejects.toThrow(
-      new RangeError('El documento legal tiene que ser "terms" o "privacy", y recibió "cookies"'),
+    await expect(getLegalContent(api, 'legal' as never)).rejects.toThrow(
+      new RangeError(
+        'El documento legal tiene que ser "terms", "privacy", "cookies", "returns"; se recibió "legal".',
+      ),
     )
   })
 })

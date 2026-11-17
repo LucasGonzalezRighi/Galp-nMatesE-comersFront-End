@@ -58,6 +58,17 @@ export type LoginInput = z.input<typeof loginSchema>
 /** Inicio de sesión ya normalizado. */
 export type Login = z.output<typeof loginSchema>
 
+/** "Eliminar mi cuenta": la contraseña actual, como al iniciar sesión (`DELETE /me`). */
+export const deleteAccountSchema = z.object({
+  password: loginPasswordSchema,
+})
+
+/** Eliminación de la cuenta como la escribe la persona. */
+export type DeleteAccountInput = z.input<typeof deleteAccountSchema>
+
+/** Eliminación de la cuenta ya normalizada, lista para `DELETE /me`. */
+export type DeleteAccount = z.output<typeof deleteAccountSchema>
+
 /** "Olvidé mi contraseña": solo el email. */
 export const forgotPasswordSchema = z.object({
   email: emailSchema,

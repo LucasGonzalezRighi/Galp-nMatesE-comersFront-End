@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AddressBookInput } from '../../generated/schema'
 import {
   createMyAddress,
+  deleteMe,
   deleteMyAddress,
   forgotPassword,
   getCustomerCsrfToken,
@@ -174,6 +175,63 @@ describe('mis datos', () => {
       phone: null,
     })
     await expect(updateMe(mock.api, {})).rejects.toMatchObject({ status: 422 })
+  })
+})
+
+describe('eliminar la cuenta', () => {
+  it('sin sesión responde 401 y sin token CSRF, 403', async () => {
+    const mock = createCheckoutApi()
+    await refreshCsrf(mock)
+    await expect(deleteMe(mock.api, { password: ACCOUNT.password })).rejects.toMatchObject({
+      status: 401,
+    })
+    await signUp(mock)
+    mock.setCsrfToken(undefined)
+    await expect(deleteMe(mock.api, { password: ACCOUNT.password })).rejects.toMatchObject({
+      status: 403,
+    })
+    expect(mock.db.customers).toHaveLength(1)
+  })
+
+  it('con la contraseña equivocada responde 422 y no borra nada', async () => {
+    const mock = createCheckoutApi()
+    await signUp(mock)
+    await expect(deleteMe(mock.api, { password: 'otra-clave-123' })).rejects.toMatchObject({
+      status: 422,
+      problem: {
+        errors: [
+          { field: 'password', code: 'invalid_password', message: 'La contraseña no es correcta' },
+        ],
+      },
+    })
+    await expect(deleteMe(mock.api, { password: '' })).rejects.toMatchObject({
+      status: 422,
+      problem: { errors: [{ field: 'password', message: 'Requerido' }] },
+    })
+    await expect(getMe(mock.api)).resolves.toMatchObject({ email: ACCOUNT.email })
+  })
+
+  it('con la contraseña borra la cuenta, cierra las sesiones y deja los pedidos sin dueño', async () => {
+    const mock = createCheckoutApi()
+    await signUp(mock)
+    await createMyAddress(mock.api, HOME)
+    const { order } = await placeOrder(mock)
+    const customerId = mock.db.orders[0]?.ownerId
+    expect(customerId).toEqual(expect.any(String))
+
+    await expect(deleteMe(mock.api, { password: ACCOUNT.password })).resolves.toBeUndefined()
+    expect(mock.cookies.has(DEFAULT_CUSTOMER_SESSION_COOKIE)).toBe(false)
+    expect(mock.db.customers).toEqual([])
+    expect(mock.db.customerSessions.filter((s) => s.customerId === customerId)).toEqual([])
+    const saved = mock.db.orders.find((candidate) => candidate.number === order.number)
+    expect(saved?.ownerId).toBeNull()
+    expect(saved?.customer.email).toBe(ACCOUNT.email)
+
+    await expect(getMe(mock.api)).rejects.toMatchObject({ status: 401 })
+    await refreshCsrf(mock)
+    await expect(
+      login(mock.api, { email: ACCOUNT.email, password: ACCOUNT.password }),
+    ).rejects.toMatchObject({ status: 401, problem: { type: 'invalid_credentials' } })
   })
 })
 

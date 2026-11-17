@@ -1,5 +1,6 @@
 import type { z } from 'zod'
-import { DEFAULT_SHIPPING_OPTIONS, SHIPPING_METHODS } from '@galpon/domain'
+import type { LegalDocument } from '@galpon/domain'
+import { DEFAULT_SHIPPING_OPTIONS, isLegalDocument, SHIPPING_METHODS } from '@galpon/domain'
 import {
   aboutContentFormSchema,
   faqContentFormSchema,
@@ -37,13 +38,10 @@ interface PlainPageRoute<K extends PlainPage> {
   schema: z.ZodType<MockContent[K]>
 }
 
-/** Documentos legales del contrato. */
-const LEGAL_DOCUMENTS = ['terms', 'privacy'] as const
-
-/** Documento legal de la ruta (`{document}`). */
-function legalDocument(ctx: MockContext): (typeof LEGAL_DOCUMENTS)[number] {
-  const document = LEGAL_DOCUMENTS.find((candidate) => candidate === ctx.params.document)
-  if (document === undefined) {
+/** Documento legal de la ruta (`{document}`), uno de `LEGAL_DOCUMENTS` de `@galpon/domain`. */
+function legalDocument(ctx: MockContext): LegalDocument {
+  const document = ctx.params.document ?? ''
+  if (!isLegalDocument(document)) {
     throw new ResponseError(notFound('No existe ese documento legal.'))
   }
   return document
@@ -112,7 +110,7 @@ function adminSettings(input: z.output<typeof settingsFormSchema>, db: MockDb): 
  * formulario (`422` por campo), guarda lo normalizado e invalida su etiqueta de caché
  * (`content:home`, `content:about`, `content:faq`, `content:footer`, `content:product-tabs`,
  * `content:legal-{documento}` y `settings`). Nosotros resuelve las fotos de los socios con
- * `resolveImage`; un documento legal que no es `terms` ni `privacy` responde `404`.
+ * `resolveImage`; un documento legal que no es uno de `LEGAL_DOCUMENTS` responde `404`.
  */
 export const adminContentRoutes: readonly MockRoute[] = [
   ...plainPageRoutes({

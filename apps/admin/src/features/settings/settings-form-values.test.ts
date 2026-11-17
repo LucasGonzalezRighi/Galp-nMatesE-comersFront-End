@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { AdminSettings } from '@galpon/api-client'
 import { settingsFormSchema } from '@galpon/schemas'
-import { settingsFormValues, settingsInput, shippingFieldPath } from './settings-form-values'
+import {
+  SETTINGS_FIELDS,
+  settingsFormValues,
+  settingsInput,
+  shippingFieldPath,
+} from './settings-form-values'
 
 /** Ajustes como los devuelve la API, con los envíos fuera de orden y un CUIT cargado. */
 const SETTINGS: AdminSettings = {
@@ -31,6 +36,10 @@ const SETTINGS: AdminSettings = {
     supportArea: null,
     supportHours: null,
     dataFiscalUrl: null,
+  },
+  consumerLinks: {
+    cabaUrl: 'https://caba.example/defensa',
+    nationalUrl: 'https://nacion.example/reclamos',
   },
 }
 
@@ -75,6 +84,15 @@ describe('settingsInput', () => {
         SETTINGS.shippingOptions[0],
       ],
     })
+  })
+
+  it('conserva los enlaces a Defensa del Consumidor', () => {
+    const form = settingsFormSchema.parse(settingsFormValues(SETTINGS))
+
+    expect(settingsInput(form).consumerLinks).toEqual(SETTINGS.consumerLinks)
+    expect(SETTINGS_FIELDS).toEqual(
+      expect.arrayContaining(['consumerLinks.cabaUrl', 'consumerLinks.nationalUrl']),
+    )
   })
 })
 

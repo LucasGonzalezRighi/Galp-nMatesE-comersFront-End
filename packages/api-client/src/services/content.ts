@@ -1,3 +1,5 @@
+import type { LegalDocument } from '@galpon/domain'
+import { isLegalDocument, LEGAL_DOCUMENTS } from '@galpon/domain'
 import type { ApiClient } from '../client'
 import type {
   AboutContent,
@@ -8,9 +10,6 @@ import type {
   ProductTabsContent,
 } from '../generated/schema'
 import { unwrap } from '../unwrap'
-
-/** Documentos legales que publica la tienda. */
-const LEGAL_DOCUMENTS: readonly string[] = ['terms', 'privacy']
 
 /**
  * Trae los textos del inicio.
@@ -66,17 +65,18 @@ export function getProductTabsContent(api: ApiClient): Promise<ProductTabsConten
  * Trae un documento legal.
  *
  * @param api - Cliente de la API.
- * @param document - `terms` (términos y condiciones) o `privacy` (política de privacidad).
- * @throws {RangeError} Si `document` no es ninguno de los dos.
+ * @param document - Uno de `LEGAL_DOCUMENTS` de `@galpon/domain`: `terms`, `privacy`, `cookies`
+ *   o `returns`.
+ * @throws {RangeError} Si `document` no es ninguno de ellos.
  * @throws {ApiError} Si la llamada falla.
  */
 export async function getLegalContent(
   api: ApiClient,
-  document: 'terms' | 'privacy',
+  document: LegalDocument,
 ): Promise<LegalContent> {
-  if (!LEGAL_DOCUMENTS.includes(document)) {
+  if (!isLegalDocument(document)) {
     throw new RangeError(
-      `El documento legal tiene que ser "terms" o "privacy", y recibió ${JSON.stringify(document)}`,
+      `El documento legal tiene que ser ${LEGAL_DOCUMENTS.map((d) => `"${d}"`).join(', ')}; se recibió ${JSON.stringify(document)}.`,
     )
   }
   return unwrap(api.GET('/content/legal/{document}', { params: { path: { document } } }))

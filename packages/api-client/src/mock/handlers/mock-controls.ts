@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import type { Leather } from '@galpon/domain'
 import { LEATHERS, normalizeLeathers } from '@galpon/domain'
+import { settingsFormSchema } from '@galpon/schemas'
 import type { MockRoute } from '../router'
 import { json, notFound, problem, ResponseError } from '../http'
+import { toPublicSettings } from '../mappers'
 import { orderNumberParam, parseOrFail } from '../validation'
 import { MOCK_MEDIA_ROUTE } from './admin-media'
 import { expireOrders, orderNotFound } from './order-state'
@@ -48,6 +50,29 @@ const productChangeSchema = z
     { message: 'Mandá el precio, el stock o los cueros.' },
   )
 
+/**
+ * Ruta interna que reemplaza los datos del vendedor o los enlaces a Defensa del Consumidor de los
+ * ajustes, relativa al prefijo de la API. No está en el contrato: solo existe en el modo de prueba
+ * y sirve para probar las páginas legales y el pie con los datos cargados desde un navegador.
+ */
+export const MOCK_SETTINGS_PATH = '/__mock/settings'
+
+/**
+ * Cuerpo de {@link MOCK_SETTINGS_PATH}: `seller`, `consumerLinks` o los dos, y nada más. Cada uno
+ * reemplaza entero al de la base y se valida con las reglas de `settingsFormSchema`.
+ */
+const settingsChangeSchema = z
+  .strictObject({
+    seller: settingsFormSchema.shape.seller.optional(),
+    consumerLinks: settingsFormSchema.shape.consumerLinks.optional(),
+  })
+  .refine((change) => change.seller !== undefined || change.consumerLinks !== undefined, {
+    message: 'Mandá los datos del vendedor o los enlaces de Defensa del Consumidor.',
+  })
+
+/** Cambio de los datos del vendedor o de los enlaces de Defensa del Consumidor. */
+export type MockSettingsChangeInput = z.input<typeof settingsChangeSchema>
+
 /** Cambio de precio, de stock o de cueros que se le pide a un producto. */
 export type MockProductChangeInput = z.input<typeof productChangeSchema>
 
@@ -75,13 +100,16 @@ export interface MockExpireOrderResult {
 
 /**
  * Rutas internas del modo de prueba para armar escenarios (pedido vencido, precio, stock o cueros
- * que cambian), fuera del contrato. Las usan los tests de extremo a extremo, que solo llegan a la base
+ * que cambian, datos del vendedor), fuera del contrato. Las usan los tests de extremo a extremo, que solo llegan a la base
  * del servidor por HTTP.
  *
  * - `POST /__mock/orders/{number}/expire`: vence la reserva del pedido pendiente, libera su stock
  *   y cancela su intento de pago activo; `409` si el pedido ya no está pendiente de pago.
  * - `POST /__mock/products/{id}` con `{ priceArs?, stock?, leathers? }`: cambia el precio, el
  *   stock o los cueros del producto y avisa que cambió el catálogo.
+ * - `POST /__mock/settings` con `{ seller?, consumerLinks? }`: reemplaza los datos del vendedor
+ *   o los enlaces a Defensa del Consumidor, avisa que cambiaron los ajustes (`settings`) y
+ *   responde los ajustes públicos.
  * - `POST /__mock/media` con `{ folder, dataUrl, width, height }`: registra una foto reducida del
  *   dashboard en lugar de subirla a Cloudinary (ver `MOCK_MEDIA_ROUTE`).
  */
@@ -132,6 +160,17 @@ export const MOCK_CONTROL_ROUTES: readonly MockRoute[] = [
         leathers: [...product.leathers],
       }
       return json(result)
+    },
+  },
+  {
+    method: 'POST',
+    path: MOCK_SETTINGS_PATH,
+    handler: async (ctx) => {
+      const change = parseOrFail(settingsChangeSchema, await ctx.body())
+      if (change.seller !== undefined) ctx.db.settings.seller = change.seller
+      if (change.consumerLinks !== undefined) ctx.db.settings.consumerLinks = change.consumerLinks
+      ctx.invalidate(['settings'])
+      return json(toPublicSettings(ctx.db.settings))
     },
   },
   MOCK_MEDIA_ROUTE,

@@ -96,6 +96,12 @@ export const MESSAGES = {
   invalidShippingOptions: 'Cargá los tres métodos de envío, uno de cada tipo',
   /** Dirección web que no empieza con http:// o https://. */
   invalidUrl: 'Ingresá una URL válida, con http:// o https://',
+  /**
+   * Documento legal con un marcador `{{clave}}` cuya clave no está en `LEGAL_MARKERS` de
+   * `@galpon/domain`, en `body` (la primera clave desconocida).
+   */
+  unknownLegalMarker: (marker: string) =>
+    `El dato {{${marker}}} no existe. Revisá la lista de datos del vendedor.`,
   /** Categoría sin grupo (mate, bombilla o yerba). */
   invalidGroup: 'Elegí un grupo',
   /** Estado del producto que no es borrador ni publicado. */

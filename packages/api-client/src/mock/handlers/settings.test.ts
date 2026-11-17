@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_CONSUMER_LINKS } from '@galpon/domain'
 import { getPublicSettings } from '../../services'
 import { createMockApi } from '../../test/mock-api'
 
@@ -15,6 +16,14 @@ describe('GET /settings/public', () => {
       contactEmail: db.settings.contactEmail,
       priceDisplay: db.settings.priceDisplay,
       seller: db.settings.seller,
+      consumerLinks: db.settings.consumerLinks,
+    })
+  })
+
+  it('trae los enlaces de fábrica a Defensa del Consumidor', async () => {
+    const { api } = createMockApi()
+    await expect(getPublicSettings(api)).resolves.toMatchObject({
+      consumerLinks: DEFAULT_CONSUMER_LINKS,
     })
   })
 })

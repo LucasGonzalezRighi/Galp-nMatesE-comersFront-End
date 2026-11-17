@@ -1,3 +1,4 @@
+import type { LegalDocument } from '@galpon/domain'
 import type {
   AboutContent,
   Address,
@@ -177,13 +178,8 @@ export interface MockContent {
   footer: FooterContent
   /** Textos de las pestañas de la ficha de producto. */
   productTabs: ProductTabsContent
-  /** Documentos legales. */
-  legal: {
-    /** Términos y condiciones. */
-    terms: LegalContent
-    /** Política de privacidad. */
-    privacy: LegalContent
-  }
+  /** Documentos legales: términos, privacidad, cookies y devoluciones. */
+  legal: Record<LegalDocument, LegalContent>
 }
 
 /** Sesión abierta del administrador en la base simulada. */
@@ -332,7 +328,7 @@ export interface MockCustomerSession {
  */
 export interface MockDb {
   /** Versión del formato; si cambia, lo guardado se descarta y se vuelve a sembrar. */
-  version: 5
+  version: 6
   /** Líneas de productos. */
   categories: MockCategory[]
   /** Productos. */

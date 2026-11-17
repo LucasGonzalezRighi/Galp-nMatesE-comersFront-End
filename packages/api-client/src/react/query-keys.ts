@@ -49,7 +49,7 @@ export const queryKeys = {
   adminContentAll: () => ['admin', 'content'] as const,
   /** Una página de contenido (`home`, `about`, `faq`, `footer` o `product-tabs`). */
   adminContent: (page: AdminContentPage) => ['admin', 'content', page] as const,
-  /** Un documento legal (`terms` o `privacy`). */
+  /** Un documento legal (`terms`, `privacy`, `cookies` o `returns`). */
   adminLegalContent: (document: LegalDocument) => ['admin', 'content', 'legal', document] as const,
   /** Ajustes del dashboard. */
   adminSettings: () => ['admin', 'settings'] as const,

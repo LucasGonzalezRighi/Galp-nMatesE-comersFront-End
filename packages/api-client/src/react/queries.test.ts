@@ -251,6 +251,12 @@ describe('consultas del admin', () => {
       [...queryKeys.adminLegalContent('privacy')],
     ],
     [
+      'adminLegalContentQuery de cookies',
+      (client, api) => client.query(adminLegalContentQuery(api, 'cookies')),
+      '/admin/content/legal/cookies',
+      [...queryKeys.adminLegalContent('cookies')],
+    ],
+    [
       'adminSettingsQuery',
       (client, api) => client.query(adminSettingsQuery(api)),
       '/admin/settings',

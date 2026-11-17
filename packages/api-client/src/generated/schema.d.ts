@@ -345,12 +345,12 @@ export interface paths {
         };
         /**
          * Obtener un documento legal
-         * @description Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+         * @description Devuelve los términos y condiciones (`terms`), la política de privacidad (`privacy`), la política de cookies (`cookies`) o la política de cambios y devoluciones (`returns`), con los marcadores `{{clave}}` sin resolver.
          */
         get: operations["getAdminLegalContent"];
         /**
          * Guardar un documento legal
-         * @description Reemplaza el documento legal: el cuerpo lleva el documento completo.
+         * @description Reemplaza el documento legal: el cuerpo lleva el documento completo y se guarda tal cual, con sus marcadores. Un marcador `{{clave}}` con una clave que no está en `LEGAL_MARKERS` de `@galpon/domain` responde `422` en `body`, con el `code` de las reglas de forma (`custom`) y el mensaje `El dato {{clave}} no existe. Revisá la lista de datos del vendedor.` (`MESSAGES.unknownLegalMarker`; la primera clave desconocida). Invalida la etiqueta `content:legal-{document}`.
          */
         put: operations["updateAdminLegalContent"];
         post?: never;
@@ -958,7 +958,7 @@ export interface paths {
         };
         /**
          * Obtener un documento legal
-         * @description Devuelve los términos y condiciones (`terms`) o la política de privacidad (`privacy`).
+         * @description Devuelve los términos y condiciones (`terms`), la política de privacidad (`privacy`), la política de cookies (`cookies`) o la política de cambios y devoluciones (`returns`). El cuerpo llega con los marcadores `{{clave}}` sin resolver: los reemplaza la tienda con los datos del vendedor de `GET /settings/public`.
          */
         get: operations["getLegalContent"];
         put?: never;
@@ -1003,7 +1003,11 @@ export interface paths {
         get: operations["getMe"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Eliminar mi cuenta
+         * @description Elimina la cuenta del cliente con la sesión iniciada, después de confirmar la contraseña. Se puede siempre, haya o no pedidos en curso. Anonimiza al cliente (ya no puede ingresar con ese email y contraseña), borra sus direcciones y cierra todas sus sesiones; sus pedidos quedan sin vínculo a la cuenta, con los datos mínimos del comprobante que la ley obliga a guardar. No vuelve a vincular nada. Una contraseña equivocada responde `422` con `{ field: 'password', code: 'invalid_password', message: 'La contraseña no es correcta' }`.
+         */
+        delete: operations["deleteMe"];
         options?: never;
         head?: never;
         /**
@@ -1568,6 +1572,14 @@ export interface components {
              * @example Cómo trabajamos
              */
             stepsEyebrow: string;
+        };
+        /** @description Confirmación para eliminar la cuenta. Es `deleteAccountSchema` de `@galpon/schemas`. */
+        AccountDeletion: {
+            /**
+             * @description Contraseña actual del cliente, de 1 a 128 caracteres.
+             * @example mate-amargo-2026
+             */
+            password: string;
         };
         /** @description Dirección de la libreta del cliente. */
         Address: components["schemas"]["AddressBookInput"] & {
@@ -2584,7 +2596,7 @@ export interface components {
                 items: {
                     /**
                      * @description Respuesta, hasta 2000 caracteres.
-                     * @example Sí, enviamos a las 24 provincias. Podés elegir envío a domicilio o a sucursal.
+                     * @example Sí, enviamos a todo el país. Podés elegir envío a domicilio o a sucursal.
                      */
                     answer: string;
                     /**
@@ -2644,17 +2656,10 @@ export interface components {
          *         "Visa",
          *         "Mastercard",
          *         "American Express"
-         *       ],
-         *       "consumerDefenseUrl": null
+         *       ]
          *     }
          */
         FooterContent: {
-            /**
-             * Format: uri
-             * @description Enlace a Defensa del Consumidor (http o https), o `null` si no se muestra.
-             * @example https://www.argentina.gob.ar/produccion/defensadelconsumidor
-             */
-            consumerDefenseUrl: string | null;
             /**
              * @description Nombres de los medios de pago que se muestran; hasta 10, de hasta 40 caracteres.
              * @example [
@@ -2962,13 +2967,16 @@ export interface components {
          * @enum {string}
          */
         Leather: "Negro" | "Marrón" | "Crudo" | "Borravino";
-        /** @description Documento legal (términos y condiciones o política de privacidad). Los límites son los de `legalContentFormSchema` de `@galpon/schemas`. */
+        /** @description Documento legal (términos y condiciones, privacidad, cookies o cambios y devoluciones). Los límites son los de `legalContentFormSchema` de `@galpon/schemas`. */
         LegalContent: {
             /**
-             * @description Texto del documento, con los párrafos separados por una línea en blanco; de 1 a 60.000 caracteres.
-             * @example Texto de ejemplo. Reemplazar por el texto revisado por un profesional antes de publicar.
+             * @description Texto plano del documento, de 1 a 60.000 caracteres. Bloques separados por una línea en blanco: `## Título` abre una sección; un bloque de líneas que empiezan con `- ` es una lista; lo demás es un párrafo (los saltos simples se conservan). Enlace en línea `[texto](destino)` con destino `/ruta` interna o `https://…` (cualquier otro destino se muestra como texto). Sin negritas, tablas ni HTML. Los marcadores `{{clave}}` (claves de `LEGAL_MARKERS` de `@galpon/domain`: `razon_social`, `cuit`, `condicion_iva`, `domicilio`, `email`, `telefono`, `area_atencion` y `horario_atencion`) se guardan y se sirven tal cual; los resuelve la tienda al dibujar con los datos del vendedor.
+             * @example ## Quién vende
              *
-             *     Segundo párrafo.
+             *     Este sitio es de {{razon_social}}, CUIT {{cuit}}.
+             *
+             *     - Envíos a todo el país.
+             *     - Cambios dentro de los 30 días corridos.
              */
             body: string;
             /**
@@ -3661,7 +3669,7 @@ export interface components {
             mate: components["schemas"]["ProductTabsGroupContent"];
             /**
              * @description Texto de la pestaña de envío y cambios, igual para todos los grupos; hasta 2000 caracteres.
-             * @example Enviamos a todo el país y calculás el costo en el checkout. También podés retirar sin costo. Tenés 10 días desde que lo recibís para cambios o arrepentimiento.
+             * @example Enviamos a todo el país y el costo lo ves antes de pagar. También podés retirar sin costo. Tenés 10 días corridos para arrepentirte y 30 para cambios.
              */
             shipping: string;
             yerba: components["schemas"]["ProductTabsGroupContent"];
@@ -3715,6 +3723,21 @@ export interface components {
         Province: "Buenos Aires" | "CABA" | "Catamarca" | "Chaco" | "Chubut" | "Córdoba" | "Corrientes" | "Entre Ríos" | "Formosa" | "Jujuy" | "La Pampa" | "La Rioja" | "Mendoza" | "Misiones" | "Neuquén" | "Río Negro" | "Salta" | "San Juan" | "San Luis" | "Santa Cruz" | "Santa Fe" | "Santiago del Estero" | "Tierra del Fuego" | "Tucumán";
         /** @description Ajustes que necesita la tienda para mostrarse y calcular importes. */
         PublicSettings: {
+            /** @description Enlaces a Defensa del Consumidor que el pie muestra siempre: el de la Ciudad de Buenos Aires (con la leyenda de la Ley 2244, art. 2) y el nacional. Los valores de fábrica son `DEFAULT_CONSUMER_LINKS` de `@galpon/domain`. */
+            consumerLinks: {
+                /**
+                 * Format: uri
+                 * @description Defensa del Consumidor de la Ciudad de Buenos Aires, con http o https.
+                 * @example https://buenosaires.gob.ar/gobierno/atencion-ciudadana/defensa-al-consumidor
+                 */
+                cabaUrl: string;
+                /**
+                 * Format: uri
+                 * @description Formulario de reclamos de Defensa del Consumidor de la Nación, con http o https.
+                 * @example https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario
+                 */
+                nationalUrl: string;
+            };
             /**
              * Format: email
              * @description Mail de contacto de la tienda.
@@ -3750,7 +3773,7 @@ export interface components {
             /** @description Datos del vendedor que la tienda tiene que mostrar (Disp. 954/2025). Cada dato es `null` mientras no se cargue. */
             seller: {
                 /**
-                 * @description Domicilio del vendedor.
+                 * @description Domicilio legal del vendedor.
                  * @example Av. Siempreviva 742, Neuquén
                  */
                 address: string | null;
@@ -3761,8 +3784,8 @@ export interface components {
                 cuit: string | null;
                 /**
                  * Format: uri
-                 * @description Enlace a Data Fiscal (ARCA), con http o https.
-                 * @example https://example.com/data-fiscal
+                 * @description El `href` del código de Data Fiscal que entrega ARCA (F. 960/D, "Banner en sitio web"), con http o https. El logo es siempre `DATA_FISCAL_LOGO_URL` de `@galpon/domain`; sin enlace, la tienda no lo muestra.
+                 * @example https://qr.afip.gob.ar/?qr=abc123
                  */
                 dataFiscalUrl: string | null;
                 /**
@@ -3771,7 +3794,7 @@ export interface components {
                  */
                 legalName: string | null;
                 /**
-                 * @description Teléfono o canal alternativo de atención.
+                 * @description Teléfono o canal alternativo de atención; es opcional (los documentos legales de fábrica no lo usan).
                  * @example +54 9 299 123 4567
                  */
                 phone: string | null;
@@ -3860,7 +3883,7 @@ export interface components {
         /** @description Reseña que envía un visitante. */
         ReviewInput: {
             /**
-             * @description Nombre con el que firma, o `null` para firmar como "Anónimo".
+             * @description Nombre con el que firma (puede ser un nombre de pila o iniciales), o `null` para firmar como "Anónimo".
              * @example Paula N.
              */
             authorName: string | null;
@@ -4269,10 +4292,10 @@ export interface components {
          */
         IdempotencyKey: string;
         /**
-         * @description Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).
+         * @description Documento legal: `terms` (términos y condiciones), `privacy` (política de privacidad), `cookies` (política de cookies) o `returns` (cambios y devoluciones). Copia `LEGAL_DOCUMENTS` de `@galpon/domain`.
          * @example terms
          */
-        LegalDocument: "terms" | "privacy";
+        LegalDocument: "terms" | "privacy" | "cookies" | "returns";
         /**
          * @description Identificador de un mensaje.
          * @example msg-0001
@@ -4304,6 +4327,7 @@ export interface components {
 }
 export type AboutContent = components['schemas']['AboutContent'];
 export type AboutContentInput = components['schemas']['AboutContentInput'];
+export type AccountDeletion = components['schemas']['AccountDeletion'];
 export type Address = components['schemas']['Address'];
 export type AddressBookInput = components['schemas']['AddressBookInput'];
 export type AddressInput = components['schemas']['AddressInput'];
@@ -5110,7 +5134,7 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).
+                 * @description Documento legal: `terms` (términos y condiciones), `privacy` (política de privacidad), `cookies` (política de cookies) o `returns` (cambios y devoluciones). Copia `LEGAL_DOCUMENTS` de `@galpon/domain`.
                  * @example terms
                  */
                 document: components["parameters"]["LegalDocument"];
@@ -5140,7 +5164,7 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).
+                 * @description Documento legal: `terms` (términos y condiciones), `privacy` (política de privacidad), `cookies` (política de cookies) o `returns` (cambios y devoluciones). Copia `LEGAL_DOCUMENTS` de `@galpon/domain`.
                  * @example terms
                  */
                 document: components["parameters"]["LegalDocument"];
@@ -6138,7 +6162,7 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description Documento legal: `terms` (términos y condiciones) o `privacy` (política de privacidad).
+                 * @description Documento legal: `terms` (términos y condiciones), `privacy` (política de privacidad), `cookies` (política de cookies) o `returns` (cambios y devoluciones). Copia `LEGAL_DOCUMENTS` de `@galpon/domain`.
                  * @example terms
                  */
                 document: components["parameters"]["LegalDocument"];
@@ -6202,6 +6226,33 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountDeletion"];
+            };
+        };
+        responses: {
+            /** @description Cuenta eliminada; la respuesta borra la cookie de sesión. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["ServerError"];
         };

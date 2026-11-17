@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   addressBookEntrySchema,
+  deleteAccountSchema,
   forgotPasswordSchema,
   loginSchema,
   optionalPhoneSchema,
@@ -84,7 +85,13 @@ function addressOf(ctx: MockContext, customer: MockCustomer): Address {
   return address
 }
 
-/** Rutas de la cuenta del cliente: sesión, contraseña, datos, pedidos y direcciones. */
+/**
+ * Rutas de la cuenta del cliente: sesión, contraseña, datos, pedidos y direcciones.
+ *
+ * `DELETE /me` elimina la cuenta después de confirmar la contraseña (`422` `invalid_password` si
+ * no coincide): saca al cliente con su libreta, cierra todas sus sesiones y deja sus pedidos sin
+ * dueño (`ownerId: null`), con los datos del comprobante.
+ */
 export const accountRoutes: readonly MockRoute[] = [
   route('GET', '/auth/csrf', (ctx) => {
     const session = currentSession(ctx) ?? startSession(ctx, null)
@@ -191,6 +198,24 @@ export const accountRoutes: readonly MockRoute[] = [
     if (changes.lastName !== undefined) customer.lastName = changes.lastName
     if (changes.phone !== undefined) customer.phone = changes.phone
     return json(toCustomer(customer))
+  }),
+
+  route('DELETE', '/me', async (ctx) => {
+    const { customer } = requireCustomer(ctx, { csrf: true })
+    const input = parseOrFail(deleteAccountSchema, await ctx.body())
+    if (input.password !== customer.password) {
+      return validationProblem([
+        { field: 'password', code: 'invalid_password', message: 'La contraseña no es correcta' },
+      ])
+    }
+    ctx.db.customers = ctx.db.customers.filter((candidate) => candidate.id !== customer.id)
+    ctx.db.customerSessions = ctx.db.customerSessions.filter(
+      (session) => session.customerId !== customer.id,
+    )
+    for (const order of ctx.db.orders) {
+      if (order.ownerId === customer.id) order.ownerId = null
+    }
+    return withSessionCookie(ctx, noContent(), null)
   }),
 
   route('GET', '/me/orders', (ctx) => {

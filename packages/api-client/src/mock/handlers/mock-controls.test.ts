@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { CartItemInput } from '../../generated/schema'
-import { createMercadoPagoPreference, getOrder, quoteCart } from '../../services'
+import type { CartItemInput, PublicSettings } from '../../generated/schema'
+import { createMercadoPagoPreference, getOrder, getPublicSettings, quoteCart } from '../../services'
 import { createMockDb, DEFAULT_MOCK_DB_OPTIONS } from '../db'
 import { createMockFetch } from '../mock-fetch'
 import { createCheckoutApi, orderInput, placeOrder, postOrder } from '../test/checkout-api'
 import { randomUuid } from '../uuid'
-import { MOCK_EXPIRE_ORDER_PATH, MOCK_PRODUCT_PATH } from './mock-controls'
+import { MOCK_EXPIRE_ORDER_PATH, MOCK_PRODUCT_PATH, MOCK_SETTINGS_PATH } from './mock-controls'
 
 /** Mate Imperial Premium ($39.999) con su cuero, como lo manda la tienda. */
 const MATE = {
@@ -185,5 +185,69 @@ describe('POST /__mock/products/{id}', () => {
   it('un producto que no existe responde 404', async () => {
     const mock = createCheckoutApi()
     expect((await control(mock, productPath('prd-no-existe'), { stock: 1 })).status).toBe(404)
+  })
+})
+
+describe('POST /__mock/settings', () => {
+  const SELLER = {
+    legalName: 'Galpón Mates S. R. L.',
+    cuit: '20-12345678-6',
+    taxCondition: 'Responsable inscripto',
+    address: 'Av. Siempre Viva 742, CABA',
+    phone: null,
+    supportArea: 'Atención al cliente',
+    supportHours: 'Lunes a viernes de 9 a 18',
+    dataFiscalUrl: 'https://qr.afip.gob.ar/?qr=abc123',
+  }
+
+  it('cambia el vendedor, lo normaliza y lo devuelve con los ajustes públicos', async () => {
+    const mock = createCheckoutApi()
+    const response = await control(mock, MOCK_SETTINGS_PATH, { seller: SELLER })
+    expect(response.status).toBe(200)
+    const settings = (await response.json()) as PublicSettings
+    expect(settings.seller).toEqual({ ...SELLER, cuit: '20123456786' })
+    expect(settings).not.toHaveProperty('vatRatePercent')
+    expect(mock.db.settings.seller.cuit).toBe('20123456786')
+    await expect(getPublicSettings(mock.api)).resolves.toMatchObject({
+      seller: { legalName: 'Galpón Mates S. R. L.' },
+    })
+  })
+
+  it('cambia los enlaces de Defensa del Consumidor y deja el vendedor', async () => {
+    const mock = createCheckoutApi()
+    const consumerLinks = {
+      cabaUrl: 'https://caba.example/',
+      nationalUrl: 'https://nacion.example/',
+    }
+    expect((await control(mock, MOCK_SETTINGS_PATH, { consumerLinks })).status).toBe(200)
+    expect(mock.db.settings.consumerLinks).toEqual(consumerLinks)
+    expect(mock.db.settings.seller.legalName).toBeNull()
+  })
+
+  it('avisa que cambiaron los ajustes', async () => {
+    const onInvalidate = vi.fn()
+    const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
+    const mockFetch = createMockFetch({ getDb: () => db, latencyMs: 0, onInvalidate })
+    const response = await mockFetch(
+      new Request(`http://localhost/api/v1${MOCK_SETTINGS_PATH}`, {
+        method: 'POST',
+        body: JSON.stringify({ seller: SELLER }),
+      }),
+    )
+    expect(response.status).toBe(200)
+    expect(onInvalidate).toHaveBeenCalledWith(['settings'])
+  })
+
+  it('valida el cuerpo: alguno de los dos, con las reglas de los ajustes, y nada más', async () => {
+    const mock = createCheckoutApi()
+    for (const body of [
+      {},
+      { seller: { ...SELLER, cuit: '20123456780' } },
+      { consumerLinks: { cabaUrl: '', nationalUrl: 'https://nacion.example/' } },
+      { seller: SELLER, extra: 1 },
+    ]) {
+      expect((await control(mock, MOCK_SETTINGS_PATH, body)).status).toBe(422)
+    }
+    expect(mock.db.settings.seller.legalName).toBeNull()
   })
 })
