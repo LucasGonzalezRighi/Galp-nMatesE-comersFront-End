@@ -1,4 +1,5 @@
 import type { MockInstance } from 'vitest'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EnvError } from './lib/env'
 
@@ -13,7 +14,16 @@ vi.mock('./lib/env', async (importOriginal) => ({
   },
 }))
 
-const { MOCK_IN_PRODUCTION_WARNING, validateEnvOrExit } = await import('./instrumentation-node')
+/** El arranque del tope de la caché de páginas, espiado: acá no se toca el disco. */
+const routeCache = vi.hoisted(() => ({ start: vi.fn() }))
+
+vi.mock('./lib/route-cache-limit', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./lib/route-cache-limit')>()),
+  startRouteCacheLimit: routeCache.start,
+}))
+
+const { MOCK_IN_PRODUCTION_WARNING, startRouteCacheLimitInProduction, validateEnvOrExit } =
+  await import('./instrumentation-node')
 
 let stderr: MockInstance
 let exit: MockInstance
@@ -51,5 +61,38 @@ describe('validateEnvOrExit', () => {
 
     expect(stderr).toHaveBeenCalledWith(expect.stringContaining('API_MODE es obligatoria'))
     expect(exit).toHaveBeenCalledWith(1)
+  })
+})
+
+describe('startRouteCacheLimitInProduction', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    routeCache.start.mockClear()
+  })
+
+  it('en el servidor de producción arranca el tope con ROUTE_CACHE_MAX_MB y la carpeta de Next', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PHASE', 'phase-production-server')
+    env.result = { mockInProduction: false, routeCacheMaxBytes: 64 * 1024 * 1024 }
+
+    expect(startRouteCacheLimitInProduction()).toBe(true)
+
+    expect(routeCache.start).toHaveBeenCalledTimes(1)
+    expect(routeCache.start).toHaveBeenCalledWith({
+      directory: join(process.cwd(), '.next', 'server', 'route-cache'),
+      maxBytes: 64 * 1024 * 1024,
+    })
+  })
+
+  it.each([
+    ['next dev', 'development', 'phase-development-server'],
+    ['next build', 'production', 'phase-production-build'],
+  ])('en %s no arranca nada', (_name, nodeEnv, phase) => {
+    vi.stubEnv('NODE_ENV', nodeEnv)
+    vi.stubEnv('NEXT_PHASE', phase)
+    env.result = { mockInProduction: false, routeCacheMaxBytes: 64 * 1024 * 1024 }
+
+    expect(startRouteCacheLimitInProduction()).toBe(false)
+    expect(routeCache.start).not.toHaveBeenCalled()
   })
 })

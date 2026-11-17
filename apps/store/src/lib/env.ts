@@ -42,6 +42,12 @@ export interface StoreEnv {
    * cabecera `X-Mock-Control-Secret` (ver `allowsMockControls`).
    */
   mockControlSecret: string | null
+  /**
+   * Tope en bytes de la caché de páginas de Next en disco (`ROUTE_CACHE_MAX_MB`, en MB; por omisión
+   * {@link DEFAULT_ROUTE_CACHE_MAX_MB}). Pasado el tope, el servidor borra las páginas guardadas más
+   * viejas (ver `lib/route-cache-limit.ts`).
+   */
+  routeCacheMaxBytes: number
 }
 
 /** Opciones de {@link parseStoreEnv}. */
@@ -63,6 +69,12 @@ const DEV_REVALIDATE_SECRET = 'dev-only-revalidate-secret-change-me-0000'
 
 /** Latencia por omisión de la API de prueba, en milisegundos. */
 const DEFAULT_MOCK_LATENCY_MS = [150, 400] as const
+
+/** Tope por omisión de la caché de páginas en disco, en MB: el mismo del optimizador de imágenes. */
+export const DEFAULT_ROUTE_CACHE_MAX_MB = 256
+
+/** Rango que acepta `ROUTE_CACHE_MAX_MB`: de 16 MB (la tienda compilada ocupa menos) a 100 GB. */
+const ROUTE_CACHE_MAX_MB_RANGE = [16, 102_400] as const
 
 /** Largo mínimo del secreto de `/api/revalidate` en vivo y del de los controles de prueba. */
 const MIN_LIVE_SECRET_LENGTH = 32
@@ -158,7 +170,8 @@ function parseMockLatency(value: string): number | readonly [number, number] | n
  * (`NODE_ENV=production`) `API_MODE` es obligatoria, y `mock` solo pasa con
  * `MOCK_ALLOWED_IN_PRODUCTION=true`: la API simulada no tiene autenticación real. En modo de prueba
  * se leen además `MOCK_ADMIN_PASSWORD` (de 10 a 128 caracteres, con letras y números) y
- * `MOCK_CONTROL_SECRET` (32 caracteres o más); en vivo se ignoran.
+ * `MOCK_CONTROL_SECRET` (32 caracteres o más); en vivo se ignoran. `ROUTE_CACHE_MAX_MB` (opcional)
+ * es el tope de la caché de páginas en disco, en MB.
  *
  * @param source - Las variables, normalmente `process.env`.
  * @param options - Ver {@link ParseStoreEnvOptions}.
@@ -283,6 +296,20 @@ export function parseStoreEnv(
     )
   }
 
+  let routeCacheMaxMb = DEFAULT_ROUTE_CACHE_MAX_MB
+  const routeCacheText = readVariable(source, 'ROUTE_CACHE_MAX_MB')
+  if (routeCacheText !== undefined) {
+    const [min, max] = ROUTE_CACHE_MAX_MB_RANGE
+    const megabytes = /^\d+$/.test(routeCacheText) ? Number(routeCacheText) : Number.NaN
+    if (Number.isSafeInteger(megabytes) && megabytes >= min && megabytes <= max) {
+      routeCacheMaxMb = megabytes
+    } else {
+      problems.push(
+        `ROUTE_CACHE_MAX_MB tiene que ser un número entero de MB entre ${String(min)} y ${String(max)}, por ejemplo ${String(DEFAULT_ROUTE_CACHE_MAX_MB)}`,
+      )
+    }
+  }
+
   if (apiMode === null || problems.length > 0) throw new EnvError(problems)
   return {
     apiMode,
@@ -296,6 +323,7 @@ export function parseStoreEnv(
     trustedClientIpHeader,
     mockAdminPassword,
     mockControlSecret,
+    routeCacheMaxBytes: routeCacheMaxMb * 1024 * 1024,
   }
 }
 

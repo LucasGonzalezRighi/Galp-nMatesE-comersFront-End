@@ -33,6 +33,7 @@ describe('parseStoreEnv', () => {
       trustedClientIpHeader: null,
       mockAdminPassword: null,
       mockControlSecret: null,
+      routeCacheMaxBytes: 256 * 1024 * 1024,
     })
   })
 
@@ -267,6 +268,28 @@ describe('TRUSTED_CLIENT_IP_HEADER', () => {
     (name) => {
       expect(problemsOf({ TRUSTED_CLIENT_IP_HEADER: name })).toEqual([
         'TRUSTED_CLIENT_IP_HEADER tiene que ser el nombre de una cabecera, por ejemplo cf-connecting-ip',
+      ])
+    },
+  )
+})
+
+describe('ROUTE_CACHE_MAX_MB', () => {
+  it('por omisión el tope de la caché de páginas es de 256 MB', () => {
+    expect(parseStoreEnv({}).routeCacheMaxBytes).toBe(256 * 1024 * 1024)
+  })
+
+  it('acepta un entero de MB entre 16 y 102400 y lo pasa a bytes', () => {
+    expect(parseStoreEnv({ ROUTE_CACHE_MAX_MB: '16' }).routeCacheMaxBytes).toBe(16 * 1024 * 1024)
+    expect(parseStoreEnv({ ROUTE_CACHE_MAX_MB: ' 1024 ' }).routeCacheMaxBytes).toBe(
+      1024 * 1024 * 1024,
+    )
+  })
+
+  it.each(['0', '15', '102401', '64.5', '-64', '64MB', 'mucho'])(
+    '"%s" no es un tope válido y tira',
+    (value) => {
+      expect(problemsOf({ ROUTE_CACHE_MAX_MB: value })).toEqual([
+        'ROUTE_CACHE_MAX_MB tiene que ser un número entero de MB entre 16 y 102400, por ejemplo 256',
       ])
     },
   )

@@ -1,4 +1,6 @@
+import { join } from 'node:path'
 import { EnvError, getStoreEnv } from './lib/env'
+import { ROUTE_CACHE_SUBPATH, startRouteCacheLimit } from './lib/route-cache-limit'
 
 /** Aviso del arranque cuando un servidor de producción corre con la API simulada. */
 export const MOCK_IN_PRODUCTION_WARNING =
@@ -19,4 +21,25 @@ export function validateEnvOrExit(): void {
     process.stderr.write(`${message}\n`)
     process.exit(1)
   }
+}
+
+/**
+ * Arranca el tope de la caché de páginas en disco (pista 13; ver `lib/route-cache-limit.ts`) con el
+ * tope de `ROUTE_CACHE_MAX_MB`. Solo en el servidor de producción (`next start`): `next dev` guarda
+ * su caché en otra carpeta y `next build` no sirve pedidos.
+ *
+ * @returns `true` si lo arrancó.
+ */
+export function startRouteCacheLimitInProduction(): boolean {
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.NEXT_PHASE === 'phase-production-build'
+  ) {
+    return false
+  }
+  startRouteCacheLimit({
+    directory: join(process.cwd(), '.next', ROUTE_CACHE_SUBPATH),
+    maxBytes: getStoreEnv().routeCacheMaxBytes,
+  })
+  return true
 }
