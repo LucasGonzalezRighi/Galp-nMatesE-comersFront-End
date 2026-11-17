@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { DEFAULT_CUSTOMER_SESSION_COOKIE } from '@galpon/api-client/mock/session-cookie'
 import type { ApiMode } from './lib/env'
+import { trustedClientIp } from './lib/client-ip'
 import { getStoreEnv } from './lib/env'
 import { isSlugShaped } from './lib/slug'
 
@@ -48,11 +49,11 @@ export const NOT_FOUND_SLUG = '_'
  * el servidor de la tienda (`TRUST_PROXY`).
  */
 function forwardToApi(request: NextRequest, trustedClientIpHeader: string | null): NextResponse {
-  const clientIp =
-    trustedClientIpHeader === null ? '' : (request.headers.get(trustedClientIpHeader) ?? '').trim()
+  // Se lee antes de borrar: la cabecera de confianza puede ser una de las que se borran.
+  const clientIp = trustedClientIp(request.headers, trustedClientIpHeader)
   const headers = new Headers(request.headers)
   for (const name of CLIENT_FORWARDING_HEADERS) headers.delete(name)
-  if (clientIp !== '') headers.set('x-forwarded-for', clientIp)
+  if (clientIp !== null) headers.set('x-forwarded-for', clientIp)
   return NextResponse.next({ request: { headers } })
 }
 

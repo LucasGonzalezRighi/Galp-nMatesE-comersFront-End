@@ -122,12 +122,12 @@ En vivo, `/api/v1/*` se reescribe hacia `API_BASE_URL/api/v1/*` (mismo dominio p
 
 ### IP del cliente para los límites del backend
 
-El backend limita por IP el login, el registro, los pedidos y los formularios. Todo lo del navegador le llega por el _rewrite_ de `/api/v1`, así que la IP que ve es la del servidor de la tienda, salvo que confíe en `X-Forwarded-For`:
+El backend limita por IP el login, el registro, los pedidos, los formularios y las lecturas de la cuenta (`/me` y `/me/addresses`: 120 por minuto; `/me/orders` no tiene límite por IP). Todo lo del navegador le llega por el _rewrite_ de `/api/v1` y las páginas de `/cuenta` las lee el servidor de la tienda, así que la IP que ve es la del servidor de la tienda, salvo que confíe en `X-Forwarded-For`:
 
 - El proxy de la tienda (`src/proxy.ts`) **borra** `x-forwarded-for`, `x-real-ip` y `forwarded` que mande el cliente en `/api/v1/*`: si no, cualquiera inventaría una IP por pedido y salteaba los límites.
 - Con `TRUSTED_CLIENT_IP_HEADER` (el nombre de la cabecera donde el proxy de la plataforma escribe la IP real, pisando lo que mande el navegador; por ejemplo `cf-connecting-ip` detrás de Cloudflare) la tienda pone `x-forwarded-for` con ese valor. Sin ella no manda ninguna.
 - En el backend, `TRUST_PROXY` tiene que listar la IP (o la red) del servidor de la tienda y la de cualquier proxy entre los dos: así Express toma la IP del cliente de `X-Forwarded-For` y los límites cuentan por cliente (ver "Proxies de confianza" en el README del back). Sin `TRUSTED_CLIENT_IP_HEADER` en la tienda, los pedidos llegan sin IP del cliente y el back los cuenta como de la tienda.
-- Las lecturas que hace el servidor de la tienda (`lib/api.server.ts`, por ejemplo las de `/cuenta`) no llevan la IP del cliente.
+- Las lecturas de la cuenta que hace el servidor de la tienda por cada visitante (`getServerApiForRequest` de `lib/api.server.ts`: `/cuenta`, sus pedidos y sus direcciones) también mandan `X-Forwarded-For` con la IP de `TRUSTED_CLIENT_IP_HEADER` (`lib/client-ip.ts`, el mismo criterio que el proxy) y nunca las cabeceras de reenvío del navegador: si no, el back las contaría todas como de la tienda y alguien con una cookie de sesión inventada agotaría el límite de las páginas de cuenta de todos. Las lecturas públicas con caché (`getServerApi`) no la llevan: son de toda la tienda y el back no las limita cuando no conoce la IP del cliente.
 
 ## Caché y revalidación
 

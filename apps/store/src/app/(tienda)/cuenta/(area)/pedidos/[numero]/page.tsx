@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { AccountSkeleton, OrderDetail, requireAccountData } from '@/features/account'
@@ -24,7 +24,7 @@ interface OrderRouteProps {
 async function Order({ params }: OrderRouteProps): Promise<ReactNode> {
   const { numero } = await params
   if (!isOrderNumber(numero)) notFound()
-  const api = getServerApiForRequest(await cookies())
+  const api = getServerApiForRequest(await cookies(), await headers())
   const order = await requireAccountData(() => getMyOrder(api, numero), `/cuenta/pedidos/${numero}`)
   return <OrderDetail order={order} />
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { Suspense } from 'react'
 import { AccountOverview, AccountSkeleton, requireAccountData } from '@/features/account'
 import { getServerApiForRequest } from '@/lib/api.server'
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Tu cuenta' }
 
 /** Lee con la sesión del pedido los datos, el último pedido y la libreta del cliente. */
 async function Overview(): Promise<ReactNode> {
-  const api = getServerApiForRequest(await cookies())
+  const api = getServerApiForRequest(await cookies(), await headers())
   const [customer, orders, addresses] = await requireAccountData(
     () => Promise.all([getMe(api), listMyOrders(api, 1), listMyAddresses(api)]),
     '/cuenta',

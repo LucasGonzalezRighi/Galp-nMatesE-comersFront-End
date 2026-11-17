@@ -26,7 +26,8 @@ export interface StoreEnv {
   /**
    * Cabecera (en minúsculas) donde el proxy de la plataforma escribe la IP del cliente
    * (`TRUSTED_CLIENT_IP_HEADER`, por ejemplo `cf-connecting-ip`); `null` si no se configuró. El
-   * proxy de la tienda copia su valor a `x-forwarded-for` en `/api/v1/*`.
+   * proxy de la tienda copia su valor a `x-forwarded-for` en `/api/v1/*`, y las lecturas de la
+   * cuenta que hace el servidor (`getServerApiForRequest`) lo mandan en `X-Forwarded-For`.
    */
   trustedClientIpHeader: string | null
   /**
