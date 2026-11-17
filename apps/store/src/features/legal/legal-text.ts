@@ -13,8 +13,11 @@ export type LegalBlock =
 /** Enlace en línea `[texto](destino)`. */
 const LINK_PATTERN = /\[([^\]\n]+)\]\(([^)\s]+)\)/g
 
-/** Destinos permitidos: una ruta interna (`/algo`, no `//host`) o una dirección `https://`. */
-const ALLOWED_HREF = /^(\/(?!\/)|https:\/\/)/
+/**
+ * Destinos permitidos: una ruta interna (`/algo`; no `//host` ni `/\host`, que el navegador lee
+ * como otro sitio) o una dirección `https://`.
+ */
+const ALLOWED_HREF = /^(\/(?![/\\])|https:\/\/)/
 
 /** Prefijo de un título de sección. */
 const HEADING_PREFIX = '## '
@@ -47,13 +50,25 @@ function parseInlines(text: string): LegalInline[] {
   return inlines
 }
 
+/**
+ * Id único de un título: `slugify(texto)` y, si ya se usó en el documento, con `-2`, `-3`… (dos
+ * títulos iguales no pueden compartir el id del ancla).
+ */
+function uniqueId(text: string, used: Set<string>): string {
+  const base = slugify(text)
+  let id = base
+  for (let n = 2; used.has(id); n += 1) id = `${base}-${String(n)}`
+  used.add(id)
+  return id
+}
+
 /** Convierte un bloque (líneas sin línea en blanco en el medio) en uno o dos bloques. */
-function parseBlock(lines: string[]): LegalBlock[] {
+function parseBlock(lines: string[], used: Set<string>): LegalBlock[] {
   const [first = '', ...rest] = lines
   if (first.startsWith(HEADING_PREFIX)) {
     const text = first.slice(HEADING_PREFIX.length).trim()
-    const heading: LegalBlock = { kind: 'heading', id: slugify(text), text }
-    return rest.length === 0 ? [heading] : [heading, ...parseBlock(rest)]
+    const heading: LegalBlock = { kind: 'heading', id: uniqueId(text, used), text }
+    return rest.length === 0 ? [heading] : [heading, ...parseBlock(rest, used)]
   }
   if (lines.every((line) => line.startsWith(ITEM_PREFIX))) {
     return [
@@ -68,8 +83,8 @@ function parseBlock(lines: string[]): LegalBlock[] {
 
 /**
  * Interpreta el cuerpo de un documento legal con el formato de LA-1: bloques separados por una
- * línea en blanco; `## Título` abre una sección (con `id` = `slugify(título)`); un bloque cuyas
- * líneas empiezan todas con `- ` es una lista; lo demás es un párrafo (los saltos simples se
+ * línea en blanco; `## Título` abre una sección (con `id` = `slugify(título)`, y `-2`, `-3`… si
+ * el título se repite); un bloque cuyas líneas empiezan todas con `- ` es una lista; lo demás es un párrafo (los saltos simples se
  * conservan). Los enlaces `[texto](destino)` valen solo con destino `/ruta` interna o `https://…`;
  * cualquier otro queda como texto. Nada de HTML: todo se dibuja como texto.
  *
@@ -87,6 +102,7 @@ export function parseLegalBody(body: string): LegalBlock[] {
       `El cuerpo del documento legal tiene que ser texto; se recibió ${typeof body}.`,
     )
   }
+  const used = new Set<string>()
   return body
     .split(/\r?\n[^\S\r\n]*\r?\n/)
     .map((block) =>
@@ -96,7 +112,7 @@ export function parseLegalBody(body: string): LegalBlock[] {
         .filter((line) => line !== ''),
     )
     .filter((lines) => lines.length > 0)
-    .flatMap(parseBlock)
+    .flatMap((lines) => parseBlock(lines, used))
 }
 
 /**

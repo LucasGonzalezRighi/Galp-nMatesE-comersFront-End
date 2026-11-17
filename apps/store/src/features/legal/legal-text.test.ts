@@ -56,6 +56,21 @@ describe('parseLegalBody', () => {
     ])
   })
 
+  it('deja como texto los destinos "//host" y "/\\host" (el navegador los lee como otro sitio)', () => {
+    for (const href of ['//evil.example', '/\\evil.example', '/\\/evil.example']) {
+      expect(parseLegalBody(`Ver [acá](${href}).`)).toEqual([
+        { kind: 'paragraph', inlines: [{ kind: 'text', text: `Ver [acá](${href}).` }] },
+      ])
+    }
+  })
+
+  it('dos títulos iguales no repiten el id: el segundo lleva "-2" y el tercero "-3"', () => {
+    const ids = parseLegalBody('## Datos\n\n## Datos\n\n## Datos 2\n\n## Datos').flatMap((block) =>
+      block.kind === 'heading' ? [block.id] : [],
+    )
+    expect(ids).toEqual(['datos', 'datos-2', 'datos-2-2', 'datos-3'])
+  })
+
   it('no interpreta HTML: queda como texto', () => {
     expect(parseLegalBody('<b>negrita</b> & más')).toEqual([
       { kind: 'paragraph', inlines: [{ kind: 'text', text: '<b>negrita</b> & más' }] },
