@@ -25,7 +25,10 @@ test.describe('tienda: política de seguridad de contenido', () => {
     isMobile,
   }) => {
     await gotoStore(page, '/tienda')
-    await page.getByRole('button', { name: 'Agregar al carrito' }).first().click()
+    await page
+      .getByRole('button', { name: /^Agregar .+ al carrito$/ })
+      .first()
+      .click()
 
     await page.getByRole('button', { name: /^Abrir carrito/ }).click()
     await expect(page.getByRole('dialog', { name: /^Carrito/ })).toBeVisible()

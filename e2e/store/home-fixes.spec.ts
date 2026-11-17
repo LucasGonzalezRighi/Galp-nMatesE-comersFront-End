@@ -208,7 +208,7 @@ test.describe('tienda: las correcciones de Lucas en el inicio (1905 × 950)', ()
     await gotoStore(page, '/tienda')
     const card = page.locator('[class*="group/card"]').first()
     const pillSweep = card.locator('[aria-hidden="true"] [data-button-sweep]').first()
-    const add = card.getByRole('button', { name: 'Agregar al carrito' })
+    const add = card.getByRole('button', { name: /^Agregar .+ al carrito$/ })
     const addSweep = add.locator('[data-button-sweep]')
     const clipOf = (locator: Locator) => async (): Promise<string> =>
       await locator.evaluate((element) => getComputedStyle(element).clipPath)

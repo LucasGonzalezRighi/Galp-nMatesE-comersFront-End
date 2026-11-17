@@ -21,7 +21,10 @@ test.describe('tienda: carrito', () => {
   }) => {
     await gotoStore(page, '/tienda')
     await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 0 productos')
-    await page.getByRole('button', { name: 'Agregar al carrito' }).first().click()
+    await page
+      .getByRole('button', { name: /^Agregar .+ al carrito$/ })
+      .first()
+      .click()
     await expect(page.getByText('Agregado al carrito. Mate Imperial Premium')).toBeAttached()
     await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 1 producto')
 
