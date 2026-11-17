@@ -33,13 +33,13 @@ export function ReasonField({ value, onChange }: ReasonFieldProps): ReactNode {
       <span aria-hidden="true" className="text-foreground/70 mb-[5px] block text-[12px]">
         {CONTACT_COPY.reason}
       </span>
-      <div className="border-divider inline-flex max-w-full self-start overflow-hidden rounded-md border">
+      <div className="inline-flex max-w-full self-start overflow-hidden rounded-md border border-neutral-600">
         <Segmented
           label={CONTACT_COPY.reason}
           options={OPTIONS}
           value={value}
           onChange={onChange}
-          className="[&>label]:border-divider -mr-px -mb-px flex-wrap rounded-none! border-0! [&>label]:flex-auto [&>label]:border-r [&>label]:border-b [&>label]:border-l-0"
+          className="-mr-px -mb-px flex-wrap rounded-none! border-0! [&>label]:flex-auto [&>label]:border-r [&>label]:border-b [&>label]:border-l-0 [&>label]:border-neutral-600"
         />
       </div>
     </div>
