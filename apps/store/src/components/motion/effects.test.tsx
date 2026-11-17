@@ -120,6 +120,30 @@ describe('useScrollTopOnStep', () => {
     heading.remove()
   })
 
+  it('el paso que se restaura al hidratar no enfoca ni sube; los cambios posteriores sí', () => {
+    mockReducedMotion(false)
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    const heading = document.createElement('h2')
+    heading.tabIndex = -1
+    document.body.append(heading)
+    const focus = vi.spyOn(heading, 'focus')
+    const ref = { current: heading }
+    const { rerender } = renderHook(
+      ({ step, ready }) => {
+        useScrollTopOnStep(step, ref, ready)
+      },
+      { initialProps: { step: 0, ready: false } },
+    )
+    rerender({ step: 2, ready: true })
+    expect(focus).not.toHaveBeenCalled()
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    rerender({ step: 1, ready: true })
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+    heading.remove()
+  })
+
   it('con prefers-reduced-motion sube de golpe', () => {
     mockReducedMotion(true)
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)

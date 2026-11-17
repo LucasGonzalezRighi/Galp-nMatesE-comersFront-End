@@ -149,7 +149,7 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
   useEffect(() => {
     void syncCart()
   }, [syncCart])
-  useScrollTopOnStep(step, stepTitle)
+  useScrollTopOnStep(step, stepTitle, ready)
 
   useEffect(() => {
     if (resumed.current || !ready || !cartReady || pedido === null) return

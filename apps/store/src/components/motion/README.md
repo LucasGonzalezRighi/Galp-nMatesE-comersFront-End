@@ -27,7 +27,7 @@ además ignoran punteros que no son un mouse. Las curvas salen de `tokens.easing
 | `DrawCheck`                | Check que se dibuja                                                                      | `size`, `color`, `label`                                                                 |
 | `Shake`                    | Temblor de un campo con error; `shake()` por `ref`                                       | `ref`                                                                                    |
 | `ScrollStage`              | Escenario fijo a la altura de la ventana; `useScrollStage()` da avance y `scrollToStop`  | `stops`, `label`                                                                         |
-| `useScrollTopOnStep(step)` | Sube suavemente al cambiar de paso (kit, checkout)                                       | `step`                                                                                   |
+| `useScrollTopOnStep(step)` | Sube suavemente al cambiar de paso (kit, checkout) y enfoca el título del paso           | `step`, `heading`, `ready` (el paso restaurado al hidratar no cuenta)                    |
 | `useMediaQuery(query)`     | Si se cumple una consulta de medios (`false` en el servidor y al hidratar)               | `query`                                                                                  |
 
 ## Cosas a tener en cuenta

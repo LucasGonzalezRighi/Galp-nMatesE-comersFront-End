@@ -12,20 +12,35 @@ import { assertIntegerInRange } from './validate'
  * `tabIndex={-1}`. No hace nada en el primer render. Con `prefers-reduced-motion: reduce` sube de
  * golpe, sin desplazamiento animado.
  *
+ * Con `ready` en `false` (el paso guardado todavía no se restauró), el paso no cuenta como
+ * cambio: el que llega al hidratar queda como punto de partida, sin subir ni robar el foco en una
+ * recarga; solo los cambios posteriores mueven la página y el foco.
+ *
  * @param step - Número del paso actual, un entero de 0 en adelante.
  * @param heading - Referencia al título del paso actual (opcional).
+ * @param ready - Si el paso ya es el definitivo (por defecto `true`).
  * @throws {RangeError} Si `step` no es un entero mayor o igual a 0.
  * @example
  * useScrollTopOnStep(step, stepTitle)
  */
-export function useScrollTopOnStep(step: number, heading?: RefObject<HTMLElement | null>): void {
+export function useScrollTopOnStep(
+  step: number,
+  heading?: RefObject<HTMLElement | null>,
+  ready = true,
+): void {
   assertIntegerInRange('step', step, 0, Number.MAX_SAFE_INTEGER)
   const reduced = usePrefersReducedMotion()
   const previous = useRef(step)
+  const settled = useRef(ready)
   useEffect(() => {
+    if (!settled.current) {
+      settled.current = ready
+      previous.current = step
+      return
+    }
     if (previous.current === step) return
     previous.current = step
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
     heading?.current?.focus({ preventScroll: true })
-  }, [step, reduced, heading])
+  }, [step, reduced, heading, ready])
 }
