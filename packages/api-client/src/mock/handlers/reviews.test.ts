@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MockReview } from '../types'
 import { createReview, listFeaturedReviews, listProductReviews } from '../../services'
 import { createMockApi, rawRequest } from '../../test/mock-api'
+import { MOCK_DB_LIMITS } from '../limits'
 
 /** Reseña aprobada de prueba para un producto. */
 function review(index: number, productId: string): MockReview {
@@ -268,5 +269,24 @@ describe('POST /products/{slug}/reviews', () => {
     const badSlug = await postReview(mock, 'Mate%20Raro', VALID_REVIEW)
     expect(badSlug.status).toBe(422)
     expect(await badSlug.json()).toMatchObject({ errors: [{ field: 'slug' }] })
+  })
+})
+
+describe('tope de las reseñas pendientes', () => {
+  it('guarda hasta MOCK_DB_LIMITS.pendingReviews pendientes: descarta la pendiente más vieja y nunca las aprobadas', async () => {
+    const mock = createMockApi({ now: () => NOW })
+    const approved = mock.db.reviews.filter((candidate) => candidate.status === 'approved')
+    const pending = Array.from({ length: MOCK_DB_LIMITS.pendingReviews }, (_, index) => ({
+      ...review(index, 'prd-imperial-premium'),
+      id: `rev-pendiente-${String(index)}`,
+      status: 'pending' as const,
+    }))
+    mock.db.reviews = [...pending.slice(0, 1), ...mock.db.reviews, ...pending.slice(1)]
+    await createReview(mock.api, 'mate-imperial-premium', VALID_REVIEW)
+    const stillPending = mock.db.reviews.filter((candidate) => candidate.status === 'pending')
+    expect(stillPending).toHaveLength(MOCK_DB_LIMITS.pendingReviews)
+    expect(stillPending[0]?.id).toBe('rev-pendiente-1')
+    expect(stillPending.at(-1)?.authorName).toBe('Paula N.')
+    expect(mock.db.reviews.filter((candidate) => candidate.status === 'approved')).toEqual(approved)
   })
 })

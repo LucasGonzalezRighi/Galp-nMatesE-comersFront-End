@@ -1,11 +1,12 @@
 import type { ApiFetch } from '../client'
 import type { PendingOperation } from './pending'
 import type { MockRoute } from './router'
-import type { MockDb } from './types'
+import type { MockDb, MockPasswordResetMail } from './types'
+import { MAX_MOCK_BODY_BYTES, readJsonBody } from './body'
 import { IMPLEMENTED_ROUTES } from './handlers'
 import { DEFAULT_CUSTOMER_SESSION_COOKIE } from './handlers/customer-session'
 import { INTERNAL_ROUTES } from './handlers/mercadopago-simulator'
-import { MOCK_CONTROL_ROUTES } from './handlers/mock-controls'
+import { MOCK_CONTROL_ROUTES, SCENARIO_CONTROL_ROUTES } from './handlers/mock-controls'
 import { isHttpMethod, notFound, problem, ResponseError } from './http'
 import { BACKEND_ONLY_OPERATIONS, PENDING_OPERATIONS } from './pending'
 import { matchRoute } from './router'
@@ -38,6 +39,26 @@ export interface MockFetchOptions {
    * `__Host-galpon_session`, que un navegador no acepta en `http://localhost`.
    */
   customerSessionCookie?: string
+  /**
+   * `true` si el `fetch` atiende a un solo cliente en su mismo navegador: el dashboard, que no puede
+   * mandarle cookies a un `fetch` en memoria (el navegador no deja poner `Cookie` en un `Request`
+   * armado a mano). Ahí la sesión del admin abierta es la de ese cliente. Por omisión `false`: cada
+   * pedido del admin tiene que traer la cookie `galpon_admin` de su sesión, como en el back.
+   */
+  singleClient?: boolean
+  /**
+   * Recibe lo que llevaría el mail con el enlace para cambiar la contraseña
+   * (`POST /auth/password/forgot` de una cuenta que existe): la API simulada no manda mails.
+   */
+  onPasswordReset?: (mail: MockPasswordResetMail) => void
+  /**
+   * Decide si un pedido puede usar los controles de escenarios (`SCENARIO_CONTROL_ROUTES`:
+   * `POST /__mock/orders/{number}/expire`, `POST /__mock/products/{id}` y `POST /__mock/settings`);
+   * si no, responden `404`
+   * como una ruta que no existe. Por omisión, todos: los tests y el dashboard corren la API
+   * simulada para un solo cliente. La tienda los cierra en producción salvo con un secreto.
+   */
+  allowControl?: (request: Request) => boolean
 }
 
 /** Ruta del contrato que el modo de prueba responde con `501` y el motivo en `detail`. */
@@ -129,7 +150,8 @@ async function wait(ms: number): Promise<void> {
  *
  * Quita el prefijo de la API, busca la ruta (las del contrato que atiende solo el back responden
  * `501`), corre el handler contra la base de `getDb()` y devuelve su respuesta. Un handler que
- * falla responde `500` en vez de lanzar, como un servidor real.
+ * falla responde `500` en vez de lanzar, como un servidor real. Cada cuerpo se lee con un tope de
+ * 64 kB (`413` si lo pasa; las rutas de contenido y de fotos del admin, 4 MB).
  *
  * @param options - Ver {@link MockFetchOptions}.
  * @returns Un {@link ApiFetch} para `createApiClient({ fetch })`.
@@ -157,26 +179,23 @@ export function createMockFetch(options: MockFetchOptions): ApiFetch {
         detail: `La ruta ${pathname} no admite ${method}.`,
       })
     }
+    const { route } = match
+    if (SCENARIO_CONTROL_ROUTES.includes(route) && options.allowControl?.(request) === false) {
+      return notFound(`No existe la ruta ${pathname}.`)
+    }
     try {
-      return await match.route.handler({
+      return await route.handler({
         request,
         params: match.params,
         query: url.searchParams,
         db: options.getDb(),
         now: now(),
         customerSessionCookie,
-        body: async <T>() => {
-          try {
-            return (await request.json()) as T
-          } catch {
-            throw new ResponseError(
-              problem(422, 'Los datos no son válidos', {
-                detail: 'El cuerpo del pedido no es un JSON válido.',
-              }),
-            )
-          }
-        },
+        singleClient: options.singleClient ?? false,
+        body: async <T>() =>
+          (await readJsonBody(request, route.maxBodyBytes ?? MAX_MOCK_BODY_BYTES)) as T,
         invalidate: (tags) => options.onInvalidate?.(tags),
+        sendPasswordReset: (mail) => options.onPasswordReset?.(mail),
       })
     } catch (error) {
       if (error instanceof ResponseError) return error.response

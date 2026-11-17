@@ -7,3 +7,9 @@
  * handlers del modo de prueba.
  */
 export const DEFAULT_CUSTOMER_SESSION_COOKIE = 'galpon_session'
+
+/**
+ * Nombre de la cookie de sesión del admin en el modo de prueba. En vivo es `__Host-galpon_admin`;
+ * acá va sin el prefijo por lo mismo que la de la tienda.
+ */
+export const MOCK_ADMIN_SESSION_COOKIE = 'galpon_admin'

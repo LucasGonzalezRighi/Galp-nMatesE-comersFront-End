@@ -372,7 +372,7 @@ describe('Checkout', () => {
     )
   })
 
-  it('con ?pedido= del mismo carrito cancela el intento anterior y reutiliza el pedido', async () => {
+  it('con ?pedido= del mismo carrito reutiliza el pedido sin cancelar nada al cargar', async () => {
     const user = userEvent.setup()
     const testApi = createCheckoutApi()
     addYerba(testApi.db)
@@ -390,9 +390,10 @@ describe('Checkout', () => {
     navigation.search = `pedido=${number}`
     renderCheckout(testApi)
     await waitFor(() => {
-      expect(requestsTo(testApi.requests, 'POST', '/cancel-payment')).toHaveLength(1)
+      expect(navigation.replace).toHaveBeenCalledWith('/checkout')
     })
-    expect(navigation.replace).toHaveBeenCalledWith('/checkout')
+    // Cancelar es una acción del usuario (el botón del resultado), nunca un efecto de la URL.
+    expect(requestsTo(testApi.requests, 'POST', '/cancel-payment')).toHaveLength(0)
     await choosePayment(user, /Tarjeta de crédito o débito/)
     expect(await screen.findByRole('button', { name: `Pagar ${total}` })).toBeInTheDocument()
     expect(requestsTo(testApi.requests, 'POST', '/orders')).toHaveLength(1)

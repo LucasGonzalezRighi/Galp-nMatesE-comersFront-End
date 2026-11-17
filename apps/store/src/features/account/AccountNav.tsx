@@ -29,8 +29,9 @@ function isCurrent(pathname: string, href: string): boolean {
 }
 
 /**
- * Cierra la sesión con el token CSRF, olvida los datos de la cuenta y vuelve al inicio. Si la
- * sesión ya no existía (`401`), igual sale.
+ * Cierra la sesión con el token CSRF, olvida los datos de la cuenta y del checkout, refresca el
+ * router (descarta las páginas de la cuenta que guardó el cliente) y vuelve al inicio con
+ * reemplazo, así "Atrás" no vuelve a la cuenta. Si la sesión ya no existía (`401`), igual sale.
  */
 function LogoutButton(): ReactNode {
   const api = useApiClient()
@@ -52,6 +53,7 @@ function LogoutButton(): ReactNode {
       }
     }
     await resetAccountState(queryClient)
+    router.refresh()
     router.replace(asRoute('/'))
   }
 

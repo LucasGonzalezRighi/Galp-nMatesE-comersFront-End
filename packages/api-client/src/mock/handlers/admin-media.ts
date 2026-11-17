@@ -6,6 +6,7 @@ import type { MediaSignature } from '../../generated/schema'
 import type { MockRoute } from '../router'
 import type { MockDb } from '../types'
 import { apiErrorFromResponse } from '../../errors'
+import { MAX_MOCK_ADMIN_BODY_BYTES } from '../body'
 import { json } from '../http'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
@@ -138,6 +139,8 @@ export const adminMediaRoutes: readonly MockRoute[] = [
 export const MOCK_MEDIA_ROUTE: MockRoute = {
   method: 'POST',
   path: MOCK_MEDIA_PATH,
+  // El data URL pasa de 64 kB; el cuerpo se lee después de exigir la sesión del admin.
+  maxBodyBytes: MAX_MOCK_ADMIN_BODY_BYTES,
   handler: async (ctx) => {
     requireAdmin(ctx, { csrf: false })
     const input = parseOrFail(mockMediaSchema, await ctx.body())

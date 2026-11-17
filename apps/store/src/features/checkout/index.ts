@@ -14,6 +14,7 @@
  */
 export type { CheckoutProps } from './Checkout'
 export { Checkout, CheckoutSkeleton } from './Checkout'
+export { clearCheckoutSession } from './checkout.store'
 export type { OrderSession } from './order-session'
 export {
   clearOrderSession,

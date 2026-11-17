@@ -28,7 +28,8 @@ export function getCustomerCsrfToken(api: ApiClient): Promise<CsrfToken> {
 }
 
 /**
- * Crea la cuenta e inicia la sesión. Los pedidos de invitado con el mismo email pasan a la cuenta.
+ * Crea la cuenta e inicia la sesión. Los pedidos de invitado hechos con el mismo email no pasan a la
+ * cuenta: registrarse no prueba que el email sea de quien se registra.
  *
  * @param api - Cliente de la API (con `getCsrfToken`).
  * @param input - Email, nombre, apellido y contraseña.

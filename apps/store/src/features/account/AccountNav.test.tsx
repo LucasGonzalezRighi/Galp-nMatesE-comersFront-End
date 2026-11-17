@@ -8,10 +8,14 @@ import { AccountNav } from './AccountNav'
 import { createAccountTestApi, signUp } from './test/support'
 
 /** Router simulado, en el detalle de un pedido. */
-const navigation = vi.hoisted(() => ({ replace: vi.fn() }))
+const navigation = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }))
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: navigation.replace, push: navigation.replace, refresh: vi.fn() }),
+  useRouter: () => ({
+    replace: navigation.replace,
+    push: navigation.replace,
+    refresh: navigation.refresh,
+  }),
   usePathname: () => '/cuenta/pedidos/GLP-00001',
 }))
 
@@ -31,7 +35,7 @@ describe('AccountNav', () => {
     )
   })
 
-  it('cierra la sesión con el token CSRF y vuelve al inicio', async () => {
+  it('cierra la sesión con el token CSRF, refresca el router y vuelve al inicio con reemplazo', async () => {
     const testApi = createAccountTestApi()
     await signUp(testApi)
     const user = userEvent.setup()
@@ -42,6 +46,10 @@ describe('AccountNav', () => {
     await waitFor(() => {
       expect(navigation.replace).toHaveBeenCalledWith('/')
     })
+    expect(navigation.refresh).toHaveBeenCalledTimes(1)
+    expect(navigation.refresh.mock.invocationCallOrder[0]).toBeLessThan(
+      navigation.replace.mock.invocationCallOrder[0] ?? 0,
+    )
     expect(testApi.cookies.has('galpon_session')).toBe(false)
     expect(testApi.db.customerSessions.some((session) => session.customerId !== null)).toBe(false)
   })

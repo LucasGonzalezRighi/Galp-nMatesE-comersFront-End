@@ -1,6 +1,8 @@
 import 'server-only'
 import type { ApiClient, ApiFetch } from '@galpon/api-client'
 import { createApiClient } from '@galpon/api-client'
+import type { HeaderReader } from './client-ip'
+import { trustedClientIp } from './client-ip'
 import { getStoreEnv } from './env'
 import { getStoreMockFetch } from './mock.server'
 
@@ -49,33 +51,42 @@ export interface IncomingCookies {
  * lo haría el navegador. En modo de prueba va a la API simulada del proceso con la cabecera
  * `Cookie`; en vivo, a `API_BASE_URL`.
  *
+ * Con `TRUSTED_CLIENT_IP_HEADER` manda además `X-Forwarded-For` con la IP del cliente
+ * ({@link trustedClientIp}), como el proxy de `/api/v1`: el backend limita estas lecturas por IP y,
+ * sin ella, contaría las de todos los clientes como de la tienda (con una cookie inventada,
+ * cualquiera agotaría el límite de las páginas de cuenta de todos). Nunca reenvía las cabeceras de
+ * reenvío que manda el navegador.
+ *
  * Se crea uno por pedido y **nunca** se usa dentro de `'use cache'`: los datos son de cada
  * persona. Para lo público está {@link getServerApi}.
  *
  * @param cookies - Cookies del pedido (`await cookies()`).
+ * @param headers - Cabeceras del pedido (`await headers()`), para la IP del cliente.
  * @throws {EnvError} Si el entorno no es válido.
  * @example
- * const api = getServerApiForRequest(await cookies())
+ * const api = getServerApiForRequest(await cookies(), await headers())
  * const customer = await getMe(api)
  */
-export function getServerApiForRequest(cookies: IncomingCookies): ApiClient {
-  const header = cookies
+export function getServerApiForRequest(cookies: IncomingCookies, headers: HeaderReader): ApiClient {
+  const cookieHeader = cookies
     .getAll()
     .map(({ name, value }) => `${name}=${encodeURIComponent(value)}`)
     .join('; ')
-  const withCookies =
+  const env = getStoreEnv()
+  const clientIp = trustedClientIp(headers, env.trustedClientIpHeader)
+  const asClient =
     (send: ApiFetch): ApiFetch =>
     (request) => {
-      if (header !== '') request.headers.set('Cookie', header)
+      if (cookieHeader !== '') request.headers.set('Cookie', cookieHeader)
+      if (clientIp !== null) request.headers.set('X-Forwarded-For', clientIp)
       return send(request)
     }
-  const env = getStoreEnv()
   if (env.apiMode === 'mock') {
-    return createApiClient({ baseUrl: MOCK_BASE_URL, fetch: withCookies(getStoreMockFetch()) })
+    return createApiClient({ baseUrl: MOCK_BASE_URL, fetch: asClient(getStoreMockFetch()) })
   }
   if (env.apiBaseUrl === null) throw new Error('Falta API_BASE_URL con API_MODE=live.')
   return createApiClient({
     baseUrl: `${env.apiBaseUrl}/api/v1`,
-    fetch: withCookies((request) => fetch(request)),
+    fetch: asClient((request) => fetch(request)),
   })
 }

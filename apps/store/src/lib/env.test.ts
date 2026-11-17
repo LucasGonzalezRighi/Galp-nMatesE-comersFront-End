@@ -29,6 +29,10 @@ describe('parseStoreEnv', () => {
       siteUrl: 'http://localhost:3000',
       mpPublicKey: null,
       cloudinaryCloudName: null,
+      mockInProduction: false,
+      trustedClientIpHeader: null,
+      mockAdminPassword: null,
+      mockControlSecret: null,
     })
   })
 
@@ -146,6 +150,126 @@ describe('parseStoreEnv', () => {
       'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME solo puede tener letras, números, guiones y guiones bajos',
     ])
   })
+})
+
+describe('parseStoreEnv en producción (NODE_ENV=production)', () => {
+  const production = { NODE_ENV: 'production' }
+
+  it.each([{}, { API_MODE: '' }, { API_MODE: '  ' }])(
+    'sin API_MODE (%o) no arranca y lo dice claro',
+    (extra) => {
+      expect(problemsOf({ ...production, ...extra })).toEqual([
+        'API_MODE es obligatoria en producción (NODE_ENV=production): "live" para el backend real, o "mock" con MOCK_ALLOWED_IN_PRODUCTION=true solo para pruebas',
+      ])
+    },
+  )
+
+  it('API_MODE=mock sin MOCK_ALLOWED_IN_PRODUCTION=true no arranca', () => {
+    for (const allowed of [undefined, '', '1', 'yes', 'TRUE ']) {
+      expect(
+        problemsOf({ ...production, API_MODE: 'mock', MOCK_ALLOWED_IN_PRODUCTION: allowed }),
+      ).toEqual([
+        'API_MODE=mock en producción necesita MOCK_ALLOWED_IN_PRODUCTION=true: la API simulada no tiene autenticación real',
+      ])
+    }
+  })
+
+  it('API_MODE=mock con MOCK_ALLOWED_IN_PRODUCTION=true arranca y marca el aviso', () => {
+    expect(
+      parseStoreEnv({ ...production, API_MODE: 'mock', MOCK_ALLOWED_IN_PRODUCTION: 'true' }),
+    ).toMatchObject({ apiMode: 'mock', mockInProduction: true })
+  })
+
+  it('en vivo completo arranca sin aviso', () => {
+    expect(parseStoreEnv({ ...production, ...liveEnv })).toMatchObject({
+      apiMode: 'live',
+      mockInProduction: false,
+    })
+  })
+
+  it('fuera de producción el modo de prueba sigue siendo el de omisión', () => {
+    for (const NODE_ENV of ['development', 'test']) {
+      expect(parseStoreEnv({ NODE_ENV })).toMatchObject({
+        apiMode: 'mock',
+        mockInProduction: false,
+      })
+    }
+  })
+
+  it('con requireModeInProduction: false (next typegen y next build) no exige API_MODE', () => {
+    expect(parseStoreEnv(production, { requireModeInProduction: false })).toMatchObject({
+      apiMode: 'mock',
+      mockInProduction: true,
+    })
+  })
+})
+
+describe('MOCK_ADMIN_PASSWORD', () => {
+  it('por omisión es null', () => {
+    expect(parseStoreEnv({}).mockAdminPassword).toBeNull()
+  })
+
+  it('con 10 a 128 caracteres, letras y números, queda como contraseña del admin simulado', () => {
+    expect(parseStoreEnv({ MOCK_ADMIN_PASSWORD: ' mate-amargo-2027 ' }).mockAdminPassword).toBe(
+      'mate-amargo-2027',
+    )
+  })
+
+  it.each(['corta-1', 'sin-numeros-nunca', '12345678901', `a1${'x'.repeat(127)}`])(
+    '"%s" no sirve y tira',
+    (password) => {
+      expect(problemsOf({ MOCK_ADMIN_PASSWORD: password })).toEqual([
+        'MOCK_ADMIN_PASSWORD tiene que tener de 10 a 128 caracteres, con letras y números',
+      ])
+    },
+  )
+
+  it('en vivo se ignora', () => {
+    expect(parseStoreEnv({ ...liveEnv, MOCK_ADMIN_PASSWORD: 'corta' }).mockAdminPassword).toBeNull()
+  })
+})
+
+describe('MOCK_CONTROL_SECRET', () => {
+  it('por omisión es null', () => {
+    expect(parseStoreEnv({}).mockControlSecret).toBeNull()
+  })
+
+  it('con 32 caracteres o más queda como secreto de los controles', () => {
+    expect(parseStoreEnv({ MOCK_CONTROL_SECRET: 's'.repeat(32) }).mockControlSecret).toBe(
+      's'.repeat(32),
+    )
+  })
+
+  it('más corto tira', () => {
+    expect(problemsOf({ MOCK_CONTROL_SECRET: 's'.repeat(31) })).toEqual([
+      'MOCK_CONTROL_SECRET tiene que tener 32 caracteres o más',
+    ])
+  })
+
+  it('en vivo se ignora', () => {
+    expect(parseStoreEnv({ ...liveEnv, MOCK_CONTROL_SECRET: 'corto' }).mockControlSecret).toBeNull()
+  })
+})
+
+describe('TRUSTED_CLIENT_IP_HEADER', () => {
+  it('por omisión es null', () => {
+    expect(parseStoreEnv({}).trustedClientIpHeader).toBeNull()
+  })
+
+  it('queda en minúsculas, sin espacios en los bordes', () => {
+    expect(
+      parseStoreEnv({ TRUSTED_CLIENT_IP_HEADER: ' CF-Connecting-IP ' }).trustedClientIpHeader,
+    ).toBe('cf-connecting-ip')
+  })
+
+  it.each(['x forwarded', 'x-ip:', 'ñandú', 'a,b'])(
+    '"%s" no es un nombre de cabecera y tira',
+    (name) => {
+      expect(problemsOf({ TRUSTED_CLIENT_IP_HEADER: name })).toEqual([
+        'TRUSTED_CLIENT_IP_HEADER tiene que ser el nombre de una cabecera, por ejemplo cf-connecting-ip',
+      ])
+    },
+  )
 })
 
 describe('parseHttpOrigin', () => {

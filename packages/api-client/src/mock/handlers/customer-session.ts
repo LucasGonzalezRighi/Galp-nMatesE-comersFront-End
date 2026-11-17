@@ -1,6 +1,7 @@
 import type { MockContext } from '../router'
 import type { MockCustomer, MockCustomerSession } from '../types'
 import { problem, ResponseError } from '../http'
+import { keepNewest, MOCK_DB_LIMITS } from '../limits'
 import { randomUuid } from '../uuid'
 
 export { DEFAULT_CUSTOMER_SESSION_COOKIE } from '../session-cookie'
@@ -14,8 +15,14 @@ const ANONYMOUS_SESSION_MS = 24 * 60 * 60 * 1000
 /** Cabecera donde la tienda manda el token anti-CSRF. */
 const CSRF_HEADER = 'X-CSRF-Token'
 
-/** Lee el valor de una cookie del pedido, o `null` si no vino. */
-function readCookie(request: Request, name: string): string | null {
+/**
+ * Lee el valor de una cookie del pedido.
+ *
+ * @param request - Pedido.
+ * @param name - Nombre de la cookie.
+ * @returns El valor, o `null` si no vino.
+ */
+export function readCookie(request: Request, name: string): string | null {
   const header = request.headers.get('Cookie') ?? ''
   for (const part of header.split(';')) {
     const separator = part.indexOf('=')
@@ -57,7 +64,8 @@ export function currentCustomer(ctx: MockContext): MockCustomer | null {
 
 /**
  * Abre una sesión nueva y descarta la del pedido y las vencidas: al iniciar o cerrar sesión la
- * cookie y el token CSRF cambian, así una cookie robada antes no sirve después.
+ * cookie y el token CSRF cambian, así una cookie robada antes no sirve después. Pasadas
+ * `MOCK_DB_LIMITS.customerSessions` sesiones descarta las más viejas.
  *
  * @param ctx - Contexto del pedido.
  * @param customerId - Cliente que inicia sesión, o `null` para una sesión anónima.
@@ -72,12 +80,15 @@ export function startSession(ctx: MockContext, customerId: string | null): MockC
     csrfToken: randomUuid(),
     expiresAt: new Date(ctx.now.getTime() + ttl).toISOString(),
   }
-  ctx.db.customerSessions = [
-    ...ctx.db.customerSessions.filter(
-      (candidate) => candidate !== previous && !isExpired(candidate, ctx.now),
-    ),
-    session,
-  ]
+  ctx.db.customerSessions = keepNewest(
+    [
+      ...ctx.db.customerSessions.filter(
+        (candidate) => candidate !== previous && !isExpired(candidate, ctx.now),
+      ),
+      session,
+    ],
+    MOCK_DB_LIMITS.customerSessions,
+  )
   return session
 }
 

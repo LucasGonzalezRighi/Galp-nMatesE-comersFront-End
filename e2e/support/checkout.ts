@@ -1,5 +1,6 @@
 import type { APIRequestContext, Locator, Page, TestInfo } from '@playwright/test'
 import type { Leather } from '@galpon/domain'
+import { MOCK_CONTROL_HEADERS } from './mock-controls'
 import { gotoStore } from './store'
 import { expect } from './test'
 
@@ -120,7 +121,8 @@ export interface MockProductChange {
 
 /**
  * Cambia el precio, el stock o los cueros de un producto en la API simulada (ruta de control
- * `POST /api/v1/__mock/products/{id}`, solo en modo de prueba).
+ * `POST /api/v1/__mock/products/{id}`, solo en modo de prueba; con el secreto de los controles,
+ * porque la tienda compilada corre en producción).
  *
  * @param request - Cliente HTTP de Playwright con la dirección de la tienda.
  * @param id - Identificador del producto.
@@ -131,19 +133,25 @@ export async function changeMockProduct(
   id: string,
   change: MockProductChange,
 ): Promise<void> {
-  const response = await request.post(`/api/v1/__mock/products/${id}`, { data: change })
+  const response = await request.post(`/api/v1/__mock/products/${id}`, {
+    data: change,
+    headers: MOCK_CONTROL_HEADERS,
+  })
   expect(response.status(), `No se pudo cambiar el producto ${id}`).toBe(200)
 }
 
 /**
  * Vence la reserva de un pedido pendiente (ruta de control
- * `POST /api/v1/__mock/orders/{number}/expire`, solo en modo de prueba).
+ * `POST /api/v1/__mock/orders/{number}/expire`, solo en modo de prueba; con el secreto de los
+ * controles).
  *
  * @param request - Cliente HTTP de Playwright con la dirección de la tienda.
  * @param number - Número del pedido.
  */
 export async function expireMockOrder(request: APIRequestContext, number: string): Promise<void> {
-  const response = await request.post(`/api/v1/__mock/orders/${number}/expire`)
+  const response = await request.post(`/api/v1/__mock/orders/${number}/expire`, {
+    headers: MOCK_CONTROL_HEADERS,
+  })
   expect(response.status(), `No se pudo vencer el pedido ${number}`).toBe(200)
 }
 

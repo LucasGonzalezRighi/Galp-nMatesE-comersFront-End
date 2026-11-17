@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { Suspense } from 'react'
 import { AccountSkeleton, AddressBook, requireAccountData } from '@/features/account'
 import { getServerApiForRequest } from '@/lib/api.server'
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Tus direcciones' }
 
 /** Lee con la sesión del pedido la libreta de direcciones del cliente. */
 async function Addresses(): Promise<ReactNode> {
-  const api = getServerApiForRequest(await cookies())
+  const api = getServerApiForRequest(await cookies(), await headers())
   const addresses = await requireAccountData(() => listMyAddresses(api), '/cuenta/direcciones')
   return <AddressBook initialAddresses={addresses} />
 }

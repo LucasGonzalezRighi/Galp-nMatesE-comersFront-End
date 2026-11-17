@@ -15,21 +15,7 @@ import {
 } from '@galpon/api-client'
 import { getServerApi } from '../../lib/api.server'
 import { getPublishedProducts } from '../../lib/data/catalog'
-
-/** Largo máximo de un slug (el del contrato): también el de las etiquetas de caché `product:{slug}`. */
-const SLUG_MAX_LENGTH = 80
-
-/** Forma de un slug del contrato: minúsculas y números separados por guiones sueltos. */
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-
-/**
- * Indica si el texto tiene la forma de un slug de producto. Se usa antes de leer, para que un
- * texto cualquiera de la URL (mayúsculas, `..`, `%`) no llegue a la API ni arme una etiqueta de
- * caché; la validación definitiva es la de `getProduct`.
- */
-function isSlugShaped(slug: string): boolean {
-  return slug.length <= SLUG_MAX_LENGTH && SLUG_PATTERN.test(slug)
-}
+import { isSlugShaped } from '../../lib/slug'
 
 /**
  * Slugs de todos los productos publicados, para que Next arme una página estática por producto

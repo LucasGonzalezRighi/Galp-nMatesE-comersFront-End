@@ -1,6 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { SellerData } from '@galpon/domain'
+import { MOCK_CONTROL_HEADERS } from './mock-controls'
 
 /** Una pantalla de la tienda que recorren las pruebas de navegación, accesibilidad y control visual. */
 export interface StoreScreen {
@@ -110,8 +111,9 @@ export const EMPTY_SELLER: SellerData = {
 
 /**
  * Reemplaza los datos del vendedor en la API simulada de la tienda compilada
- * (`POST /api/v1/__mock/settings`), que regenera la caché de los ajustes. La base es una sola para
- * todos los proyectos de Playwright: quien la cambia la vuelve a {@link EMPTY_SELLER} al terminar.
+ * (`POST /api/v1/__mock/settings`, con el secreto de los controles), que regenera la caché de los
+ * ajustes. La base es una sola para todos los proyectos de Playwright: quien la cambia la vuelve a
+ * {@link EMPTY_SELLER} al terminar.
  *
  * @param request - Contexto de pedidos de Playwright (con el `baseURL` de la tienda).
  * @param seller - Los ocho datos del vendedor.
@@ -121,6 +123,9 @@ export async function changeMockSeller(
   request: APIRequestContext,
   seller: SellerData,
 ): Promise<void> {
-  const response = await request.post('/api/v1/__mock/settings', { data: { seller } })
+  const response = await request.post('/api/v1/__mock/settings', {
+    data: { seller },
+    headers: MOCK_CONTROL_HEADERS,
+  })
   expect(response.status(), await response.text()).toBe(200)
 }

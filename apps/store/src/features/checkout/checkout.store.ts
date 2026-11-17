@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { ShippingMethod } from '@galpon/domain'
 import { isOrderNumber, SHIPPING_METHODS } from '@galpon/domain'
+import { clearOrderSession } from './order-session'
 
 /** Clave de `sessionStorage` donde se guardan los pasos del checkout (spec 14.1). */
 export const CHECKOUT_STORAGE_KEY = 'galpon.checkout'
@@ -271,6 +272,19 @@ export function ensureCheckoutHydrated(): void {
   if (useCheckoutStore.getState().hasHydrated) return
   void useCheckoutStore.persist.rehydrate()
   useCheckoutStore.getState().markHydrated()
+}
+
+/**
+ * Olvida el checkout y el pedido en curso de la pestaña: vuelve el store a vacío (paso, contacto,
+ * envío, intento y pedido) y borra `galpon.checkout` y `galpon.order` de `sessionStorage`. Se
+ * llama al cambiar la sesión del cliente (`resetAccountState`): son datos y el token de pedido
+ * del cliente anterior, y la próxima persona que use la pestaña no los tiene que ver.
+ */
+export function clearCheckoutSession(): void {
+  // `persist` escribe lo vacío al cambiar el estado; después se borra la clave.
+  useCheckoutStore.setState({ ...EMPTY })
+  useCheckoutStore.persist.clearStorage()
+  clearOrderSession()
 }
 
 /**

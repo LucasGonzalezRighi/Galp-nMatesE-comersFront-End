@@ -9,6 +9,7 @@ import {
 } from '../../services'
 import { createMockCardToken } from '../card-token'
 import { MOCK_MERCADOPAGO_RESOLVE_PATH } from '../handlers/mercadopago-simulator'
+import { MOCK_DB_LIMITS } from '../limits'
 import { createCheckoutApi, placeOrder } from '../test/checkout-api'
 import { randomUuid } from '../uuid'
 
@@ -173,6 +174,39 @@ describe('POST /orders/{number}/payments/mercadopago/card', () => {
     ).rejects.toMatchObject({ status: 409 })
     await expect(cancelPayment(mock.api, other.order.number)).rejects.toMatchObject({
       status: 409,
+    })
+  })
+
+  it('para la idempotencia el intento guarda solo el SHA-256 del cuerpo', async () => {
+    const mock = createCheckoutApi()
+    const { order } = await placeOrder(mock)
+    const key = randomUuid()
+    const response = await mock.raw(`/orders/${order.number}/payments/mercadopago/card`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': key,
+        'X-Order-Token': mock.db.orders[0]?.creation.orderToken ?? '',
+      },
+      body: JSON.stringify({ ...card('OTHE'), relleno: 'x'.repeat(10_000) }),
+    })
+    expect(response.status).toBe(200)
+    expect(mock.db.orders[0]?.intents[0]?.fingerprint).toMatch(/^[0-9a-f]{64}$/)
+    expect(JSON.stringify(mock.db.orders)).not.toContain('xxxxxxxxxx')
+  })
+
+  it('cada pedido guarda hasta MOCK_DB_LIMITS.intentsPerOrder intentos: descarta los más viejos', async () => {
+    const mock = createCheckoutApi()
+    const { order } = await placeOrder(mock)
+    const total = MOCK_DB_LIMITS.intentsPerOrder + 5
+    for (let attempt = 0; attempt < total; attempt += 1) {
+      await payWithCard(mock.api, order.number, card('OTHE'), randomUuid())
+    }
+    const last = await payWithCard(mock.api, order.number, card('CONT'), randomUuid())
+    expect(mock.db.orders[0]?.intents).toHaveLength(MOCK_DB_LIMITS.intentsPerOrder)
+    expect(last.paymentStatus).toBe('pending')
+    await expect(getOrder(mock.api, order.number)).resolves.toMatchObject({
+      paymentStatus: 'pending',
     })
   })
 })

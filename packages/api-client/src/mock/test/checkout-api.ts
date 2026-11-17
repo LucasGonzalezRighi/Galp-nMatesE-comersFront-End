@@ -1,7 +1,9 @@
 import type { ApiClient, ApiFetch } from '../../client'
 import type { CreateOrderInput, CreateOrderResult } from '../../generated/schema'
+import type { MockFetchOptions } from '../mock-fetch'
 import type { MockDb } from '../types'
 import { createApiClient } from '../../client'
+import { withCookieJar } from '../../test/cookie-jar'
 import { createMockDb, DEFAULT_MOCK_DB_OPTIONS } from '../db'
 import { createMockFetch } from '../mock-fetch'
 import { randomUuid } from '../uuid'
@@ -32,28 +34,20 @@ export interface CheckoutApi {
   raw(path: string, init?: RequestInit): Promise<Response>
 }
 
-/** Crea una base nueva y un cliente con un frasco de cookies, sin latencia. */
-export function createCheckoutApi(): CheckoutApi {
+/**
+ * Crea una base nueva y un cliente con un frasco de cookies, sin latencia.
+ *
+ * @param options - Opciones extra de `createMockFetch` (por ejemplo `onPasswordReset` o
+ *   `allowControl`); la base, la latencia y el reloj son los del test.
+ */
+export function createCheckoutApi(
+  options: Partial<Omit<MockFetchOptions, 'getDb' | 'latencyMs' | 'now'>> = {},
+): CheckoutApi {
   const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
   let now = START
-  const mockFetch = createMockFetch({ getDb: () => db, latencyMs: 0, now: () => now })
-  const cookies = new Map<string, string>()
-  const fetch: ApiFetch = async (request) => {
-    if (cookies.size > 0) {
-      request.headers.set(
-        'Cookie',
-        [...cookies].map(([name, value]) => `${name}=${value}`).join('; '),
-      )
-    }
-    const response = await mockFetch(request)
-    for (const header of response.headers.getSetCookie()) {
-      const [pair = ''] = header.split(';')
-      const [name = '', value = ''] = pair.split('=')
-      if (/max-age=0/i.test(header)) cookies.delete(name)
-      else cookies.set(name, value)
-    }
-    return response
-  }
+  const { fetch, cookies } = withCookieJar(
+    createMockFetch({ ...options, getDb: () => db, latencyMs: 0, now: () => now }),
+  )
   let orderToken: string | undefined
   let csrfToken: string | undefined
   const api = createApiClient({

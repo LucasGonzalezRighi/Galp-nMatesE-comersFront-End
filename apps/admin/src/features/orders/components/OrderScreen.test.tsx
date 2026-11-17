@@ -84,7 +84,7 @@ describe('OrderScreen', () => {
     expect(within(customer).getByText('Lucía Pérez')).toBeInTheDocument()
     expect(within(customer).getByRole('link', { name: 'lucia.perez@example.com' })).toHaveAttribute(
       'href',
-      'mailto:lucia.perez@example.com',
+      'mailto:lucia.perez%40example.com',
     )
     expect(within(customer).getByText('1145678901')).toBeInTheDocument()
 

@@ -11,6 +11,7 @@ import type { ChangeNotice, OrderShipping } from '../../generated/schema'
 import type { MockRoute } from '../router'
 import type { MockOrder } from '../types'
 import { json, problem, ResponseError, validationProblem } from '../http'
+import { keepNewest, MOCK_DB_LIMITS } from '../limits'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
 import { orderNumberParam, parseOrFail, withoutNulls } from '../validation'
@@ -85,12 +86,13 @@ export const ordersRoutes: readonly MockRoute[] = [
   route('POST', '/orders', async (ctx) => {
     const key = idempotencyKey(ctx)
     const body = await ctx.body<unknown>()
+    // Para reconocer una repetición alcanza el hash del cuerpo: no se guarda el cuerpo.
+    const fingerprint = await sha256Hex(stableStringify(body))
     const orderToken = `${randomUuid()}${randomUuid()}`.replaceAll('-', '')
     const tokenHash = await sha256Hex(orderToken)
     // Desde acá no hay más esperas: dos pedidos con la misma clave no se cruzan.
     const { db, now } = ctx
     expireOrders(db, now)
-    const fingerprint = stableStringify(body)
     const previous = db.orders.find(
       (order) =>
         order.creation.idempotencyKey === key &&
@@ -163,7 +165,10 @@ export const ordersRoutes: readonly MockRoute[] = [
       createdAt,
     }
     // Con el campo trampa lleno se responde como si nada, pero no se guarda (contrato, `Honeypot`).
-    if (input.website === undefined || input.website === '') db.orders.push(order)
+    // Pasados `MOCK_DB_LIMITS.orders` pedidos se descartan los más viejos.
+    if (input.website === undefined || input.website === '') {
+      db.orders = keepNewest([...db.orders, order], MOCK_DB_LIMITS.orders)
+    }
     return json({ order: toOrder(order), orderToken }, 201)
   }),
 

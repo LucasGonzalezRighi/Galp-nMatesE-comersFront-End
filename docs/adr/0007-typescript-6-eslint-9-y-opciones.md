@@ -21,6 +21,7 @@ El 2026-10-20 se eligieron las versiones del stack con la regla "la última esta
 - **npm workspaces** (`apps/*` y `packages/*`). Los paquetes propios se declaran con `"*"`. `npm run dev` levanta la tienda (:3000) y el admin (:5173) juntos con `concurrently`.
 - **Versiones exactas, centralizadas** en `scripts/dependency-versions.json`, la fuente única. `npm run lint` ejecuta `scripts/check-dependency-versions.mjs`, que falla si algún `package.json` declara otra versión, usa `^` o `~`, o agrega un paquete que no está en el archivo (en `peerDependencies` va `^` más la versión fijada).
 - **`openapi-typescript` no se instala**: se ejecuta con `npx --yes openapi-typescript@7.13.0`. Su peer pide TypeScript 5 y npm no admite ese conflicto con TypeScript 6.
+  - _Reemplazado (2026-11-17, auditoría de seguridad del front):_ `npx --yes` bajaba la herramienta fuera de la lockfile. Ahora es devDependency de `@galpon/api-client` (7.13.0, con integridad en la lockfile) y los scripts la corren con `npx --no-install`. En ese paquete npm sí admite el peer: deja un TypeScript 5.9.3 solo para él en `packages/api-client/node_modules`, y el `typecheck` del paquete corre el `tsc` de la raíz.
 - **Node**: `engines.node: ">=22.12"` y `engines.npm: ">=10"`. `.nvmrc` y el CI usan Node 24.
 
 **Avisos de `npm audit`**

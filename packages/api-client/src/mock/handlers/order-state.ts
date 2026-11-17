@@ -86,18 +86,26 @@ export function idempotencyKeyReused(): Response {
 }
 
 /**
- * Próximo número de pedido: `GLP-` y el número que sigue al mayor ya entregado.
+ * Próximo número de pedido: `GLP-` y el que sigue al del pedido más nuevo. Después de `GLP-99999`
+ * vuelve a `GLP-10001` (el contrato fija cinco dígitos) y saltea los números que siguen en la base;
+ * como la base guarda a lo sumo `MOCK_DB_LIMITS.orders` pedidos, siempre queda alguno libre.
  *
- * @param db - Base simulada.
- * @throws {Error} Si ya se usaron todos los números.
+ * @param db - Base simulada; sus pedidos van del más viejo al más nuevo.
+ * @throws {Error} Si todos los números están en uso (solo con más pedidos que números).
  */
 export function nextOrderNumber(db: MockDb): string {
-  const last = db.orders.reduce(
-    (max, order) => Math.max(max, Number(order.number.slice(4))),
-    FIRST_ORDER_NUMBER - 1,
-  )
-  if (last >= LAST_ORDER_NUMBER) throw new Error('No quedan números de pedido.')
-  return `GLP-${String(last + 1)}`
+  const used = new Set(db.orders.map((order) => order.number))
+  const newest = Number(db.orders.at(-1)?.number.slice(4) ?? Number.NaN)
+  let candidate = Number.isSafeInteger(newest) ? newest + 1 : FIRST_ORDER_NUMBER
+  for (let tries = 0; tries <= LAST_ORDER_NUMBER - FIRST_ORDER_NUMBER; tries += 1) {
+    if (candidate < FIRST_ORDER_NUMBER || candidate > LAST_ORDER_NUMBER) {
+      candidate = FIRST_ORDER_NUMBER
+    }
+    const number = `GLP-${String(candidate)}`
+    if (!used.has(number)) return number
+    candidate += 1
+  }
+  throw new Error('No quedan números de pedido.')
 }
 
 /** Indica si un intento de pago todavía está activo. */

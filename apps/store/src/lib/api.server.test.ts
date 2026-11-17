@@ -63,13 +63,13 @@ describe('getServerApiForRequest', () => {
   it('manda la cookie de sesión entrante: el cliente ve sus datos', async () => {
     const { session } = await customer('server-me@ejemplo.com')
 
-    const api = getServerApiForRequest(incomingCookies({ galpon_session: session }))
+    const api = getServerApiForRequest(incomingCookies({ galpon_session: session }), new Headers())
 
     await expect(getMe(api)).resolves.toMatchObject({ email: 'server-me@ejemplo.com' })
   })
 
   it('sin cookie de sesión la API responde 401', async () => {
-    const api = getServerApiForRequest(incomingCookies({ otra: 'x' }))
+    const api = getServerApiForRequest(incomingCookies({ otra: 'x' }), new Headers())
 
     await expect(getMe(api)).rejects.toMatchObject({ kind: 'unauthorized' })
   })
@@ -111,8 +111,14 @@ describe('getServerApiForRequest', () => {
       crypto.randomUUID(),
     )
     const other = await customer('server-other@ejemplo.com')
-    const ownerApi = getServerApiForRequest(incomingCookies({ galpon_session: owner.session }))
-    const otherApi = getServerApiForRequest(incomingCookies({ galpon_session: other.session }))
+    const ownerApi = getServerApiForRequest(
+      incomingCookies({ galpon_session: owner.session }),
+      new Headers(),
+    )
+    const otherApi = getServerApiForRequest(
+      incomingCookies({ galpon_session: other.session }),
+      new Headers(),
+    )
 
     await expect(getMyOrder(ownerApi, created.order.number)).resolves.toMatchObject({
       number: created.order.number,

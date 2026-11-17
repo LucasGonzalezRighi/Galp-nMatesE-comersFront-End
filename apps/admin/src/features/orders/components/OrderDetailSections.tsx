@@ -6,6 +6,7 @@ import type { DescriptionItem } from '../../../components/ui/DescriptionList'
 import { Badge } from '../../../components/ui/Badge'
 import { DescriptionList } from '../../../components/ui/DescriptionList'
 import { Section } from '../../../components/ui/Section'
+import { buildMailto } from '../../../lib/mailto'
 import {
   formatMoney,
   formatOrderAddress,
@@ -34,7 +35,7 @@ export interface OrderDetailSectionsProps {
 /** Clases de un enlace dentro del contenido. */
 const LINK_CLASS = 'text-accent-400 underline-offset-2 hover:underline'
 
-/** Sección "Cliente": nombre, email con `mailto:` y teléfono (o "—"). */
+/** Sección "Cliente": nombre, email con `mailto:` (codificado, {@link buildMailto}) y teléfono (o "—"). */
 function CustomerSection({ order }: OrderDetailSectionsProps): ReactNode {
   const { firstName, lastName, email, phone } = order.customer
   return (
@@ -45,7 +46,7 @@ function CustomerSection({ order }: OrderDetailSectionsProps): ReactNode {
           {
             term: ORDERS_COPY.customer.email,
             details: (
-              <a href={`mailto:${email}`} className={LINK_CLASS}>
+              <a href={buildMailto(email)} className={LINK_CLASS}>
                 {email}
               </a>
             ),

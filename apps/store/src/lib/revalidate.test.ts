@@ -103,4 +103,10 @@ describe('REVALIDATE_TAG_PATTERN', () => {
   ])('rechaza %j', (tag) => {
     expect(REVALIDATE_TAG_PATTERN.test(tag)).toBe(false)
   })
+
+  it('acepta hasta 100 caracteres y rechaza más', () => {
+    expect(REVALIDATE_TAG_PATTERN.test(`product:${'a'.repeat(92)}`)).toBe(true)
+    expect(REVALIDATE_TAG_PATTERN.test(`product:${'a'.repeat(93)}`)).toBe(false)
+    expect(REVALIDATE_TAG_PATTERN.test(`content:${'a'.repeat(93)}`)).toBe(false)
+  })
 })

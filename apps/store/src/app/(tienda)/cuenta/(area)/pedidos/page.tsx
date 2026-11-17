@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { Suspense } from 'react'
 import { AccountSkeleton, OrdersList, requireAccountData } from '@/features/account'
 import { getServerApiForRequest } from '@/lib/api.server'
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Tus pedidos' }
 
 /** Lee con la sesión del pedido la primera página de pedidos del cliente. */
 async function Orders(): Promise<ReactNode> {
-  const api = getServerApiForRequest(await cookies())
+  const api = getServerApiForRequest(await cookies(), await headers())
   const page = await requireAccountData(() => listMyOrders(api, 1), '/cuenta/pedidos')
   return <OrdersList initialPage={page} />
 }

@@ -188,7 +188,7 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(testApi.requests.some((request) => request.url.endsWith('/cancel-payment'))).toBe(false)
   })
 
-  it('none: "No completaste el pago" y "Pagar" vuelve al paso 3 con el mismo pedido', async () => {
+  it('none: "No completaste el pago" y "Pagar" cancela el intento anterior y vuelve al paso 3 con el mismo pedido', async () => {
     const testApi = createResultTestApi()
     const order = await placeGuestOrder(testApi)
     render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
@@ -196,11 +196,17 @@ describe('OrderResult: cada estado del pago (spec 14.2)', () => {
     expect(
       await screen.findByRole('heading', { name: RESULT_COPY.unpaid.title }),
     ).toBeInTheDocument()
+    expect(testApi.requests.some((request) => request.url.endsWith('/cancel-payment'))).toBe(false)
     await userEvent.click(screen.getByRole('button', { name: RESULT_COPY.unpaid.pay }))
 
     await waitFor(() => {
       expect(mocks.push).toHaveBeenCalledWith(`/checkout?pedido=${order.number}`)
     })
+    expect(
+      testApi.requests.filter(
+        (request) => request.method === 'POST' && request.url.endsWith('/cancel-payment'),
+      ),
+    ).toHaveLength(1)
   })
 
   it('cancelled con el pedido pendiente: también "No completaste el pago" (Ruling P3-6)', async () => {

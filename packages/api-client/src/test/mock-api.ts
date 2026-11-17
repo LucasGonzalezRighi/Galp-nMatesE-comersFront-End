@@ -5,6 +5,7 @@ import { createApiClient } from '../client'
 import { createMockDb, DEFAULT_MOCK_DB_OPTIONS } from '../mock/db'
 import { createMockFetch } from '../mock/mock-fetch'
 import { adminLogin } from '../services'
+import { withCookieJar } from './cookie-jar'
 
 /** URL base con la que los tests hablan con la API simulada. */
 export const MOCK_ORIGIN = 'http://localhost'
@@ -15,20 +16,25 @@ export interface MockApi {
   api: ApiClient
   /** Base simulada propia del test (se puede modificar antes de consultar). */
   db: MockDb
-  /** El `fetch` simulado, para mandar pedidos crudos. */
+  /** El `fetch` simulado con las cookies del cliente, para mandar pedidos crudos. */
   fetch: ApiFetch
+  /** Cookies del cliente (la sesión del admin va en `galpon_admin`), por nombre. */
+  cookies: Map<string, string>
   /** Cambia el token CSRF que manda el cliente en las escrituras. */
   setCsrfToken(token: string | undefined): void
 }
 
 /**
- * Crea una base simulada nueva y un cliente que habla con ella sin latencia.
+ * Crea una base simulada nueva y un cliente que habla con ella sin latencia. El cliente guarda las
+ * cookies que pone la API (la de la sesión del admin) y las manda en cada pedido, como un navegador.
  *
  * @param options - Opciones extra de `createMockFetch` (por ejemplo `now` u `onMutation`).
  */
 export function createMockApi(options: Partial<Omit<MockFetchOptions, 'getDb'>> = {}): MockApi {
   const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
-  const fetch = createMockFetch({ getDb: () => db, latencyMs: 0, ...options })
+  const { fetch, cookies } = withCookieJar(
+    createMockFetch({ getDb: () => db, latencyMs: 0, ...options }),
+  )
   let csrfToken: string | undefined
   const api = createApiClient({
     baseUrl: `${MOCK_ORIGIN}/api/mock/v1`,
@@ -39,6 +45,7 @@ export function createMockApi(options: Partial<Omit<MockFetchOptions, 'getDb'>> 
     api,
     db,
     fetch,
+    cookies,
     setCsrfToken(token) {
       csrfToken = token
     },

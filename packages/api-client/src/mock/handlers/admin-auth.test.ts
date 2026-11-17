@@ -16,8 +16,10 @@ import {
   updateAdminCategory,
   updateAdminProduct,
 } from '../../services'
-import { createMockApi, loginAsAdmin, rawRequest } from '../../test/mock-api'
-import { DEFAULT_MOCK_DB_OPTIONS } from '../db'
+import { createMockApi, loginAsAdmin, MOCK_ORIGIN, rawRequest } from '../../test/mock-api'
+import { createMockDb, DEFAULT_MOCK_DB_OPTIONS } from '../db'
+import { createMockFetch } from '../mock-fetch'
+import { MOCK_ADMIN_SESSION_COOKIE } from '../session-cookie'
 
 const NOW = new Date('2026-10-21T12:00:00Z')
 const HOUR = 60 * 60 * 1000
@@ -76,9 +78,124 @@ describe('POST /admin/auth/login', () => {
       csrfToken: expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
       expiresAt: new Date(NOW.getTime() + 8 * HOUR).toISOString(),
     })
-    expect(db.adminSession).toEqual(result)
+    expect(db.adminSession).toEqual({ ...result, id: expect.any(String) as unknown })
   })
 })
+
+/** Pedido crudo de un cliente sin cookies, contra la misma base que `mock`. */
+function stranger(mock: ReturnType<typeof createMockApi>, path: string, init?: RequestInit) {
+  const fetch = createMockFetch({ getDb: () => mock.db, latencyMs: 0 })
+  return fetch(new Request(`${MOCK_ORIGIN}/api/v1${path}`, init))
+}
+
+describe('la sesión del admin va atada a su cookie', () => {
+  it('el login pone la cookie galpon_admin (HttpOnly, 8 horas) y no devuelve su valor', async () => {
+    const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
+    const fetch = createMockFetch({ getDb: () => db, latencyMs: 0 })
+    const response = await fetch(
+      new Request(`${MOCK_ORIGIN}/api/v1/admin/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: DEFAULT_MOCK_DB_OPTIONS.adminEmail,
+          password: DEFAULT_MOCK_DB_OPTIONS.adminPassword,
+        }),
+      }),
+    )
+    expect(response.status).toBe(200)
+    const [cookie = ''] = response.headers.getSetCookie()
+    expect(cookie).toBe(
+      `${MOCK_ADMIN_SESSION_COOKIE}=${db.adminSession?.id ?? 'falta'}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`,
+    )
+    expect(db.adminSession?.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(Object.keys((await response.json()) as object).sort()).toEqual([
+      'csrfToken',
+      'email',
+      'expiresAt',
+    ])
+  })
+
+  it('otro cliente sin la cookie no lee ni escribe como admin mientras la sesión está abierta', async () => {
+    const mock = createAdminDemoMock()
+    const csrfToken = await loginAsAdmin(mock)
+
+    for (const path of ['/admin/auth/me', '/admin/auth/csrf', '/admin/orders', '/admin/messages']) {
+      expect((await stranger(mock, path)).status, path).toBe(401)
+    }
+    const write = await stranger(mock, '/admin/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+      body: JSON.stringify({ name: 'Nueva', slug: 'nueva', group: 'mate', blurb: '', image: null }),
+    })
+    expect(write.status).toBe(401)
+    expect(mock.db.categories).toHaveLength(6)
+    await expect(getAdminSession(mock.api)).resolves.toMatchObject({
+      email: DEFAULT_MOCK_DB_OPTIONS.adminEmail,
+    })
+  })
+
+  it('una cookie con otro valor tampoco sirve', async () => {
+    const mock = createMockApi()
+    await loginAsAdmin(mock)
+    const response = await stranger(mock, '/admin/auth/me', {
+      headers: { Cookie: `${MOCK_ADMIN_SESSION_COOKIE}=otro-valor` },
+    })
+    expect(response.status).toBe(401)
+  })
+
+  it('un login nuevo reemplaza la sesión: la cookie anterior deja de servir', async () => {
+    const mock = createMockApi()
+    await loginAsAdmin(mock)
+    const previous = mock.cookies.get(MOCK_ADMIN_SESSION_COOKIE) ?? ''
+    await loginAsAdmin(mock)
+    expect(mock.cookies.get(MOCK_ADMIN_SESSION_COOKIE)).not.toBe(previous)
+    const response = await stranger(mock, '/admin/auth/me', {
+      headers: { Cookie: `${MOCK_ADMIN_SESSION_COOKIE}=${previous}` },
+    })
+    expect(response.status).toBe(401)
+  })
+
+  it('logout borra la cookie', async () => {
+    const mock = createMockApi()
+    const csrfToken = await loginAsAdmin(mock)
+    const response = await rawRequest(mock, '/admin/auth/logout', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': csrfToken },
+    })
+    expect(response.headers.getSetCookie()).toEqual([
+      `${MOCK_ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
+    ])
+    expect(mock.cookies.has(MOCK_ADMIN_SESSION_COOKIE)).toBe(false)
+  })
+
+  it('con singleClient (el dashboard en el navegador) la sesión abierta es la de su único cliente', async () => {
+    const db = createMockDb(DEFAULT_MOCK_DB_OPTIONS)
+    const fetch = createMockFetch({ getDb: () => db, latencyMs: 0, singleClient: true })
+    const login = await fetch(
+      new Request(`${MOCK_ORIGIN}/api/v1/admin/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: DEFAULT_MOCK_DB_OPTIONS.adminEmail,
+          password: DEFAULT_MOCK_DB_OPTIONS.adminPassword,
+        }),
+      }),
+    )
+    expect(login.status).toBe(200)
+    const me = await fetch(new Request(`${MOCK_ORIGIN}/api/v1/admin/auth/me`))
+    expect(me.status).toBe(200)
+  })
+})
+
+/**
+ * API simulada con los datos de demostración del admin (pedidos y mensajes de otros), con el reloj
+ * real: el mismo que usa {@link stranger}.
+ */
+function createAdminDemoMock(): ReturnType<typeof createMockApi> {
+  const mock = createMockApi()
+  Object.assign(mock.db, createMockDb({ ...DEFAULT_MOCK_DB_OPTIONS, demo: 'admin' }))
+  return mock
+}
 
 describe('sesión del admin', () => {
   it('después del login, me y csrf responden con la sesión', async () => {

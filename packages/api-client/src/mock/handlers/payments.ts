@@ -8,6 +8,7 @@ import type { MockContext, MockRoute } from '../router'
 import type { MockOrder, MockPaymentIntent } from '../types'
 import { parseMockCardToken } from '../card-token'
 import { json, noContent, ResponseError, validationProblem } from '../http'
+import { keepNewest, MOCK_DB_LIMITS } from '../limits'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
 import { orderNumberParam, parseOrFail } from '../validation'
@@ -20,6 +21,7 @@ import {
   idempotencyKeyReused,
   markPaid,
   orderNotFound,
+  sha256Hex,
   stableStringify,
 } from './order-state'
 
@@ -93,7 +95,10 @@ async function orderForPayment(ctx: MockContext): Promise<MockOrder> {
   return order
 }
 
-/** Crea un intento de pago vacío y lo agrega al pedido. */
+/**
+ * Crea un intento de pago vacío y lo agrega al pedido. Pasados `MOCK_DB_LIMITS.intentsPerOrder`
+ * intentos descarta los más viejos (el activo es siempre el último).
+ */
 function addIntent(
   ctx: MockContext,
   order: MockOrder,
@@ -112,7 +117,7 @@ function addIntent(
     createdAt: ctx.now.toISOString(),
     ...fields,
   }
-  order.intents.push(intent)
+  order.intents = keepNewest([...order.intents, intent], MOCK_DB_LIMITS.intentsPerOrder)
   return intent
 }
 
@@ -189,8 +194,9 @@ export const paymentsRoutes: readonly MockRoute[] = [
   route('POST', '/orders/{number}/payments/mercadopago/card', async (ctx) => {
     const key = idempotencyKey(ctx)
     const body = await ctx.body<unknown>()
+    // Para reconocer una repetición alcanza el hash del cuerpo: no se guarda el cuerpo.
+    const fingerprint = await sha256Hex(stableStringify(body))
     const order = await orderForPayment(ctx)
-    const fingerprint = stableStringify(body)
     const previous = order.intents.find((intent) => intent.idempotencyKey === key)
     if (previous !== undefined) {
       return previous.method === 'card' && previous.fingerprint === fingerprint

@@ -13,6 +13,7 @@ import type { Address, Customer } from '../../generated/schema'
 import type { MockContext, MockRoute } from '../router'
 import type { MockCustomer } from '../types'
 import { json, noContent, notFound, problem, ResponseError, validationProblem } from '../http'
+import { keepNewest, MOCK_DB_LIMITS, nextSequentialId } from '../limits'
 import { route } from '../router'
 import { randomUuid } from '../uuid'
 import { orderNumberParam, parseOrFail, QueryReader, withoutNulls } from '../validation'
@@ -24,13 +25,13 @@ import {
   startSession,
   withSessionCookie,
 } from './customer-session'
-import { expireOrders, orderNotFound, toOrder, toOrderSummary } from './order-state'
+import { expireOrders, orderNotFound, sha256Hex, toOrder, toOrderSummary } from './order-state'
 
-/**
- * Token de prueba del enlace de cambio de contraseña: cambia la contraseña de la cuenta que pidió
- * el cambio más recientemente con `POST /auth/password/forgot`.
- */
-export const MOCK_PASSWORD_RESET_TOKEN = 'RESET-OK'
+/** Vigencia del enlace para cambiar la contraseña: 60 minutos, como en el back. */
+export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
+
+/** Comienzo del token del enlace para cambiar la contraseña (`rt_` y 64 dígitos hexadecimales). */
+const PASSWORD_RESET_TOKEN_PREFIX = 'rt_'
 
 /** Pedidos por página de "Mis pedidos". */
 const MY_ORDERS_PAGE_SIZE = 10
@@ -65,14 +66,22 @@ async function readAddress(ctx: MockContext): Promise<Omit<Address, 'id'>> {
   return { ...entry, label: entry.label ?? null, apartment: entry.apartment ?? null }
 }
 
-/** Guarda una dirección; si es la predeterminada, las demás dejan de serlo. */
+/**
+ * Guarda una dirección; si es la predeterminada, las demás dejan de serlo. Pasadas
+ * `MOCK_DB_LIMITS.addressesPerCustomer` direcciones descarta las más viejas.
+ */
 function saveAddress(customer: MockCustomer, address: Address): void {
   const exists = customer.addresses.some((existing) => existing.id === address.id)
   const addresses = exists
     ? customer.addresses.map((existing) => (existing.id === address.id ? address : existing))
     : [...customer.addresses, address]
-  customer.addresses = addresses.map((existing) =>
-    address.isDefault && existing.id !== address.id ? { ...existing, isDefault: false } : existing,
+  customer.addresses = keepNewest(
+    addresses.map((existing) =>
+      address.isDefault && existing.id !== address.id
+        ? { ...existing, isDefault: false }
+        : existing,
+    ),
+    MOCK_DB_LIMITS.addressesPerCustomer,
   )
 }
 
@@ -108,20 +117,20 @@ export const accountRoutes: readonly MockRoute[] = [
       })
     }
     const customer: MockCustomer = {
-      id: `cus-${String(ctx.db.customers.length + 1).padStart(4, '0')}`,
+      id: nextSequentialId(
+        'cus-',
+        ctx.db.customers.map((existing) => existing.id),
+        4,
+      ),
       ...input,
       phone: null,
       addresses: [],
-      passwordResetRequestedAt: null,
+      passwordReset: null,
       createdAt: ctx.now.toISOString(),
     }
-    ctx.db.customers.push(customer)
-    // Los pedidos de invitado hechos con el mismo email pasan a la cuenta nueva.
-    for (const order of ctx.db.orders) {
-      if (order.ownerId === null && order.customer.email === customer.email) {
-        order.ownerId = customer.id
-      }
-    }
+    ctx.db.customers = keepNewest([...ctx.db.customers, customer], MOCK_DB_LIMITS.customers)
+    // Como el back: los pedidos de invitado hechos con el mismo email no pasan a la cuenta nueva,
+    // porque registrarse no prueba que el email sea de quien se registra.
     return withSessionCookie(ctx, json(toCustomer(customer), 201), startSession(ctx, customer.id))
   }),
 
@@ -146,23 +155,33 @@ export const accountRoutes: readonly MockRoute[] = [
     return withSessionCookie(ctx, noContent(), null)
   }),
 
+  // Como en el back: un token al azar por pedido, de un solo uso y que vence a los 60 minutos. La
+  // base guarda su hash y el token en claro va solo en el "mail" (`ctx.sendPasswordReset`).
   route('POST', '/auth/password/forgot', async (ctx) => {
     requireCsrf(ctx)
     const { email } = parseOrFail(forgotPasswordSchema, await ctx.body())
+    const token = `${PASSWORD_RESET_TOKEN_PREFIX}${randomUuid()}${randomUuid()}`.replaceAll('-', '')
+    const tokenHash = await sha256Hex(token)
     const customer = ctx.db.customers.find((candidate) => candidate.email === email)
-    if (customer !== undefined) customer.passwordResetRequestedAt = ctx.now.toISOString()
+    if (customer !== undefined) {
+      const expiresAt = new Date(ctx.now.getTime() + PASSWORD_RESET_TTL_MS).toISOString()
+      customer.passwordReset = { tokenHash, expiresAt }
+      ctx.sendPasswordReset({ email: customer.email, token, expiresAt })
+    }
     return new Response(null, { status: 202 })
   }),
 
   route('POST', '/auth/password/reset', async (ctx) => {
     requireCsrf(ctx)
     const input = parseOrFail(resetPasswordSchema, await ctx.body())
-    const customer = ctx.db.customers
-      .filter((candidate) => candidate.passwordResetRequestedAt !== null)
-      .sort((a, b) =>
-        (b.passwordResetRequestedAt ?? '').localeCompare(a.passwordResetRequestedAt ?? ''),
-      )[0]
-    if (input.token !== MOCK_PASSWORD_RESET_TOKEN || customer === undefined) {
+    const tokenHash = await sha256Hex(input.token)
+    // Desde acá no hay más esperas: dos pedidos con el mismo token no lo usan dos veces.
+    const customer = ctx.db.customers.find(
+      (candidate) =>
+        candidate.passwordReset?.tokenHash === tokenHash &&
+        Date.parse(candidate.passwordReset.expiresAt) > ctx.now.getTime(),
+    )
+    if (customer === undefined) {
       return validationProblem([
         {
           field: 'token',
@@ -172,7 +191,7 @@ export const accountRoutes: readonly MockRoute[] = [
       ])
     }
     customer.password = input.password
-    customer.passwordResetRequestedAt = null
+    customer.passwordReset = null
     // Cambiar la contraseña cierra las sesiones abiertas de esa cuenta.
     ctx.db.customerSessions = ctx.db.customerSessions.filter(
       (session) => session.customerId !== customer.id,

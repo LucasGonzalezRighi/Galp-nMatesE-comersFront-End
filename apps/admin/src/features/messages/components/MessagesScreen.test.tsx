@@ -150,14 +150,14 @@ describe('MessagesScreen', () => {
 
     expect(screen.getByRole('link', { name: 'Responder por email' })).toHaveAttribute(
       'href',
-      'mailto:carla.fernandez@example.com?subject=Tu%20consulta%20a%20Galp%C3%B3n%20Mates',
+      'mailto:carla.fernandez%40example.com?subject=Tu%20consulta%20a%20Galp%C3%B3n%20Mates',
     )
     await user.click(await findMessage(/Sofía Martínez.*Arrepentimiento/))
 
     expect(screen.getByText('Sin comentario.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Responder por email' })).toHaveAttribute(
       'href',
-      'mailto:sofia.martinez@example.com?subject=Tu%20solicitud%20de%20arrepentimiento%20ARR-000003',
+      'mailto:sofia.martinez%40example.com?subject=Tu%20solicitud%20de%20arrepentimiento%20ARR-000003',
     )
 
     await user.click(screen.getByRole('link', { name: 'Ver pedido GLP-09005' }))

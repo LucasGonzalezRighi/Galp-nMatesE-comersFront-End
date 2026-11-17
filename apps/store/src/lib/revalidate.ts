@@ -1,16 +1,12 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { secretMatches } from './secret'
 
 /**
  * Etiquetas de caché que el backend puede pedir regenerar: `products`, `categories`, `settings`,
- * `combos`, `product:{slug}`, `reviews:{slug}` y `content:{página}`.
+ * `combos`, `product:{slug}`, `reviews:{slug}` y `content:{página}`, de hasta 100 caracteres (un
+ * slug tiene hasta 80): una etiqueta más larga no llega al estado de etiquetas de Next.
  */
 export const REVALIDATE_TAG_PATTERN =
-  /^(products|categories|settings|combos|product:[a-z0-9-]+|reviews:[a-z0-9-]+|content:[a-z-]+)$/
-
-/** SHA-256 del texto: dos huellas del mismo largo se pueden comparar en tiempo constante. */
-function fingerprint(value: string): Buffer {
-  return createHash('sha256').update(value, 'utf8').digest()
-}
+  /^(?=.{1,100}$)(products|categories|settings|combos|product:[a-z0-9-]+|reviews:[a-z0-9-]+|content:[a-z-]+)$/
 
 /**
  * Compara el secreto recibido en `x-revalidate-secret` con el esperado, en tiempo constante y
@@ -27,8 +23,7 @@ export function isValidRevalidateSecret(provided: string | null, expected: strin
       'isValidRevalidateSecret necesita el secreto esperado (no puede ser vacío).',
     )
   }
-  if (provided === null) return false
-  return timingSafeEqual(fingerprint(provided), fingerprint(expected))
+  return secretMatches(provided, expected)
 }
 
 /**

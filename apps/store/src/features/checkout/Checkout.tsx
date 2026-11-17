@@ -21,7 +21,6 @@ import {
   useCartView,
 } from '@/features/cart'
 import { asRoute } from '@/lib/routes'
-import { cancelPayment } from '@galpon/api-client'
 import { myAddressesQuery, useApiClient } from '@galpon/api-client/react'
 import { pesos, sumPesos } from '@galpon/domain'
 import { orderFingerprint, shippingCost } from './checkout-order'
@@ -109,9 +108,11 @@ function EmptyCheckout(): ReactNode {
  * Concilia el carrito al entrar, guarda los pasos 1 y 2 en `sessionStorage` (una recarga vuelve al
  * último paso completo) y crea el pedido al elegir el medio de pago (Ruling P3-5).
  *
- * Acepta `?pedido=GLP-…` (desde "Probar con otro medio" del resultado): si ese es el pedido en curso
- * de la pestaña y el carrito no cambió, cancela el intento anterior y retoma el paso 3 con el mismo
- * pedido. Lee la URL con `useSearchParams`, así que va dentro de un `<Suspense>`.
+ * Acepta `?pedido=GLP-…` (desde "Probar con otro medio" o "Pagar" del resultado): si ese es el
+ * pedido en curso de la pestaña y el carrito no cambió, retoma el paso 3 con el mismo pedido. No
+ * cancela nada al cargar: el intento anterior lo cancela el botón del resultado, con un clic, así
+ * una navegación de la pestaña no puede cancelar un pago. Lee la URL con `useSearchParams`, así
+ * que va dentro de un `<Suspense>`.
  *
  * @param props - Ver {@link CheckoutProps}.
  */
@@ -155,17 +156,11 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
     resumed.current = true
     const current = readOrderSession()
     const fingerprint = orderFingerprint(hash, contact, shipping)
-    if (
-      current?.number === pedido &&
-      current.cartHash === hash &&
-      fingerprint !== null &&
+    if (current?.number === pedido && current.cartHash === hash && fingerprint !== null) {
       useCheckoutStore.getState().resumePayment({ number: pedido, fingerprint })
-    ) {
-      // "Probar con otro medio": el intento anterior se cancela; sin intento activo no hace nada.
-      void cancelPayment(api, pedido).catch(() => undefined)
     }
     router.replace(asRoute('/checkout'))
-  }, [api, router, pedido, ready, cartReady, hash, contact, shipping])
+  }, [router, pedido, ready, cartReady, hash, contact, shipping])
 
   const savedMethod =
     shipping !== null && options.some((option) => option.method === shipping.method)

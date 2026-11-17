@@ -184,6 +184,11 @@ export interface MockContent {
 
 /** Sesión abierta del administrador en la base simulada. */
 export interface MockAdminSession {
+  /**
+   * Valor de la cookie de sesión del admin (`galpon_admin`): la sesión es de quien la manda, como
+   * en el back. No viaja en el cuerpo de ninguna respuesta.
+   */
+  id: string
   /** Email con el que se inició sesión. */
   email: string
   /** Token CSRF de la sesión. */
@@ -208,7 +213,10 @@ export interface MockPaymentIntent {
   method: PaymentMethod
   /** `Idempotency-Key` con la que se creó. */
   idempotencyKey: string
-  /** Cuerpo del pedido que lo creó, en JSON con las claves ordenadas, para comparar repeticiones. */
+  /**
+   * SHA-256 en hexadecimal del cuerpo del pedido que lo creó (JSON con las claves ordenadas), para
+   * comparar repeticiones sin guardar el cuerpo; vacío en una preferencia, que no lleva cuerpo.
+   */
   fingerprint: string
   /** Estado del intento; `none` es una preferencia que todavía no se pagó. */
   status: PaymentStatus
@@ -232,7 +240,7 @@ export interface MockPaymentIntent {
 export interface MockOrderCreation {
   /** `Idempotency-Key` con la que se creó. */
   idempotencyKey: string
-  /** Cuerpo del pedido, en JSON con las claves ordenadas. */
+  /** SHA-256 en hexadecimal del cuerpo del pedido (JSON con las claves ordenadas), no el cuerpo. */
   fingerprint: string
   /**
    * Token entregado en la respuesta, en claro: se guarda solo para repetir el mismo `201` con la
@@ -304,10 +312,27 @@ export interface MockCustomer {
   password: string
   /** Libreta de direcciones; a lo sumo una es la predeterminada. */
   addresses: Address[]
-  /** Último pedido de cambio de contraseña, ISO 8601 con hora y zona, o `null`. */
-  passwordResetRequestedAt: string | null
+  /**
+   * Enlace vigente para cambiar la contraseña, o `null`: el SHA-256 en hexadecimal de su token (el
+   * token en claro solo viaja en el "mail", ver `MockPasswordResetMail`) y su vencimiento, ISO 8601
+   * con hora y zona. Se borra al usarlo y un pedido nuevo lo reemplaza.
+   */
+  passwordReset: { tokenHash: string; expiresAt: string } | null
   /** Momento del alta, ISO 8601 con hora y zona. */
   createdAt: string
+}
+
+/**
+ * Lo que llevaría el mail con el enlace para cambiar la contraseña: la API simulada no manda mails y
+ * se lo pasa a `onPasswordReset` de `createMockFetch` (la tienda lo escribe en el log del servidor).
+ */
+export interface MockPasswordResetMail {
+  /** Email de la cuenta. */
+  email: string
+  /** Token del enlace (`rt_` y 64 dígitos hexadecimales), de un solo uso. */
+  token: string
+  /** Vencimiento del enlace (60 minutos), ISO 8601 con hora y zona. */
+  expiresAt: string
 }
 
 /** Sesión de la tienda: anónima (solo para el token CSRF) o de un cliente. */
