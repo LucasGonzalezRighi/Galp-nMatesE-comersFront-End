@@ -14,7 +14,7 @@ import {
   saveOrderSession,
 } from '../order-session'
 import { CHALLENGE_DONE_MESSAGE } from './mp-simulator'
-import { OrderResult } from './OrderResult'
+import { OrderResult, OrderResultLoading } from './OrderResult'
 import { RESULT_COPY } from './result.copy'
 import {
   createResultTestApi,
@@ -428,5 +428,25 @@ describe('OrderResult: pedido sembrado en la cache al crearlo (la cache dura un 
     expect(
       screen.queryByRole('heading', { name: RESULT_COPY.unpaid.title }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('OrderResult: estructura (1.3.1)', () => {
+  it('cada pantalla va en un único main: cargando, no encontrado y el resultado', async () => {
+    const loading = render(<OrderResultLoading />)
+    expect(screen.getAllByRole('main')).toHaveLength(1)
+    loading.unmount()
+
+    const testApi = createResultTestApi()
+    const missing = render(testApi.wrap(<OrderResult number="GLP-10001" apiMode="mock" />))
+    await screen.findByRole('heading', { name: RESULT_COPY.notFound.title })
+    expect(screen.getAllByRole('main')).toHaveLength(1)
+    missing.unmount()
+
+    const order = await placeGuestOrder(testApi)
+    await payWithTestCard(testApi, order.number, 'APRO')
+    render(testApi.wrap(<OrderResult number={order.number} apiMode="mock" />))
+    await screen.findByRole('heading', { name: RESULT_COPY.approved.title('Lucía') })
+    expect(screen.getAllByRole('main')).toHaveLength(1)
   })
 })

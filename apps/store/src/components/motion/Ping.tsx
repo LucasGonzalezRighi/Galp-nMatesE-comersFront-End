@@ -9,6 +9,12 @@ import { assertNonNegative } from './validate'
 /** Cuánto crece el halo: de 8 px a 28 px de diámetro, como la sombra de 10 px del diseño. */
 const HALO_SCALE = 3.5
 
+/**
+ * Repeticiones del latido después del primero: dos latidos de 1,8 s (3,6 s, menos de 5 s, WCAG
+ * 2.2.2) y queda solo el punto.
+ */
+export const PING_REPEAT = 1
+
 /** Props de {@link Ping}. */
 export interface PingProps {
   /** Color del punto: cualquier color CSS. Por omisión el de acento. */
@@ -24,8 +30,8 @@ export interface PingProps {
 }
 
 /**
- * Punto que late: un halo del color del punto crece y se desvanece cada 1,8 segundos (indicador
- * de stock). El halo se anima con `transform` y `opacity`, en lugar de la sombra del diseño.
+ * Punto que late: un halo del color del punto crece y se desvanece cada 1,8 segundos, dos veces
+ * ({@link PING_REPEAT}), y queda solo el punto (indicador de stock). El halo se anima con `transform` y `opacity`, en lugar de la sombra del diseño.
  *
  * Es decorativo (`aria-hidden`): el estado del stock tiene que decirse también con texto.
  * Con `prefers-reduced-motion: reduce` solo se ve el punto, sin halo.
@@ -62,7 +68,7 @@ export function Ping({
             transition={{
               duration: 1.8,
               delay: delay / 1000,
-              repeat: Infinity,
+              repeat: PING_REPEAT,
               ease: 'linear',
             }}
           />

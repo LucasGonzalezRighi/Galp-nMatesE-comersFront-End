@@ -421,6 +421,26 @@ describe('FooterView: el pie que sube por encima de las reseñas', () => {
     expect(container.querySelector('.site-footer-line')).toHaveAttribute('aria-hidden', 'true')
   })
 
+  it('los textos chicos del pie (títulos de columna, fila del vendedor y del año) van en neutral-400 (1.4.3)', () => {
+    const { container } = render(
+      <FooterView
+        content={content}
+        settings={{ ...settings, seller: { ...emptySeller, legalName: 'Galpón SRL' } }}
+        categories={categories}
+      />,
+    )
+
+    const all = rows(container)
+    const seller = all.find((row) => row.dataset.footerRow === '2')
+    const year = all.find((row) => row.dataset.footerRow === '3')
+    expect(seller).toHaveClass('text-neutral-400')
+    expect(year).toHaveClass('text-neutral-400')
+    for (const title of ['Tienda', 'Ayuda', 'Galpón', 'Legales']) {
+      expect(screen.getByText(title, { selector: 'span' })).toHaveClass('text-neutral-400')
+    }
+    expect(container.querySelector('.text-neutral-500')).toBeNull()
+  })
+
   it('con los datos del vendedor, su bloque es la fila 2', () => {
     const { container } = render(
       <FooterView

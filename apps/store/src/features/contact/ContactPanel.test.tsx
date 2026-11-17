@@ -81,6 +81,7 @@ describe('Contacto: formulario', () => {
 
     expect(screen.getByText('Escribí al menos 10 caracteres')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: CONTACT_COPY.message })).toBeInvalid()
+    expect(screen.getByRole('textbox', { name: CONTACT_COPY.message })).toHaveFocus()
     expect(api.requests).toHaveLength(0)
   })
 
@@ -221,5 +222,19 @@ describe('Contacto: motivo "Arrepentimiento"', () => {
 
     expect(screen.getByRole('radio', { name: 'Pedido' })).toBeChecked()
     expect(screen.getByRole('button', { name: CONTACT_COPY.submit })).toBeInTheDocument()
+  })
+})
+
+describe('ContactPanel: foco al primer error', () => {
+  it('enviar vacío enfoca "Nombre", el primer campo con error', async () => {
+    const api = createTestApi()
+    const user = userEvent.setup()
+    render(api.wrap(<ContactPanel />))
+
+    await user.click(screen.getByRole('button', { name: CONTACT_COPY.submit }))
+
+    expect(screen.getByRole('textbox', { name: CONTACT_COPY.name })).toBeInvalid()
+    expect(screen.getByRole('textbox', { name: CONTACT_COPY.name })).toHaveFocus()
+    expect(api.requests).toHaveLength(0)
   })
 })

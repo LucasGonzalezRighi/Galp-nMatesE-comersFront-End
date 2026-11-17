@@ -29,7 +29,8 @@ export interface CatalogGridProps {
  * despliega el resto. En el servidor y antes de medir se suponen 5 columnas (20 productos, las que
  * entran en `shop-container`). Las tarjetas de arriba van en un `GridReplay`: reaparecen
  * escalonadas al cambiar de filtro u orden (`replayKey`); al cambiar de filtro, orden o búsqueda
- * (`collapseKey`) vuelve a 4 hileras.
+ * (`collapseKey`) vuelve a 4 hileras. Va en un `div` `contents` con `data-catalog-grid`: con el
+ * foco del teclado, sus enlaces y botones quedan por debajo de la barra fija (`globals.css`).
  *
  * @param props - Ver {@link CatalogGridProps}.
  */
@@ -41,16 +42,18 @@ export function CatalogGrid({
   showNetPrice,
 }: CatalogGridProps): ReactNode {
   return (
-    <ProductGrid
-      products={products}
-      rows={CATALOG_ROWS}
-      defaultColumns={CATALOG_DEFAULT_COLUMNS}
-      moreLabel={PRODUCT_CARD_COPY.moreProducts}
-      installments={installments}
-      showNetPrice={showNetPrice}
-      collapseKey={collapseKey}
-      priorityCount={PRIORITY_CARDS}
-      frame={(frame) => <GridReplay replayKey={replayKey} {...frame} />}
-    />
+    <div className="contents" data-catalog-grid="">
+      <ProductGrid
+        products={products}
+        rows={CATALOG_ROWS}
+        defaultColumns={CATALOG_DEFAULT_COLUMNS}
+        moreLabel={PRODUCT_CARD_COPY.moreProducts}
+        installments={installments}
+        showNetPrice={showNetPrice}
+        collapseKey={collapseKey}
+        priorityCount={PRIORITY_CARDS}
+        frame={(frame) => <GridReplay replayKey={replayKey} {...frame} />}
+      />
+    </div>
   )
 }

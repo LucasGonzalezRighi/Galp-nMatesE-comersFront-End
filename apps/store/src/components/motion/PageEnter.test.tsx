@@ -22,6 +22,18 @@ beforeEach(() => {
 })
 
 describe('PageEnter', () => {
+  it('pasa id y tabIndex al contenedor (destino de "Saltar al contenido")', () => {
+    mockReducedMotion(false)
+    render(
+      <PageEnter id="contenido" tabIndex={-1}>
+        Inicio
+      </PageEnter>,
+    )
+    const box = screen.getByText('Inicio')
+    expect(box).toHaveAttribute('id', 'contenido')
+    expect(box).toHaveAttribute('tabindex', '-1')
+  })
+
   it('no oculta ni anima el contenido en la primera carga', () => {
     mockReducedMotion(false)
     render(<PageEnter>Inicio</PageEnter>)

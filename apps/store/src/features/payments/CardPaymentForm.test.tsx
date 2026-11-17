@@ -112,6 +112,19 @@ describe('CardPaymentForm', () => {
     expect(preview()).toHaveAttribute('data-flipped', 'false')
   })
 
+  it('el contenedor de cada campo seguro lleva el borde neutral-600 y el anillo de foco de los demás campos', async () => {
+    await renderForm()
+
+    const box = field(PAYMENTS_COPY.cardNumber).parentElement
+    expect(box).toHaveClass(
+      'border-neutral-600',
+      'focus-within:outline-2',
+      'focus-within:outline-accent',
+      'focus-within:outline-offset-0',
+    )
+    expect(box).not.toHaveClass('border-divider')
+  })
+
   it('al pagar vacío muestra cada error y lleva el foco al primero', async () => {
     const user = userEvent.setup()
     const { onSubmit } = await renderForm()
@@ -128,6 +141,9 @@ describe('CardPaymentForm', () => {
       MESSAGES.incompleteCardNumber,
     )
     expect(field(PAYMENTS_COPY.cardholderName)).toHaveAttribute('aria-invalid', 'true')
+    expect(field(PAYMENTS_COPY.cardNumber)).toHaveAttribute('aria-invalid', 'true')
+    expect(field(PAYMENTS_COPY.expirationDate)).toHaveAttribute('aria-invalid', 'true')
+    expect(field(PAYMENTS_COPY.securityCode)).toHaveAttribute('aria-invalid', 'true')
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
@@ -150,6 +166,7 @@ describe('CardPaymentForm', () => {
     await user.type(field(PAYMENTS_COPY.cardNumber), '4509')
     expect(screen.queryByText(MESSAGES.incompleteCardNumber)).not.toBeInTheDocument()
     await user.tab()
+    expect(field(PAYMENTS_COPY.cardNumber)).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByText(MESSAGES.incompleteCardNumber)).toBeInTheDocument()
   })
 

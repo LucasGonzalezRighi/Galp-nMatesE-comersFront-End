@@ -13,6 +13,7 @@ import {
 } from '../../components/motion/test/support'
 import { addKitToCart, clearCart, useCart } from '../cart'
 import { hideToast, Toaster } from '../toast'
+import { addToCartLabel } from './product-card.copy'
 import { ProductCard } from './ProductCard'
 
 /** Navegación simulada: la tarjeta lleva a la ficha con el router de Next. */
@@ -156,14 +157,14 @@ describe('ProductCard', () => {
     expect(screen.getByText('Precio a confirmar')).toBeVisible()
     expect(screen.queryByText(/cuotas/)).toBeNull()
     expect(screen.queryByText(/sin impuestos nacionales/)).toBeNull()
-    expect(screen.getByRole('button', { name: 'Agregar al carrito' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Agregar .+ al carrito$/ })).toBeDisabled()
   })
 
   it('sin stock: etiqueta "Sin stock" y el botón de agregar deshabilitado', async () => {
     renderCard({ ...mate, isSoldOut: true, isPurchasable: false, maxQuantity: 0 })
 
     expect(screen.getByText('Sin stock')).toBeVisible()
-    const add = screen.getByRole('button', { name: 'Agregar al carrito' })
+    const add = screen.getByRole('button', { name: /^Agregar .+ al carrito$/ })
     expect(add).toBeDisabled()
     await userEvent.click(add)
     expect(cartLines()).toEqual([])
@@ -182,7 +183,7 @@ describe('ProductCard', () => {
   it('agregar rápido suma el mate con Negro y avisa "Agregado al carrito"', async () => {
     renderCard(mate)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Agregar .+ al carrito$/ }))
 
     expect(cartLines()).toEqual([
       {
@@ -202,14 +203,14 @@ describe('ProductCard', () => {
   it('una bombilla se agrega sin opciones', async () => {
     renderCard(summary({ id: 'b1', group: 'bombilla', name: 'Bombillón', priceArs: 25999 }))
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Agregar .+ al carrito$/ }))
 
     expect(cartLines()).toEqual([{ type: 'product', productId: 'b1', quantity: 1 }])
   })
 
   it('un doble clic rápido nunca supera el tope y deja el botón deshabilitado', async () => {
     renderCard({ ...mate, maxQuantity: 1 })
-    const add = screen.getByRole('button', { name: 'Agregar al carrito' })
+    const add = screen.getByRole('button', { name: /^Agregar .+ al carrito$/ })
 
     await userEvent.dblClick(add)
 
@@ -238,7 +239,7 @@ describe('ProductCard', () => {
       }
     })
 
-    expect(screen.getByRole('button', { name: 'Agregar al carrito' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Agregar .+ al carrito$/ })).toBeDisabled()
   })
 
   it('tocar la tarjeta lleva a la ficha una sola vez', async () => {
@@ -307,7 +308,7 @@ describe('ProductCard: hover y foco', () => {
   it('el "+" y la píldora "Ver detalle" se llenan de gris solo con su propio hover, no con el de la tarjeta (Ruling MR-24)', () => {
     renderCard(mate)
 
-    const add = screen.getByRole('button', { name: 'Agregar al carrito' })
+    const add = screen.getByRole('button', { name: /^Agregar .+ al carrito$/ })
     expect(add).toHaveClass('[--btn-fill:var(--color-neutral-600)]', 'group/btn')
     expect(add.className).not.toMatch(/group-(hover|has-focus-visible)\/card:/)
     const addSweep = add.querySelector('[data-button-sweep]')
@@ -375,5 +376,18 @@ describe('ProductCard: bajo el telón entre páginas (Ruling MR-29)', () => {
     )
     renderCard(mate)
     expect(outer().style.opacity).toBe('0')
+  })
+})
+
+describe('addToCartLabel', () => {
+  it('nombra el producto en el botón de agregar rápido', () => {
+    expect(addToCartLabel('Mate Imperial Premium')).toBe('Agregar Mate Imperial Premium al carrito')
+    expect(() => addToCartLabel('  ')).toThrow(RangeError)
+  })
+
+  it('la tarjeta usa el nombre del producto en su botón', () => {
+    renderCard(mate)
+
+    expect(screen.getByRole('button', { name: addToCartLabel(mate.name) })).toBeVisible()
   })
 })

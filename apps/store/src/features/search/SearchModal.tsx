@@ -91,6 +91,7 @@ export function SearchModal(): ReactNode {
       <Reveal kind="up" duration={600} className="flex flex-col gap-5">
         <form
           role="search"
+          aria-label={SEARCH_COPY.region}
           onSubmit={onSubmit}
           className="flex items-center gap-[14px] pb-[14px]"
           style={FIELD_UNDERLINE}
@@ -162,6 +163,7 @@ export function SearchModal(): ReactNode {
               <p role="status" className="sr-only">
                 {pluralize(matches.length, 'resultado', 'resultados')}
               </p>
+              <h2 className="sr-only">{SEARCH_COPY.productsHeading}</h2>
               <ul aria-label={SEARCH_COPY.results} className="flex flex-col">
                 {shown.map((product) => (
                   <li key={product.id}>

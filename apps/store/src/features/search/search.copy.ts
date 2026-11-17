@@ -10,6 +10,10 @@ export const SEARCH_COPY = {
   close: 'Cerrar búsqueda',
   /** Nombre accesible del grupo de líneas que se muestra con el campo vacío. */
   lines: 'Líneas',
+  /** Nombre de la región de búsqueda (distinto del de la barra de la tienda). */
+  region: 'Buscar en la tienda',
+  /** Título de los resultados, solo para lectores de pantalla. */
+  productsHeading: 'Productos',
   /** Nombre accesible de la lista de resultados. */
   results: 'Resultados',
   /** Link que lleva a la tienda con la búsqueda. */

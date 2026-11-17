@@ -366,7 +366,10 @@ describe('Checkout', () => {
     await waitFor(() => {
       expect(requestsTo(testApi.requests, 'POST', '/preference')).toHaveLength(1)
     })
-    expect(screen.getByRole('button', { name: CHECKOUT_COPY.connectingMp })).toBeDisabled()
+    expect(screen.getByRole('button', { name: CHECKOUT_COPY.connectingMp })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
   })
 
   it('con ?pedido= del mismo carrito cancela el intento anterior y reutiliza el pedido', async () => {
@@ -749,13 +752,19 @@ describe('Checkout', () => {
     await choosePayment(user, /Mercado Pago/)
     const total = formatPesos(pesos(yerbaPrice(testApi.db)))
     await user.click(await screen.findByRole('button', { name: payWithMpLabel(total) }))
-    expect(await screen.findByRole('button', { name: CHECKOUT_COPY.connectingMp })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: CHECKOUT_COPY.connectingMp })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
 
     // Una página que se muestra sin salir del bfcache no cambia nada.
     act(() => {
       window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: false }))
     })
-    expect(screen.getByRole('button', { name: CHECKOUT_COPY.connectingMp })).toBeDisabled()
+    expect(screen.getByRole('button', { name: CHECKOUT_COPY.connectingMp })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
 
     act(() => {
       window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))

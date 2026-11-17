@@ -90,3 +90,17 @@
     cursor: not-allowed;
   }
 }
+
+/*
+ * Foco no tapado (WCAG 2.4.11, técnica C43): al recorrer con el teclado, lo que recibe el foco
+ * queda por debajo del encabezado fijo (64 px más aire). En la tienda y las líneas la barra de
+ * filtros también es fija: los enlaces y botones de la grilla dejan 140 px más. Solo con el foco
+ * del teclado (`:focus-visible`), así las anclas y los desplazamientos con el mouse no cambian.
+ */
+html:has(:focus-visible) {
+  scroll-padding-top: 80px;
+}
+
+[data-catalog-grid] :is(a, button):focus-visible {
+  scroll-margin-top: 140px;
+}

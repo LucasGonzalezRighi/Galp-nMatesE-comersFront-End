@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ReactNode } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +15,8 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Comprar' })).toHaveAttribute('type', 'button')
   })
 
-  it('con loading se deshabilita, avisa que está ocupado y no dispara el clic', async () => {
+  it('con loading marca aria-disabled y aria-busy, conserva el foco y no dispara el clic', async () => {
+    const user = userEvent.setup()
     const onClick = vi.fn()
     render(
       <Button loading onClick={onClick}>
@@ -23,10 +25,43 @@ describe('Button', () => {
     )
 
     const button = screen.getByRole('button', { name: 'Pagar' })
-    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).not.toHaveAttribute('disabled')
     expect(button).toHaveAttribute('aria-busy', 'true')
-    await userEvent.click(button)
+    await user.click(button)
+    button.focus()
+    await user.keyboard('{Enter}')
+    await user.keyboard(' ')
     expect(onClick).not.toHaveBeenCalled()
+    expect(button).toHaveFocus()
+  })
+
+  it('cargando conserva el foco y no envía el formulario, ni con el clic ni con Enter', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const form = (loading: boolean): ReactNode => (
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSubmit()
+        }}
+      >
+        <input aria-label="Nombre" />
+        <Button type="submit" loading={loading}>
+          Enviar
+        </Button>
+      </form>
+    )
+    const { rerender } = render(form(false))
+    const button = screen.getByRole('button', { name: 'Enviar' })
+    button.focus()
+
+    rerender(form(true))
+    expect(button).toHaveFocus()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'x{Enter}')
+
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('con asChild aplica el estilo al enlace sin envolverlo en un botón', () => {

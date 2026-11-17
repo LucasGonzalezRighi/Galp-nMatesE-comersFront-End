@@ -60,7 +60,10 @@ export interface ButtonProps extends ComponentProps<'button'> {
    * "Ver detalle", Ruling MR-16). Ver {@link ButtonFill}.
    */
   fill?: ButtonFill
-  /** Muestra un indicador, deshabilita el botón y lo marca como ocupado (`aria-busy`). */
+  /**
+   * Muestra un indicador, marca el botón como no disponible (`aria-disabled`, atenuado igual que
+   * deshabilitado) y ocupado (`aria-busy`), y frena su clic. No usa `disabled`, así conserva el foco.
+   */
   loading?: boolean
   /** Ocupa todo el ancho disponible. */
   fullWidth?: boolean
@@ -172,9 +175,20 @@ export function Button({
     <button
       {...props}
       type={type}
-      disabled={disabled === true || loading}
+      disabled={disabled}
+      aria-disabled={loading ? true : props['aria-disabled']}
       aria-busy={loading ? true : undefined}
       className={classes}
+      onClick={(event) => {
+        // Cargando: ni el clic, ni Enter o la barra (que llegan como clic), ni el envío implícito
+        // del formulario (también un clic en el botón de enviar) hacen nada. No usa `disabled`
+        // para que el botón conserve el foco (WCAG 2.4.3).
+        if (loading) {
+          event.preventDefault()
+          return
+        }
+        props.onClick?.(event)
+      }}
     >
       {fx}
       {spinner}

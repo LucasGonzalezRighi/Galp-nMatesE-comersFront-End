@@ -146,6 +146,18 @@ describe('CatalogBrowser: todo el catálogo', () => {
     ])
   })
 
+  it('la grilla tiene un título "Productos" para los lectores antes de los h3 de las tarjetas', () => {
+    renderCatalog()
+    const heading = screen.getByRole('heading', { level: 2, name: 'Productos' })
+    expect(heading).toHaveClass('sr-only')
+    expect(document.querySelector('[data-catalog-grid]')).toHaveClass('contents')
+  })
+
+  it('su región de búsqueda se llama "Buscar en el catálogo" (distinta de la del buscador)', () => {
+    renderCatalog()
+    expect(screen.getByRole('search', { name: 'Buscar en el catálogo' })).toBeInTheDocument()
+  })
+
   it('arma los botones de línea con su cantidad y marca "Todos" como el activo', () => {
     renderCatalog()
     const nav = screen.getByRole('navigation', { name: 'Líneas de producto' })

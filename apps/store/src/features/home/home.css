@@ -162,31 +162,40 @@
   }
 }
 
-/* Puntos: 8 px; el de la pieza actual se estira (32 px, 40 desde 768) y se llena de verde. */
+/*
+ * Puntos: el botón mide 24 × 24 (zona táctil de WCAG 2.5.8) y el punto de 8 px se dibuja en su
+ * `::after`; el de la pieza actual se estira (32 px, 40 desde 768) y se llena de verde. El inactivo
+ * va en neutral-500 (5,4:1 sobre el fondo, 1.4.11).
+ */
 .home-carousel-dot {
-  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.home-carousel-dot::after {
+  content: '';
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--color-neutral-700);
-  cursor: pointer;
+  background: var(--color-neutral-500);
 }
 
-/* El área que se toca mide 24 px de alto aunque el punto mida 8. */
-.home-carousel-dot::before {
-  content: '';
-  position: absolute;
-  inset: -8px -3px;
-}
-
-.home-carousel-dot[aria-current] {
+.home-carousel-dot[aria-current]::after {
   width: 32px;
   background: var(--color-accent-2-400);
 }
 
 @media (min-width: 768px) {
-  .home-carousel-dot[aria-current] {
+  .home-carousel-dot[aria-current]::after {
     width: 40px;
   }
 }
@@ -235,7 +244,7 @@
     }
   }
 
-  .home-carousel-dot {
+  .home-carousel-dot::after {
     transition:
       width 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
       background-color 600ms ease;
@@ -386,7 +395,9 @@
   position: absolute;
   inset: 0;
   background: currentcolor;
-  animation: home-hint 2400ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+  /* Dos pasadas (4,8 s) y queda quieta, llena: menos de 5 s de movimiento (WCAG 2.2.2). */
+  animation: home-hint 2400ms var(--ease-main, cubic-bezier(0.16, 1, 0.3, 1));
+  animation-iteration-count: 2;
 }
 
 @keyframes home-hint {

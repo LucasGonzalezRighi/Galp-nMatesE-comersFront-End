@@ -407,11 +407,7 @@ export function HeroCarousel({ hero, slides, kitDiscountLabel }: HeroCarouselPro
                 >
                   <ArrowRightIcon size={HOME_ARROW_SIZE} aria-hidden="true" />
                 </button>
-                <div
-                  role="group"
-                  aria-label={COPY.dots}
-                  className="ml-[6px] flex items-center gap-[6px] md:gap-2"
-                >
+                <div role="group" aria-label={COPY.dots} className="flex items-center">
                   {slides.map((product, position) => (
                     <button
                       key={product.id}

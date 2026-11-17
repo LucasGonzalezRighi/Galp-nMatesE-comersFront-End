@@ -151,9 +151,9 @@ describe('HomePage', () => {
     const data = await homeData()
     renderSection(await HomePage())
     expect(screen.getAllByText('Ver detalle')).toHaveLength(data.featured.length)
-    expect(
-      screen.getByRole('button', { name: 'Agregar Mate Imperial Premium al carrito' }),
-    ).toBeInTheDocument()
+    // El de la portada (la tarjeta del destacado lleva el mismo nombre, dentro de su `article`).
+    const add = screen.getAllByRole('button', { name: 'Agregar Mate Imperial Premium al carrito' })
+    expect(add.filter((button) => button.closest('article') === null)).toHaveLength(1)
   })
 })
 

@@ -85,7 +85,11 @@ export function CatalogToolbar({
             )
           })}
         </nav>
-        <div role="search" className="flex max-w-[440px] flex-[1_1_300px] items-center gap-[10px]">
+        <div
+          role="search"
+          aria-label={CATALOG_COPY.searchRegion}
+          className="flex max-w-[440px] flex-[1_1_300px] items-center gap-[10px]"
+        >
           <div className="relative flex-1">
             <MagnifyingGlassIcon
               size={15}

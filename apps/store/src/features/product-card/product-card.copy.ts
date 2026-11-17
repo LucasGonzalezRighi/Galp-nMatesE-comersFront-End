@@ -2,8 +2,6 @@
 export const PRODUCT_CARD_COPY = {
   /** Píldora que aparece al pasar el mouse. */
   viewDetail: 'Ver detalle',
-  /** Nombre accesible del botón de agregar rápido. */
-  addToCart: 'Agregar al carrito',
   /** Etiqueta de un producto sin stock. */
   soldOut: 'Sin stock',
   /** Etiqueta (y precio) de un producto "a consultar". */
@@ -20,3 +18,19 @@ export const PRODUCT_CARD_COPY = {
    */
   moreProducts: 'Ver más productos',
 } as const
+
+/**
+ * Nombre accesible del botón de agregar rápido de la tarjeta, con el nombre del producto (como el
+ * del hero): en una grilla, cada "+" se distingue de los demás.
+ *
+ * @param name - Nombre del producto, no vacío.
+ * @returns "Agregar {nombre} al carrito".
+ * @throws {RangeError} Si `name` está vacío o solo tiene espacios.
+ * @example
+ * addToCartLabel('Mate Imperial Premium') // 'Agregar Mate Imperial Premium al carrito'
+ */
+export function addToCartLabel(name: string): string {
+  const trimmed = name.trim()
+  if (trimmed === '') throw new RangeError('El nombre del producto no puede estar vacío')
+  return `Agregar ${trimmed} al carrito`
+}

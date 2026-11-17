@@ -83,12 +83,15 @@ export function CatalogResults({
     )
   }
   return (
-    <CatalogGrid
-      products={products}
-      replayKey={replayKey}
-      collapseKey={`${replayKey}:${query}`}
-      installments={installments}
-      showNetPrice={showNetPrice}
-    />
+    <>
+      <h2 className="sr-only">{CATALOG_COPY.productsHeading}</h2>
+      <CatalogGrid
+        products={products}
+        replayKey={replayKey}
+        collapseKey={`${replayKey}:${query}`}
+        installments={installments}
+        showNetPrice={showNetPrice}
+      />
+    </>
   )
 }

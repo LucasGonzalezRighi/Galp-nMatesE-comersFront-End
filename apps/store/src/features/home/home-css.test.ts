@@ -41,3 +41,22 @@ describe('home.css: el Manifiesto clavado', () => {
     )
   })
 })
+
+describe('home.css: accesibilidad del carrusel y de la pista', () => {
+  it('cada punto es un botón de 24 × 24 con el punto de 8 px dibujado en ::after (2.5.8)', () => {
+    const dot = rule('.home-carousel-dot')
+    expect(dot).toContain('min-width: 24px;')
+    expect(dot).toContain('height: 24px;')
+    expect(dot).toContain('background: transparent;')
+    expect(rule('.home-carousel-dot::before')).toBe('')
+    const mark = rule('.home-carousel-dot::after')
+    expect(mark).toContain('height: 8px;')
+    expect(mark).toContain('background: var(--color-neutral-500);')
+  })
+
+  it('la línea de "deslizá" se mueve dos veces y queda quieta (2.2.2, menos de 5 s)', () => {
+    const line = rule('.home-hint-line::after')
+    expect(line).toContain('animation-iteration-count: 2;')
+    expect(line).not.toContain('infinite')
+  })
+})

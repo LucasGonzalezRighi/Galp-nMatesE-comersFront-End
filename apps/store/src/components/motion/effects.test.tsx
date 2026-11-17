@@ -2,9 +2,9 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { DrawCheck } from './DrawCheck'
-import { Float } from './Float'
+import { Float, floatRepeat } from './Float'
 import { MouseParallax } from './MouseParallax'
-import { Ping } from './Ping'
+import { Ping, PING_REPEAT } from './Ping'
 import { cleanUpAfterEach, mockReducedMotion } from './test/support'
 import { useScrollTopOnStep } from './use-scroll-top-on-step'
 
@@ -60,6 +60,17 @@ describe('Float, Ping, DrawCheck y MouseParallax', () => {
     expect(box.style.transform).toBe(before)
   })
 
+  it('Float y Ping se mueven un número finito de veces, 5 s como máximo', () => {
+    expect(floatRepeat(4200)).toBe(0)
+    expect(floatRepeat(2400)).toBe(1)
+    expect(floatRepeat(5000)).toBe(0)
+    expect(floatRepeat(1000)).toBe(4)
+    expect(floatRepeat(8000)).toBe(0)
+    expect(() => floatRepeat(0)).toThrow(RangeError)
+    expect(PING_REPEAT).toBe(1)
+    expect(PING_REPEAT + 1).toBeLessThanOrEqual(Math.floor(5 / 1.8))
+  })
+
   it('validan sus números con RangeError', () => {
     expect(() => Float({ distance: -1 })).toThrow(RangeError)
     expect(() => Float({ duration: Number.NaN })).toThrow(RangeError)
@@ -86,6 +97,27 @@ describe('useScrollTopOnStep', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     rerender({ step: 1 })
     expect(scrollTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('enfoca el título del paso nuevo sin desplazar, y no en el primer render', () => {
+    mockReducedMotion(false)
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    const heading = document.createElement('h2')
+    heading.tabIndex = -1
+    document.body.append(heading)
+    const focus = vi.spyOn(heading, 'focus')
+    const ref = { current: heading }
+    const { rerender } = renderHook(
+      ({ step }) => {
+        useScrollTopOnStep(step, ref)
+      },
+      { initialProps: { step: 0 } },
+    )
+    expect(focus).not.toHaveBeenCalled()
+    rerender({ step: 1 })
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(heading).toHaveFocus()
+    heading.remove()
   })
 
   it('con prefers-reduced-motion sube de golpe', () => {

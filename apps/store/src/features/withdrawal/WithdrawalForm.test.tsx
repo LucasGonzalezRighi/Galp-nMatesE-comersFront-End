@@ -67,6 +67,7 @@ describe('WithdrawalForm', () => {
     expect(screen.getByRole('textbox', { name: WITHDRAWAL_COPY.name })).toBeInvalid()
     expect(screen.getByRole('textbox', { name: WITHDRAWAL_COPY.email })).toBeInvalid()
     expect(screen.getByText('Requerido')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: WITHDRAWAL_COPY.name })).toHaveFocus()
     expect(api.requests).toHaveLength(0)
   })
 

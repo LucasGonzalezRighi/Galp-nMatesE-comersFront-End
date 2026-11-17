@@ -33,7 +33,7 @@ const LIT_WORDMARK_STYLE: CSSProperties = {
 const COLUMN_LINK = 'text-neutral-300 hover:text-foreground no-underline'
 
 /** Estilo de los títulos de las columnas. */
-const COLUMN_TITLE = 'text-[11px] tracking-[0.12em] text-neutral-500 uppercase'
+const COLUMN_TITLE = 'text-[11px] tracking-[0.12em] text-neutral-400 uppercase'
 
 /**
  * Da formato al CUIT para mostrarlo: `30712345671` queda `30-71234567-1`.
@@ -230,7 +230,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
          */}
         <FooterRow
           index={2}
-          className="mt-12 flex flex-wrap items-start justify-between gap-x-12 gap-y-6 text-[12px] leading-[1.6] text-neutral-500"
+          className="mt-12 flex flex-wrap items-start justify-between gap-x-12 gap-y-6 text-[12px] leading-[1.6] text-neutral-400"
         >
           {seller.length === 0 ? null : (
             <div className="flex max-w-[520px] flex-col gap-1">
@@ -272,7 +272,7 @@ export function FooterView({ content, settings, categories }: FooterViewProps): 
         </FooterRow>
         <FooterRow
           index={3}
-          className="relative z-20 flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-500"
+          className="relative z-20 flex flex-wrap items-center justify-between gap-[14px] pt-14 text-[12px] text-neutral-400"
         >
           <span>
             © <FooterYear /> {LAYOUT_COPY.brand}

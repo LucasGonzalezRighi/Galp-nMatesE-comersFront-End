@@ -6,11 +6,13 @@ export const LAYOUT_COPY = {
   homeLink: 'Galpón — inicio',
   /** Nombre accesible de la navegación principal. */
   mainNavigation: 'Principal',
+  /** Primer enlace de cada página (se ve con el foco): lleva al contenido, salteando el encabezado. */
+  skipToContent: 'Saltar al contenido',
   /** Nombre accesible del botón de búsqueda. */
   search: 'Buscar',
   /** Nombre accesible del botón que abre el menú del celular. */
   openMenu: 'Menú',
-  /** Nombre accesible del botón que cierra el menú del celular. */
+  /** Botón visible, dentro del menú del celular, que lo cierra. */
   closeMenu: 'Cerrar menú',
   /** Nombre del diálogo del menú del celular. */
   menuTitle: 'Menú',

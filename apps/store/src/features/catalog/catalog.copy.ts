@@ -14,6 +14,10 @@ export const CATALOG_COPY = {
   linesNav: 'Líneas de producto',
   /** Texto de ayuda del buscador. */
   searchPlaceholder: 'Buscar en la tienda…',
+  /** Nombre de la región de búsqueda de la barra (distinto del del buscador del encabezado). */
+  searchRegion: 'Buscar en el catálogo',
+  /** Título de la grilla, solo para lectores de pantalla (antes de los `h3` de las tarjetas). */
+  productsHeading: 'Productos',
   /** Nombre accesible del buscador. */
   searchLabel: 'Buscar en la tienda',
   /** Nombre accesible de la lista de orden. */

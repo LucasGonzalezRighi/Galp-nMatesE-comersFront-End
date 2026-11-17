@@ -1,7 +1,7 @@
 'use client'
 
 import type { MouseEvent, ReactNode } from 'react'
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, useRef } from 'react'
 import { useScrollTopOnStep } from '@/components/motion'
 import { cx } from '@/components/ui/cx'
 import { KIT_GROUP_ORDER, resolveLeather } from '@galpon/domain'
@@ -30,7 +30,8 @@ const CONTAINER = 'site-container'
  * Asistente "Armá tu kit" (spec 9.4 y 9.5): barra de pasos, opciones comprables del paso o
  * vista Resumen, y el panel con el cuero, los importes y los botones. El estado vive en
  * `useKitStore` (en memoria): los pasos se recorren libremente, elegir una pieza avanza solo a
- * los 420 ms y al cambiar de paso la página sube con scroll suave.
+ * los 420 ms y al cambiar de paso la página sube con scroll suave y el foco pasa al título del
+ * paso nuevo (WCAG 2.4.3).
  *
  * "Agregar kit al carrito" usa `addKitToCart` (respeta el tope de compra y abre el carrito a los
  * 850 ms) con el cuero preferido si el mate lo ofrece (si no, `resolveLeather` da el inicial, o
@@ -46,7 +47,8 @@ export function KitBuilder({ products, discountPercent }: KitBuilderProps): Reac
   const leather = useKitStore((state) => state.leather)
   // Las acciones del store no cambian nunca: se leen una vez.
   const { goToStep, pickPiece, setLeather, reset } = useKitStore.getState()
-  useScrollTopOnStep(step)
+  const stepTitle = useRef<HTMLHeadingElement>(null)
+  useScrollTopOnStep(step, stepTitle)
 
   const view = useMemo(
     () => buildKitView({ products, step, picks, discountPercent }),
@@ -78,6 +80,7 @@ export function KitBuilder({ products, discountPercent }: KitBuilderProps): Reac
         <div className="min-w-0 flex-[2_1_520px]">
           {view.group === null ? (
             <KitReview
+              headingRef={stepTitle}
               slots={view.slots}
               onSelect={(group) => {
                 goToStep(KIT_GROUP_ORDER.indexOf(group))
@@ -85,6 +88,7 @@ export function KitBuilder({ products, discountPercent }: KitBuilderProps): Reac
             />
           ) : (
             <KitOptions
+              headingRef={stepTitle}
               group={view.group}
               options={view.options}
               selectedId={picks[view.group]}

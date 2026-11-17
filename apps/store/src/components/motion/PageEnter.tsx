@@ -32,6 +32,10 @@ export interface PageEnterProps {
   children: ReactNode
   /** Clase del contenedor. */
   className?: string
+  /** `id` del contenedor (el destino de "Saltar al contenido" del layout). */
+  id?: string
+  /** `tabIndex` del contenedor: `-1` para que reciba el foco del salto sin entrar en el orden. */
+  tabIndex?: number
 }
 
 /**
@@ -45,7 +49,7 @@ export interface PageEnterProps {
  *
  * @param props - Ver {@link PageEnterProps}.
  */
-export function PageEnter({ children, className }: PageEnterProps): ReactNode {
+export function PageEnter({ children, className, id, tabIndex }: PageEnterProps): ReactNode {
   const reduced = usePrefersReducedMotion()
   const controls = useAnimationControls()
   const ref = useRef<HTMLDivElement>(null)
@@ -59,6 +63,8 @@ export function PageEnter({ children, className }: PageEnterProps): ReactNode {
       <RouteWatcher onChange={play} />
       <m.div
         ref={ref}
+        id={id}
+        tabIndex={tabIndex}
         className={className}
         initial={false}
         animate={controls}

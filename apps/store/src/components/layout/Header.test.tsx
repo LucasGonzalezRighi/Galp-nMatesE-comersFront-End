@@ -254,6 +254,23 @@ describe('menú del celular', () => {
     expect(dialog.parentElement).toHaveClass('z-[45]')
   })
 
+  it('tiene un botón visible "Cerrar menú" dentro del menú que lo cierra y devuelve el foco', async () => {
+    render(<Header />)
+    const toggle = screen.getByRole('button', { name: 'Menú' })
+    await userEvent.click(toggle)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menú' })
+    const nav = within(dialog).getByRole('navigation', { name: 'Menú' })
+    const close = within(nav).getByRole('button', { name: 'Cerrar menú' })
+    expect(close).toBeVisible()
+    await userEvent.click(close)
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(toggle).toHaveFocus()
+  })
+
   it('Escape lo cierra', async () => {
     render(<Header />)
     await userEvent.click(screen.getByRole('button', { name: 'Menú' }))

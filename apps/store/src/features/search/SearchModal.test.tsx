@@ -180,6 +180,17 @@ describe('SearchModal: contenido', () => {
     ).toHaveAttribute('href', '/tienda?q=BOMBILLON%20CURVO')
   })
 
+  it('su región de búsqueda se llama "Buscar en la tienda" y los resultados llevan el título "Productos"', async () => {
+    const { user } = renderSearch()
+    openSearch()
+
+    await user.type(await searchbox(), 'mate')
+
+    expect(screen.getByRole('search', { name: 'Buscar en la tienda' })).toBeInTheDocument()
+    await screen.findByRole('list', { name: 'Resultados' })
+    expect(screen.getByRole('heading', { level: 2, name: 'Productos' })).toHaveClass('sr-only')
+  })
+
   it('muestra hasta 6 resultados aunque haya más', async () => {
     const { user } = renderSearch()
     openSearch()

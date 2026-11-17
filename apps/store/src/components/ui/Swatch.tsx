@@ -22,11 +22,11 @@ const RING_CLASSES = {
   md: {
     selected:
       'scale-[1.08] shadow-[0_0_0_2px_var(--color-background),0_0_0_3px_var(--color-accent),0_0_18px_-2px_var(--color-accent)]',
-    idle: 'shadow-[0_0_0_1px_var(--color-neutral-700)]',
+    idle: 'shadow-[0_0_0_1px_var(--color-neutral-500)]',
   },
   sm: {
     selected: 'shadow-[0_0_0_2px_var(--color-surface),0_0_0_3px_var(--color-accent)]',
-    idle: 'shadow-[0_0_0_1px_var(--color-neutral-700)]',
+    idle: 'shadow-[0_0_0_1px_var(--color-neutral-500)]',
   },
 } as const
 

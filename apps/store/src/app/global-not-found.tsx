@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { SITE_NAME } from '@/lib/seo'
 import StoreRootLayout from './(tienda)/layout'
 import NotFound from './(tienda)/not-found'
 import { SITE_METADATA, SITE_VIEWPORT } from './site-shell'
 
-/** Título, descripción y `metadataBase` comunes (ver {@link SITE_METADATA}). */
-export const metadata: Metadata = SITE_METADATA
+/**
+ * Descripción y `metadataBase` comunes (ver {@link SITE_METADATA}) y el título "Página no
+ * encontrada · Galpón Mates" (WCAG 2.4.2): `absolute`, porque la plantilla de un root layout no se
+ * aplica a su propio título.
+ */
+export const metadata: Metadata = {
+  ...SITE_METADATA,
+  title: { absolute: `Página no encontrada · ${SITE_NAME}` },
+}
 
 /** Color de la barra del navegador en el celular (ver {@link SITE_VIEWPORT}). */
 export const viewport: Viewport = SITE_VIEWPORT

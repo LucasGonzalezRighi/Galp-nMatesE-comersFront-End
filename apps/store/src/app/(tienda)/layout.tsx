@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import { Footer, Header } from '@/components/layout'
+import { LAYOUT_COPY } from '@/components/layout/layout.copy'
 import { PageEnter } from '@/components/motion'
 import { cx } from '@/components/ui/cx'
 import { CartDrawer, CartHydrator } from '@/features/cart'
@@ -26,7 +27,7 @@ interface RootLayoutProps {
 
 /**
  * Root layout de la tienda, el grupo `(tienda)` (spec 9.5): idioma, tipografía, proveedores
- * del cliente, encabezado, la página (que entra con `PageEnter`), pie (con el "Botón de
+ * del cliente, "Saltar al contenido", encabezado, la página (que entra con `PageEnter`), pie (con el "Botón de
  * arrepentimiento": sin barra arriba desde el 2026-11-03, Ruling IC-1), panel del carrito, avisos
  * e hidratación del carrito. Todo va dentro de `PageTransitionProvider` (Ruling MR-29): la intro
  * del inicio y el telón que baja al cambiar de sección desde el menú y se abre como un libro.
@@ -43,8 +44,17 @@ export default function RootLayout({ children }: RootLayoutProps): ReactNode {
             <div
               className={cx('relative min-h-screen overflow-x-clip text-pretty', PAGE_BACKGROUND)}
             >
+              {/* Primer enlace de la página: se ve con el foco y saltea el encabezado (WCAG 2.4.1). */}
+              <a
+                href="#contenido"
+                className="bg-surface text-foreground sr-only z-[60] rounded-md px-4 py-2 shadow-md focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+              >
+                {LAYOUT_COPY.skipToContent}
+              </a>
               <Header />
-              <PageEnter>{children}</PageEnter>
+              <PageEnter id="contenido" tabIndex={-1} className="outline-none">
+                {children}
+              </PageEnter>
               <Footer />
             </div>
             <CartDrawer />

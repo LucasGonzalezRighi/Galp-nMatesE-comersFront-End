@@ -83,6 +83,13 @@ describe('ReviewForm', () => {
     expect(document.querySelector('input[type="checkbox"]')).toBeNull()
   })
 
+  it('las estrellas sin elegir van en neutral-500 (3:1 sobre el fondo, 1.4.11)', () => {
+    renderForm()
+
+    expect(starLabel('5 estrellas')).toHaveClass('text-neutral-500')
+    expect(starLabel('5 estrellas')).not.toHaveClass('text-neutral-700')
+  })
+
   it('las estrellas muestran su palabra al pasar el mouse y al elegirlas', async () => {
     const user = renderForm()
 

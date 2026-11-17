@@ -62,6 +62,9 @@ function ContactFormBody({ reason, reasonField }: ContactFormProps): ReactNode {
   const [formError, setFormError] = useState<string | null>(null)
   const [sender, setSender] = useState<Sender | null>(null)
   const sentTitle = useRef<HTMLHeadingElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+  // Cuenta los envíos con errores de validación: cada uno lleva el foco al primer campo inválido.
+  const [invalidSubmits, setInvalidSubmits] = useState(0)
   const mutation = useMutation({
     mutationFn: (input: ContactSubmission) => sendContactMessage(api, input),
   })
@@ -71,6 +74,12 @@ function ContactFormBody({ reason, reasonField }: ContactFormProps): ReactNode {
     if (sender !== null) sentTitle.current?.focus()
   }, [sender])
 
+  useEffect(() => {
+    // Enviado con errores: el foco va al primer campo marcado (como en el checkout y la cuenta).
+    if (invalidSubmits === 0) return
+    form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+  }, [invalidSubmits])
+
   const update = (field: keyof Values, value: string): void => {
     setValues((current) => ({ ...current, [field]: value }))
   }
@@ -79,6 +88,7 @@ function ContactFormBody({ reason, reasonField }: ContactFormProps): ReactNode {
     const parsed = contactSchema.safeParse({ ...values, reason, website: undefined })
     if (!parsed.success) {
       setFieldErrors(toFieldErrors(parsed.error))
+      setInvalidSubmits((count) => count + 1)
       setFormError(null)
       return
     }
@@ -136,6 +146,7 @@ function ContactFormBody({ reason, reasonField }: ContactFormProps): ReactNode {
 
   return (
     <form
+      ref={form}
       noValidate
       aria-busy={mutation.isPending}
       className={CARD}

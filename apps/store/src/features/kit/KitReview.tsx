@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, ReactNode, Ref } from 'react'
 import type { ProductGroup } from '@galpon/domain'
 import { Reveal } from '@/components/motion'
 import { Price } from '@/components/ui'
@@ -13,6 +13,8 @@ export interface KitReviewProps {
   slots: readonly KitSlotView[]
   /** Se llama al tocar una pieza: lleva al paso de su grupo para cambiarla. */
   onSelect: (group: ProductGroup) => void
+  /** Referencia al título "Tu kit" (lleva `tabIndex={-1}`): recibe el foco al llegar al resumen. */
+  headingRef?: Ref<HTMLHeadingElement>
 }
 
 /** Línea divisora que se desvanece en los extremos, bajo cada renglón (la del diseño). */
@@ -30,11 +32,15 @@ const ROW_STAGGER_MS = 100
  *
  * @param props - Ver {@link KitReviewProps}.
  */
-export function KitReview({ slots, onSelect }: KitReviewProps): ReactNode {
+export function KitReview({ slots, onSelect, headingRef }: KitReviewProps): ReactNode {
   return (
     <div>
       <div className="mb-5 flex flex-col gap-[6px]">
-        <h2 className="text-[28px] leading-[1.12] font-medium tracking-[-0.02em]">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-[28px] leading-[1.12] font-medium tracking-[-0.02em] outline-none"
+        >
           {KIT_COPY.reviewTitle}
         </h2>
         <p className="text-[14px] text-neutral-400">{KIT_COPY.reviewHint}</p>

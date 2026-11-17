@@ -24,7 +24,7 @@ import { ButtonFx } from '../../components/ui/ButtonFx'
 import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
 import { addProductToCart, clickOrigin, useCart } from '../cart'
-import { PRODUCT_CARD_COPY } from './product-card.copy'
+import { addToCartLabel, PRODUCT_CARD_COPY } from './product-card.copy'
 
 /** Cuántas tarjetas se escalonan al aparecer: de la novena en adelante entran juntas. */
 const MAX_STAGGER_INDEX = 8
@@ -315,7 +315,7 @@ export function ProductCard({
                 </div>
                 <IconButton
                   variant="primary"
-                  aria-label={PRODUCT_CARD_COPY.addToCart}
+                  aria-label={addToCartLabel(product.name)}
                   title={atCartLimit ? PRODUCT_CARD_COPY.cartLimit : undefined}
                   disabled={cannotBuy}
                   className={cx('flex-none rounded-full!', !cannotBuy && buttonFxClassName('gray'))}

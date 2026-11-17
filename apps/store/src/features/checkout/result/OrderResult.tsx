@@ -85,25 +85,25 @@ function readServerOrderNumber(): undefined {
  */
 export function OrderResultLoading(): ReactNode {
   return (
-    <div className={SHELL} aria-busy="true">
+    <main className={SHELL} aria-busy="true">
       <p className="m-0 flex items-center gap-3 text-[15px] text-neutral-300">
         <Spinner />
         {RESULT_COPY.loading}
       </p>
-    </div>
+    </main>
   )
 }
 
 /** "No encontramos ese pedido", sin decir si existe. */
 function OrderNotFound(): ReactNode {
   return (
-    <div className={SHELL}>
+    <main className={SHELL}>
       <h1 className={TITLE}>{RESULT_COPY.notFound.title}</h1>
       <p className={LEAD}>{RESULT_COPY.notFound.text}</p>
       <Button asChild variant="secondary">
         <Link href={asRoute('/tienda')}>{RESULT_COPY.notFound.shop}</Link>
       </Button>
-    </div>
+    </main>
   )
 }
 
@@ -474,19 +474,19 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
     if (!query.isError) return <OrderResultLoading />
     if (isApiError(query.error) && NOT_FOUND_KINDS.has(query.error.kind)) return <OrderNotFound />
     return (
-      <div className={SHELL}>
+      <main className={SHELL}>
         <p role="alert" className={LEAD}>
           {RESULT_COPY.loadError}
         </p>
         <Button variant="secondary" loading={query.isFetching} onClick={refresh}>
           {RESULT_COPY.retry}
         </Button>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className={SHELL}>
+    <main className={SHELL}>
       {/* Región siempre montada: los paneles de cada estado se desmontan al pasar al siguiente, así
           que el cambio (por ejemplo de pendiente a aprobado) se anuncia desde acá. */}
       <p role="status" className="sr-only">
@@ -524,7 +524,7 @@ function KnownOrder({ number, apiMode, variant }: KnownOrderProps): ReactNode {
       ) : (
         <OrderSummary order={order} />
       )}
-    </div>
+    </main>
   )
 }
 

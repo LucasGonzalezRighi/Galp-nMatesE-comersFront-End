@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { CheckIcon } from '@phosphor-icons/react/Check'
 import type { ProductGroup } from '@galpon/domain'
 import { GridReplay, Tilt } from '@/components/motion'
@@ -19,6 +19,8 @@ export interface KitOptionsProps {
   selectedId: string | undefined
   /** Se llama al elegir una opción. */
   onPick: (product: KitProduct) => void
+  /** Referencia al título del paso (lleva `tabIndex={-1}`): recibe el foco al cambiar de paso. */
+  headingRef?: Ref<HTMLHeadingElement>
 }
 
 /** Anillo de la opción elegida: contorno cobre y un resplandor. */
@@ -37,11 +39,21 @@ const OPTION_IMAGE_SIZES = '(min-width: 1024px) 180px, 45vw'
  *
  * @param props - Ver {@link KitOptionsProps}.
  */
-export function KitOptions({ group, options, selectedId, onPick }: KitOptionsProps): ReactNode {
+export function KitOptions({
+  group,
+  options,
+  selectedId,
+  onPick,
+  headingRef,
+}: KitOptionsProps): ReactNode {
   return (
     <div>
       <div className="mb-5 flex flex-col gap-[6px]">
-        <h2 className="text-[28px] leading-[1.12] font-medium tracking-[-0.02em]">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-[28px] leading-[1.12] font-medium tracking-[-0.02em] outline-none"
+        >
           {stepTitle(group)}
         </h2>
         <p className="text-[14px] text-neutral-400">{stepHint(group, options.length)}</p>

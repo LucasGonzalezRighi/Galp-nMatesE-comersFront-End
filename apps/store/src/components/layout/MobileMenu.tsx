@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePageTransition } from '../../features/intro'
 import { asRoute } from '../../lib/routes'
 import { Reveal } from '../motion'
-import { Dialog } from '../ui'
+import { Button, Dialog } from '../ui'
 import { LAYOUT_COPY } from './layout.copy'
 import { NAV_ITEMS } from './nav'
 
@@ -16,7 +16,7 @@ const STAGGER_MS = 50
 export interface MobileMenuProps {
   /** Si el menú está abierto. */
   open: boolean
-  /** Se llama al pedir el cierre (Escape, tocar un link o tocar fuera). */
+  /** Se llama al pedir el cierre (Escape, "Cerrar menú", tocar un link o tocar fuera). */
   onClose: () => void
   /**
    * Dónde empieza el panel, en píxeles desde el borde superior de la ventana: el borde inferior
@@ -29,7 +29,8 @@ export interface MobileMenuProps {
  * Menú del celular (por debajo de 1040 px, spec 9.5): una capa que cubre la pantalla desde el
  * borde inferior del encabezado, con los seis links en grande y aparición escalonada de 50 ms. El
  * encabezado queda por encima y a la vista (el diálogo `full` va debajo de él). Es un diálogo
- * accesible: foco atrapado, Escape lo cierra y se bloquea el scroll de la página. Tocar un link lo
+ * accesible: foco atrapado, Escape o el botón "Cerrar menú" lo cierran y se bloquea el scroll de
+ * la página. Tocar un link lo
  * cierra y, con el proveedor de la transición, baja el telón antes de navegar (Ruling MR-29).
  *
  * @param props - Ver {@link MobileMenuProps}.
@@ -68,6 +69,10 @@ export function MobileMenu({ open, onClose, top }: MobileMenuProps): ReactNode {
             </Reveal>
           ))}
         </ul>
+        {/* Cierre visible dentro del menú (además de Escape y del botón del encabezado). */}
+        <Button variant="secondary" className="mt-8 self-start" onClick={onClose}>
+          {LAYOUT_COPY.closeMenu}
+        </Button>
       </nav>
     </Dialog>
   )

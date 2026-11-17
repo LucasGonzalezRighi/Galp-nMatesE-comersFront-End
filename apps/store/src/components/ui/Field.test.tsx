@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { CONTROL_CLASS_NAME } from './control-styles'
 import { Field } from './Field'
 import { Input } from './Input'
 
@@ -54,5 +55,12 @@ describe('Field', () => {
     )
 
     expect(screen.getByLabelText('Correo')).toHaveAttribute('id', 'correo')
+  })
+})
+
+describe('CONTROL_CLASS_NAME', () => {
+  it('el borde de los campos va en neutral-600, 3:1 sobre el fondo y sobre surface (1.4.11)', () => {
+    expect(CONTROL_CLASS_NAME.split(' ')).toContain('border-neutral-600')
+    expect(CONTROL_CLASS_NAME.split(' ')).not.toContain('border-divider')
   })
 })

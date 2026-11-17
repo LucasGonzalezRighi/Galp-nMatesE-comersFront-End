@@ -172,7 +172,7 @@ export function ReviewForm({ slug, productName, onClose }: ReviewFormProps): Rea
                     key={value}
                     className={cx(
                       'ease-spring has-[input:focus-visible]:outline-accent cursor-pointer rounded-sm p-1 transition-[transform,color] duration-[250ms] has-[input:focus-visible]:outline-2 motion-reduce:transition-none',
-                      shown >= value ? 'text-accent' : 'text-neutral-700',
+                      shown >= value ? 'text-accent' : 'text-neutral-500',
                       hovered === value ? 'scale-[1.2]' : 'scale-100',
                     )}
                     onMouseEnter={() => {

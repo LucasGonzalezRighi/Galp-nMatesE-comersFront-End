@@ -56,6 +56,9 @@ function WithdrawalFormBody({ leading }: WithdrawalFormProps): ReactNode {
   const [formError, setFormError] = useState<string | null>(null)
   const [receipt, setReceipt] = useState<WithdrawalReceipt | null>(null)
   const receiptTitle = useRef<HTMLHeadingElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+  // Cuenta los envíos con errores de validación: cada uno lleva el foco al primer campo inválido.
+  const [invalidSubmits, setInvalidSubmits] = useState(0)
   const mutation = useMutation({
     mutationFn: (input: WithdrawalSubmission) => requestWithdrawal(api, input),
   })
@@ -65,6 +68,12 @@ function WithdrawalFormBody({ leading }: WithdrawalFormProps): ReactNode {
     if (receipt !== null) receiptTitle.current?.focus()
   }, [receipt])
 
+  useEffect(() => {
+    // Enviado con errores: el foco va al primer campo marcado (como en el checkout y la cuenta).
+    if (invalidSubmits === 0) return
+    form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+  }, [invalidSubmits])
+
   const update = (field: keyof Values, value: string): void => {
     setValues((current) => ({ ...current, [field]: value }))
   }
@@ -73,6 +82,7 @@ function WithdrawalFormBody({ leading }: WithdrawalFormProps): ReactNode {
     const parsed = withdrawalSchema.safeParse({ ...values, website: undefined })
     if (!parsed.success) {
       setFieldErrors(toFieldErrors(parsed.error))
+      setInvalidSubmits((count) => count + 1)
       setFormError(null)
       return
     }
@@ -140,6 +150,7 @@ function WithdrawalFormBody({ leading }: WithdrawalFormProps): ReactNode {
 
   return (
     <form
+      ref={form}
       noValidate
       aria-busy={mutation.isPending}
       className={CARD}

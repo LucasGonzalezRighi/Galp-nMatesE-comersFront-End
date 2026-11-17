@@ -134,6 +134,7 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
   const shipping = useCheckoutStore((state) => state.shipping)
   const [draftMethod, setDraftMethod] = useState<ShippingMethod | null>(null)
   const resumed = useRef(false)
+  const stepTitle = useRef<HTMLHeadingElement>(null)
 
   const options = useMemo(
     () => shippingOptions.filter((option) => option.enabled),
@@ -147,7 +148,7 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
   useEffect(() => {
     void syncCart()
   }, [syncCart])
-  useScrollTopOnStep(step)
+  useScrollTopOnStep(step, stepTitle)
 
   useEffect(() => {
     if (resumed.current || !ready || !cartReady || pedido === null) return
@@ -206,6 +207,10 @@ export function Checkout({ apiMode, mpPublicKey, shippingOptions }: CheckoutProp
           </Reveal>
         </div>
         <CheckoutSteps step={step} onSelect={goToStep} />
+        {/* Título del paso para lectores: recibe el foco al cambiar de paso (WCAG 2.4.3). */}
+        <h2 ref={stepTitle} tabIndex={-1} className="sr-only">
+          {CHECKOUT_COPY.steps[step]}
+        </h2>
         {/* Cada paso entra con su propio Reveal (`key`), como el `data-reveal="up"` del diseño. */}
         <Reveal key={step} kind="up" delay={STEP_REVEAL_DELAY_MS} duration={STEP_REVEAL_MS}>
           {step === 0 ? (

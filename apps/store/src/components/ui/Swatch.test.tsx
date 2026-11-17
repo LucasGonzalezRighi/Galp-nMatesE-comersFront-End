@@ -33,6 +33,14 @@ describe('Swatch', () => {
     expect(onClick).toHaveBeenCalledOnce()
   })
 
+  it('sin elegir, el anillo va en neutral-500 (3:1 sobre el fondo, 1.4.11)', () => {
+    render(<Swatch leather="Negro" selected={false} />)
+
+    expect(screen.getByRole('button', { name: 'Negro' }).className).toContain(
+      'shadow-[0_0_0_1px_var(--color-neutral-500)]',
+    )
+  })
+
   it('rechaza un cuero que no existe', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
