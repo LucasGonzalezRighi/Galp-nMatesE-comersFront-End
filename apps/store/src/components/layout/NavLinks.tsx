@@ -23,9 +23,10 @@ export interface NavLinksListProps {
 
 /**
  * Los seis links del encabezado de escritorio, con el activo subrayado y `aria-current="page"`.
- * Al pasar el mouse (o con el foco del teclado) cada link muestra la píldora y una línea de 1 px que
- * crece desde la izquierda en 240 ms; el activo la tiene fija. No lee la ruta: recibe cuál está
- * activo. Con el proveedor de la transición, el clic baja el telón antes de navegar (Ruling MR-29).
+ * Al pasar el mouse cada link muestra la píldora y sube 2 px, sin subrayar (Ruling AI-5); con el
+ * foco del teclado, además, una línea de 1 px que crece desde la izquierda en 240 ms; el activo la
+ * tiene fija. No lee la ruta: recibe cuál está activo. Con el proveedor de la transición, el clic
+ * baja el telón antes de navegar (Ruling MR-29).
  *
  * @param props - Ver {@link NavLinksListProps}.
  */
@@ -54,9 +55,7 @@ export function NavLinksList({ activeKey }: NavLinksListProps): ReactNode {
                 aria-hidden="true"
                 className={cx(
                   'bg-accent ease-main absolute right-3 bottom-[2px] left-3 h-px origin-left transition-[scale] duration-240 motion-reduce:transition-none',
-                  active
-                    ? 'scale-x-100'
-                    : 'scale-x-0 group-hover/nav:scale-x-100 group-focus-visible/nav:scale-x-100',
+                  active ? 'scale-x-100' : 'scale-x-0 group-focus-visible/nav:scale-x-100',
                 )}
               />
             </Link>

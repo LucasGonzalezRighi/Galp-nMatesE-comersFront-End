@@ -65,6 +65,38 @@ test.describe('tienda: navegación', () => {
     ).toBeVisible()
   })
 
+  test('en el menú de escritorio el hover no subraya: la línea queda para el activo y el teclado (Ruling AI-5)', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'En el celular el menú es otro (sin subrayado).')
+    await gotoStore(page, '/tienda')
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    /** El ancho de la línea de un link, en píxeles (0 si no está). */
+    const underlineWidth = (name: string): Promise<number> =>
+      nav
+        .getByRole('link', { name })
+        .locator('[aria-hidden="true"]')
+        .evaluate((line) => line.getBoundingClientRect().width)
+    const about = nav.getByRole('link', { name: 'Nosotros' })
+    await about.hover()
+    // La píldora de fondo sí aparece con el mouse encima.
+    await expect
+      .poll(() => about.evaluate((link) => getComputedStyle(link).backgroundColor))
+      .not.toBe('rgba(0, 0, 0, 0)')
+    // Pasada la transición (240 ms), la línea sigue sin crecer.
+    await page.waitForTimeout(400)
+    expect(await underlineWidth('Nosotros')).toBe(0)
+    expect(await underlineWidth('Tienda')).toBeGreaterThan(10)
+    // Con el teclado, el link enfocado sí se subraya.
+    await page.mouse.move(0, 400)
+    await about.focus()
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Tab')
+    await expect(about).toBeFocused()
+    await expect.poll(() => underlineWidth('Nosotros')).toBeGreaterThan(10)
+  })
+
   test('el link del botón de arrepentimiento va en el pie y lleva a la página (Ruling IC-1)', async ({
     page,
   }) => {

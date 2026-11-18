@@ -127,21 +127,26 @@ describe('Header', () => {
     expect(current.map((link) => link.textContent)).toEqual([label])
   })
 
-  it('cada link subraya al pasar el mouse (240 ms, desde la izquierda); el activo, fijo', () => {
+  it('el hover no subraya: la línea queda para el activo (fija) y para el foco del teclado (Ruling AI-5)', () => {
     route.pathname = '/tienda'
 
     render(<Header />)
 
     const nav = screen.getByRole('navigation', { name: 'Principal' })
+    const link = (name: string): HTMLElement => within(nav).getByRole('link', { name })
     const underline = (name: string): Element | null =>
-      within(nav).getByRole('link', { name }).querySelector('[aria-hidden="true"]')
+      link(name).querySelector('[aria-hidden="true"]')
     expect(underline('Inicio')).toHaveClass(
       'scale-x-0',
       'origin-left',
       'duration-240',
-      'group-hover/nav:scale-x-100',
       'group-focus-visible/nav:scale-x-100',
     )
+    for (const element of nav.querySelectorAll('*')) {
+      expect(element.className).not.toMatch(/hover[^ ]*scale-x-100/)
+    }
+    // El hover conserva la píldora de fondo y la subida.
+    expect(link('Inicio')).toHaveClass('hover:bg-accent/16', 'hover:-translate-y-[2px]')
     expect(underline('Tienda')).toHaveClass('scale-x-100')
     expect(underline('Tienda')).not.toHaveClass('scale-x-0')
   })
