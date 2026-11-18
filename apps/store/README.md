@@ -109,6 +109,7 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 | `MOCK_ADMIN_PASSWORD`               | opcional                | se ignora                        |
 | `MOCK_CONTROL_SECRET`               | los E2E                 | se ignora                        |
 | `TRUSTED_CLIENT_IP_HEADER`          | opcional                | la cabecera con la IP real       |
+| `API_PROXY_SECRET`                  | se ignora               | en Vercel, el secreto del back   |
 | `ROUTE_CACHE_MAX_MB`                | opcional (256)          | opcional (256)                   |
 
 ## Pasar a vivo
@@ -130,9 +131,18 @@ El backend limita por IP el login, el registro, los pedidos, los formularios y l
 - En el backend, `TRUST_PROXY` tiene que listar la IP (o la red) del servidor de la tienda y la de cualquier proxy entre los dos: así Express toma la IP del cliente de `X-Forwarded-For` y los límites cuentan por cliente (ver "Proxies de confianza" en el README del back). Sin `TRUSTED_CLIENT_IP_HEADER` en la tienda, los pedidos llegan sin IP del cliente y el back los cuenta como de la tienda.
 - Las lecturas de la cuenta que hace el servidor de la tienda por cada visitante (`getServerApiForRequest` de `lib/api.server.ts`: `/cuenta`, sus pedidos y sus direcciones) también mandan `X-Forwarded-For` con la IP de `TRUSTED_CLIENT_IP_HEADER` (`lib/client-ip.ts`, el mismo criterio que el proxy) y nunca las cabeceras de reenvío del navegador: si no, el back las contaría todas como de la tienda y alguien con una cookie de sesión inventada agotaría el límite de las páginas de cuenta de todos. Las lecturas públicas con caché (`getServerApi`) no la llevan: son de toda la tienda y el back no las limita cuando no conoce la IP del cliente.
 
-## Producción con Docker
+## Producción en Vercel
 
-`Dockerfile` y `docker-entrypoint.sh` arman la imagen de la tienda que usa el despliegue del back (`backend/deploy/docker-compose.yml`; el paso a paso está en `backend/docs/DESPLIEGUE.md`). El contexto es la raíz del repo del front.
+Es el camino elegido (el paso a paso, pantalla por pantalla, está en `backend/docs/DESPLIEGUE.md`): un proyecto de Vercel con **Root Directory** `apps/store`, que detecta Next.js solo. El back va en Render.
+
+- Variables: `API_MODE=live`, `NEXT_PUBLIC_API_MODE=live`, `API_BASE_URL` (la dirección del back en Render), `NEXT_PUBLIC_SITE_URL`, `REVALIDATE_SECRET`, `NEXT_PUBLIC_MP_PUBLIC_KEY`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `TRUSTED_CLIENT_IP_HEADER=x-real-ip` y `API_PROXY_SECRET`.
+- `next build` lee el catálogo del back: el back tiene que estar levantado al desplegar.
+- **La IP real del cliente.** Vercel pisa `x-real-ip` y `x-forwarded-for` con la IP del visitante, pero el back no puede confiar en la tienda por su dirección (las IP de salida de Vercel no son fijas) y entre los dos hay más saltos. Con `API_PROXY_SECRET` (el `TRUSTED_PROXY_SECRET` del back), `src/proxy.ts` y `lib/api.server.ts` mandan `x-galpon-proxy-secret` y la IP en `x-galpon-client-ip` (`lib/client-ip.ts`): el back solo le cree a quien trae el secreto. Las lecturas propias de la tienda mandan el secreto sin IP y el back no las cuenta en los límites por cliente. El proxy borra esas cabeceras si las manda el navegador.
+- **La caché de páginas.** En Vercel las páginas generadas van a la caché de la plataforma, no a `.next/server/route-cache`: el tope de la pista 13 no arranca (`VERCEL=1`).
+
+## Producción con Docker (camino alternativo)
+
+No es el camino elegido: queda para un servidor propio. `Dockerfile` y `docker-entrypoint.sh` arman la imagen de la tienda que usa el compose del back (`backend/deploy/docker-compose.yml`; el paso a paso está en `backend/docs/DESPLIEGUE-SERVIDOR-PROPIO.md`). El contexto es la raíz del repo del front.
 
 - La imagen trae el código y las dependencias, **sin compilar**: `next build` lee el catálogo del back y deja fijos el _rewrite_ de `/api/v1`, la CSP y las variables `NEXT_PUBLIC_*`, así que la tienda se compila dentro del contenedor la primera vez que arranca (con el back ya respondiendo y el entorno real) y deja la marca `.next/.galpon-compilada`. Los reinicios del mismo contenedor no vuelven a compilar; una imagen nueva sí.
 - El compose le pasa `API_MODE=live`, `API_BASE_URL=http://api:3001` (la red interna de Docker), `REVALIDATE_SECRET`, `NEXT_PUBLIC_MP_PUBLIC_KEY`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_SITE_URL` y `TRUSTED_CLIENT_IP_HEADER=x-real-ip` (Caddy, el proxy de entrada, escribe ahí la IP real de cada visitante).
@@ -178,7 +188,7 @@ En los E2E, `gotoStore` (de `e2e/support/store.ts`) salta la intro al abrir el i
 - **Proxy** (`src/proxy.ts`): limpia las cabeceras de reenvío en `/api/v1/*` (ver "IP del cliente para los límites del backend"), reescribe las fichas y las líneas con un slug que no tiene la forma de uno del contrato a la 404 de su sección (`/producto/_` o `/tienda/_`: una sola página para todas, así no se genera ni se guarda una por cada dirección inventada) y pone `Cache-Control: no-store` en las páginas de `/cuenta`.
 - **Cambiar de sesión** (`resetAccountState`: ingresar, crear la cuenta, cambiar la contraseña o cerrar sesión) olvida el checkout y el pedido en curso de la pestaña (`galpon.checkout` y `galpon.order` de `sessionStorage`); al cerrar sesión, además, se refresca el router y se vuelve al inicio con reemplazo.
 - **Webhook de revalidación:** cuerpo de hasta 8 kB y etiquetas de hasta 100 caracteres.
-- **Tope de la caché de páginas en disco** (`src/lib/route-cache-limit.ts`, pista 13 de la auditoría): `next start` guarda en `.next/server/route-cache` cada página que genera, también la 404 de una ficha o de una línea con un slug de forma válida que no existe (6 archivos y unos 77 kB por dirección), y Next no le pone tope a esa carpeta. Al arrancar y cada minuto (`instrumentation.ts`, solo en `next start`) la tienda la mide y, si pasó `ROUTE_CACHE_MAX_MB` (256 MB por omisión), borra páginas enteras, las más viejas primero, hasta el 75 % del tope, y lo avisa en el log. Borrar una página es inocuo: la próxima visita la vuelve a generar. No se usó `experimental.isrFlushToDisk: false` (deja al optimizador de imágenes sin su caché de disco) ni `dynamicParams = false` (cada producto nuevo pediría recompilar).
+- **Tope de la caché de páginas en disco** (`src/lib/route-cache-limit.ts`, pista 13 de la auditoría): `next start` guarda en `.next/server/route-cache` cada página que genera, también la 404 de una ficha o de una línea con un slug de forma válida que no existe (6 archivos y unos 77 kB por dirección), y Next no le pone tope a esa carpeta. Al arrancar y cada minuto (`instrumentation.ts`, solo en `next start`) la tienda la mide y, si pasó `ROUTE_CACHE_MAX_MB` (256 MB por omisión), borra páginas enteras, las más viejas primero, hasta el 75 % del tope, y lo avisa en el log. Borrar una página es inocuo: la próxima visita la vuelve a generar. En Vercel no arranca (las páginas van a la caché de la plataforma). No se usó `experimental.isrFlushToDisk: false` (deja al optimizador de imágenes sin su caché de disco) ni `dynamicParams = false` (cada producto nuevo pediría recompilar).
 - **CSP y Data Fiscal** (LA-5): `img-src` suma solo `https://www.afip.gob.ar` (el logo de ARCA). Toda fuente de la política tiene que estar en `CSP_ALLOWED_SOURCES` y ninguna puede coincidir con `TRACKER_HOST_PATTERN` (`src/lib/csp.test.ts`): es la prueba de LS-9, que falla si alguien suma un dominio de analítica o publicidad sin un banner de consentimiento.
 
 ## Estructura

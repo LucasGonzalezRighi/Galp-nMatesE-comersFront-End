@@ -123,9 +123,20 @@ Cada app y cada paquete tiene su propio `README.md` con lo que hace y cómo se u
 
 Se hace cambiando variables de entorno y volviendo a compilar, sin tocar código: `API_MODE` y `NEXT_PUBLIC_API_MODE` (tienda) y `VITE_API_MODE` (dashboard) pasan a `live`, y se completan `API_BASE_URL`, `VITE_API_BASE_URL`, `NEXT_PUBLIC_MP_PUBLIC_KEY` y `REVALIDATE_SECRET`. Una configuración incoherente hace fallar el build de la tienda con un mensaje en español; el dashboard no falla al compilar: muestra el motivo en pantalla al abrirse. La lista completa de variables y el procedimiento están en la [sección 13.4 del diseño](docs/superpowers/specs/2026-10-19-galpon-frontend-design.md#134-pasar-a-vivo) y en los README de la [tienda](apps/store/README.md) y del [dashboard](apps/admin/README.md).
 
-## Producción (Docker)
+## Producción (Vercel)
 
-La tienda y el dashboard se publican con Docker junto con el back, en un solo servidor: el compose, el proxy con HTTPS y la guía paso a paso viven en el repo del back (`backend/deploy/` y `backend/docs/DESPLIEGUE.md`), que espera este repo clonado al lado, en `../frontend`. De acá salen las dos imágenes:
+La tienda y el dashboard se publican en **Vercel**, como dos proyectos de este mismo repo, y el back en Render. La guía paso a paso, pantalla por pantalla y variable por variable, está en el repo del back: `backend/docs/DESPLIEGUE.md`.
+
+| Proyecto de Vercel   | Root Directory | Qué es                                                                                                                                                                                                   |
+| -------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `galpon-mates`       | `apps/store`   | La tienda (Next.js). Ver "Producción en Vercel" en el [README de la tienda](apps/store/README.md).                                                                                                       |
+| `galpon-mates-admin` | `apps/admin`   | El dashboard (Vite), con [`apps/admin/vercel.json`](apps/admin/vercel.json): cabeceras de seguridad, SPA y el reenvío de `/api/v1/admin/*` al back. Ver el [README del dashboard](apps/admin/README.md). |
+
+El navegador nunca habla directo con el back: la tienda y el dashboard le reenvían los pedidos desde Vercel. Por eso anda con las direcciones gratis (`vercel.app` y `onrender.com`), sin dominio propio.
+
+### Camino alternativo: Docker en un servidor propio
+
+No es el camino elegido. La tienda y el dashboard también se pueden publicar con Docker junto con el back, en un solo servidor: el compose, el proxy con HTTPS y su guía viven en el repo del back (`backend/deploy/` y `backend/docs/DESPLIEGUE-SERVIDOR-PROPIO.md`), que espera este repo clonado al lado, en `../frontend`. De acá salen las dos imágenes:
 
 - [`apps/store/Dockerfile`](apps/store/Dockerfile): la tienda. Se compila dentro del contenedor la primera vez que arranca, con el back ya levantado (ver el [README de la tienda](apps/store/README.md)).
 - [`apps/admin/Dockerfile`](apps/admin/Dockerfile): el dashboard compilado, servido como archivos estáticos con sus cabeceras de seguridad (ver el [README del dashboard](apps/admin/README.md)).
