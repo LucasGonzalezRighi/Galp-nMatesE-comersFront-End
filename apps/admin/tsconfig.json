@@ -1,5 +1,5 @@
 {
-  "extends": "@galpon/config/tsconfig.react.json",
+  "extends": "../../packages/config/tsconfig.react.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "types": ["vite/client", "node"]
