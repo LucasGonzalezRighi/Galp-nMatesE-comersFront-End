@@ -79,24 +79,29 @@ interface SceneLinkProps {
   tone: Tone
 }
 
-/** Botón de una escena: píldora con flecha que se corre hacia el mouse. */
+/**
+ * Botón de una escena: píldora con flecha que se corre hacia el mouse, centrada en el ancho de la
+ * columna (Ruling AI-4).
+ */
 function SceneLink({ href, children, tone }: SceneLinkProps): ReactNode {
   return (
-    <Magnetic>
-      <Button
-        asChild
-        variant={tone === 'dark' ? 'primary' : 'secondary'}
-        size="lg"
-        className={
-          tone === 'dark' ? HOME_PILL_BUTTON : 'border-background! text-background! rounded-full!'
-        }
-      >
-        <Link href={asRoute(href)}>
-          {children}
-          <ArrowRightIcon size={HOME_ARROW_SIZE} aria-hidden="true" />
-        </Link>
-      </Button>
-    </Magnetic>
+    <div className="flex justify-center">
+      <Magnetic>
+        <Button
+          asChild
+          variant={tone === 'dark' ? 'primary' : 'secondary'}
+          size="lg"
+          className={
+            tone === 'dark' ? HOME_PILL_BUTTON : 'border-background! text-background! rounded-full!'
+          }
+        >
+          <Link href={asRoute(href)}>
+            {children}
+            <ArrowRightIcon size={HOME_ARROW_SIZE} aria-hidden="true" />
+          </Link>
+        </Button>
+      </Magnetic>
+    </div>
   )
 }
 
@@ -113,13 +118,16 @@ export interface SceneBodyProps {
 /**
  * El contenido de una escena de la historia (título, texto, productos o pasos del ritual sin número,
  * y botón; sin rótulo chico: Ruling MR-23), igual en las escenas apiladas y en las paradas del mate
- * 3D.
+ * 3D. "Alpaca y bronce." va en un renglón y "Agua a 75 °C." / "Nunca hervida." en dos, sin cortes;
+ * solo el botón y los pasos del agua van centrados en el ancho de la columna (Ruling AI-4).
  *
  * @param props - Ver {@link SceneBodyProps}.
  */
 export function SceneBody({ scene, tone, data }: SceneBodyProps): ReactNode {
   const { content, story, lines } = data
-  const title = <StoryTitle lines={scene.titleLines} tone={tone} />
+  const title = (
+    <StoryTitle lines={scene.titleLines} tone={tone} oneLine={scene.key === 'bombilla'} />
+  )
   const text = <SceneText tone={tone}>{scene.text}</SceneText>
   const cta = (href: string): ReactNode =>
     scene.ctaLabel === null ? null : (
@@ -143,7 +151,7 @@ export function SceneBody({ scene, tone, data }: SceneBodyProps): ReactNode {
           {title}
           {text}
           <SceneReveal kind="up" delay={280}>
-            <ol className="m-0 grid list-none grid-cols-4 gap-[10px] p-0 text-[12px] text-neutral-400">
+            <ol className="m-0 flex list-none flex-wrap justify-center gap-x-6 gap-y-2 p-0 text-[12px] text-neutral-400">
               {content.ritualSteps.map((step, position) => (
                 <li key={`${String(position)}-${step}`}>{step}</li>
               ))}

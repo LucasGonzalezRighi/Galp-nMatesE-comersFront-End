@@ -7,12 +7,10 @@ import { Magnetic } from '../../components/motion'
 import { Button, Tag } from '../../components/ui'
 import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
-import { HOME_ARROW_SIZE, HOME_PILL_BUTTON } from './home-styles'
+import { HeroTitleRow } from './HeroTitle'
+import { HOME_ARROW_SIZE, HOME_PILL_BUTTON, HOME_STAGE_TITLE_SIZE } from './home-styles'
 import { HOME_COPY } from './home.copy'
 import { SceneReveal } from './SceneReveal'
-
-/** Retardo de entrada de cada línea del título, en milisegundos (los 60 y 180 del diseño). */
-const TITLE_LINE_DELAYS_MS = [60, 180] as const
 
 /** Props de {@link HeroIntro}. */
 export interface HeroIntroProps {
@@ -20,7 +18,7 @@ export interface HeroIntroProps {
   hero: HomeContent['hero']
   /** Descuento del kit para mostrar en su botón ("−10%"), o `null` si no tiene. */
   kitDiscountLabel: string | null
-  /** Clase de la fila de los dos botones (en la portada van abajo y centrados; en el mate 3D, en la columna). */
+  /** Clase extra de la fila de los dos botones (que va centrada en el ancho de la columna). */
   ctaClassName?: string
   /**
    * `true` si el texto ya entró en la página: el título se dibuja quieto, sin su animación de
@@ -34,10 +32,11 @@ export interface HeroIntroProps {
  * El texto de la portada del inicio (spec 9.5): la píldora con la marca, el título "Encontrá tu
  * mate." (el único `h1` del inicio), la bajada y los botones "Ver la tienda" y "Armá tu kit" (con
  * el descuento del kit). Lo usa la primera parada del mate 3D (`MateStage`); donde no hay 3D la
- * portada es `HeroCarousel`. El título entra con CSS, sin esperar a JavaScript, y el resto
- * aparece con `SceneReveal`; con `entered` (y, para el resto, dentro de `StaticRevealContext`)
- * todo se dibuja ya en su lugar, así el cambio de la portada del v4 (tapada por la intro) al mate
- * 3D no repite la entrada.
+ * portada es `HeroCarousel`. El título va en un renglón y solo los botones, centrados en el ancho
+ * de la columna; la bajada sigue a la izquierda (Ruling AI-4). El título entra con CSS, sin
+ * esperar a JavaScript, y el resto aparece con `SceneReveal`; con `entered` (y, para el resto,
+ * dentro de `StaticRevealContext`) todo se dibuja ya en su lugar, así el cambio de la portada del
+ * v4 (tapada por la intro) al mate 3D no repite la entrada.
  *
  * @param props - Ver {@link HeroIntroProps}.
  */
@@ -66,25 +65,10 @@ export function HeroIntro({
         <span aria-hidden="true" className="bg-accent-2-400 size-1 rounded-full" />
         <span className="text-neutral-400">{hero.eyebrow}</span>
       </SceneReveal>
-      <h1 className="text-[clamp(54px,7.4vw,118px)] leading-[0.9] tracking-[-0.05em] whitespace-nowrap">
-        {hero.titleLines.map((line, position) => (
-          <span key={`${String(position)}-${line}`} className="block overflow-hidden pb-[0.1em]">
-            <span
-              className={cx(
-                entered ? 'block' : 'home-rise block',
-                position > 0 &&
-                  'from-accent-300 to-accent-2-300 bg-linear-to-r bg-clip-text text-transparent [text-shadow:none]',
-              )}
-              style={
-                entered
-                  ? undefined
-                  : { animationDelay: `${String(TITLE_LINE_DELAYS_MS[position] ?? 180)}ms` }
-              }
-            >
-              {line}
-            </span>
-          </span>
-        ))}
+      <h1
+        className={cx(HOME_STAGE_TITLE_SIZE, 'leading-[0.9] tracking-[-0.05em] whitespace-nowrap')}
+      >
+        <HeroTitleRow lines={hero.titleLines} entered={entered} />
       </h1>
       <SceneReveal
         kind="up"
@@ -94,7 +78,11 @@ export function HeroIntro({
       >
         {hero.text}
       </SceneReveal>
-      <SceneReveal kind="up" delay={320} className={cx('flex flex-wrap gap-[14px]', ctaClassName)}>
+      <SceneReveal
+        kind="up"
+        delay={320}
+        className={cx('flex flex-wrap justify-center gap-[14px]', ctaClassName)}
+      >
         <Magnetic>
           <Button asChild variant="primary" size="lg" className={HOME_PILL_BUTTON}>
             <Link href={asRoute('/tienda')}>

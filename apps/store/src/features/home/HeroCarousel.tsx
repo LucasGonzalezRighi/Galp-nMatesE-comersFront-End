@@ -15,6 +15,7 @@ import { cx } from '../../components/ui/cx'
 import { asRoute } from '../../lib/routes'
 import { addProductToCart, clickOrigin, useCart } from '../cart'
 import { heroCounter, heroWord, stackLook } from './hero-carousel'
+import { HeroTitleRow } from './HeroTitle'
 import { HOME_ARROW_SIZE, HOME_PILL_BUTTON } from './home-styles'
 import {
   addProductLabel,
@@ -23,9 +24,6 @@ import {
   heroViewLabel,
   stopCounter,
 } from './home.copy'
-
-/** Retardo de entrada de cada línea del título, en milisegundos (los 60 y 180 del v4). */
-const TITLE_LINE_DELAYS_MS = [60, 180] as const
 
 /** Cuánto hay que deslizar el dedo (o el mouse) sobre la pila para pasar de pieza, en píxeles. */
 const SWIPE_PX = 50
@@ -243,9 +241,10 @@ function StackCard({ product, position, count, distance, state }: StackCardProps
 /**
  * La portada del inicio donde no hay mate 3D (Ruling IC-8: celular, tableta, ventanas bajas, menos
  * movimiento o contenido sin las dos escenas): el hero carrusel del v4. La píldora, el título
- * "Encontrá tu mate." (el único `h1` del inicio, que entra con CSS), el texto de la pieza actual,
- * las flechas con los puntos y el contador "01 — 05", los botones "Ver la tienda" y "Armá tu kit"
- * y la pila de tarjetas con la palabra gigante del grupo detrás.
+ * "Encontrá tu mate." (el único `h1` del inicio, en un renglón y que entra con CSS), el texto de la
+ * pieza actual, las flechas con los puntos y el contador "01 — 05", los botones "Ver la tienda" y
+ * "Armá tu kit" (centrados en el ancho de la columna, Ruling AI-4) y la pila de tarjetas con la
+ * palabra gigante del grupo detrás.
  *
  * Sin avance solo: la pieza cambia con las flechas (dan la vuelta), los puntos o deslizando más de
  * 50 px sobre la pila. En el celular la pila va plana y entre el título y el texto (la foto entra
@@ -324,21 +323,10 @@ export function HeroCarousel({ hero, slides, kitDiscountLabel }: HeroCarouselPro
           <span aria-hidden="true" className="bg-accent-2-400 size-1 rounded-full" />
           <span className="text-neutral-400">{hero.eyebrow}</span>
         </Reveal>
-        <h1 className="relative text-[clamp(46px,13vw,60px)] leading-[0.9] tracking-[-0.05em] whitespace-nowrap md:text-[clamp(48px,6.2vw,100px)] lg:col-start-1 lg:row-start-3">
-          {hero.titleLines.map((line, position) => (
-            <span key={`${String(position)}-${line}`} className="block overflow-hidden pb-[0.1em]">
-              <span
-                className={cx(
-                  'home-rise block',
-                  position > 0 &&
-                    'from-accent-300 to-accent-2-300 bg-linear-to-r bg-clip-text text-transparent [text-shadow:none]',
-                )}
-                style={{ animationDelay: `${String(TITLE_LINE_DELAYS_MS[position] ?? 180)}ms` }}
-              >
-                {line}
-              </span>
-            </span>
-          ))}
+        {/* En un renglón (Ruling AI-4): en el celular entra desde 320 px; desde 1024 px, en la
+            columna izquierda de la grilla (~41 % del ancho). */}
+        <h1 className="relative text-[clamp(34px,11.4vw,60px)] leading-[0.9] tracking-[-0.05em] whitespace-nowrap md:text-[clamp(48px,6.2vw,100px)] lg:col-start-1 lg:row-start-3 lg:text-[clamp(44px,5vw,100px)]">
+          <HeroTitleRow lines={hero.titleLines} />
         </h1>
         {current === undefined ? null : (
           <>
@@ -438,7 +426,7 @@ export function HeroCarousel({ hero, slides, kitDiscountLabel }: HeroCarouselPro
         <Reveal
           kind="up"
           delay={400}
-          className="relative flex flex-wrap gap-3 md:mt-[6px] md:gap-[14px] lg:col-start-1 lg:row-start-6"
+          className="relative flex flex-wrap justify-center gap-3 md:mt-[6px] md:gap-[14px] lg:col-start-1 lg:row-start-6"
         >
           <Magnetic fullWidth className="max-md:flex-[1_1_150px]">
             <Button

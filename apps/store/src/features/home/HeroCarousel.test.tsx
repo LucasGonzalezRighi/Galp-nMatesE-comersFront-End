@@ -158,6 +158,21 @@ describe('HeroCarousel', () => {
     expect(kit).toHaveTextContent('−10%')
   })
 
+  it('"Encontrá tu mate." va en un renglón y los dos botones, centrados (Ruling AI-4)', () => {
+    renderCarousel()
+    const title = screen.getByRole('heading', { level: 1 })
+    expect(title).toHaveTextContent('Encontrá tu mate.')
+    expect([...title.querySelectorAll('[data-title-line]')].map((row) => row.textContent)).toEqual([
+      'Encontrá tu mate.',
+    ])
+    expect(title).toHaveClass('whitespace-nowrap')
+    expect(within(title).getByText('tu mate.')).toHaveClass('bg-clip-text')
+    for (const name of ['Ver la tienda', /Armá tu kit/]) {
+      expect(screen.getByRole('link', { name }).closest('.justify-center')).not.toBeNull()
+    }
+    expect(title.closest('.justify-center')).toBeNull()
+  })
+
   it('sin piezas quedan el título y los botones, sin pila ni controles', () => {
     render(<HeroCarousel hero={data.content.hero} slides={[]} kitDiscountLabel={null} />)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()

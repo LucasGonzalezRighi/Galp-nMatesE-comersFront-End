@@ -129,8 +129,54 @@ describe('MateStage', () => {
       within(stage())
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual(['Alpacay bronce.', 'Agua a 75 °C.Nunca hervida.'])
+    ).toEqual(['Alpaca y bronce.', 'Agua a 75 °C.Nunca hervida.'])
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  })
+
+  it('"Encontrá tu mate." y "Alpaca y bronce." van en un renglón; el agua, en dos sin cortes (Ruling AI-4)', () => {
+    render(<MateStage data={data} />)
+    const panel = (index: number): HTMLElement => byData(`data-stage-stop="${String(index)}"`)
+    const rows = (heading: HTMLElement): (string | null)[] =>
+      [...heading.querySelectorAll('[data-title-line]')].map((row) => row.textContent)
+    const title = within(panel(0)).getByRole('heading', { level: 1 })
+    const bombilla = within(panel(1)).getByRole('heading', { level: 2 })
+    const ritual = within(panel(2)).getByRole('heading', { level: 2 })
+    expect(rows(title)).toEqual(['Encontrá tu mate.'])
+    expect(rows(bombilla)).toEqual(['Alpaca y bronce.'])
+    expect(rows(ritual)).toEqual(['Agua a 75 °C.', 'Nunca hervida.'])
+    // Ningún renglón se corta adentro; la segunda parte del título conserva su color.
+    for (const heading of [title, bombilla, ritual]) {
+      for (const row of heading.querySelectorAll('[data-title-line]')) {
+        expect(row.closest('.whitespace-nowrap')).not.toBeNull()
+      }
+    }
+    expect(within(title).getByText('tu mate.')).toHaveClass('bg-clip-text')
+    expect(within(bombilla).getByText('y bronce.')).toHaveClass('text-accent-300')
+  })
+
+  it('solo los botones y los pasos del agua van centrados; la bajada sigue a la izquierda (Ruling AI-4)', () => {
+    render(<MateStage data={data} />)
+    const panel = (index: number): HTMLElement => byData(`data-stage-stop="${String(index)}"`)
+    const centered = (element: Element): boolean => element.closest('.justify-center') !== null
+    expect(centered(within(panel(0)).getByRole('link', { name: 'Ver la tienda' }))).toBe(true)
+    expect(centered(within(panel(0)).getByRole('link', { name: /Armá tu kit/ }))).toBe(true)
+    expect(centered(within(panel(1)).getByRole('link', { name: 'Ver bombillones' }))).toBe(true)
+    const steps = within(panel(2)).getByRole('list')
+    expect(
+      within(steps)
+        .getAllByRole('listitem')
+        .map((step) => step.textContent),
+    ).toEqual(['Yerba', 'Montañita', 'Bombilla', 'Agua'])
+    expect(steps).toHaveClass('justify-center')
+    for (const index of [0, 1, 2]) {
+      const lede = panel(index).querySelector('p')
+      if (lede === null) throw new Error(`La parada ${String(index)} no tiene bajada.`)
+      expect(centered(lede)).toBe(false)
+      expect(lede).not.toHaveClass('text-center')
+      for (const heading of within(panel(index)).getAllByRole('heading')) {
+        expect(centered(heading)).toBe(false)
+      }
+    }
   })
 
   it('el raíl tiene tres paradas y marca la actual', () => {
