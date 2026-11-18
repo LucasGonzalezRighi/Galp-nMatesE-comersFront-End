@@ -493,6 +493,46 @@ Consolidada de los informes de las Tasks 2 y 3 y de `research-leyes.md`; el back
 - El tipo de comprobante que se entrega (términos no lo nombra) y el plazo fiscal de conservación (privacidad dice 10 años).
 - El cálculo del "Precio sin impuestos nacionales" (y si cambia siendo monotributista) y si la leyenda va en mayúsculas.
 
+## Next 16.4.5 y la prueba del foco (2026-11-17)
+
+**Next 16.4.5.** Lucas aprobó actualizar Next de 16.4.2 a 16.4.5, la versión de seguridad de
+noviembre de 2026. Corrige siete avisos: GHSA-mfr8-8qww-v76h y GHSA-vc7v-qv4w-wrv8 (fugas de caché
+entre valores de root params con `'use cache'`), GHSA-vvgp-ww4w-46vf (envenenamiento de las páginas
+de respaldo compartidas de Cache Components con parámetros de ruta), GHSA-rhh4-g77r-r9qj
+(`'use cache'` con argumentos binarios), GHSA-pc58-hwjq-p385 (apps autohospedadas que reenvían
+respuestas), GHSA-7qx7-33qx-rqx2 (SVG en el optimizador de imágenes) y GHSA-f3mh-rxg3-f5g2 (cookies
+`HttpOnly` en rutas Edge). La tienda usa Cache Components con rutas dinámicas y el optimizador de
+imágenes, así que la actualización no es solo preventiva.
+
+- Se eligió la 16.4.5 y no la 16.4.6: es la más nueva con 14 días publicada, y la 16.4.6 no suma
+  arreglos de seguridad (agrega la compresión automática de las respuestas de los route handlers).
+- Cambian `next` y `@next/eslint-plugin-next` en `scripts/dependency-versions.json`, en
+  `apps/store/package.json` y en el `package.json` de la raíz. En la lockfile cambian solo las 13
+  entradas de esos paquetes y Next sigue en `node_modules` de la raíz: `npm install` lo dejaba
+  anidado en `apps/store/node_modules`, se corrigió a mano y se comprobó con `npm ci` y con
+  `npm install --package-lock-only`, que ya no la cambia.
+- Con la 16.4.2, `next build` avisaba de la versión vulnerable en cada compilación y, corrido por un
+  agente, se detenía la primera vez (`SecurityFatalError`). Con la 16.4.5 compila al primer intento
+  y sin el aviso.
+
+**La prueba del foco (2.4.11) del dashboard.** El caso "el encabezado no tapa el foco al volver con
+Mayús+Tab" de `e2e/admin/a11y.spec.ts` fallaba siempre con la máquina libre y pasaba con la máquina
+cargada. No era un defecto del dashboard: la prueba apretaba la tecla Fin, que Chromium anima unos
+170 ms, y enseguida hacía ocho Mayús+Tab en 100 ms; los últimos cuadros de esa animación pisaban el
+scroll del foco y la página volvía al final. Ahora no usa Fin (enfocar el último control ya lleva la
+página al final) y comprueba en cada paso que el control enfocado queda debajo del encabezado fijo.
+Con `scroll-padding-top` el aire mínimo es de 8 px; sin esa regla, dos mensajes quedan tapados (12 y
+56 px), cosa que la versión anterior no detectaba.
+
+**Verificación** (copia de trabajo aparte, tienda en el 4420 y dashboard en el 5420): `typecheck`,
+`lint`, `format:check` y `api:check` en verde; `npm test`, 333 archivos y 4669 tests; E2E de los
+cuatro proyectos con 2 procesos, 501 pasan, 119 se saltean a propósito y 0 fallan; la prueba del
+foco, sola y con la máquina libre, 5 de 5.
+
+**Lección:** dos corridas pesadas a la vez en esta máquina falsean los resultados en los dos
+sentidos. Una corrida de `npm test` tardó dos horas y 31 archivos no llegaron a arrancar, y la
+prueba del foco pasaba solo por la demora. Las suites completas se corren de a una.
+
 ## Próximos pasos: P5
 
 Una **sesión de trabajo** es una tanda de entre 1 y 3 horas seguidas, como las tres de P1, con agentes en paralelo y el proceso liviano. P1 llevó 3 sesiones más una de cierre (pulido, documentación, E2E y revisión final). Las estimaciones son un rango y **no incluyen el tiempo de Lucas** para revisar capturas, probar y decidir.
