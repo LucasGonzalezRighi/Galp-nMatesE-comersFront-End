@@ -38,7 +38,7 @@ const isMain = process.argv[1] !== undefined && fileURLToPath(import.meta.url) =
 if (isMain) {
   const reason = skipReason(process.env, existsSync(join(ROOT, '.git')))
   if (reason !== null) {
-    console.log(`Hooks de git salteados: ${reason}.`)
+    process.stdout.write(`Hooks de git salteados: ${reason}.\n`)
   } else {
     const result = spawnSync('npx', ['--no-install', 'lefthook', 'install'], {
       cwd: ROOT,
