@@ -25,18 +25,18 @@ export function validateEnvOrExit(): void {
 
 /**
  * Arranca el tope de la caché de páginas en disco (pista 13; ver `lib/route-cache-limit.ts`) con el
- * tope de `ROUTE_CACHE_MAX_MB`. Solo en el servidor de producción (`next start`): `next dev` guarda
- * su caché en otra carpeta y `next build` no sirve pedidos.
+ * tope de `ROUTE_CACHE_MAX_MB`. Solo en el servidor de producción propio (`next start`): `next dev`
+ * guarda su caché en otra carpeta, `next build` no sirve pedidos y en Vercel (`VERCEL=1`) las
+ * páginas generadas van a la caché de la plataforma, no a un disco de la tienda.
  *
  * @returns `true` si lo arrancó.
  */
 export function startRouteCacheLimitInProduction(): boolean {
-  if (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.NEXT_PHASE === 'phase-production-build'
-  ) {
-    return false
-  }
+  const isOwnServer =
+    process.env.NODE_ENV === 'production' &&
+    process.env.NEXT_PHASE !== 'phase-production-build' &&
+    (process.env.VERCEL ?? '') === ''
+  if (!isOwnServer) return false
   startRouteCacheLimit({
     directory: join(process.cwd(), '.next', ROUTE_CACHE_SUBPATH),
     maxBytes: getStoreEnv().routeCacheMaxBytes,

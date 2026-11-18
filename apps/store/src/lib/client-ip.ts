@@ -1,3 +1,32 @@
+/**
+ * Cabecera con el secreto compartido con el backend (`API_PROXY_SECRET` acá, `TRUSTED_PROXY_SECRET`
+ * allá): le prueba que el pedido sale del servidor de la tienda. Nunca llega al navegador.
+ */
+export const PROXY_SECRET_HEADER = 'x-galpon-proxy-secret'
+
+/**
+ * Cabecera con la IP real del cliente, para los límites por cliente del backend. El backend solo le
+ * cree si viene junto con {@link PROXY_SECRET_HEADER}: en Vercel y Render no puede confiar por la
+ * dirección de quien llama (las IP de salida de Vercel no son fijas).
+ */
+export const CLIENT_IP_HEADER = 'x-galpon-client-ip'
+
+/**
+ * Cabecera con la que un proxy sin código (el del dashboard en Vercel) le dice al backend de dónde
+ * sacar la IP del cliente. La tienda no la manda, pero tampoco deja que la mande el navegador.
+ */
+export const CLIENT_IP_FROM_HEADER = 'x-galpon-client-ip-from'
+
+/**
+ * Cabeceras propias que solo puede escribir el servidor de la tienda: si las manda el navegador, se
+ * borran antes de seguir.
+ */
+export const PROXY_ONLY_HEADERS = [
+  PROXY_SECRET_HEADER,
+  CLIENT_IP_HEADER,
+  CLIENT_IP_FROM_HEADER,
+] as const
+
 /** Cabeceras de un pedido entrante: alcanza con leer una por nombre (`Headers` o `headers()` de Next). */
 export interface HeaderReader {
   /** Valor de la cabecera, o `null` si no vino. */

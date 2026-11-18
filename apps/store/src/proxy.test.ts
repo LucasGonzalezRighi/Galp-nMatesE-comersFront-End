@@ -5,19 +5,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isSlugShaped } from './lib/slug'
 import { config, NOT_FOUND_SLUG, proxy } from './proxy'
 
-/** Modo de la API y cabecera de la IP del cliente simulados: cada prueba los cambia. */
+/** Modo de la API, cabecera de la IP del cliente y secreto del proxy simulados: cada prueba los cambia. */
 const env = vi.hoisted(() => ({
   apiMode: 'mock',
   trustedClientIpHeader: null as string | null,
+  apiProxySecret: null as string | null,
 }))
 
 vi.mock('./lib/env', () => ({
-  getStoreEnv: () => ({ apiMode: env.apiMode, trustedClientIpHeader: env.trustedClientIpHeader }),
+  getStoreEnv: () => ({
+    apiMode: env.apiMode,
+    trustedClientIpHeader: env.trustedClientIpHeader,
+    apiProxySecret: env.apiProxySecret,
+  }),
 }))
 
 beforeEach(() => {
   env.apiMode = 'mock'
   env.trustedClientIpHeader = null
+  env.apiProxySecret = null
 })
 
 /** Pedido a la tienda, con las cookies indicadas. */
@@ -165,6 +171,68 @@ describe('proxy de /api/v1', () => {
     const headers = forwardedHeaders(proxy(requestWith('/api/v1/products', spoofed)))
 
     expect(headers.has('x-forwarded-for')).toBe(false)
+  })
+})
+
+describe('proxy de /api/v1 con API_PROXY_SECRET (Vercel y Render)', () => {
+  const SECRET = 's'.repeat(40)
+
+  it('manda el secreto y la IP real en x-galpon-client-ip', () => {
+    env.apiProxySecret = SECRET
+    env.trustedClientIpHeader = 'x-real-ip'
+
+    const headers = forwardedHeaders(
+      proxy(requestWith('/api/v1/auth/login', { 'x-real-ip': '198.51.100.4' })),
+    )
+
+    expect(headers.get('x-galpon-proxy-secret')).toBe(SECRET)
+    expect(headers.get('x-galpon-client-ip')).toBe('198.51.100.4')
+    expect(headers.get('x-forwarded-for')).toBe('198.51.100.4')
+  })
+
+  it('sin cabecera de confianza manda el secreto solo: el backend no cuenta a nadie de más', () => {
+    env.apiProxySecret = SECRET
+
+    const headers = forwardedHeaders(proxy(requestWith('/api/v1/products', {})))
+
+    expect(headers.get('x-galpon-proxy-secret')).toBe(SECRET)
+    expect(headers.has('x-galpon-client-ip')).toBe(false)
+  })
+
+  it('pisa lo que mande el navegador en las cabeceras propias', () => {
+    env.apiProxySecret = SECRET
+    env.trustedClientIpHeader = 'x-real-ip'
+
+    const headers = forwardedHeaders(
+      proxy(
+        requestWith('/api/v1/orders', {
+          'x-real-ip': '198.51.100.4',
+          'x-galpon-proxy-secret': 'inventado',
+          'x-galpon-client-ip': '203.0.113.7',
+          'x-galpon-client-ip-from': 'x-forwarded-for',
+        }),
+      ),
+    )
+
+    expect(headers.get('x-galpon-proxy-secret')).toBe(SECRET)
+    expect(headers.get('x-galpon-client-ip')).toBe('198.51.100.4')
+    expect(headers.has('x-galpon-client-ip-from')).toBe(false)
+  })
+
+  it('sin API_PROXY_SECRET borra las cabeceras propias que invente el navegador', () => {
+    const headers = forwardedHeaders(
+      proxy(
+        requestWith('/api/v1/orders', {
+          'x-galpon-proxy-secret': 'inventado',
+          'x-galpon-client-ip': '203.0.113.7',
+          'x-galpon-client-ip-from': 'x-forwarded-for',
+        }),
+      ),
+    )
+
+    expect(headers.has('x-galpon-proxy-secret')).toBe(false)
+    expect(headers.has('x-galpon-client-ip')).toBe(false)
+    expect(headers.has('x-galpon-client-ip-from')).toBe(false)
   })
 })
 

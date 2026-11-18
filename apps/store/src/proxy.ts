@@ -2,7 +2,12 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { DEFAULT_CUSTOMER_SESSION_COOKIE } from '@galpon/api-client/mock/session-cookie'
 import type { ApiMode } from './lib/env'
-import { trustedClientIp } from './lib/client-ip'
+import {
+  CLIENT_IP_HEADER,
+  PROXY_ONLY_HEADERS,
+  PROXY_SECRET_HEADER,
+  trustedClientIp,
+} from './lib/client-ip'
 import { getStoreEnv } from './lib/env'
 import { isSlugShaped } from './lib/slug'
 
@@ -24,8 +29,16 @@ const PUBLIC_ACCOUNT_PATHS = new Set([
   '/cuenta/restablecer',
 ])
 
-/** Cabeceras de reenvío que puede inventar el cliente: no pasan al backend. */
-const CLIENT_FORWARDING_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded'] as const
+/**
+ * Cabeceras que puede inventar el cliente y no pasan al backend: las de reenvío y las propias del
+ * servidor de la tienda (el secreto y la IP del cliente).
+ */
+const CLIENT_FORWARDING_HEADERS = [
+  'x-forwarded-for',
+  'x-real-ip',
+  'forwarded',
+  ...PROXY_ONLY_HEADERS,
+] as const
 
 /** `/api/v1` y lo que cuelga de ahí. */
 const API_PATH = /^\/api\/v1(?:\/|$)/
@@ -41,19 +54,36 @@ const CATALOG_PATH = /^\/(producto|tienda)\/([^/]+)$/
  */
 export const NOT_FOUND_SLUG = '_'
 
+/** Lo que {@link forwardToApi} necesita del entorno de la tienda. */
+interface ApiForwarding {
+  /** `TRUSTED_CLIENT_IP_HEADER`, en minúsculas; `null` si no se configuró. */
+  trustedClientIpHeader: string | null
+  /** `API_PROXY_SECRET`; `null` si no se configuró. */
+  apiProxySecret: string | null
+}
+
 /**
  * `/api/v1/*` (el rewrite hacia el backend o la API simulada): borra `x-forwarded-for`,
  * `x-real-ip` y `forwarded` que mande el cliente, que podría inventarlos para saltear los límites
- * por IP del backend. Con `TRUSTED_CLIENT_IP_HEADER` pone `x-forwarded-for` con el valor de esa
- * cabecera, la que escribe el proxy de la plataforma con la IP real; el backend la lee si confía en
- * el servidor de la tienda (`TRUST_PROXY`).
+ * por IP del backend, y también las cabeceras propias del servidor de la tienda
+ * (`x-galpon-proxy-secret`, `x-galpon-client-ip` y `x-galpon-client-ip-from`).
+ *
+ * Con `TRUSTED_CLIENT_IP_HEADER` pone `x-forwarded-for` con el valor de esa cabecera, la que
+ * escribe el proxy de la plataforma con la IP real; el backend la lee si confía en el servidor de
+ * la tienda por su dirección (`TRUST_PROXY`, el camino del servidor propio). Con `API_PROXY_SECRET`
+ * manda además el secreto y esa misma IP en `x-galpon-client-ip`: así el backend le cree aunque no
+ * pueda confiar por dirección (Vercel y Render, `TRUSTED_PROXY_SECRET` del back).
  */
-function forwardToApi(request: NextRequest, trustedClientIpHeader: string | null): NextResponse {
+function forwardToApi(request: NextRequest, forwarding: ApiForwarding): NextResponse {
   // Se lee antes de borrar: la cabecera de confianza puede ser una de las que se borran.
-  const clientIp = trustedClientIp(request.headers, trustedClientIpHeader)
+  const clientIp = trustedClientIp(request.headers, forwarding.trustedClientIpHeader)
   const headers = new Headers(request.headers)
   for (const name of CLIENT_FORWARDING_HEADERS) headers.delete(name)
   if (clientIp !== null) headers.set('x-forwarded-for', clientIp)
+  if (forwarding.apiProxySecret !== null) {
+    headers.set(PROXY_SECRET_HEADER, forwarding.apiProxySecret)
+    if (clientIp !== null) headers.set(CLIENT_IP_HEADER, clientIp)
+  }
   return NextResponse.next({ request: { headers } })
 }
 
@@ -82,7 +112,8 @@ function guardAccount(request: NextRequest, apiMode: ApiMode): NextResponse {
 /**
  * Proxy de la tienda:
  *
- * - `/api/v1/*`: limpia las cabeceras de reenvío del cliente (ver {@link forwardToApi}).
+ * - `/api/v1/*`: limpia las cabeceras de reenvío del cliente y, si está configurado, le pasa al
+ *   backend la IP real con el secreto compartido (ver {@link forwardToApi}).
  * - `/producto/{slug}` y `/tienda/{linea}`: un slug que no tiene la forma de uno del contrato
  *   (mayúsculas, `%`, más de 80 caracteres) va a la 404 de su sección (`/producto/_` o
  *   `/tienda/_`, ver {@link NOT_FOUND_SLUG}): una sola página para todas, sin consultar la API.
@@ -95,7 +126,7 @@ function guardAccount(request: NextRequest, apiMode: ApiMode): NextResponse {
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl
   const env = getStoreEnv()
-  if (API_PATH.test(pathname)) return forwardToApi(request, env.trustedClientIpHeader)
+  if (API_PATH.test(pathname)) return forwardToApi(request, env)
   const [, section, slug] = CATALOG_PATH.exec(pathname) ?? []
   if (section !== undefined && slug !== undefined) {
     return isSlugShaped(slug)

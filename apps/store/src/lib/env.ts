@@ -31,6 +31,14 @@ export interface StoreEnv {
    */
   trustedClientIpHeader: string | null
   /**
+   * Secreto compartido con el backend (`API_PROXY_SECRET`, el mismo `TRUSTED_PROXY_SECRET` del
+   * back; solo en vivo); `null` si no se definió. Con él, el proxy de `/api/v1` y las lecturas del
+   * servidor mandan `x-galpon-proxy-secret` y, cuando la conocen, la IP del cliente en
+   * `x-galpon-client-ip`: es la forma de que el backend cuente los límites por cliente cuando no
+   * puede confiar por dirección IP (Vercel y Render).
+   */
+  apiProxySecret: string | null
+  /**
    * Contraseña del admin de la API simulada (`MOCK_ADMIN_PASSWORD`, solo en modo de prueba); `null`
    * si no se definió: entonces es la de fábrica fuera de producción y, en producción, el admin de la
    * API simulada queda cerrado (ver `storeMockAdminPassword`).
@@ -76,7 +84,7 @@ export const DEFAULT_ROUTE_CACHE_MAX_MB = 256
 /** Rango que acepta `ROUTE_CACHE_MAX_MB`: de 16 MB (la tienda compilada ocupa menos) a 100 GB. */
 const ROUTE_CACHE_MAX_MB_RANGE = [16, 102_400] as const
 
-/** Largo mínimo del secreto de `/api/revalidate` en vivo y del de los controles de prueba. */
+/** Largo mínimo de los secretos: el de `/api/revalidate` y el del proxy en vivo, y el de los controles de prueba. */
 const MIN_LIVE_SECRET_LENGTH = 32
 
 /**
@@ -171,7 +179,8 @@ function parseMockLatency(value: string): number | readonly [number, number] | n
  * `MOCK_ALLOWED_IN_PRODUCTION=true`: la API simulada no tiene autenticación real. En modo de prueba
  * se leen además `MOCK_ADMIN_PASSWORD` (de 10 a 128 caracteres, con letras y números) y
  * `MOCK_CONTROL_SECRET` (32 caracteres o más); en vivo se ignoran. `ROUTE_CACHE_MAX_MB` (opcional)
- * es el tope de la caché de páginas en disco, en MB.
+ * es el tope de la caché de páginas en disco, en MB. `API_PROXY_SECRET` (opcional, solo en vivo, 32
+ * caracteres o más) es el secreto con el que el backend le cree a la tienda la IP del cliente.
  *
  * @param source - Las variables, normalmente `process.env`.
  * @param options - Ver {@link ParseStoreEnvOptions}.
@@ -282,6 +291,13 @@ export function parseStoreEnv(
     )
   }
 
+  const apiProxySecret = isLive ? (readVariable(source, 'API_PROXY_SECRET') ?? null) : null
+  if (apiProxySecret !== null && apiProxySecret.length < MIN_LIVE_SECRET_LENGTH) {
+    problems.push(
+      `API_PROXY_SECRET tiene que tener ${String(MIN_LIVE_SECRET_LENGTH)} caracteres o más`,
+    )
+  }
+
   const isMock = apiMode === 'mock'
   const mockAdminPassword = isMock ? (readVariable(source, 'MOCK_ADMIN_PASSWORD') ?? null) : null
   if (mockAdminPassword !== null && !MOCK_ADMIN_PASSWORD_PATTERN.test(mockAdminPassword)) {
@@ -321,6 +337,7 @@ export function parseStoreEnv(
     cloudinaryCloudName,
     mockInProduction,
     trustedClientIpHeader,
+    apiProxySecret,
     mockAdminPassword,
     mockControlSecret,
     routeCacheMaxBytes: routeCacheMaxMb * 1024 * 1024,

@@ -73,6 +73,7 @@ describe('startRouteCacheLimitInProduction', () => {
   it('en el servidor de producción arranca el tope con ROUTE_CACHE_MAX_MB y la carpeta de Next', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('NEXT_PHASE', 'phase-production-server')
+    vi.stubEnv('VERCEL', '')
     env.result = { mockInProduction: false, routeCacheMaxBytes: 64 * 1024 * 1024 }
 
     expect(startRouteCacheLimitInProduction()).toBe(true)
@@ -84,12 +85,23 @@ describe('startRouteCacheLimitInProduction', () => {
     })
   })
 
+  it('en Vercel no arranca: las páginas van a la caché de la plataforma, no a un disco propio', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PHASE', 'phase-production-server')
+    vi.stubEnv('VERCEL', '1')
+    env.result = { mockInProduction: false, routeCacheMaxBytes: 64 * 1024 * 1024 }
+
+    expect(startRouteCacheLimitInProduction()).toBe(false)
+    expect(routeCache.start).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['next dev', 'development', 'phase-development-server'],
     ['next build', 'production', 'phase-production-build'],
   ])('en %s no arranca nada', (_name, nodeEnv, phase) => {
     vi.stubEnv('NODE_ENV', nodeEnv)
     vi.stubEnv('NEXT_PHASE', phase)
+    vi.stubEnv('VERCEL', '')
     env.result = { mockInProduction: false, routeCacheMaxBytes: 64 * 1024 * 1024 }
 
     expect(startRouteCacheLimitInProduction()).toBe(false)

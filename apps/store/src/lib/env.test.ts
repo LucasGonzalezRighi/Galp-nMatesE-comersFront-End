@@ -31,6 +31,7 @@ describe('parseStoreEnv', () => {
       cloudinaryCloudName: null,
       mockInProduction: false,
       trustedClientIpHeader: null,
+      apiProxySecret: null,
       mockAdminPassword: null,
       mockControlSecret: null,
       routeCacheMaxBytes: 256 * 1024 * 1024,
@@ -271,6 +272,31 @@ describe('TRUSTED_CLIENT_IP_HEADER', () => {
       ])
     },
   )
+})
+
+describe('API_PROXY_SECRET', () => {
+  it('por omisión es null, también en vivo', () => {
+    expect(parseStoreEnv({}).apiProxySecret).toBeNull()
+    expect(parseStoreEnv(liveEnv).apiProxySecret).toBeNull()
+  })
+
+  it('en vivo se lee tal cual, sin espacios en los bordes', () => {
+    const secret = 's'.repeat(32)
+    expect(parseStoreEnv({ ...liveEnv, API_PROXY_SECRET: ` ${secret} ` }).apiProxySecret).toBe(
+      secret,
+    )
+  })
+
+  it('en vivo, con menos de 32 caracteres tira sin mostrar el valor', () => {
+    const short = 'c'.repeat(31)
+    const problems = problemsOf({ ...liveEnv, API_PROXY_SECRET: short })
+    expect(problems).toEqual(['API_PROXY_SECRET tiene que tener 32 caracteres o más'])
+    expect(problems.join(' ')).not.toContain(short)
+  })
+
+  it('en modo de prueba se ignora (no hay backend al que mandarlo)', () => {
+    expect(parseStoreEnv({ API_PROXY_SECRET: 'corto' }).apiProxySecret).toBeNull()
+  })
 })
 
 describe('ROUTE_CACHE_MAX_MB', () => {

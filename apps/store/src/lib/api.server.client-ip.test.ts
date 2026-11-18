@@ -1,16 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getMe } from '@galpon/api-client'
-import { getServerApiForRequest } from './api.server'
+import { getMe, listCategories } from '@galpon/api-client'
+import { getServerApi, getServerApiForRequest } from './api.server'
 
 vi.mock('server-only', () => ({}))
 // En vivo no se usa la API simulada: así el test no carga su base ni `next/cache`.
 vi.mock('./mock.server', () => ({ getStoreMockFetch: vi.fn() }))
 
-/** Entorno en vivo; cada prueba elige la cabecera de confianza (`TRUSTED_CLIENT_IP_HEADER`). */
+/**
+ * Entorno en vivo; cada prueba elige la cabecera de confianza (`TRUSTED_CLIENT_IP_HEADER`) y el
+ * secreto del proxy (`API_PROXY_SECRET`).
+ */
 const env = vi.hoisted(() => ({
   apiMode: 'live',
   apiBaseUrl: 'https://api.example.test',
   trustedClientIpHeader: null as string | null,
+  apiProxySecret: null as string | null,
 }))
 
 vi.mock('./env', () => ({ getStoreEnv: () => env }))
@@ -20,6 +24,7 @@ let sent: Request[] = []
 
 beforeEach(() => {
   env.trustedClientIpHeader = null
+  env.apiProxySecret = null
   sent = []
   vi.stubGlobal('fetch', (request: Request) => {
     sent.push(request)
@@ -79,5 +84,55 @@ describe('getServerApiForRequest: la IP del cliente para los límites del backen
     const request = await readMe(new Headers(SPOOFED))
 
     expect(request.headers.get('x-forwarded-for')).toBeNull()
+  })
+})
+
+describe('getServerApiForRequest con API_PROXY_SECRET (Vercel y Render)', () => {
+  const SECRET = 's'.repeat(40)
+
+  it('manda el secreto y la IP real en x-galpon-client-ip', async () => {
+    env.trustedClientIpHeader = 'x-real-ip'
+    env.apiProxySecret = SECRET
+
+    const request = await readMe(new Headers({ 'x-real-ip': '198.51.100.4' }))
+
+    expect(request.headers.get('x-galpon-proxy-secret')).toBe(SECRET)
+    expect(request.headers.get('x-galpon-client-ip')).toBe('198.51.100.4')
+  })
+
+  it('sin la IP del cliente manda el secreto solo', async () => {
+    env.apiProxySecret = SECRET
+
+    const request = await readMe(new Headers({ 'x-galpon-client-ip': '203.0.113.7' }))
+
+    expect(request.headers.get('x-galpon-proxy-secret')).toBe(SECRET)
+    expect(request.headers.get('x-galpon-client-ip')).toBeNull()
+  })
+
+  it('sin API_PROXY_SECRET no manda ninguna de las dos cabeceras', async () => {
+    env.trustedClientIpHeader = 'x-real-ip'
+
+    const request = await readMe(new Headers({ 'x-real-ip': '198.51.100.4' }))
+
+    expect(request.headers.get('x-galpon-proxy-secret')).toBeNull()
+    expect(request.headers.get('x-galpon-client-ip')).toBeNull()
+  })
+})
+
+describe('getServerApi con API_PROXY_SECRET', () => {
+  it('las lecturas propias de la tienda mandan el secreto sin ninguna IP de cliente', async () => {
+    env.apiProxySecret = 's'.repeat(40)
+    vi.stubGlobal('fetch', (request: Request) => {
+      sent.push(request)
+      return Promise.resolve(Response.json([]))
+    })
+
+    await listCategories(getServerApi())
+
+    const [request] = sent
+    expect(request?.url).toBe('https://api.example.test/api/v1/categories')
+    expect(request?.headers.get('x-galpon-proxy-secret')).toBe('s'.repeat(40))
+    expect(request?.headers.get('x-galpon-client-ip')).toBeNull()
+    expect(request?.headers.get('x-forwarded-for')).toBeNull()
   })
 })
