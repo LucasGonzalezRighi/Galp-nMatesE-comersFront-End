@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
+import type { StrokeStep } from './stroke-plan'
 import { LOGO_PATHS } from './logo-paths'
 import { planStrokes, STROKE_TIMING } from './stroke-plan'
 
 describe('planStrokes', () => {
   const plan = planStrokes(LOGO_PATHS.mark, LOGO_PATHS.word)
+  const markIds = new Set(LOGO_PATHS.mark.map((part) => part.id))
 
-  it('dibuja primero el matecito y después GALPÓN letra por letra, de izquierda a derecha', () => {
+  /** El final del último trazo de una lista de pasos. */
+  function lastEnd(steps: readonly StrokeStep[]): number {
+    return Math.max(...steps.map((step) => step.delayMs + step.durationMs))
+  }
+
+  it('los pasos del matecito y después los de GALPÓN letra por letra, de izquierda a derecha', () => {
     expect(plan.map((step) => step.id)).toEqual([
       'mark-mate',
       'mark-mouth',
@@ -20,12 +27,15 @@ describe('planStrokes', () => {
     ])
   })
 
-  it('el matecito ocupa el primer tramo y la palabra termina justo al cerrar el dibujo', () => {
+  it('el matecito y GALPÓN arrancan juntos: el matecito termina a 1,2 s y GALPÓN a 2,4 s (Ruling AI-1)', () => {
+    expect(STROKE_TIMING.markMs).toBe(1200)
+    expect(STROKE_TIMING.writeMs).toBe(2400)
     const byId = new Map(plan.map((step) => [step.id, step]))
-    expect(byId.get('mark-mate')).toEqual({ id: 'mark-mate', delayMs: 0, durationMs: 1400 })
-    expect(byId.get('g')?.delayMs).toBe(STROKE_TIMING.markMs)
-    const ends = plan.map((step) => step.delayMs + step.durationMs)
-    expect(Math.max(...ends)).toBe(STROKE_TIMING.markMs + STROKE_TIMING.writeMs)
+    expect(byId.get('mark-mate')).toEqual({ id: 'mark-mate', delayMs: 0, durationMs: 1200 })
+    expect(byId.get('g')?.delayMs).toBe(0)
+    expect(lastEnd(plan.filter((step) => markIds.has(step.id)))).toBe(1200)
+    expect(lastEnd(plan.filter((step) => !markIds.has(step.id)))).toBe(2400)
+    expect(byId.get('n')?.delayMs).toBeGreaterThan(1200)
   })
 
   it('cada letra se solapa un poco con la siguiente y los huecos van con su letra', () => {
@@ -54,7 +64,7 @@ describe('planStrokes', () => {
       planStrokes(LOGO_PATHS.mark, [{ id: 'x', minX: Number.NaN, hole: false }]),
     ).toThrow(RangeError)
     expect(() =>
-      planStrokes(LOGO_PATHS.mark, LOGO_PATHS.word, { markMs: 1400, writeMs: 300, letterMs: 380 }),
+      planStrokes(LOGO_PATHS.mark, LOGO_PATHS.word, { markMs: 1200, writeMs: 300, letterMs: 460 }),
     ).toThrow(RangeError)
   })
 })

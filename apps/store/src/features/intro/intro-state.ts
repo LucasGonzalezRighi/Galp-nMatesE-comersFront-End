@@ -42,13 +42,13 @@ export type IntroAction =
 /** Sin capa. */
 export const IDLE: IntroState = { phase: 'idle', mode: 'page', href: null }
 
-/** Duraciones de la capa, en milisegundos (el guion del video de 5 s, con la apertura más larga). */
+/** Duraciones de la capa, en milisegundos (Ruling AI-1). */
 export const INTRO_TIMING = {
-  /** Trazado del matecito y de la palabra: 0 a 3,4 s. */
-  drawMs: 3400,
-  /** Relleno con el degradé y subida: 3,4 a 4 s. */
-  fillMs: 600,
-  /** Apertura de la intro: 4 a 5,5 s (Ruling MR-31: 1,5 s, suave al arrancar y al llegar). */
+  /** Trazado: el matecito de 0 a 1,2 s y GALPÓN de 0 a 2,4 s (`STROKE_TIMING`). */
+  drawMs: 2400,
+  /** Relleno con el degradé y subida: 2,4 a 2,9 s. */
+  fillMs: 500,
+  /** Apertura de la intro: 2,9 a 4,4 s (Ruling MR-31: 1,5 s, suave al arrancar y al llegar). */
   introOpenMs: 1500,
   /** Bajada del telón entre páginas. */
   coverMs: 450,

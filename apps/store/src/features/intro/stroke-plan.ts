@@ -18,18 +18,21 @@ export interface StrokeStep {
   durationMs: number
 }
 
-/** Tiempos del dibujo de la intro. */
+/** Tiempos del dibujo de la intro: el matecito y la palabra arrancan juntos, en 0. */
 export interface StrokeTiming {
-  /** Cuánto tarda el matecito (0 a 1,4 s). */
+  /** Cuánto tarda el matecito (0 a 1,2 s). */
   markMs: number
-  /** Cuánto tarda la palabra entera (1,4 a 3,4 s). */
+  /** Cuánto tarda la palabra entera, también desde 0 (0 a 2,4 s). */
   writeMs: number
   /** Cuánto tarda cada letra; se solapan un poco para que entren en `writeMs`. */
   letterMs: number
 }
 
-/** El guion del video de referencia: el matecito en 1,4 s y GALPÓN en 2 s, ~0,38 s por letra. */
-export const STROKE_TIMING: StrokeTiming = { markMs: 1400, writeMs: 2000, letterMs: 380 }
+/**
+ * El guion de la intro (Ruling AI-1): el matecito y GALPÓN arrancan juntos; el matecito termina a
+ * 1,2 s y GALPÓN a 2,4 s, ~0,46 s por letra (cada una se solapa ~70 ms con la siguiente).
+ */
+export const STROKE_TIMING: StrokeTiming = { markMs: 1200, writeMs: 2400, letterMs: 460 }
 
 /** Dónde arranca un hueco dentro del trazo de su letra, y cuánto dura, en fracción de la letra. */
 const HOLE_START = 0.4
@@ -76,15 +79,17 @@ function schedule(list: Glyph[], startMs: number, spanMs: number, glyphMs: numbe
 }
 
 /**
- * Arma el orden y los tiempos del trazado de la intro: primero el matecito (su contorno, con la
- * boca a mitad de camino y la bombilla al final del contorno), después GALPÓN letra por letra
- * de izquierda a derecha (por `minX`), cada letra solapada un poco con la siguiente y con sus
- * huecos dibujándose junto con ella. La última letra termina justo en `markMs + writeMs`.
+ * Arma el orden y los tiempos del trazado de la intro (Ruling AI-1): el matecito (su contorno, con
+ * la boca a mitad de camino y la bombilla al final del contorno) y GALPÓN arrancan juntos. El
+ * matecito termina en `markMs`; GALPÓN va letra por letra de izquierda a derecha (por `minX`),
+ * cada letra solapada un poco con la siguiente y con sus huecos dibujándose junto con ella, y la
+ * última termina justo en `writeMs`.
  *
  * @param mark - Los subtrazos del matecito.
  * @param word - Los subtrazos de la palabra.
  * @param timing - Los tiempos; por defecto, {@link STROKE_TIMING}.
- * @returns Un paso por subtrazo, en el orden en que empiezan a dibujarse.
+ * @returns Un paso por subtrazo: los del matecito y después los de la palabra, cada grupo en el
+ *   orden en que empieza a dibujarse.
  * @throws {RangeError} Si alguna lista está vacía, un `minX` no es finito, un hueco no tiene una
  *   letra a su izquierda, o los tiempos no son positivos o la letra dura más que la palabra.
  */
@@ -104,6 +109,6 @@ export function planStrokes(
   }
   return [
     ...schedule(glyphs(mark, 'el matecito'), 0, markMs, markMs),
-    ...schedule(glyphs(word, 'la palabra'), markMs, writeMs, letterMs),
+    ...schedule(glyphs(word, 'la palabra'), 0, writeMs, letterMs),
   ]
 }

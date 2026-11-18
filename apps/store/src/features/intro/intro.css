@@ -134,7 +134,7 @@
   height: auto;
   overflow: visible;
   translate: var(--intro-cut) 0;
-  transition: transform 600ms var(--ease-main);
+  transition: transform var(--intro-fill-ms) var(--ease-main);
 }
 
 .intro[data-logo='fill'] .intro-logo,
@@ -144,7 +144,7 @@
 
 .intro-fill {
   opacity: 0;
-  transition: opacity 600ms ease;
+  transition: opacity var(--intro-fill-ms) ease;
 }
 
 .intro[data-logo='fill'] .intro-fill,
@@ -158,7 +158,7 @@
 }
 
 .intro-strokes {
-  transition: opacity 600ms ease;
+  transition: opacity var(--intro-fill-ms) ease;
 }
 
 .intro[data-logo='fill'] .intro-strokes,

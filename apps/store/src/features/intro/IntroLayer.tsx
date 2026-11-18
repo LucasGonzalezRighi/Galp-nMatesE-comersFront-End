@@ -91,7 +91,8 @@ export interface IntroLayerProps {
 /**
  * La capa que tapa la pantalla (la intro del inicio y el telón entre páginas): dos mitades
  * verticales con fondo liso, cada una con su mitad del logo (el corte cae entre la L y la P).
- * Según el paso, baja desde arriba, traza el matecito y escribe GALPÓN (con `stroke-dashoffset`),
+ * Según el paso, baja desde arriba, traza el matecito y escribe GALPÓN a la vez (con
+ * `stroke-dashoffset`),
  * rellena el logo con el degradé crema a tostado y lo sube 12 px, y se abre como un libro: cada
  * mitad hacia su costado con un giro leve, suave al arrancar y al llegar (solo `transform`, así
  * no pierde cuadros). Es decorativa (`aria-hidden`); el movimiento vive en `intro.css` y los
@@ -114,6 +115,7 @@ export function IntroLayer({ state, paths }: IntroLayerProps): ReactNode {
     '--intro-ease-draw': `cubic-bezier(${EASE_DRAW.join(', ')})`,
     '--intro-ease-open': `cubic-bezier(${EASE_OPEN.join(', ')})`,
     '--intro-cover-ms': `${String(INTRO_TIMING.coverMs)}ms`,
+    '--intro-fill-ms': `${String(INTRO_TIMING.fillMs)}ms`,
     '--intro-open-ms': `${String(state.mode === 'intro' ? INTRO_TIMING.introOpenMs : INTRO_TIMING.pageOpenMs)}ms`,
   } as CSSProperties
 

@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import type { IntroMode, IntroPhase, IntroState } from './intro-state'
-import { canSkip, IDLE, introReducer } from './intro-state'
+import { canSkip, IDLE, INTRO_TIMING, introReducer } from './intro-state'
+import { STROKE_TIMING } from './stroke-plan'
 
 /** Un estado de la capa. */
 function at(phase: IntroPhase, mode: IntroMode, href: string | null = null): IntroState {
   return { phase, mode, href }
 }
+
+describe('INTRO_TIMING', () => {
+  it('la intro dura 4,4 s: trazado de 2,4 s, relleno de 0,5 s y apertura de 1,5 s (Ruling AI-1)', () => {
+    expect(INTRO_TIMING.drawMs).toBe(Math.max(STROKE_TIMING.markMs, STROKE_TIMING.writeMs))
+    expect(INTRO_TIMING.drawMs).toBe(2400)
+    expect(INTRO_TIMING.fillMs).toBe(500)
+    expect(INTRO_TIMING.introOpenMs).toBe(1500)
+    expect(INTRO_TIMING.drawMs + INTRO_TIMING.fillMs + INTRO_TIMING.introOpenMs).toBe(4400)
+  })
+})
 
 describe('introReducer', () => {
   it('un clic en el menú baja el telón solo si no hay otra capa', () => {

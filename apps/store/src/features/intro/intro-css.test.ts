@@ -57,3 +57,13 @@ describe('apertura de la intro y del telón (Ruling MR-31)', () => {
     expect(INTRO_TIMING.introOpenMs).toBe(1500)
   })
 })
+
+describe('relleno del logo (Ruling AI-1)', () => {
+  it('el relleno, la subida y el apagado de los trazos duran lo mismo que el paso (0,5 s)', () => {
+    expect(INTRO_TIMING.fillMs).toBe(500)
+    expect(css).toMatch(/\.intro-logo \{[^}]*transition: transform var\(--intro-fill-ms\)/)
+    expect(css).toMatch(/\.intro-fill \{[^}]*transition: opacity var\(--intro-fill-ms\)/)
+    expect(css).toMatch(/\.intro-strokes \{[^}]*transition: opacity var\(--intro-fill-ms\)/)
+    expect(css).not.toContain('600ms')
+  })
+})
