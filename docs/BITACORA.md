@@ -547,7 +547,7 @@ Parte del cierre del back (B8; el plan está en `backend/docs/superpowers/plans/
   - **El tope de la caché de páginas no corre en Vercel** (`VERCEL=1`): ahí las páginas van a la caché de la plataforma, sin límite de espacio y con costo por escritura.
   - Las imágenes de Docker quedan solo para el camino alternativo.
   - **No se pudo probar sin las cuentas:** que Vercel compile los dos proyectos desde el monorepo, el reenvío de `apps/admin/vercel.json` y que la IP real llegue al back a través de Vercel. Está en "Lo que se probó y lo que no" de `backend/docs/DESPLIEGUE.md`.
-- **`next build` y el aviso de Next:** con Next 16.4.2, corrido por un agente, el primer `next build` termina con `SecurityFatalError` (las dos fallas conocidas de la 16.4.2) y pasa al reintentar. `docker-entrypoint.sh` reintenta una vez por las dudas. Actualizar Next sigue siendo un tema aparte.
+- **`next build` y el aviso de Next:** las pruebas de esta pieza empezaron con Next 16.4.2, que cortaba el primer `next build` con `SecurityFatalError` cuando lo corría un agente y pasaba al reintentar. Con Next 16.4.5 (la sección de arriba) ya no pasa; `docker-entrypoint.sh` conserva un reintento por las dudas.
 
 ## Próximos pasos: P5
 
