@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import {
   ADMIN_SCREENS,
   expireSession,
@@ -35,6 +36,19 @@ const AUDITED = [
 // Con movimiento reducido los diálogos quedan en su estado final: axe no mide el contraste de un
 // elemento a medio aparecer.
 test.use({ reducedMotion: 'reduce' })
+
+/**
+ * Aire, en píxeles, entre el borde de abajo del encabezado fijo del celular y el borde de arriba
+ * del control enfocado: negativo si el encabezado lo tapa, `NaN` si falta alguno de los dos.
+ */
+function focusClearance(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const header = document.querySelector('header')?.getBoundingClientRect()
+    const focused = document.activeElement?.getBoundingClientRect()
+    if (header === undefined || focused === undefined) return Number.NaN
+    return Math.round(focused.y - (header.y + header.height))
+  })
+}
 
 test.describe('dashboard: accesibilidad (axe)', () => {
   test('ingreso no tiene violaciones serias ni críticas', async ({ page }) => {
@@ -180,10 +194,14 @@ test.describe('dashboard: accesibilidad (axe)', () => {
     await logInAsAdmin(page)
     await gotoAdmin(page, { path: '/mensajes', heading: 'Mensajes' })
     const unreadOnly = page.getByRole('checkbox', { name: 'Solo sin leer' })
-    // Desde el final de la página, hacia atrás hasta "Solo sin leer".
-    await page.keyboard.press('End')
+    // Desde el final de la página, hacia atrás hasta "Solo sin leer". Enfocar el último control ya
+    // lleva la página al final. No se aprieta la tecla Fin: Chromium anima ese desplazamiento (unos
+    // 170 ms) y sus últimos cuadros pisan el scroll que hace el foco al volver con Mayús+Tab.
     await page.locator('main a, main button, main [tabindex="0"]').last().focus()
     for (let step = 0; step < 60; step += 1) {
+      // Ningún control por el que pasa el foco queda debajo del encabezado fijo: sin el
+      // `scroll-padding-top` de `styles.css`, los primeros mensajes quedan tapados (12 y 56 px).
+      expect(await focusClearance(page), `paso ${String(step)}`).toBeGreaterThanOrEqual(0)
       if (await unreadOnly.evaluate((element) => element === document.activeElement)) break
       await page.keyboard.press('Shift+Tab')
     }
