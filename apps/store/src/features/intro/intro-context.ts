@@ -11,7 +11,10 @@ export interface PageTransitionApi {
    * clic modificado o del medio, si el link es la página actual o con menos movimiento.
    */
   onNavClick: (event: MouseEvent<HTMLAnchorElement>, href: string) => void
-  /** Arranca la intro del inicio (la llama el inicio al montarse). */
+  /**
+   * Avisa que el inicio se muestra (la llama el inicio al montarse): arranca la intro si es la
+   * primera página que cargó el navegador; si no, el telón con el logo (Ruling AI-3).
+   */
   startIntro: () => void
   /** Corta la intro del inicio si todavía no se está abriendo (al desmontarse el inicio). */
   stopIntro: () => void

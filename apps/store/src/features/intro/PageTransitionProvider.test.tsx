@@ -76,7 +76,7 @@ function Home(): ReactNode {
 }
 
 describe('intro del inicio', () => {
-  it('tapa el inicio, traza, rellena, se abre como un libro y se desmonta en 5,5 s', async () => {
+  it('tapa el inicio, traza, rellena, se abre como un libro y se desmonta en 4,4 s', async () => {
     goTo('/')
     render(
       <PageTransitionProvider>
@@ -167,7 +167,7 @@ describe('telón entre páginas', () => {
     )
   }
 
-  it('baja el telón, navega tapado y se abre como un libro cuando pinta la ruta nueva', () => {
+  it('baja el telón, navega tapado y, con la página lista, se abre a los 850 ms: 1,5 s en total', () => {
     goTo('/')
     const { rerender } = render(<Site page={<main>Inicio</main>} />)
 
@@ -183,8 +183,29 @@ describe('telón entre páginas', () => {
     expect(nav.push).toHaveBeenCalledWith('/tienda')
     expect(layer()).toHaveAttribute('data-phase', 'covering')
 
+    // La página nueva pinta enseguida: el telón queda tapado con el logo hasta los 850 ms.
     goTo('/tienda')
     rerender(<Site page={<main>Tienda</main>} />)
+    expect(layer()).toHaveAttribute('data-phase', 'covering')
+    advance(INTRO_TIMING.pageHoldMs - INTRO_TIMING.coverMs - 1)
+    expect(layer()).toHaveAttribute('data-phase', 'covering')
+    advance(1)
+    expect(layer()).toHaveAttribute('data-phase', 'opening')
+    advance(INTRO_TIMING.pageOpenMs - 1)
+    expect(layer()).not.toBeNull()
+    // 450 + 400 + 650 = 1500 ms desde el clic.
+    advance(1)
+    expect(layer()).toBeNull()
+  })
+
+  it('si la página nueva tarda más, el telón la espera y se abre apenas pinta', () => {
+    goTo('/')
+    const { rerender } = render(<Site page={<main>Inicio</main>} />)
+    fireEvent.click(screen.getByRole('link', { name: 'Nosotros' }))
+    advance(1200)
+    expect(layer()).toHaveAttribute('data-phase', 'covering')
+    goTo('/nosotros')
+    rerender(<Site page={<main>Nosotros</main>} />)
     expect(layer()).toHaveAttribute('data-phase', 'opening')
     advance(INTRO_TIMING.pageOpenMs)
     expect(layer()).toBeNull()
@@ -201,25 +222,61 @@ describe('telón entre páginas', () => {
     goTo('/tienda')
     rerender(<Site page={<main>Tienda</main>} />)
     expect(html).toHaveAttribute('data-page-covered')
+    advance(INTRO_TIMING.pageHoldMs - INTRO_TIMING.coverMs)
+    expect(html).toHaveAttribute('data-page-covered')
     advance(INTRO_TIMING.pageOpenMs)
     expect(html).not.toHaveAttribute('data-page-covered')
   })
 
-  it('hacia el inicio baja sin logo y la intro lo dibuja antes de abrirse', async () => {
+  it('hacia el inicio baja con el logo, no arranca la intro y se abre a los 1,5 s (Ruling AI-3)', async () => {
     goTo('/tienda')
     const { rerender } = render(<Site page={<main>Tienda</main>} />)
 
     fireEvent.click(screen.getByRole('link', { name: 'Inicio' }))
     expect(layer()).toHaveAttribute('data-phase', 'covering')
-    expect(layer()).toHaveAttribute('data-logo', 'none')
+    expect(layer()).toHaveAttribute('data-logo', 'done')
     advance(INTRO_TIMING.coverMs)
     expect(nav.push).toHaveBeenCalledWith('/')
 
     goTo('/')
     rerender(<Site page={<Home />} />)
     await settleImports()
+    expect(layer()).toHaveAttribute('data-mode', 'page')
+    expect(layer()).toHaveAttribute('data-logo', 'done')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(document.querySelector('main')).not.toHaveAttribute('inert')
+    advance(INTRO_TIMING.pageHoldMs - INTRO_TIMING.coverMs)
+    expect(layer()).toHaveAttribute('data-phase', 'opening')
+    advance(INTRO_TIMING.pageOpenMs)
+    expect(layer()).toBeNull()
+  })
+
+  it('volver al inicio sin el menú (botón Atrás) muestra el telón ya abajo, con el logo, y no la intro', async () => {
+    // Se entró al sitio por el inicio: la intro sale una vez.
+    goTo('/')
+    const { rerender } = render(<Site page={<Home />} />)
+    await settleImports()
     expect(layer()).toHaveAttribute('data-mode', 'intro')
-    expect(layer()).toHaveAttribute('data-phase', 'drawing')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    advance(INTRO_TIMING.introOpenMs)
+    expect(layer()).toBeNull()
+
+    // A la tienda (sin telón, como un link del contenido) y de vuelta con el botón Atrás.
+    goTo('/tienda')
+    rerender(<Site page={<main>Tienda</main>} />)
+    expect(layer()).toBeNull()
+    goTo('/')
+    rerender(<Site page={<Home />} />)
+    await settleImports()
+    expect(layer()).toHaveAttribute('data-mode', 'page')
+    expect(layer()).toHaveAttribute('data-phase', 'covered')
+    expect(layer()).toHaveAttribute('data-logo', 'done')
+    advance(INTRO_TIMING.pageHoldMs - 1)
+    expect(layer()).toHaveAttribute('data-phase', 'covered')
+    advance(1)
+    expect(layer()).toHaveAttribute('data-phase', 'opening')
+    advance(INTRO_TIMING.pageOpenMs)
+    expect(layer()).toBeNull()
   })
 
   it('mientras el telón se abre, un clic en el menú no se pierde: el link navega solo', () => {
@@ -229,6 +286,7 @@ describe('telón entre páginas', () => {
     advance(INTRO_TIMING.coverMs)
     goTo('/tienda')
     rerender(<Site page={<main>Tienda</main>} />)
+    advance(INTRO_TIMING.pageHoldMs - INTRO_TIMING.coverMs)
     expect(layer()).toHaveAttribute('data-phase', 'opening')
 
     // El `body` escucha después que React y antes que la prueba frene la navegación real.

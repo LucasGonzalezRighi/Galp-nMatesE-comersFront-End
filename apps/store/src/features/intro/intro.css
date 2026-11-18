@@ -32,7 +32,8 @@
   background: var(--color-background);
 }
 
-/* El telón baja desde arriba; la página de atrás se ve debajo de su borde. */
+/* El telón baja desde arriba; la página de atrás se ve debajo de su borde. En `covered` (el inicio
+   al que se llegó sin el telón del menú) ya está abajo desde el primer cuadro: no baja. */
 .intro[data-phase='covering'] {
   animation: intro-curtain var(--intro-cover-ms) var(--ease-main) both;
 }

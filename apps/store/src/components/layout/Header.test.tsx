@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event'
 import { motionValue } from 'motion/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PageTransitionProvider } from '../../features/intro'
 import { registerHeaderHideZone } from '../motion/header-hide-zone'
 import { mockReducedMotion } from '../motion/test/support'
 import { Header } from './Header'
@@ -15,6 +16,7 @@ const route = vi.hoisted(() => ({ pathname: '/' }))
 
 vi.mock('next/navigation', () => ({
   usePathname: (): string => route.pathname,
+  useRouter: (): { push: (href: string) => void } => ({ push: vi.fn() }),
 }))
 
 /** El scroll que lee el encabezado que se esconde (`useScroll` de Motion), movido a mano. */
@@ -444,6 +446,27 @@ describe('el logo GALPÓN', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
 
     expect(scroll).not.toHaveBeenCalled()
+  })
+
+  it('en otra página baja el telón del menú hacia el inicio, como "Inicio" (Ruling AI-3)', () => {
+    window.history.pushState({}, '', '/tienda')
+    route.pathname = '/tienda'
+    const scroll = stubWindowScroll()
+    render(
+      <PageTransitionProvider>
+        <Header />
+      </PageTransitionProvider>,
+    )
+
+    const notPrevented = fireEvent.click(screen.getByRole('link', { name: 'Galpón — inicio' }))
+
+    // El proveedor toma el clic: baja el telón con el logo y navega cuando terminó de bajar.
+    expect(notPrevented).toBe(false)
+    expect(scroll).not.toHaveBeenCalled()
+    const layer = document.querySelector('[data-intro]')
+    expect(layer).toHaveAttribute('data-mode', 'page')
+    expect(layer).toHaveAttribute('data-phase', 'covering')
+    expect(layer).toHaveAttribute('data-logo', 'done')
   })
 
   it('con Ctrl (abrir en otra pestaña) no sube a mano', () => {

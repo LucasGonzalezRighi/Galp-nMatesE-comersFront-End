@@ -56,8 +56,9 @@ test.describe('tienda: navegación', () => {
     await gotoStore(page, '/nosotros')
     await page.getByRole('link', { name: 'Galpón — inicio' }).click()
     await expect(page).toHaveURL('/')
-    // Al volver a Inicio se dibuja la intro entera (Ruling MR-29) y después queda la portada.
-    await expect(page.locator(`${INTRO_LAYER}[data-mode="intro"]`)).toBeAttached()
+    // Desde adentro del sitio el inicio no repite la intro: baja el telón con el logo (Ruling AI-3).
+    await expect(page.locator(`${INTRO_LAYER}[data-mode="page"]`)).toBeAttached()
+    await expect(page.locator(`${INTRO_LAYER}[data-mode="intro"]`)).toHaveCount(0)
     await settleIntro(page)
     await expect(
       page.getByRole('heading', { level: 1, name: /Encontrá\s*tu mate\./ }),

@@ -3,9 +3,17 @@ import type { IntroMode, IntroPhase, IntroState } from './intro-state'
 import { canSkip, IDLE, INTRO_TIMING, introReducer } from './intro-state'
 import { STROKE_TIMING } from './stroke-plan'
 
+/** Lo que el telón ya tiene: la página nueva pintada y el mínimo tapado cumplido. */
+type CurtainFlags = Partial<Pick<IntroState, 'routed' | 'held'>>
+
 /** Un estado de la capa. */
-function at(phase: IntroPhase, mode: IntroMode, href: string | null = null): IntroState {
-  return { phase, mode, href }
+function at(
+  phase: IntroPhase,
+  mode: IntroMode,
+  href: string | null = null,
+  flags: CurtainFlags = {},
+): IntroState {
+  return { phase, mode, href, routed: false, held: false, ...flags }
 }
 
 describe('INTRO_TIMING', () => {
@@ -15,6 +23,14 @@ describe('INTRO_TIMING', () => {
     expect(INTRO_TIMING.fillMs).toBe(500)
     expect(INTRO_TIMING.introOpenMs).toBe(1500)
     expect(INTRO_TIMING.drawMs + INTRO_TIMING.fillMs + INTRO_TIMING.introOpenMs).toBe(4400)
+  })
+
+  it('el telón dura 1,5 s: baja en 450 ms, tapa hasta los 850 ms y abre en 650 ms (Ruling AI-2)', () => {
+    expect(INTRO_TIMING.coverMs).toBe(450)
+    expect(INTRO_TIMING.pageHoldMs).toBe(850)
+    expect(INTRO_TIMING.pageOpenMs).toBe(650)
+    expect(INTRO_TIMING.pageHoldMs + INTRO_TIMING.pageOpenMs).toBe(1500)
+    expect(INTRO_TIMING.routeWaitMs).toBe(8000)
   })
 })
 
@@ -29,9 +45,11 @@ describe('introReducer', () => {
     expect(introReducer(opening, { type: 'navigate', href: '/kit' })).toBe(opening)
   })
 
-  it('la intro arranca siempre (también sobre el telón): directo a dibujar si ya están los trazos', () => {
-    expect(introReducer(IDLE, { type: 'introStart', ready: true })).toEqual(at('drawing', 'intro'))
-    expect(introReducer(at('covering', 'page', '/'), { type: 'introStart', ready: false })).toEqual(
+  it('la intro dibujada arranca solo en la primera página: directo a dibujar si ya están los trazos', () => {
+    expect(introReducer(IDLE, { type: 'introStart', ready: true, first: true })).toEqual(
+      at('drawing', 'intro'),
+    )
+    expect(introReducer(IDLE, { type: 'introStart', ready: false, first: true })).toEqual(
       at('loading', 'intro'),
     )
     expect(introReducer(at('loading', 'intro'), { type: 'ready' })).toEqual(at('drawing', 'intro'))
@@ -39,11 +57,36 @@ describe('introReducer', () => {
     expect(introReducer(drawing, { type: 'ready' })).toBe(drawing)
   })
 
-  it('el cambio de ruta abre solo el telón que está tapando', () => {
-    expect(introReducer(at('covering', 'page', '/tienda'), { type: 'routeChanged' })).toEqual(
-      at('opening', 'page', '/tienda'),
+  it('al inicio desde adentro del sitio nunca hay intro: sigue el telón (Ruling AI-3)', () => {
+    // Con el telón del menú bajando hacia el inicio, el inicio no lo cambia.
+    const covering = at('covering', 'page', '/')
+    expect(introReducer(covering, { type: 'introStart', ready: true, first: false })).toBe(covering)
+    // Sin telón (el botón Atrás o un link fuera del menú), el telón aparece ya abajo, con la página
+    // nueva pintada, y espera el mínimo tapado.
+    expect(introReducer(IDLE, { type: 'introStart', ready: true, first: false })).toEqual(
+      at('covered', 'page', null, { routed: true }),
     )
-    // Si en el medio arrancó la intro del inicio, manda la intro.
+  })
+
+  it('el telón se abre cuando pasó el mínimo tapado y ya pintó la página nueva, en cualquier orden', () => {
+    // La página llega antes del mínimo: espera el reloj.
+    const routed = introReducer(at('covering', 'page', '/tienda'), { type: 'routeChanged' })
+    expect(routed).toEqual(at('covering', 'page', '/tienda', { routed: true }))
+    expect(introReducer(routed, { type: 'next' })).toEqual(
+      at('opening', 'page', '/tienda', { routed: true }),
+    )
+    // La página tarda más que el mínimo: se abre apenas llega.
+    const held = introReducer(at('covering', 'page', '/kit'), { type: 'next' })
+    expect(held).toEqual(at('covering', 'page', '/kit', { held: true }))
+    expect(introReducer(held, { type: 'routeChanged' })).toEqual(
+      at('opening', 'page', '/kit', { held: true }),
+    )
+    // El telón que apareció ya abajo, igual.
+    const covered = at('covered', 'page', null, { routed: true })
+    expect(introReducer(covered, { type: 'next' })).toEqual(
+      at('opening', 'page', null, { routed: true }),
+    )
+    // Si la intro está tapando, el cambio de ruta no la toca; sin capa, tampoco.
     const drawing = at('drawing', 'intro')
     expect(introReducer(drawing, { type: 'routeChanged' })).toBe(drawing)
     expect(introReducer(IDLE, { type: 'routeChanged' })).toBe(IDLE)
@@ -56,9 +99,7 @@ describe('introReducer', () => {
     }
     expect(steps.map((state) => state.phase)).toEqual(['drawing', 'filling', 'opening', 'idle'])
     expect(introReducer(at('opening', 'page', '/kit'), { type: 'next' })).toEqual(IDLE)
-    // Cubriendo o cargando, el reloj no la mueve: espera la ruta nueva o los trazos.
-    const covering = at('covering', 'page', '/kit')
-    expect(introReducer(covering, { type: 'next' })).toBe(covering)
+    // Cargando, el reloj no la mueve: espera los trazos.
     const loading = at('loading', 'intro')
     expect(introReducer(loading, { type: 'next' })).toBe(loading)
   })
@@ -68,9 +109,10 @@ describe('introReducer', () => {
       expect(canSkip(at(phase, 'intro'))).toBe(true)
       expect(introReducer(at(phase, 'intro'), { type: 'skip' })).toEqual(at('opening', 'intro'))
     }
-    const covering = at('covering', 'page', '/kit')
-    expect(canSkip(covering)).toBe(false)
-    expect(introReducer(covering, { type: 'skip' })).toBe(covering)
+    for (const curtain of [at('covering', 'page', '/kit'), at('covered', 'page')]) {
+      expect(canSkip(curtain)).toBe(false)
+      expect(introReducer(curtain, { type: 'skip' })).toBe(curtain)
+    }
     const opening = at('opening', 'intro')
     expect(introReducer(opening, { type: 'skip' })).toBe(opening)
   })
@@ -81,5 +123,7 @@ describe('introReducer', () => {
     expect(introReducer(opening, { type: 'introStop' })).toBe(opening)
     const covering = at('covering', 'page', '/kit')
     expect(introReducer(covering, { type: 'introStop' })).toBe(covering)
+    const covered = at('covered', 'page', null, { routed: true })
+    expect(introReducer(covered, { type: 'introStop' })).toBe(covered)
   })
 })

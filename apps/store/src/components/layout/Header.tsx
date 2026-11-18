@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { AccountButton } from '../../features/account'
 import { CartButton } from '../../features/cart'
+import { usePageTransition } from '../../features/intro'
 import { asRoute } from '../../lib/routes'
 import { useHeaderMayHide, usePrefersReducedMotion, useScrollDirection } from '../motion'
 import { IconButton } from '../ui'
@@ -81,7 +82,8 @@ const GLASS_LINE: CSSProperties = {
  * páginas, con menos movimiento, arriba de todo, con el menú abierto o con el foco adentro siempre
  * se ve, bajes o subas. En el inicio, el logo no navega: sube todo con scroll suave (sin animar
  * con menos movimiento) y lleva el foco al principio (Ruling MR-17); el mate 3D vuelve a la portada
- * solo, porque su avance sale del scroll. En otra página lleva al inicio como cualquier link.
+ * solo, porque su avance sale del scroll. En otra página lleva al inicio con el telón del menú
+ * (Ruling AI-3), como el link "Inicio".
  */
 export function Header(): ReactNode {
   const scrolled = useScrolled()
@@ -92,6 +94,7 @@ export function Header(): ReactNode {
   const reduced = usePrefersReducedMotion()
   const direction = useScrollDirection(HIDE_AFTER_PX)
   const mayHide = useHeaderMayHide()
+  const transition = usePageTransition()
   const hidden = mayHide && !reduced && direction === 'down' && !menuOpen && !focusInside
 
   // Si la ventana se ensancha con el menú abierto, ya no hay hamburguesa: se cierra.
@@ -120,7 +123,11 @@ export function Header(): ReactNode {
   const goHome = (event: MouseEvent<HTMLAnchorElement>): void => {
     const newTab =
       event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
-    if (newTab || window.location.pathname !== '/') return
+    if (newTab) return
+    if (window.location.pathname !== '/') {
+      transition?.onNavClick(event, '/')
+      return
+    }
     event.preventDefault()
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
     focusPageStartAtTop()

@@ -1,32 +1,69 @@
 import type { Page } from '@playwright/test'
-import { gotoStore } from '../support/store'
+import { gotoStore, settleIntro } from '../support/store'
 import { expect, test } from '../support/test'
 
 /** La capa de la intro y del telón (la tapa del servidor antes de hidratar es otra). */
 const LAYER = '[data-intro]'
 
-/** Abre el link "Tienda" del menú: el del encabezado o, en el celular, el del menú. */
-async function clickShop(page: Page, isMobile: boolean): Promise<void> {
+/** Abre un link del menú: el del encabezado o, en el celular, el del menú. */
+async function clickMenu(page: Page, isMobile: boolean, name: string): Promise<void> {
   if (isMobile) {
     await page.getByRole('button', { name: 'Menú', exact: true }).click()
-    await page.getByRole('dialog', { name: 'Menú' }).getByRole('link', { name: 'Tienda' }).click()
+    await page.getByRole('dialog', { name: 'Menú' }).getByRole('link', { name }).click()
   } else {
-    await page
-      .getByRole('navigation', { name: 'Principal' })
-      .getByRole('link', { name: 'Tienda' })
-      .click()
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name }).click()
   }
 }
 
-test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
+/**
+ * Empieza a anotar, en `data-seen-layers` de `<html>`, cada capa que aparece: su modo y su logo
+ * (`page:done` es el telón con el logo; `intro:…`, la intro dibujada). Sigue anotando mientras la
+ * navegación sea del lado del cliente (el mismo documento).
+ */
+async function recordLayers(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const seen: string[] = []
+    const note = (): void => {
+      const layer = document.querySelector('[data-intro]')
+      if (layer === null) return
+      const entry = `${layer.getAttribute('data-mode') ?? ''}:${layer.getAttribute('data-logo') ?? ''}`
+      if (seen.at(-1) === entry) return
+      seen.push(entry)
+      document.documentElement.dataset.seenLayers = seen.join(' ')
+    }
+    new MutationObserver(note).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-mode', 'data-logo', 'data-phase'],
+    })
+  })
+}
+
+/** Las capas que anotó {@link recordLayers}. */
+async function seenLayers(page: Page): Promise<string[]> {
+  const seen = await page.locator('html').getAttribute('data-seen-layers')
+  return seen === null ? [] : seen.split(' ')
+}
+
+/** Espera a que se vaya la capa y comprueba que fue el telón con el logo, nunca la intro. */
+async function expectCurtainWithLogo(page: Page): Promise<void> {
+  await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 5000 })
+  const seen = await seenLayers(page)
+  expect(seen).toContain('page:done')
+  expect(seen.filter((entry) => entry.startsWith('intro'))).toEqual([])
+  await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
+}
+
+test.describe('tienda: intro y telón entre páginas (Rulings MR-29, AI-1 a AI-3)', () => {
   test.describe('con movimiento', () => {
     test.use({ reducedMotion: 'no-preference' })
 
-    test('la intro tapa el inicio, se abre en 5,5 s y deja ver la portada', async ({ page }) => {
+    test('la intro tapa el inicio, se abre en 4,4 s y deja ver la portada', async ({ page }) => {
       await gotoStore(page, '/', { intro: 'keep' })
       await expect(page.locator(LAYER)).toBeAttached()
       await expect(page.locator(LAYER)).toHaveAttribute('data-mode', 'intro')
-      // 5,5 s de guion, más la hidratación y la carga de los trazos.
+      // 4,4 s de guion, más la hidratación y la carga de los trazos.
       await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
       await expect(page.locator('main').first()).not.toHaveAttribute('inert')
@@ -46,7 +83,7 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       // clic del menú llegaba con la intro todavía en curso).
       await gotoStore(page, '/')
 
-      await clickShop(page, isMobile)
+      await clickMenu(page, isMobile, 'Tienda')
       await expect(page.locator(LAYER)).toHaveAttribute('data-mode', 'page')
       await expect(page).toHaveURL('/tienda')
       await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 3000 })
@@ -54,42 +91,49 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
     })
   })
 
-  test.describe('volver a Inicio (con movimiento)', () => {
+  test.describe('volver al inicio desde adentro del sitio (Ruling AI-3)', () => {
     test.use({ reducedMotion: 'no-preference' })
 
-    test('"Inicio" del menú dibuja la intro entera y después muestra la portada', async ({
+    test('"Inicio" del menú baja el telón con el logo y no arranca la intro', async ({
       page,
       isMobile,
     }) => {
       await gotoStore(page, '/tienda')
-      if (isMobile) {
-        await page.getByRole('button', { name: 'Menú', exact: true }).click()
-        await page
-          .getByRole('dialog', { name: 'Menú' })
-          .getByRole('link', { name: 'Inicio' })
-          .click()
-      } else {
-        await page
-          .getByRole('navigation', { name: 'Principal' })
-          .getByRole('link', { name: 'Inicio' })
-          .click()
-      }
-      // El telón baja sin logo y la intro del inicio lo dibuja entero (Ruling MR-29).
-      await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
+      await recordLayers(page)
+      await clickMenu(page, isMobile, 'Inicio')
       await expect(page).toHaveURL('/')
-      await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
-      await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
-      await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
+      await expectCurtainWithLogo(page)
     })
 
-    test('el logo desde otra página también dibuja la intro antes de la portada', async ({
+    test('el logo desde otra página baja el mismo telón, sin intro', async ({ page }) => {
+      await gotoStore(page, '/nosotros')
+      await recordLayers(page)
+      await page.getByRole('link', { name: 'Galpón — inicio' }).click()
+      await expect(page).toHaveURL('/')
+      await expectCurtainWithLogo(page)
+    })
+
+    test('el botón Atrás hacia el inicio muestra el telón con el logo, sin intro', async ({
       page,
+      isMobile,
     }) => {
+      await gotoStore(page, '/')
+      await clickMenu(page, isMobile, 'Tienda')
+      await expect(page).toHaveURL('/tienda')
+      await settleIntro(page)
+      await recordLayers(page)
+      await page.goBack()
+      await expect(page).toHaveURL('/')
+      await expectCurtainWithLogo(page)
+    })
+
+    test('recargar el inicio sí dibuja la intro', async ({ page }) => {
       await gotoStore(page, '/nosotros')
       await page.getByRole('link', { name: 'Galpón — inicio' }).click()
-      await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
       await expect(page).toHaveURL('/')
-      await expect(page.locator(`${LAYER}[data-phase="drawing"]`)).toBeAttached()
+      await settleIntro(page)
+      await page.reload()
+      await expect(page.locator(`${LAYER}[data-mode="intro"]`)).toBeAttached()
       await expect(page.locator(LAYER)).toHaveCount(0, { timeout: 8000 })
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
     })
@@ -104,8 +148,11 @@ test.describe('tienda: intro y telón entre páginas (Ruling MR-29)', () => {
       await expect(page.locator('[data-intro-cover]')).toHaveCount(0)
       await expect(page.getByRole('heading', { level: 1, name: 'Encontrá tu mate.' })).toBeVisible()
 
-      await clickShop(page, isMobile)
+      await clickMenu(page, isMobile, 'Tienda')
       await expect(page).toHaveURL('/tienda')
+      await expect(page.locator(LAYER)).toHaveCount(0)
+      await clickMenu(page, isMobile, 'Inicio')
+      await expect(page).toHaveURL('/')
       await expect(page.locator(LAYER)).toHaveCount(0)
     })
   })

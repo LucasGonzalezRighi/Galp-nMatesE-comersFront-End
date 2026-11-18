@@ -52,10 +52,13 @@ function logoLook(state: IntroState, source: LogoSource | null): LogoLook {
   return state.phase === 'opening' ? 'done' : 'none'
 }
 
-/** De dónde sale el logo: la intro lo dibuja; el telón lo muestra hecho, salvo hacia el inicio. */
+/**
+ * De dónde sale el logo: la intro lo dibuja; el telón lo muestra hecho, también hacia el inicio
+ * (Ruling AI-3).
+ */
 function logoSource(state: IntroState, paths: LogoPaths | null): LogoSource | null {
   if (state.mode === 'intro') return paths === null ? null : 'paths'
-  return state.href === '/' ? null : 'images'
+  return 'images'
 }
 
 /**
@@ -91,8 +94,8 @@ export interface IntroLayerProps {
 /**
  * La capa que tapa la pantalla (la intro del inicio y el telón entre páginas): dos mitades
  * verticales con fondo liso, cada una con su mitad del logo (el corte cae entre la L y la P).
- * Según el paso, baja desde arriba, traza el matecito y escribe GALPÓN a la vez (con
- * `stroke-dashoffset`),
+ * Según el paso, baja desde arriba (o aparece ya abajo), traza el matecito y escribe GALPÓN a la
+ * vez (con `stroke-dashoffset`),
  * rellena el logo con el degradé crema a tostado y lo sube 12 px, y se abre como un libro: cada
  * mitad hacia su costado con un giro leve, suave al arrancar y al llegar (solo `transform`, así
  * no pierde cuadros). Es decorativa (`aria-hidden`); el movimiento vive en `intro.css` y los
