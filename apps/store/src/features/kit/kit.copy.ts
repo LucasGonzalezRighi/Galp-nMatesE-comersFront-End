@@ -29,8 +29,10 @@ export const KIT_COPY = {
   subtotal: 'Subtotal',
   /** Renglón del total. */
   total: 'Total',
-  /** Botón que agrega el kit al carrito. */
+  /** Botón que agrega el kit al carrito (con las tres piezas, o deshabilitado sin ninguna). */
   addKit: 'Agregar kit al carrito',
+  /** Botón que agrega una o dos piezas como productos sueltos, a precio de lista (Ruling AI-6). */
+  addPieces: 'Agregar al carrito',
   /** Botón que reinicia las piezas elegidas. */
   startOver: 'Empezar de nuevo',
   /** Valor de un renglón de la vista Resumen sin pieza elegida. */
@@ -117,6 +119,26 @@ export function missingText(missing: readonly ProductGroup[]): string {
     throw new RangeError('missingText necesita al menos un grupo que falte.')
   }
   return `Te falta elegir ${missing.map((group) => GROUP_WITH_ARTICLE[group]).join(', ')}.`
+}
+
+/**
+ * Aviso del panel con una o dos piezas: lo que falta para tener el descuento del kit (Ruling
+ * AI-6). Sin descuento configurado (0%) no hay aviso: quien llama lo omite.
+ *
+ * @param missing - Grupos sin pieza elegida, en el orden del kit; uno o dos.
+ * @param percent - Descuento del kit, un entero entre 1 y 100.
+ * @returns Por ejemplo "Sumá la bombilla y tenés −10%." o "Sumá la bombilla y la yerba y tenés −10%.".
+ * @throws {RangeError} Si no faltan uno o dos grupos, o si el porcentaje no es un entero entre 1 y 100.
+ */
+export function discountHint(missing: readonly ProductGroup[], percent: number): string {
+  if (missing.length < 1 || missing.length > 2) {
+    throw new RangeError(
+      `El aviso del descuento necesita uno o dos grupos que falten; se recibieron ${String(missing.length)}.`,
+    )
+  }
+  if (percent === 0) throw new RangeError('Sin descuento del kit no hay aviso del descuento.')
+  const discount = formatDiscountPercent(percent)
+  return `Sumá ${missing.map((group) => GROUP_WITH_ARTICLE[group]).join(' y ')} y tenés ${discount}.`
 }
 
 /**

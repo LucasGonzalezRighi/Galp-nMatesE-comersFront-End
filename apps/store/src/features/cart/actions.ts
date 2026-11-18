@@ -7,12 +7,14 @@ import {
   hasDistinctGroups,
   initialLeather,
   isLeather,
+  KIT_GROUP_ORDER,
   MAX_KIT_DISCOUNT_PERCENT,
   remainingQuantityFor,
 } from '@galpon/domain'
+import type { SkippedReason } from './cart.copy'
 import type { FlyOrigin } from './fly-to-cart'
 import { hideToast, showToast } from '../toast'
-import { CART_COPY, kitDiscountApplied } from './cart.copy'
+import { CART_COPY, kitDiscountApplied, namesList, pieceSkippedNotice } from './cart.copy'
 import { ensureCartHydrated, useCartStore } from './cart.store'
 import { flyToCart } from './fly-to-cart'
 
@@ -73,6 +75,20 @@ export interface AddKitInput {
   leather: Leather | null
   /** Descuento actual del kit (para el aviso); un entero entre 0 y 30. */
   discountPercent: number
+  /** Punto del clic, para el vuelo al carrito. */
+  origin?: FlyOrigin
+}
+
+/** Datos de {@link addKitPiecesToCart}. */
+export interface AddKitPiecesInput {
+  /** Las piezas elegidas del kit, una o dos y de grupos distintos (con las tres va el kit). */
+  pieces: readonly CartableProduct[]
+  /**
+   * Cuero del mate, si entre las piezas hay uno, con el mismo criterio que {@link AddKitInput}:
+   * uno de sus `leathers`; con `null`, `initialLeather(mate.leathers)`. Se ignora si no hay mate o
+   * el mate no ofrece cueros.
+   */
+  leather: Leather | null
   /** Punto del clic, para el vuelo al carrito. */
   origin?: FlyOrigin
 }
@@ -295,6 +311,96 @@ export function addKitToCart({
   flyToCart(origin)
   setTimeout(openCart, KIT_CART_OPEN_DELAY_MS)
   return { status: 'added', quantity: 1 }
+}
+
+/**
+ * Valida las piezas que pide {@link addKitPiecesToCart} y decide el cuero del mate.
+ *
+ * @returns El cuero del mate, o `null` si no hay mate o no ofrece cueros.
+ * @throws {RangeError} Si no son una o dos piezas de grupos distintos, si a alguna le faltan el id
+ *   o el nombre, o si el cuero no existe o el mate no lo ofrece.
+ */
+function checkKitPieces({ pieces, leather }: AddKitPiecesInput): Leather | null {
+  if (pieces.length < 1 || pieces.length >= KIT_GROUP_ORDER.length) {
+    throw new RangeError(
+      `Las piezas sueltas del kit tienen que ser de 1 a ${String(KIT_GROUP_ORDER.length - 1)}; con las tres se agrega el kit.`,
+    )
+  }
+  if (!hasDistinctGroups(pieces.map((piece) => piece.group))) {
+    throw new RangeError('Las piezas del kit tienen que ser de grupos distintos.')
+  }
+  pieces.forEach(assertCartable)
+  const mate = pieces.find((piece) => piece.group === 'mate')
+  return chooseLeather(leather, mate?.leathers ?? [], mate?.name ?? '')
+}
+
+/**
+ * Agrega el kit con una o dos piezas (Ruling AI-6): cada pieza va como un producto suelto, a
+ * precio de lista y sin el descuento del kit, y el mate con su cuero (el mismo criterio que
+ * {@link addKitToCart}). Respeta el tope de compra de cada pieza contando todas sus líneas, así que
+ * volver a agregar suma cantidades como un producto suelto. Si una pieza no se puede sumar (tope o
+ * sin stock) agrega las otras y lo dice en el aviso. Muestra un solo aviso y lanza un solo vuelo; si
+ * entraron todas, abre el carrito a los 850 ms como el kit ({@link KIT_CART_OPEN_DELAY_MS}); si
+ * alguna quedó afuera no lo abre, así el aviso se puede leer.
+ *
+ * @param input - Ver {@link AddKitPiecesInput}.
+ * @returns Qué pasó: ver {@link AddToCartResult}; en `added`, `quantity` es cuántas piezas entraron.
+ * @throws {RangeError} Si no son una o dos piezas de grupos distintos, si a alguna le faltan el id
+ *   o el nombre, o si el cuero no existe o el mate no lo ofrece.
+ * @example
+ * addKitPiecesToCart({ pieces: [mate, yerba], leather: 'Negro', origin: clickOrigin(event) })
+ */
+export function addKitPiecesToCart(input: AddKitPiecesInput): AddToCartResult {
+  const mateLeather = checkKitPieces(input)
+  const { pieces, origin } = input
+  if (pieces.every((piece) => !piece.isPurchasable)) return { status: 'unavailable' }
+
+  ensureCartHydrated()
+  const { lines, addLine } = useCartStore.getState()
+  const added: string[] = []
+  const skipped: { name: string; reason: SkippedReason }[] = []
+  for (const piece of pieces) {
+    if (!piece.isPurchasable) {
+      skipped.push({ name: piece.name, reason: 'unavailable' })
+    } else if (remainingQuantityFor(piece.id, piece.maxQuantity, lines) < 1) {
+      skipped.push({ name: piece.name, reason: 'limit' })
+    } else {
+      // Las piezas son de grupos distintos: ninguna cambia el tope de otra.
+      const leather = piece.group === 'mate' ? mateLeather : null
+      addLine(
+        {
+          type: 'product',
+          productId: piece.id,
+          quantity: 1,
+          ...(leather === null ? null : { options: { leather } }),
+        },
+        { prices: priceMap([piece]) },
+      )
+      added.push(piece.name)
+    }
+  }
+
+  if (added.length === 0) {
+    const limited = skipped.filter((piece) => piece.reason === 'limit').map((piece) => piece.name)
+    showToast({
+      title: CART_COPY.limitReached,
+      subtitle: namesList(limited),
+      action: VIEW_CART_ACTION,
+    })
+    return { status: 'limit' }
+  }
+  const [firstSkipped] = skipped
+  showToast({
+    title: CART_COPY.added,
+    subtitle:
+      firstSkipped === undefined
+        ? namesList(added)
+        : pieceSkippedNotice(firstSkipped.name, firstSkipped.reason),
+    action: VIEW_CART_ACTION,
+  })
+  flyToCart(origin)
+  if (firstSkipped === undefined) setTimeout(openCart, KIT_CART_OPEN_DELAY_MS)
+  return { status: 'added', quantity: added.length }
 }
 
 /**

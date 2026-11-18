@@ -2,9 +2,10 @@
  * Carrito de la tienda (spec 9.4 y 9.5): store con `localStorage`, conciliación con el catálogo,
  * panel lateral, botón con contador y vuelo al carrito.
  *
- * Para agregar al carrito desde cualquier pantalla se usan `addProductToCart`, `addKitToCart` y
- * `addComboToCart` (respetan el tope de compra, muestran el aviso y lanzan el vuelo); `openCart` abre el panel y
- * `useCart` lee las líneas. El layout monta `CartHydrator` y `CartDrawer` una sola vez, y el
+ * Para agregar al carrito desde cualquier pantalla se usan `addProductToCart`, `addKitToCart`,
+ * `addKitPiecesToCart` (el kit con una o dos piezas, sueltas) y `addComboToCart` (respetan el
+ * tope de compra, muestran el aviso y lanzan el vuelo); `openCart` abre el panel y `useCart` lee
+ * las líneas. El layout monta `CartHydrator` y `CartDrawer` una sola vez, y el
  * encabezado monta `CartButton`. El checkout concilia con `useCartSync`.
  *
  * Los importes del panel salen de la cotización de la API (`useCartView`). Para el checkout:
@@ -17,6 +18,7 @@
 export type {
   AddComboInput,
   AddKitInput,
+  AddKitPiecesInput,
   AddProductInput,
   AddToCartResult,
   CartableCombo,
@@ -36,6 +38,7 @@ export type { FlyOrigin } from './fly-to-cart'
 export type { CartNotice, ReconcileResult } from './reconcile'
 export {
   addComboToCart,
+  addKitPiecesToCart,
   addKitToCart,
   addProductToCart,
   clearCart,

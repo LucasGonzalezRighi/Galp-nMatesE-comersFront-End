@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LEATHERS } from '@galpon/domain'
 import { kitProductsFrom } from './kit-products'
 import { buildKitView, kitOptions, linkedMate, resolvePieces } from './kit-view'
-import { missingText, noOptionsText, stepHint } from './kit.copy'
+import { discountHint, missingText, noOptionsText, stepHint } from './kit.copy'
 import { CATALOG, kitProduct } from './test/support'
 
 describe('kitOptions', () => {
@@ -135,6 +135,10 @@ describe('buildKitView', () => {
     expect(view.amounts).toEqual({ grossArs: 0, savingsArs: 0, totalArs: 0 })
     expect(view.group).toBe('mate')
     expect(view.progress).toBe(0)
+    // Sin piezas no hay nada que agregar: el botón del kit queda deshabilitado.
+    expect(view.canAdd).toBe(false)
+    expect(view.addLabel).toBe('Agregar kit al carrito')
+    expect(view.notice).toBe('Te falta elegir el mate, la bombilla, la yerba.')
   })
 
   it('un paso resuelto muestra el tilde y el nombre de la pieza, salvo que sea el actual', () => {
@@ -166,14 +170,44 @@ describe('buildKitView', () => {
     expect(view.progress).toBe(1)
     // 39.999 + 25.999 + 9.999 = 75.997; 10 % redondeado = 7.600.
     expect(view.amounts).toEqual({ grossArs: 75997, savingsArs: 7600, totalArs: 68397 })
+    expect(view.canAdd).toBe(true)
+    expect(view.addLabel).toBe('Agregar kit al carrito')
+    expect(view.notice).toBeNull()
   })
 
-  it('con piezas a medias calcula el panel con lo elegido', () => {
+  it('con una pieza: precio de lista, sin descuento, y avisa lo que falta para el −10% (Ruling AI-6)', () => {
     const view = buildKitView({ ...base, step: 1, picks: { mate: 'm1' } })
 
-    expect(view.amounts).toEqual({ grossArs: 39999, savingsArs: 4000, totalArs: 35999 })
+    expect(view.amounts).toEqual({ grossArs: 39999, savingsArs: 0, totalArs: 39999 })
     expect(view.options.map((product) => product.id)).toEqual(['b1', 'b2'])
     expect(view.slots.map((slot) => slot.product?.id ?? null)).toEqual(['m1', null, null])
+    expect(view.canAdd).toBe(true)
+    expect(view.addLabel).toBe('Agregar al carrito')
+    expect(view.notice).toBe('Sumá la bombilla y la yerba y tenés −10%.')
+  })
+
+  it('con dos piezas: la suma a precio de lista y lo que falta, nunca el total del kit', () => {
+    const view = buildKitView({ ...base, step: 3, picks: { mate: 'm1', yerba: 'y1' } })
+
+    // 39.999 + 9.999, sin el 10 %: el carrito no lo cobraría.
+    expect(view.amounts).toEqual({ grossArs: 49998, savingsArs: 0, totalArs: 49998 })
+    expect(view.isComplete).toBe(false)
+    expect(view.canAdd).toBe(true)
+    expect(view.addLabel).toBe('Agregar al carrito')
+    expect(view.notice).toBe('Sumá la bombilla y tenés −10%.')
+  })
+
+  it('sin descuento configurado, con piezas a medias no hay aviso del descuento', () => {
+    const view = buildKitView({
+      ...base,
+      step: 3,
+      picks: { mate: 'm1', bombilla: 'b1' },
+      discountPercent: 0,
+    })
+
+    expect(view.notice).toBeNull()
+    expect(view.canAdd).toBe(true)
+    expect(view.amounts).toEqual({ grossArs: 65998, savingsArs: 0, totalArs: 65998 })
   })
 
   it('respeta el descuento que cargó el negocio, incluido el 0', () => {
@@ -191,6 +225,10 @@ describe('buildKitView', () => {
     expect(() => buildKitView({ ...base, step: 0, picks: {}, discountPercent: 31 })).toThrow(
       RangeError,
     )
+    // También con piezas a medias, aunque el descuento todavía no se aplique.
+    expect(() =>
+      buildKitView({ ...base, step: 0, picks: { mate: 'm1' }, discountPercent: 1.5 }),
+    ).toThrow(RangeError)
   })
 })
 
@@ -201,6 +239,18 @@ describe('textos del kit', () => {
     )
     expect(missingText(['yerba'])).toBe('Te falta elegir la yerba.')
     expect(() => missingText([])).toThrow(RangeError)
+  })
+
+  it('el aviso del descuento nombra lo que falta con su artículo, en el orden del kit', () => {
+    expect(discountHint(['bombilla'], 10)).toBe('Sumá la bombilla y tenés −10%.')
+    expect(discountHint(['bombilla', 'yerba'], 10)).toBe(
+      'Sumá la bombilla y la yerba y tenés −10%.',
+    )
+    expect(discountHint(['mate'], 25)).toBe('Sumá el mate y tenés −25%.')
+    expect(() => discountHint([], 10)).toThrow(RangeError)
+    expect(() => discountHint(['mate', 'bombilla', 'yerba'], 10)).toThrow(RangeError)
+    expect(() => discountHint(['mate'], 0)).toThrow(RangeError)
+    expect(() => discountHint(['mate'], 101)).toThrow(RangeError)
   })
 
   it('la ayuda del mate usa la cantidad de mates comprables', () => {

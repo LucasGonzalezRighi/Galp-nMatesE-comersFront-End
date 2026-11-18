@@ -2,7 +2,7 @@ import type { LineAmounts, Pesos, ProductGroup } from '@galpon/domain'
 import { KIT_GROUP_ORDER, kitLineAmounts, missingKitGroups, pesos } from '@galpon/domain'
 import type { KitProduct } from './kit-products'
 import type { KitPicks, KitStep } from './kit.store'
-import { GROUP_LABEL, KIT_COPY, missingCount } from './kit.copy'
+import { discountHint, GROUP_LABEL, KIT_COPY, missingCount, missingText } from './kit.copy'
 import { KIT_REVIEW_STEP } from './kit.store'
 
 /** Las piezas elegidas del kit; `null` si el grupo todavía no tiene o la pieza ya no se puede comprar. */
@@ -49,7 +49,19 @@ export interface KitView {
   missing: ProductGroup[]
   /** Si están las tres piezas. */
   isComplete: boolean
-  /** Importes del kit: suma de las piezas elegidas, ahorro y total (con `kitLineAmounts`). */
+  /** Si hay al menos una pieza: con una o dos se agregan sueltas, con las tres el kit (Ruling AI-6). */
+  canAdd: boolean
+  /** Texto del botón: "Agregar al carrito" con una o dos piezas; si no, "Agregar kit al carrito". */
+  addLabel: string
+  /**
+   * Aviso antes del botón: sin piezas, lo que falta elegir; con una o dos, lo que falta para el
+   * descuento (nada si el descuento es 0); con las tres, `null`.
+   */
+  notice: string | null
+  /**
+   * Importes del panel: suma de las piezas elegidas, ahorro y total (con `kitLineAmounts`). El
+   * descuento del kit solo cuenta con las tres piezas; con menos, todo va a precio de lista.
+   */
   amounts: LineAmounts
   /** Avance de la línea de la barra, de 0 a 1. */
   progress: number
@@ -120,8 +132,10 @@ function listPrice(product: KitProduct | null): Pesos {
 
 /**
  * Calcula lo que muestra la pantalla del kit (spec 9.4 y 9.5): opciones del paso, estado de cada
- * paso, piezas e importes. Los importes salen de `kitLineAmounts` con las piezas elegidas (las
- * que faltan cuentan 0), así el panel se va armando mientras se elige.
+ * paso, piezas, importes, el botón y el aviso. Los importes salen de `kitLineAmounts` con las
+ * piezas elegidas (las que faltan cuentan 0), así el panel se va armando mientras se elige; el
+ * descuento solo se aplica con las tres piezas, porque con menos el carrito las cobra a precio de
+ * lista (Ruling AI-6).
  *
  * @param input - Ver {@link KitViewInput}.
  * @returns El estado de la pantalla.
@@ -136,7 +150,22 @@ export function buildKitView({ products, step, picks, discountPercent }: KitView
   }
   const missing = missingKitGroups(selection)
   const isComplete = missing.length === 0
+  const canAdd = missing.length < KIT_GROUP_ORDER.length
   const group = KIT_GROUP_ORDER[step] ?? null
+  const prices = [
+    listPrice(pieces.mate),
+    listPrice(pieces.bombilla),
+    listPrice(pieces.yerba),
+  ] as const
+  // Se calcula siempre con el descuento, así un descuento inválido es un error aunque no aplique.
+  const kitAmounts = kitLineAmounts(prices, 1, discountPercent)
+  const notice = isComplete
+    ? null
+    : !canAdd
+      ? missingText(missing)
+      : discountPercent === 0
+        ? null
+        : discountHint(missing, discountPercent)
 
   const steps = ([0, 1, 2, 3] as const).map((index): KitStepView => {
     const stepGroup = KIT_GROUP_ORDER[index]
@@ -168,11 +197,10 @@ export function buildKitView({ products, step, picks, discountPercent }: KitView
     steps,
     missing,
     isComplete,
-    amounts: kitLineAmounts(
-      [listPrice(pieces.mate), listPrice(pieces.bombilla), listPrice(pieces.yerba)],
-      1,
-      discountPercent,
-    ),
+    canAdd,
+    addLabel: canAdd && !isComplete ? KIT_COPY.addPieces : KIT_COPY.addKit,
+    notice,
+    amounts: isComplete ? kitAmounts : kitLineAmounts(prices, 1, 0),
     progress: step / KIT_REVIEW_STEP,
   }
 }

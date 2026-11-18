@@ -120,6 +120,9 @@ test.describe('tienda: carrito', () => {
     const summary = page.getByRole('complementary', { name: 'Resumen del kit' })
     const addKit = summary.getByRole('button', { name: 'Agregar kit al carrito' })
     await expect(addKit).toBeEnabled()
+    // Con las tres piezas, el descuento del kit como siempre (Ruling AI-6).
+    await expect(summary.getByText('Descuento kit −10%')).toBeVisible()
+    await expect(summary.getByText(/^Sumá/)).toHaveCount(0)
     const total = await summary
       .getByText('Total', { exact: true })
       .locator('xpath=following-sibling::*[1]')
@@ -132,5 +135,46 @@ test.describe('tienda: carrito', () => {
     await expect(drawer.getByText('Kit ronda completa')).toBeVisible()
     await expect(drawer.getByText(/^Ahorrás/)).toBeVisible()
     await expect(drawer.getByText(total).first()).toBeVisible()
+  })
+
+  test('con mate y yerba agrega dos productos sueltos a precio de lista, sin "Descuento kit"', async ({
+    page,
+  }) => {
+    await gotoStore(page, '/kit')
+    await page.getByRole('button', { name: /^Imperiales Mate Imperial Premium/ }).click()
+    await page
+      .getByRole('navigation', { name: 'Pasos del kit' })
+      .getByRole('button', { name: /^Yerba/ })
+      .click()
+    await page.getByRole('button', { name: /^Yerbas Yerba Canarias 1 kg/ }).click()
+
+    // 39.999 + 9.999 a precio de lista: el resumen no muestra un descuento que el carrito no cobra.
+    const summary = page.getByRole('complementary', { name: 'Resumen del kit' })
+    await expect(summary.getByText(/Descuento kit/)).toHaveCount(0)
+    await expect(
+      summary.getByText('Total', { exact: true }).locator('xpath=following-sibling::*[1]'),
+    ).toHaveText('$49.998')
+    await expect(summary.getByText('Sumá la bombilla y tenés −10%.')).toBeVisible()
+    await expect(summary.getByRole('button', { name: 'Agregar kit al carrito' })).toHaveCount(0)
+    const add = summary.getByRole('button', { name: 'Agregar al carrito' })
+    await expect(add).toBeEnabled()
+    await expect(add).toHaveAccessibleDescription('Sumá la bombilla y tenés −10%.')
+
+    await add.click()
+    await expect(
+      page.getByText('Agregado al carrito. Mate Imperial Premium y Yerba Canarias 1 kg'),
+    ).toBeAttached()
+    await expect(cartButton(page)).toHaveAccessibleName('Abrir carrito, 2 productos')
+    // Como con el kit, el carrito se abre solo y el kit vuelve al primer paso.
+    const drawer = page.getByRole('dialog', { name: /^Carrito/ })
+    await expect(drawer).toBeVisible()
+    await expect(drawer.getByText('Mate Imperial Premium')).toBeVisible()
+    await expect(drawer.getByText('Yerba Canarias 1 kg')).toBeVisible()
+    await expect(drawer.getByText('Kit ronda completa')).toHaveCount(0)
+    await expect(drawer.getByText(/^Ahorrás/)).toHaveCount(0)
+    await expect(drawer.getByText('$39.999').first()).toBeVisible()
+    await expect(drawer.getByText('$9.999').first()).toBeVisible()
+    await expect(drawer.getByText('$49.998').first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Elegí el mate' })).toBeAttached()
   })
 })

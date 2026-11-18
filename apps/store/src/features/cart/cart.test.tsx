@@ -8,6 +8,7 @@ import { LEATHERS } from '@galpon/domain'
 import { hideToast, Toaster } from '../toast'
 import {
   addComboToCart,
+  addKitPiecesToCart,
   addKitToCart,
   addProductToCart,
   closeCart,
@@ -15,6 +16,7 @@ import {
   openCart,
   type AddComboInput,
   type AddKitInput,
+  type AddKitPiecesInput,
   type AddProductInput,
   type AddToCartResult,
   type CartableProduct,
@@ -75,6 +77,23 @@ function addKit(input: AddKitInput): AddToCartResult {
   })
   if (result === undefined) throw new Error('addKitToCart no devolvió nada')
   return result
+}
+
+/** Agrega las piezas sueltas de un kit incompleto dentro de `act`. */
+function addPieces(input: AddKitPiecesInput): AddToCartResult {
+  let result: AddToCartResult | undefined
+  act(() => {
+    result = addKitPiecesToCart(input)
+  })
+  if (result === undefined) throw new Error('addKitPiecesToCart no devolvió nada')
+  return result
+}
+
+/** Deja pasar el tiempo de los temporizadores falsos dentro de `act`. */
+function wait(ms: number): void {
+  act(() => {
+    vi.advanceTimersByTime(ms)
+  })
 }
 
 /** Agrega un combo dentro de `act`. */
@@ -336,6 +355,145 @@ describe('addKitToCart', () => {
     })
 
     expect(cart().lines[0]).toMatchObject({ type: 'kit', leather: null })
+  })
+})
+
+describe('addKitPiecesToCart (Ruling AI-6)', () => {
+  it('suma cada pieza como producto suelto a precio de lista, con el cuero del mate, y abre el carrito a los 850 ms', () => {
+    vi.useFakeTimers()
+
+    const result = addPieces({ pieces: [mate, yerba], leather: 'Crudo' })
+
+    expect(result).toEqual({ status: 'added', quantity: 2 })
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1, options: { leather: 'Crudo' } },
+      { type: 'product', productId: 'y1', quantity: 1 },
+    ])
+    // Un solo aviso con las dos piezas, sin el descuento del kit.
+    expect(announced()).toHaveTextContent(
+      'Agregado al carrito. Mate Imperial Premium y Yerba Canarias',
+    )
+    expect(cart().seen).toEqual({ prices: { m1: 39999, y1: 39999 }, kitDiscountPercent: null })
+    expect(cart().isOpen).toBe(false)
+    wait(KIT_CART_OPEN_DELAY_MS - 1)
+    expect(cart().isOpen).toBe(false)
+    wait(1)
+    expect(cart().isOpen).toBe(true)
+  })
+
+  it('sin cuero pedido usa el inicial del mate, y un mate sin cueros va sin opciones', () => {
+    addPieces({ pieces: [{ ...mate, leathers: ['Crudo', 'Marrón'] }], leather: null })
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1, options: { leather: 'Crudo' } },
+    ])
+
+    act(() => {
+      useCartStore.getState().clear()
+    })
+    addPieces({ pieces: [{ ...mate, leathers: [] }, bombilla], leather: 'Negro' })
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1 },
+      { type: 'product', productId: 'b1', quantity: 1 },
+    ])
+  })
+
+  it('volver a agregar suma cantidades como un producto suelto', () => {
+    addPieces({ pieces: [mate, bombilla], leather: 'Negro' })
+    add({ product: mate, options: { leather: 'Negro' } })
+    addPieces({ pieces: [mate, bombilla], leather: 'Negro' })
+
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 3, options: { leather: 'Negro' } },
+      { type: 'product', productId: 'b1', quantity: 2 },
+    ])
+  })
+
+  it('si una pieza llegó al tope, agrega las otras, lo dice en el aviso y no abre el carrito', () => {
+    vi.useFakeTimers()
+    const limited = { ...yerba, maxQuantity: 1 }
+    addPieces({ pieces: [mate, limited], leather: 'Negro' })
+    wait(KIT_CART_OPEN_DELAY_MS)
+    act(() => {
+      closeCart()
+    })
+
+    const result = addPieces({ pieces: [mate, limited], leather: 'Negro' })
+
+    expect(result).toEqual({ status: 'added', quantity: 1 })
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 2, options: { leather: 'Negro' } },
+      { type: 'product', productId: 'y1', quantity: 1 },
+    ])
+    expect(announced()).toHaveTextContent(
+      'Agregado al carrito. Yerba Canarias no se sumó: ya tenés el máximo disponible',
+    )
+    // El carrito no se abre, así el aviso se puede leer.
+    wait(KIT_CART_OPEN_DELAY_MS)
+    expect(cart().isOpen).toBe(false)
+  })
+
+  it('el tope cuenta la pieza en todas las líneas, también dentro de un kit', () => {
+    const limited = { ...mate, maxQuantity: 1 }
+    addKit({ pieces: { mate: limited, bombilla, yerba }, leather: 'Negro', discountPercent: 10 })
+
+    const result = addPieces({ pieces: [limited, yerba], leather: 'Negro' })
+
+    expect(result).toEqual({ status: 'added', quantity: 1 })
+    expect(cart().lines).toHaveLength(2)
+    expect(cart().lines[1]).toEqual({ type: 'product', productId: 'y1', quantity: 1 })
+  })
+
+  it('una pieza sin stock no se agrega y las demás sí', () => {
+    const result = addPieces({
+      pieces: [mate, { ...bombilla, isPurchasable: false, maxQuantity: 0 }],
+      leather: 'Negro',
+    })
+
+    expect(result).toEqual({ status: 'added', quantity: 1 })
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1, options: { leather: 'Negro' } },
+    ])
+    expect(announced()).toHaveTextContent(
+      'Agregado al carrito. Bombillón Curvo no se sumó: no está disponible',
+    )
+  })
+
+  it('si no entra ninguna, no agrega y avisa el tope; si ninguna se puede comprar, no avisa', () => {
+    const limited = { ...mate, maxQuantity: 1 }
+    add({ product: limited })
+
+    expect(addPieces({ pieces: [limited], leather: 'Negro' })).toEqual({ status: 'limit' })
+    expect(cart().lines).toHaveLength(1)
+    expect(announced()).toHaveTextContent('Ya tenés el máximo disponible. Mate Imperial Premium')
+
+    act(() => {
+      hideToast()
+    })
+    const result = addPieces({ pieces: [{ ...yerba, isPurchasable: false }], leather: null })
+    expect(result).toEqual({ status: 'unavailable' })
+    expect(cart().lines).toHaveLength(1)
+    expect(announced()).toHaveTextContent('')
+  })
+
+  it('valida las piezas (de una a dos, de grupos distintos) y el cuero', () => {
+    expect(() => addKitPiecesToCart({ pieces: [], leather: null })).toThrow(RangeError)
+    // Con las tres piezas va el kit, con su descuento (addKitToCart).
+    expect(() => addKitPiecesToCart({ pieces: [mate, bombilla, yerba], leather: null })).toThrow(
+      RangeError,
+    )
+    expect(() =>
+      addKitPiecesToCart({ pieces: [mate, { ...mate, id: 'm2' }], leather: null }),
+    ).toThrow(RangeError)
+    expect(() => addKitPiecesToCart({ pieces: [mate], leather: 'Rosa' as 'Negro' })).toThrow(
+      RangeError,
+    )
+    expect(() =>
+      addKitPiecesToCart({ pieces: [{ ...mate, leathers: ['Crudo'] }], leather: 'Negro' }),
+    ).toThrow(RangeError)
+    expect(() => addKitPiecesToCart({ pieces: [{ ...yerba, name: ' ' }], leather: null })).toThrow(
+      RangeError,
+    )
+    expect(cart().lines).toEqual([])
   })
 })
 

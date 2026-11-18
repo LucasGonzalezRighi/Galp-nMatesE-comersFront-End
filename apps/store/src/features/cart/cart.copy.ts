@@ -60,6 +60,38 @@ export const CART_COPY = {
 } as const
 
 /**
+ * Nombres de varios productos para el subtítulo de un aviso.
+ *
+ * @param names - Nombres, al menos uno y ninguno vacío.
+ * @returns "Mate Galleta", "Mate Galleta y Yerba Canarias" o "Mate Galleta, Bombillón Curvo y Yerba Canarias".
+ * @throws {RangeError} Si no hay nombres o alguno está vacío.
+ */
+export function namesList(names: readonly string[]): string {
+  if (names.length === 0 || names.some((name) => name.trim() === '')) {
+    throw new RangeError('La lista de nombres necesita al menos un nombre y ninguno vacío.')
+  }
+  const last = names.at(-1) ?? ''
+  return names.length === 1 ? last : `${names.slice(0, -1).join(', ')} y ${last}`
+}
+
+/** Por qué una pieza no se sumó: ya está todo lo que se puede comprar, o no está a la venta. */
+export type SkippedReason = 'limit' | 'unavailable'
+
+/**
+ * Subtítulo del aviso cuando una de las piezas sueltas del kit no se sumó (Ruling AI-6).
+ *
+ * @param name - Nombre de la pieza.
+ * @param reason - Por qué no se sumó.
+ * @returns "Yerba Canarias no se sumó: ya tenés el máximo disponible" o "Yerba Canarias no se sumó: no está disponible".
+ * @throws {RangeError} Si el nombre está vacío.
+ */
+export function pieceSkippedNotice(name: string, reason: SkippedReason): string {
+  if (name.trim() === '') throw new RangeError('El aviso necesita el nombre de la pieza.')
+  const why = reason === 'limit' ? 'ya tenés el máximo disponible' : 'no está disponible'
+  return `${name} no se sumó: ${why}`
+}
+
+/**
  * Subtítulo del aviso de un kit agregado.
  *
  * @param percent - Descuento del kit, entero.

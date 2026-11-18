@@ -80,6 +80,29 @@ function addButton(): HTMLElement {
   return screen.getByRole('button', { name: 'Agregar kit al carrito' })
 }
 
+/** El botón "Agregar al carrito" del kit con una o dos piezas. */
+function addPiecesButton(): HTMLElement {
+  return screen.getByRole('button', { name: 'Agregar al carrito' })
+}
+
+/** El panel "Resumen del kit". */
+function panel(): HTMLElement {
+  return screen.getByRole('complementary', { name: 'Resumen del kit' })
+}
+
+/** Importe del renglón "Total" del panel. */
+function panelTotal(): string {
+  const label = within(panel()).getByText('Total', { exact: true })
+  return label.nextElementSibling?.textContent ?? ''
+}
+
+/** Elige el mate y la yerba, sin bombilla, y queda en el Resumen. */
+function chooseMateAndYerba(): void {
+  choose('Mate Imperial Premium')
+  fireEvent.click(step('Yerba'))
+  choose('Yerba Canarias')
+}
+
 const scrollTo = vi.fn()
 
 beforeEach(() => {
@@ -122,7 +145,8 @@ describe('KitBuilder: pasos y opciones', () => {
     expect(within(steps).getAllByText('Sin elegir')).toHaveLength(3)
     expect(within(steps).getByText('Faltan 3')).toBeVisible()
     const panel = screen.getByRole('complementary', { name: 'Resumen del kit' })
-    expect(within(panel).getByText('Descuento kit −10%')).toBeVisible()
+    // Sin las tres piezas no hay descuento del kit (Ruling AI-6).
+    expect(within(panel).queryByText(/Descuento kit/)).toBeNull()
     expect(within(panel).getByText('Te falta elegir el mate, la bombilla, la yerba.')).toBeVisible()
     expect(within(panel).queryByRole('group', { name: 'Cuero' })).toBeNull()
     expect(addButton()).toBeDisabled()
@@ -159,7 +183,9 @@ describe('KitBuilder: pasos y opciones', () => {
     expect(within(panel).getByText('$75.997')).toBeVisible()
     expect(within(panel).getByText('−$7.600')).toBeVisible()
     expect(within(panel).getByText('$68.397')).toBeVisible()
+    expect(within(panel).getByText('Descuento kit −10%')).toBeVisible()
     expect(within(panel).queryByText(/Te falta elegir/)).toBeNull()
+    expect(within(panel).queryByText(/^Sumá/)).toBeNull()
     expect(addButton()).toBeEnabled()
   })
 
@@ -479,7 +505,126 @@ describe('KitBuilder: descuento y datos', () => {
       />,
     )
 
+    // Quedan el mate y la bombilla: se pueden agregar sueltos, sin el descuento del kit.
+    expect(screen.queryByRole('button', { name: 'Agregar kit al carrito' })).toBeNull()
+    expect(addPiecesButton()).toBeEnabled()
+    expect(screen.getByText('Sumá la yerba y tenés −10%.')).toBeVisible()
+  })
+})
+
+describe('KitBuilder: una o dos piezas (Ruling AI-6)', () => {
+  it('con mate y yerba el resumen va a precio de lista, avisa lo que falta antes del botón y deja agregar', () => {
+    renderKit()
+
+    chooseMateAndYerba()
+
+    // 39.999 + 9.999 a precio de lista: ni "Descuento kit" ni el total con descuento.
+    expect(within(panel()).queryByText(/Descuento kit/)).toBeNull()
+    expect(within(panel()).queryByText(/^−\$/)).toBeNull()
+    expect(panelTotal()).toBe('$49.998')
+    const notice = within(panel()).getByText('Sumá la bombilla y tenés −10%.')
+    expect(notice).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Agregar kit al carrito' })).toBeNull()
+    const button = addPiecesButton()
+    expect(button).toBeEnabled()
+    // El aviso se lee antes del botón y el lector lo anuncia con el botón.
+    expect(notice.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(button).toHaveAccessibleDescription('Sumá la bombilla y tenés −10%.')
+  })
+
+  it('agrega las piezas como productos sueltos con el cuero del mate, avisa una vez, abre el carrito y reinicia', () => {
+    renderKit()
+    choose('Mate Imperial Premium')
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Cuero' })).getByRole('button', {
+        name: 'Borravino',
+      }),
+    )
+    fireEvent.click(step('Yerba'))
+    choose('Yerba Canarias')
+
+    fireEvent.click(addPiecesButton())
+
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 1, options: { leather: 'Borravino' } },
+      { type: 'product', productId: 'y1', quantity: 1 },
+    ])
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+      'Agregado al carrito. Mate Imperial Premium y Yerba Canarias',
+    )
+    expect(cart().isOpen).toBe(false)
+    wait(KIT_CART_OPEN_DELAY_MS)
+    expect(cart().isOpen).toBe(true)
+    // El kit vuelve al inicio y el cuero se conserva.
+    expect(screen.getByRole('heading', { name: 'Elegí el mate' })).toBeVisible()
     expect(addButton()).toBeDisabled()
-    expect(screen.getByText('Te falta elegir la yerba.')).toBeVisible()
+    expect(useKitStore.getState().leather).toBe('Borravino')
+  })
+
+  it('con una sola pieza también se agrega, y volver a agregar suma cantidades', () => {
+    renderKit()
+
+    const addBombilla = (): void => {
+      fireEvent.click(step('Bombilla'))
+      choose('Bombillón Curvo')
+      expect(panelTotal()).toBe('$25.999')
+      expect(within(panel()).getByText('Sumá el mate y la yerba y tenés −10%.')).toBeVisible()
+      fireEvent.click(addPiecesButton())
+    }
+    addBombilla()
+    addBombilla()
+
+    expect(cart().lines).toEqual([{ type: 'product', productId: 'b1', quantity: 2 }])
+  })
+
+  it('si la yerba llegó al tope, agrega el mate, lo avisa y no abre el carrito', () => {
+    const limited = CATALOG.map((product) =>
+      product.id === 'y1' ? { ...product, maxQuantity: 1 } : product,
+    )
+    renderKit(limited)
+    chooseMateAndYerba()
+    fireEvent.click(addPiecesButton())
+    wait(KIT_CART_OPEN_DELAY_MS)
+    act(() => {
+      closeCart()
+    })
+
+    chooseMateAndYerba()
+    fireEvent.click(addPiecesButton())
+
+    expect(cart().lines).toEqual([
+      { type: 'product', productId: 'm1', quantity: 2, options: { leather: 'Negro' } },
+      { type: 'product', productId: 'y1', quantity: 1 },
+    ])
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+      'Yerba Canarias no se sumó: ya tenés el máximo disponible',
+    )
+    wait(KIT_CART_OPEN_DELAY_MS)
+    expect(cart().isOpen).toBe(false)
+  })
+
+  it('un doble clic rápido agrega las piezas una sola vez', () => {
+    renderKit()
+    chooseMateAndYerba()
+    const button = addPiecesButton()
+
+    act(() => {
+      button.click()
+      button.click()
+    })
+
+    expect(cart().lines.map((line) => line.quantity)).toEqual([1, 1])
+  })
+
+  it('sin descuento configurado no hay aviso del descuento ni de lo que falta', () => {
+    renderKit(CATALOG, 0)
+
+    choose('Mate Imperial Premium')
+
+    expect(within(panel()).queryByText(/^Sumá/)).toBeNull()
+    expect(within(panel()).queryByText(/Te falta elegir/)).toBeNull()
+    expect(panelTotal()).toBe('$39.999')
+    expect(addPiecesButton()).toBeEnabled()
+    expect(addPiecesButton()).not.toHaveAccessibleDescription()
   })
 })
