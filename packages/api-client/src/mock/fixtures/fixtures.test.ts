@@ -287,8 +287,12 @@ describe('fixtures del diseño: contenido y ajustes', () => {
     const { collection, featured, scenes } = FIXTURE_CONTENT.home
     expect(collection).toEqual({ eyebrow: 'Colección', title: 'Categorías' })
     expect(featured).toEqual({ eyebrow: 'Destacados', title: 'Los más vendidos' })
+    expect(scenes.find((scene) => scene.key === 'leather')?.titleLines).toEqual([
+      'Elegí',
+      'el color.',
+    ])
     expect(scenes.find((scene) => scene.key === 'leather')?.text).toBe(
-      'Negro, marrón, crudo o borravino. Elegís el cuero en la página de cada mate.',
+      'Negro, marrón, crudo o borravino. Elegís el color en la página de cada mate.',
     )
     expect(FIXTURE_CONTENT.productTabs.mate.materials).toBe(
       'Calabaza natural curable, cuero vacuno cosido a mano y base de alpaca o cuero según el modelo. La virola de cada mate está en su descripción.',

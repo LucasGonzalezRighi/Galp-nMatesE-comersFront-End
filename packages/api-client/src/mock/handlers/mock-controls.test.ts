@@ -150,11 +150,11 @@ describe('POST /__mock/products/{id}', () => {
       quoteCart(mock.api, { items: [{ ...MATE, productId: 'prd-imperial-criollo' }] }),
     ).rejects.toMatchObject({
       status: 422,
-      fieldErrors: { 'items.0.options.leather': 'Ese cuero no está disponible para este mate.' },
+      fieldErrors: { 'items.0.options.leather': 'Ese color no está disponible para este mate.' },
     })
-    expect(
-      (await control(mock, productPath('prd-imperial-criollo'), { leathers: ['Rosa'] })).status,
-    ).toBe(422)
+    const invalid = await control(mock, productPath('prd-imperial-criollo'), { leathers: ['Rosa'] })
+    expect(invalid.status).toBe(422)
+    expect(JSON.stringify(await invalid.json())).toContain('Elegí un color de la lista.')
   })
 
   it('avisa que cambió el catálogo para renovar la caché de la tienda', async () => {

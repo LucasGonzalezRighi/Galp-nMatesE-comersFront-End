@@ -4712,7 +4712,7 @@
       },
       "valid": false,
       "errors": {
-        "leathers.0": "Elegí un cuero de la lista"
+        "leathers.0": "Elegí un color de la lista"
       }
     },
     {
@@ -4740,7 +4740,7 @@
       },
       "valid": false,
       "errors": {
-        "leathers": "Cada cuero tiene que aparecer una sola vez"
+        "leathers": "Cada color tiene que aparecer una sola vez"
       }
     },
     {

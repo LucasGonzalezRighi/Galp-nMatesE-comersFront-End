@@ -180,7 +180,7 @@ describe('POST /admin/products', () => {
           {
             field: 'leathers',
             code: 'leathers_not_allowed',
-            message: 'Solo los mates llevan cuero',
+            message: 'Solo los mates llevan colores',
           },
         ],
       },
@@ -299,7 +299,7 @@ describe('PATCH /admin/products/{id}', () => {
       }),
     ).rejects.toMatchObject({
       status: 422,
-      fieldErrors: { leathers: 'Solo los mates llevan cuero' },
+      fieldErrors: { leathers: 'Solo los mates llevan colores' },
     })
     expect(mock.db.products.find((product) => product.id === yerba.id)).toMatchObject({
       name: yerba.name,

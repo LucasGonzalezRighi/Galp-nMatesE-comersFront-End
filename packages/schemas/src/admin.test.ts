@@ -376,9 +376,9 @@ describe('productFormSchema', () => {
     })
 
     it('tiene los mensajes exactos', () => {
-      expect(MESSAGES.invalidLeather).toBe('Elegí un cuero de la lista')
-      expect(MESSAGES.duplicateLeathers).toBe('Cada cuero tiene que aparecer una sola vez')
-      expect(MESSAGES.leathersOnlyMates).toBe('Solo los mates llevan cuero')
+      expect(MESSAGES.invalidLeather).toBe('Elegí un color de la lista')
+      expect(MESSAGES.duplicateLeathers).toBe('Cada color tiene que aparecer una sola vez')
+      expect(MESSAGES.leathersOnlyMates).toBe('Solo los mates llevan colores')
     })
   })
 

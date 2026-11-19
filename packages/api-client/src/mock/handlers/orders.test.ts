@@ -39,7 +39,7 @@ describe('POST /orders', () => {
     expect(order.lines[0]).toEqual({
       type: 'product',
       name: 'Mate Imperial Premium',
-      detail: 'Cuero negro',
+      detail: 'Color negro',
       quantity: 1,
       unitPriceArs: 39999,
       kitSavingsArs: 0,
@@ -346,7 +346,7 @@ describe('POST /orders con combos', () => {
       {
         type: 'combo',
         name: 'Dúo Imperial',
-        detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
+        detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Color marrón',
         quantity: 2,
         unitPriceArs: 68998,
         kitSavingsArs: 13998,

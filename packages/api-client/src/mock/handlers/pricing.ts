@@ -37,10 +37,10 @@ const MISSING_PRODUCT_NAME = 'Producto no disponible'
 const MISSING_COMBO_NAME = 'Combo no disponible'
 
 /** Error de un mate que ofrece cueros (suelto, en un kit o en un combo) y llega sin cuero. */
-const MISSING_LEATHER_MESSAGE = 'Elegí el cuero del mate.'
+const MISSING_LEATHER_MESSAGE = 'Elegí el color del mate.'
 
 /** Error de un mate que llega con un cuero que no ofrece. */
-const LEATHER_NOT_OFFERED_MESSAGE = 'Ese cuero no está disponible para este mate.'
+const LEATHER_NOT_OFFERED_MESSAGE = 'Ese color no está disponible para este mate.'
 
 /** Identificador de un producto en el carrito. */
 const idSchema = z.string().min(1).max(80)
@@ -190,9 +190,9 @@ function sellable(
   )
 }
 
-/** Cuero escrito como en el carrito de la tienda: "Cuero negro". */
+/** Cuero escrito como en el carrito de la tienda: "Color negro". */
 function leatherLabel(leather: string): string {
-  return `Cuero ${leather.toLowerCase()}`
+  return `Color ${leather.toLowerCase()}`
 }
 
 /**

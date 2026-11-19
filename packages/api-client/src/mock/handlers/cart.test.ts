@@ -38,7 +38,7 @@ describe('POST /cart/quote', () => {
           key: 'product:prd-imperial-premium:Negro',
           type: 'product',
           name: 'Mate Imperial Premium',
-          detail: 'Cuero negro',
+          detail: 'Color negro',
           unitPriceArs: 39999,
           netUnitPriceArs: netPrice(pesos(39999), 21),
           kitSavingsArs: 0,
@@ -67,7 +67,7 @@ describe('POST /cart/quote', () => {
       key: 'kit:prd-imperial-premium:prd-bombillon-premium-curvo:prd-yerba-canarias:Crudo',
       type: 'kit',
       name: 'Kit',
-      detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Cuero crudo',
+      detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Color crudo',
       unitPriceArs: prices[0] + prices[1] + prices[2],
       kitSavingsArs: amounts.savingsArs,
       totalArs: amounts.totalArs,
@@ -154,7 +154,7 @@ describe('POST /cart/quote', () => {
       status: 422,
       problem: {
         errors: [
-          { field: 'items.0.options', code: 'required', message: 'Elegí el cuero del mate.' },
+          { field: 'items.0.options', code: 'required', message: 'Elegí el color del mate.' },
         ],
       },
     })
@@ -176,14 +176,14 @@ describe('POST /cart/quote', () => {
           {
             field: 'items.0.options.leather',
             code: 'leather_not_offered',
-            message: 'Ese cuero no está disponible para este mate.',
+            message: 'Ese color no está disponible para este mate.',
           },
           {
             field: 'items.1.leather',
             code: 'leather_not_offered',
-            message: 'Ese cuero no está disponible para este mate.',
+            message: 'Ese color no está disponible para este mate.',
           },
-          { field: 'items.2.leather', code: 'required', message: 'Elegí el cuero del mate.' },
+          { field: 'items.2.leather', code: 'required', message: 'Elegí el color del mate.' },
         ],
       },
     })
@@ -299,7 +299,7 @@ describe('POST /cart/quote con combos', () => {
           key: 'combo:cmb-duo-imperial:Marrón',
           type: 'combo',
           name: 'Dúo Imperial',
-          detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
+          detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Color marrón',
           unitPriceArs: 68998,
           netUnitPriceArs: netPrice(pesos(61999), 21),
           kitSavingsArs: 13998,
@@ -424,7 +424,7 @@ describe('POST /cart/quote con combos', () => {
       status: 422,
       problem: {
         errors: [
-          { field: 'items.1.options', code: 'required', message: 'Elegí el cuero del mate.' },
+          { field: 'items.1.options', code: 'required', message: 'Elegí el color del mate.' },
         ],
       },
     })
@@ -440,7 +440,7 @@ describe('POST /cart/quote con combos', () => {
           {
             field: 'items.0.options.leather',
             code: 'leather_not_offered',
-            message: 'Ese cuero no está disponible para este mate.',
+            message: 'Ese color no está disponible para este mate.',
           },
         ],
       },

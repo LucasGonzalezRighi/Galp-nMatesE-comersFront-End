@@ -58,8 +58,8 @@ export const FIXTURE_CONTENT: MockContent = {
       {
         key: 'leather',
         eyebrow: 'Hacelo tuyo',
-        titleLines: ['Elegí', 'el cuero.'],
-        text: 'Negro, marrón, crudo o borravino. Elegís el cuero en la página de cada mate.',
+        titleLines: ['Elegí', 'el color.'],
+        text: 'Negro, marrón, crudo o borravino. Elegís el color en la página de cada mate.',
         ctaLabel: 'Armá tu kit',
       },
     ],

@@ -800,7 +800,7 @@ export interface paths {
         put?: never;
         /**
          * Cotizar el carrito
-         * @description Recibe las líneas del carrito y devuelve los importes que calcula el back, con el ahorro por kit y la disponibilidad de cada línea. Es la fuente de verdad de los importes en el checkout: la tienda no calcula precios por su cuenta. No reserva stock. Una línea con problemas no hace fallar la cotización: se informa en su `issue` y el front decide qué mostrar. El cuero sí: en un producto suelto que ofrece cueros (`leathers` no vacío), si falta `options` responde `422` en `items.N.options` ("Elegí el cuero del mate.", `code` `required`) y si `options.leather` no es uno de sus cueros, en `items.N.options.leather` ("Ese cuero no está disponible para este mate.", `code` `leather_not_offered`); en un kit, lo mismo con los cueros del mate del kit, en `items.N.leather`; en un combo, ver `ComboCartItemInput`. Si el producto no ofrece cueros, el cuero que llegue se ignora. Un producto inexistente, no publicado o sin precio sale `unavailable` sin error de cuero. Los errores se juntan y la respuesta es un solo `422` con todos.
+         * @description Recibe las líneas del carrito y devuelve los importes que calcula el back, con el ahorro por kit y la disponibilidad de cada línea. Es la fuente de verdad de los importes en el checkout: la tienda no calcula precios por su cuenta. No reserva stock. Una línea con problemas no hace fallar la cotización: se informa en su `issue` y el front decide qué mostrar. El color (cuero) sí: en un producto suelto que ofrece colores (`leathers` no vacío), si falta `options` responde `422` en `items.N.options` ("Elegí el color del mate.", `code` `required`) y si `options.leather` no es uno de sus colores, en `items.N.options.leather` ("Ese color no está disponible para este mate.", `code` `leather_not_offered`); en un kit, lo mismo con los cueros del mate del kit, en `items.N.leather`; en un combo, ver `ComboCartItemInput`. Si el producto no ofrece cueros, el cuero que llegue se ignora. Un producto inexistente, no publicado o sin precio sale `unavailable` sin error de cuero. Los errores se juntan y la respuesta es un solo `422` con todos.
          */
         post: operations["quoteCart"];
         delete?: never;
@@ -1720,7 +1720,7 @@ export interface components {
              */
             updatedAt: string;
         };
-        /** @description Producto que guarda el dashboard. Las reglas son las de `productFormSchema` de `@galpon/schemas`. `code`, `sequence`, `previousSlugs` y las fechas los pone el back. Además, con la base, el back responde `422` en `leathers` ("Solo los mates llevan cuero", `code` `leathers_not_allowed`) si la línea elegida no es de mates y trae algún cuero. */
+        /** @description Producto que guarda el dashboard. Las reglas son las de `productFormSchema` de `@galpon/schemas`. `code`, `sequence`, `previousSlugs` y las fechas los pone el back. Además, con la base, el back responde `422` en `leathers` ("Solo los mates llevan colores", `code` `leathers_not_allowed`) si la línea elegida no es de mates y trae algún color (cuero). */
         AdminProductInput: {
             /**
              * @description Identificador de la línea del producto.
@@ -1746,7 +1746,7 @@ export interface components {
             /** @description Fotos del producto, hasta 8. La primera es la principal. */
             images: components["schemas"]["ImageInput"][];
             /**
-             * @description Cueros que ofrece el producto, de 0 a 4 y sin repetir; el back los guarda en el orden de `Leather`. Vacío: la ficha, el kit y los combos no muestran selector de cuero. Solo los mates pueden tener cueros: en una línea de otro grupo el back responde `422` en `leathers` ("Solo los mates llevan cuero", `code` `leathers_not_allowed`). Es obligatorio porque el `PATCH` lleva el producto completo: un cliente que no lo mande borraría los cueros.
+             * @description Cueros que ofrece el producto, de 0 a 4 y sin repetir; el back los guarda en el orden de `Leather`. Vacío: la ficha, el kit y los combos no muestran selector de cuero. Solo los mates pueden tener cueros: en una línea de otro grupo el back responde `422` en `leathers` ("Solo los mates llevan colores", `code` `leathers_not_allowed`). Es obligatorio porque el `PATCH` lleva el producto completo: un cliente que no lo mande borraría los cueros.
              * @example [
              *       "Negro",
              *       "Marrón"
@@ -1951,7 +1951,7 @@ export interface components {
          *           "key": "product:prd-imperial-premium:Negro",
          *           "type": "product",
          *           "name": "Mate Imperial Premium",
-         *           "detail": "Cuero negro",
+         *           "detail": "Color negro",
          *           "unitPriceArs": 39999,
          *           "netUnitPriceArs": 33057,
          *           "kitSavingsArs": 0,
@@ -2000,8 +2000,8 @@ export interface components {
         /** @description Línea cotizada. `unitPriceArs` es el precio de lista de una unidad (en un kit, la suma de las tres piezas; en un combo, la suma de sus piezas o el precio del combo si es mayor), `kitSavingsArs` es el ahorro de toda la línea y `totalArs = unitPriceArs × cantidad − kitSavingsArs`. Las líneas `unavailable` y `sold_out` tienen todos sus importes en 0 y no suman a los totales. */
         CartQuoteLine: {
             /**
-             * @description Texto secundario de la línea, con el cuero elegido (en un kit o un combo, además las piezas unidas con " + " y el cuero después de " · "); vacío si no hay.
-             * @example Cuero negro
+             * @description Texto secundario de la línea, con el color (cuero) elegido, como "Color negro" (en un kit o un combo, además las piezas unidas con " + " y el color después de " · "); vacío si no hay.
+             * @example Color negro
              */
             detail: string;
             /**
@@ -2216,7 +2216,7 @@ export interface components {
             savingsArs: components["schemas"]["TotalArs"];
             status: components["schemas"]["ComboStatus"];
         };
-        /** @description Combo en el carrito. Solo lleva el combo: el back usa sus piezas y su precio vigentes. Cotización de la línea (también en `POST /orders`), en este orden: 1) si el combo no existe o no está publicado, `unavailable` con `name` "Combo no disponible" o el nombre del combo; 2) si alguna pieza no existe, no está publicada o no tiene precio, `unavailable`; 3) si el mate del combo ofrece cueros (los `leathers` de esa pieza) y falta `options`, `422` en `items.N.options` ("Elegí el cuero del mate.", `code` `required`); si `options.leather` no es uno de sus cueros, `422` en `items.N.options.leather` ("Ese cuero no está disponible para este mate.", `code` `leather_not_offered`); 4) el stock de cada pieza se comparte con las demás líneas del carrito (sueltas, kits y otros combos, en orden): sin lugar, `sold_out`; con menos que lo pedido, `quantity_reduced` con esa cantidad; 5) con `q` combos, `suma` = los precios de lista vigentes de las piezas y `precio` = `Combo.priceArs`: `unitPriceArs = max(suma, precio)`, `kitSavingsArs = (unitPriceArs − precio) × q` y `totalArs = precio × q`, así `totalArs = unitPriceArs × q − kitSavingsArs` y el ahorro nunca es negativo; 6) `price_changed` si `expectedUnitPriceArs` vino y no es `Combo.priceArs`. La línea se llama como el combo y su `detail` son las piezas unidas con " + " y, si hay cuero, " · Cuero negro". En el pedido la línea guarda las piezas en `kitItems` y la reserva suma cada pieza. */
+        /** @description Combo en el carrito. Solo lleva el combo: el back usa sus piezas y su precio vigentes. Cotización de la línea (también en `POST /orders`), en este orden: 1) si el combo no existe o no está publicado, `unavailable` con `name` "Combo no disponible" o el nombre del combo; 2) si alguna pieza no existe, no está publicada o no tiene precio, `unavailable`; 3) si el mate del combo ofrece colores (cueros, los `leathers` de esa pieza) y falta `options`, `422` en `items.N.options` ("Elegí el color del mate.", `code` `required`); si `options.leather` no es uno de sus colores, `422` en `items.N.options.leather` ("Ese color no está disponible para este mate.", `code` `leather_not_offered`); 4) el stock de cada pieza se comparte con las demás líneas del carrito (sueltas, kits y otros combos, en orden): sin lugar, `sold_out`; con menos que lo pedido, `quantity_reduced` con esa cantidad; 5) con `q` combos, `suma` = los precios de lista vigentes de las piezas y `precio` = `Combo.priceArs`: `unitPriceArs = max(suma, precio)`, `kitSavingsArs = (unitPriceArs − precio) × q` y `totalArs = precio × q`, así `totalArs = unitPriceArs × q − kitSavingsArs` y el ahorro nunca es negativo; 6) `price_changed` si `expectedUnitPriceArs` vino y no es `Combo.priceArs`. La línea se llama como el combo y su `detail` son las piezas unidas con " + " y, si hay color, " · Color negro". En el pedido la línea guarda las piezas en `kitItems` y la reserva suma cada pieza. */
         ComboCartItemInput: {
             /**
              * @description Identificador del combo.
@@ -2962,7 +2962,7 @@ export interface components {
             yerbaId: string;
         };
         /**
-         * @description Cuero de la funda de un mate.
+         * @description Color (cuero) de la funda de un mate que elige el cliente.
          * @example Negro
          * @enum {string}
          */
@@ -3107,7 +3107,7 @@ export interface components {
          *         {
          *           "type": "product",
          *           "name": "Mate Imperial Premium",
-         *           "detail": "Cuero negro",
+         *           "detail": "Color negro",
          *           "quantity": 1,
          *           "unitPriceArs": 39999,
          *           "kitSavingsArs": 0,
@@ -3204,8 +3204,8 @@ export interface components {
         /** @description Línea de un pedido. Es una copia de lo que se compró, con los nombres y precios del momento de la compra: no cambia si después se edita el producto. Los importes se calculan como en `CartQuoteLine`. */
         OrderLine: {
             /**
-             * @description Texto secundario de la línea, con el cuero elegido (en un kit o un combo, además las piezas); vacío si no hay. Es texto congelado al comprar: en los pedidos anteriores a los cueros por producto también dice la virola elegida.
-             * @example Cuero negro
+             * @description Texto secundario de la línea, con el color (cuero) elegido, como "Color negro" (en un kit o un combo, además las piezas); vacío si no hay. Es texto congelado al comprar: los pedidos anteriores dicen "Cuero negro", y los anteriores a los cueros por producto también la virola elegida.
+             * @example Color negro
              */
             detail: string;
             /** @description Las piezas de un kit (mate, bombilla y yerba, 3) o de un combo (2 o 3, en el orden del combo), o `null` si la línea es un producto suelto. */

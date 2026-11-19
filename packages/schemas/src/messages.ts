@@ -107,14 +107,14 @@ export const MESSAGES = {
   /** Estado del producto que no es borrador ni publicado. */
   invalidProductStatus: 'Elegí un estado',
   /** Cuero de un producto que no es uno de los de `LEATHERS`, en `leathers.N`. */
-  invalidLeather: 'Elegí un cuero de la lista',
+  invalidLeather: 'Elegí un color de la lista',
   /** Lista de cueros de un producto con un cuero repetido, en `leathers`. */
-  duplicateLeathers: 'Cada cuero tiene que aparecer una sola vez',
+  duplicateLeathers: 'Cada color tiene que aparecer una sola vez',
   /**
    * Producto que no es un mate y trae cueros. Lo valida el servidor (necesita la línea del
    * producto), en `leathers`, con `code` `leathers_not_allowed`.
    */
-  leathersOnlyMates: 'Solo los mates llevan cuero',
+  leathersOnlyMates: 'Solo los mates llevan colores',
   /** Orden de líneas con una línea repetida. */
   duplicateCategoryIds: 'Cada línea tiene que aparecer una sola vez',
   /** Precio de un combo que no es un entero mayor a 0 (un combo no puede quedar "a consultar"). */

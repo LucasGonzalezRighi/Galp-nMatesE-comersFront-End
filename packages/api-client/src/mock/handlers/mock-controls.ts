@@ -40,7 +40,7 @@ const productChangeSchema = z
       .min(0, 'El stock no puede ser negativo.')
       .optional(),
     leathers: z
-      .array(z.enum(LEATHERS, { error: 'Elegí un cuero de la lista.' }))
+      .array(z.enum(LEATHERS, { error: 'Elegí un color de la lista.' }))
       .transform(normalizeLeathers)
       .optional(),
   })
