@@ -1,0 +1,130 @@
+# Galpón Mates en Render: la tienda y el dashboard, definidos en un solo archivo (un "Blueprint").
+# El back, su base y su Redis tienen su propio Blueprint (`galpon-mates`, en el repo del back), que
+# tiene que existir antes que este: la tienda toma dos secretos del servicio `galpon-mates-api`.
+# En el panel de Render: New > Blueprint > elegir este repo. El paso a paso está en
+# backend/docs/DESPLIEGUE.md, "Todo en Render con el dominio propio".
+#
+# Direcciones: la tienda en https://galponmates.com.ar (Render agrega solo www.galponmates.com.ar,
+# que redirige a la raíz) y el dashboard en https://admin.galponmates.com.ar. El dashboard le habla
+# directo al back en https://api.galponmates.com.ar: los tres comparten el dominio, así que la
+# cookie de sesión del back viaja sin ningún reenvío.
+#
+# PLANES. La tienda arranca en el plan GRATIS, que sirve para probar y nada más: se duerme a los
+# 15 minutos sin visitas y la primera visita después tarda alrededor de un minuto. Para salir a
+# vender, cambiá la línea marcada con "PLAN" y subí el cambio: Render lo aplica solo. El dashboard
+# es un sitio estático: siempre gratis.
+services:
+  # La tienda (Next.js), con `next start`. Escucha en el puerto que le da Render ($PORT, 10000).
+  - type: web
+    name: galpon-mates-tienda
+    runtime: node
+    plan: free # PLAN: para vender, starter (el mismo plan que el back)
+    region: virginia # la misma región que el back
+    # Sin rootDir: el monorepo de npm necesita el package-lock.json y los paquetes de la raíz. La
+    # versión de Node sale de .nvmrc.
+    buildCommand: npm ci && npm run build -w @galpon/store
+    startCommand: npm run start -w @galpon/store
+    healthCheckPath: /robots.txt
+    autoDeployTrigger: commit
+    # Solo se vuelve a compilar si cambia algo que usa la tienda.
+    buildFilter:
+      paths:
+        - apps/store/**
+        - packages/**
+        - package.json
+        - package-lock.json
+        - .nvmrc
+    domains:
+      - galponmates.com.ar
+    envVars:
+      - key: API_MODE
+        value: live
+      - key: NEXT_PUBLIC_API_MODE
+        value: live
+      # El back. La tienda le habla desde su servidor (los visitantes nunca ven esta dirección):
+      # la de onrender.com anda aunque el dominio todavía no esté listo. `next build` lee el
+      # catálogo de ahí, así que el back tiene que estar despierto al compilar.
+      - key: API_BASE_URL
+        value: https://galpon-mates-api.onrender.com
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://galponmates.com.ar
+      # La IP del visitante: Cloudflare, que está delante de todos los servicios de Render, la
+      # escribe en True-Client-IP pisando lo que mande el navegador. La tienda se la pasa al back
+      # con el secreto de abajo.
+      - key: TRUSTED_CLIENT_IP_HEADER
+        value: true-client-ip
+      # Los dos secretos compartidos con el back: Render los copia solos del servicio
+      # galpon-mates-api (STORE_REVALIDATE_SECRET y TRUSTED_PROXY_SECRET), así nunca quedan
+      # distintos.
+      - key: REVALIDATE_SECRET
+        fromService:
+          type: web
+          name: galpon-mates-api
+          envVarKey: STORE_REVALIDATE_SECRET
+      - key: API_PROXY_SECRET
+        fromService:
+          type: web
+          name: galpon-mates-api
+          envVarKey: TRUSTED_PROXY_SECRET
+      # Los pide Render al crear el Blueprint: la Public Key de Mercado Pago (de prueba o de
+      # producción, de la misma aplicación que el Access Token del back) y la nube de Cloudinary.
+      - key: NEXT_PUBLIC_MP_PUBLIC_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+        sync: false
+
+  # El dashboard (Vite): archivos estáticos, gratis. Las variables VITE_ quedan fijas al compilar:
+  # si cambia una, hay que volver a desplegar.
+  - type: web
+    name: galpon-mates-admin
+    runtime: static
+    buildCommand: npm ci && npm run build -w @galpon/admin
+    staticPublishPath: apps/admin/dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/admin/**
+        - packages/**
+        - package.json
+        - package-lock.json
+        - .nvmrc
+    domains:
+      - admin.galponmates.com.ar
+    envVars:
+      - key: VITE_API_MODE
+        value: live
+      # El back, llamado directo desde el navegador (con cookies). Tiene que ser igual al
+      # PUBLIC_API_ORIGIN del back, y el ADMIN_ORIGIN del back, la dirección de este dashboard.
+      - key: VITE_API_BASE_URL
+        value: https://api.galponmates.com.ar
+      - key: VITE_STORE_URL
+        value: https://galponmates.com.ar
+    # Es una SPA: cualquier ruta que no sea un archivo devuelve index.html (Render no reescribe
+    # una ruta donde hay un archivo).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # Las mismas cabeceras que `vite preview` y que el Caddy del servidor propio
+    # (src/lib/csp.ts de apps/admin, con el back en api.galponmates.com.ar), más HSTS.
+    # scripts/render-config.test.mjs falla si dejan de coincidir.
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com; connect-src 'self' https://api.galponmates.com.ar https://api.cloudinary.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=()
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=63072000; includeSubDomains
+      # Los archivos de /assets llevan un hash en el nombre: se pueden guardar para siempre.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
