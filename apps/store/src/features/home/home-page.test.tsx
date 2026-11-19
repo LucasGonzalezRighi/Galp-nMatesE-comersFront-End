@@ -76,7 +76,7 @@ describe('HomePage', () => {
       'Un mate no se compra', // manifiesto
       'Piezas en catálogo', // cifras
       '−10% en el kit.', // kit
-      'Lo que dice la ronda', // reseñas
+      'Reseñas', // reseñas
     ].map((fragment) => text.indexOf(fragment))
     expect(order.every((position) => position >= 0)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
@@ -106,9 +106,10 @@ describe('HomePage', () => {
         .filter((scene) => scene.key === 'bombilla' || scene.key === 'ritual')
         .map((scene) => scene.eyebrow),
     ]
-    // Los links y botones con el mismo texto ("Armá tu kit") no son rótulos.
+    // Los links y botones con el mismo texto ("Armá tu kit") no son rótulos, ni los títulos grandes
+    // que dicen lo mismo que su rótulo (las reseñas se titulan "Reseñas").
     for (const eyebrow of eyebrows) {
-      expect(screen.queryByText(eyebrow, { ignore: 'script, style, a, button' })).toBeNull()
+      expect(screen.queryByText(eyebrow, { ignore: 'script, style, a, button, h2' })).toBeNull()
     }
     // Ni el 01, 02… de las tarjetas, el kit y los pasos del agua, ni el "01 — 06" de la colección.
     expect(screen.queryAllByText(/^0\d$/)).toHaveLength(0)
@@ -267,7 +268,7 @@ describe('HomeReviews', () => {
   it('muestra las reseñas destacadas con su texto entre comillas y el producto, que lleva a la ficha', async () => {
     const data = await homeData()
     renderSection(<HomeReviews data={data} />)
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Lo que dice la ronda')
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Reseñas')
     const [first] = data.reviews
     if (first === undefined) throw new Error('El catálogo de fábrica no tiene reseñas destacadas.')
     expect(screen.getByText(`“${first.text}”`)).toBeInTheDocument()
