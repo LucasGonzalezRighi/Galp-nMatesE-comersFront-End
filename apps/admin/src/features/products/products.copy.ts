@@ -102,11 +102,11 @@ export const PRODUCT_FORM_COPY = {
   featured: 'Destacado',
   /** Los destacados son los que muestra «Los más vendidos» del inicio (Ruling AT-4). */
   featuredHint: 'Aparece en «Los más vendidos» del inicio.',
-  leathersSection: 'Cueros',
+  leathersSection: 'Colores',
   leathersHint:
     'Los que el cliente puede elegir en la ficha, el kit y los combos. Si no marcás ninguno, no se muestra el selector.',
   /** Nombre del grupo de casillas, solo para lectores de pantalla. */
-  leathersLegend: 'Cueros que ofrece este mate',
+  leathersLegend: 'Colores que ofrece este mate',
   statusSection: 'Estado',
   statusHint: 'Los borradores no se ven en la tienda.',
   statusLegend: 'Estado del producto',

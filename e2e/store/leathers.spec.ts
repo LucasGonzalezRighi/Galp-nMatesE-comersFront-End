@@ -65,7 +65,7 @@ async function openCart(page: Page): Promise<Locator> {
 
 /** El grupo de muestras de cuero de la ficha. */
 function leatherSwatches(page: Page): Locator {
-  return page.getByRole('main').getByRole('group', { name: 'Cuero', exact: true })
+  return page.getByRole('main').getByRole('group', { name: 'Color', exact: true })
 }
 
 /** "Agregar al carrito" de la compra de la ficha (el primero: los relacionados vienen después). */
@@ -83,7 +83,7 @@ test.describe('tienda: cueros por producto (Ruling AT-5)', () => {
     })
   })
 
-  test('un mate con solo Crudo muestra una sola muestra y la línea dice "Cuero crudo"', async ({
+  test('un mate con solo Crudo muestra una sola muestra y la línea dice "Color crudo"', async ({
     page,
   }, testInfo) => {
     const mate = mateFor(testInfo.project.name)
@@ -101,7 +101,7 @@ test.describe('tienda: cueros por producto (Ruling AT-5)', () => {
 
     const drawer = await openCart(page)
     await expect(drawer.getByText(mate.name)).toBeVisible()
-    await expect(drawer.getByText('Cuero crudo', { exact: true })).toBeVisible()
+    await expect(drawer.getByText('Color crudo', { exact: true })).toBeVisible()
     // Cotiza sin error y se puede finalizar (la clave de la línea es la que espera la vista).
     await expect(drawer.getByRole('link', { name: 'Finalizar compra' })).not.toHaveAttribute(
       'aria-disabled',
@@ -146,11 +146,11 @@ test.describe('tienda: cueros por producto (Ruling AT-5)', () => {
     await page.reload()
 
     await expect(
-      page.getByText(`Actualizamos tu carrito. Cambiamos el cuero de ${mate.name} a marrón`),
+      page.getByText(`Actualizamos tu carrito. Cambiamos el color de ${mate.name} a marrón`),
     ).toBeAttached()
     const drawer = await openCart(page)
-    await expect(drawer.getByText('Cuero marrón', { exact: true })).toBeVisible()
-    await expect(drawer.getByText('Cuero negro', { exact: true })).toHaveCount(0)
+    await expect(drawer.getByText('Color marrón', { exact: true })).toBeVisible()
+    await expect(drawer.getByText('Color negro', { exact: true })).toHaveCount(0)
     // Cotiza sin error y se puede finalizar (la clave de la línea es la que espera la vista).
     await expect(drawer.getByRole('link', { name: 'Finalizar compra' })).not.toHaveAttribute(
       'aria-disabled',

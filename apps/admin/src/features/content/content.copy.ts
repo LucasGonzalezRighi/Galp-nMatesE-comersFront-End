@@ -43,7 +43,7 @@ export const CONTENT_COPY = {
     bombilla: 'La bombilla',
     yerba: 'La yerba',
     ritual: 'El ritual',
-    leather: 'El cuero',
+    leather: 'El color',
   } satisfies Record<StoryScene['key'], string>,
   optionalCta: 'Botón (opcional)',
   ritualSteps: 'Pasos del ritual',

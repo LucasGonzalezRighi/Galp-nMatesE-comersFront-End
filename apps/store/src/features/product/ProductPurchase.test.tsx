@@ -56,7 +56,7 @@ describe('opciones del mate', () => {
   it('un mate con los cuatro cueros muestra cuatro muestras con Negro elegido, sin virola', () => {
     renderPurchase(detail())
 
-    const leathers = screen.getByRole('group', { name: 'Cuero' })
+    const leathers = screen.getByRole('group', { name: 'Color' })
     expect(leathers.querySelectorAll('button')).toHaveLength(4)
     expect(screen.getByRole('button', { name: 'Negro', pressed: true })).toBeInTheDocument()
     expect(screen.queryByRole('radiogroup')).toBeNull()
@@ -65,7 +65,7 @@ describe('opciones del mate', () => {
   it('muestra solo los cueros que ofrece el producto, y sin Negro arranca en el primero', () => {
     renderPurchase(detail({ leathers: ['Crudo', 'Borravino'] }))
 
-    const leathers = screen.getByRole('group', { name: 'Cuero' })
+    const leathers = screen.getByRole('group', { name: 'Color' })
     expect(leathers.querySelectorAll('button')).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Crudo', pressed: true })).toBeInTheDocument()
   })
@@ -74,7 +74,7 @@ describe('opciones del mate', () => {
     const user = userEvent.setup()
     renderPurchase(detail({ leathers: ['Crudo'] }))
 
-    const leathers = screen.getByRole('group', { name: 'Cuero' })
+    const leathers = screen.getByRole('group', { name: 'Color' })
     expect(leathers.querySelectorAll('button')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Crudo', pressed: true })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
@@ -93,7 +93,7 @@ describe('opciones del mate', () => {
     const user = userEvent.setup()
     renderPurchase(detail({ leathers: [] }))
 
-    expect(screen.queryByRole('group', { name: 'Cuero' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Color' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }))
 
     expect(cartLines()).toEqual([
@@ -104,7 +104,7 @@ describe('opciones del mate', () => {
   it('una bombilla o una yerba no ofrece cuero', () => {
     for (const group of ['bombilla', 'yerba'] as const) {
       renderPurchase(detail({ group }))
-      expect(screen.queryByRole('group', { name: 'Cuero' })).toBeNull()
+      expect(screen.queryByRole('group', { name: 'Color' })).toBeNull()
       expect(screen.getByRole('button', { name: 'Agregar al carrito' })).toBeVisible()
       cleanup()
     }
@@ -199,6 +199,6 @@ describe('producto que no se puede comprar', () => {
   it('un mate sin precio igual muestra sus cueros', () => {
     renderPurchase(detail({ priceArs: null, netPriceArs: null, isPurchasable: false }))
 
-    expect(screen.getByRole('group', { name: 'Cuero' })).toBeVisible()
+    expect(screen.getByRole('group', { name: 'Color' })).toBeVisible()
   })
 })

@@ -45,7 +45,7 @@ const kitKey = 'kit:m1:b1:y1:Negro'
 const mateQuoteLine = quoteLine({
   key: mateKey,
   name: 'Mate Imperial Premium',
-  detail: 'Cuero negro',
+  detail: 'Color negro',
   unitPriceArs: 39999,
   totalArs: 39999,
   netUnitPriceArs: 33057,
@@ -54,7 +54,7 @@ const kitQuoteLine = quoteLine({
   key: kitKey,
   type: 'kit',
   name: 'Kit',
-  detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Cuero negro',
+  detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Color negro',
   unitPriceArs: 75997,
   kitSavingsArs: 7600,
   totalArs: 68397,
@@ -72,7 +72,7 @@ describe('buildCartView', () => {
     const [productLine, kit] = view.lines
     expect(productLine).toMatchObject({
       name: 'Mate Imperial Premium',
-      detail: 'Cuero negro',
+      detail: 'Color negro',
       status: 'ready',
       issue: null,
       totalArs: 39999,
@@ -81,7 +81,7 @@ describe('buildCartView', () => {
     // El kit usa el nombre del diseño y el detalle que arma la API.
     expect(kit).toMatchObject({
       name: 'Kit ronda completa',
-      detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Cuero negro',
+      detail: 'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Color negro',
       status: 'ready',
       totalArs: 68397,
       kitSavingsArs: 7600,
@@ -299,7 +299,7 @@ describe('buildCartView con combos', () => {
     key: comboKey,
     type: 'combo',
     name: 'Dúo Imperial',
-    detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
+    detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Color marrón',
     unitPriceArs: 68998,
     kitSavingsArs: 6999,
     totalArs: 61999,
@@ -317,7 +317,7 @@ describe('buildCartView con combos', () => {
     expect(view.lines[0]).toMatchObject({
       key: comboKey,
       name: 'Dúo Imperial',
-      detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón',
+      detail: 'Mate Imperial Premium + Bombillón Premium Curvo · Color marrón',
       image: { url: '/m1.jpg', alt: 'Mate' },
       status: 'ready',
       totalArs: 61999,

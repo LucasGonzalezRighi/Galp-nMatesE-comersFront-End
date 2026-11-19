@@ -381,7 +381,7 @@ describe('reconcileCart: cueros por producto (Ruling AT-5)', () => {
     ])
     expect(describeCartNotices(result.notices)).toEqual({
       title: 'Actualizamos tu carrito',
-      subtitle: 'Cambiamos el cuero de Mate Uno a marrón',
+      subtitle: 'Cambiamos el color de Mate Uno a marrón',
     })
   })
 
@@ -544,7 +544,7 @@ describe('parseSeenValues', () => {
 describe('describeCartNotices', () => {
   it('el aviso del cuero valida el nombre y el cuero', () => {
     expect(leatherChangedNotice('Mate Imperial Criollo', 'Marrón')).toBe(
-      'Cambiamos el cuero de Mate Imperial Criollo a marrón',
+      'Cambiamos el color de Mate Imperial Criollo a marrón',
     )
     expect(() => leatherChangedNotice(' ', 'Marrón')).toThrow(RangeError)
     expect(() => leatherChangedNotice('Mate', 'Rosa' as 'Negro')).toThrow(RangeError)

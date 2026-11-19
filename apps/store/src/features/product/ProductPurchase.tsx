@@ -28,7 +28,7 @@ function consultHref(contactEmail: string, productName: string): string {
   return `mailto:${contactEmail}?subject=${subject}`
 }
 
-/** Título de una elección ("Cuero") con lo elegido a la derecha. */
+/** Título de una elección ("Color") con lo elegido a la derecha. */
 function OptionHeading({ label, value }: { label: string; value: string }): ReactNode {
   return (
     <div className="flex justify-between text-[13px]">

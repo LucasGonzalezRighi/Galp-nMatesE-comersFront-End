@@ -142,7 +142,7 @@ describe('CartDrawer', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Carrito (4)' })
     // El detalle llega con la cotización; hasta entonces las líneas están cargando.
-    expect(await within(dialog).findAllByText('Cuero negro')).toHaveLength(3)
+    expect(await within(dialog).findAllByText('Color negro')).toHaveLength(3)
     expect(within(dialog).getByText('Mate Imperial Premium')).toBeVisible()
     expect(within(dialog).queryByText('prd-borrado')).not.toBeInTheDocument()
     // Sin stock: marcada y sin selector de cantidad; el total solo suma las líneas con stock.
@@ -194,7 +194,7 @@ describe('CartDrawer', () => {
     expect(await within(dialog).findByText('Kit ronda completa')).toBeVisible()
     expect(
       within(dialog).getByText(
-        'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Cuero negro',
+        'Mate Imperial Premium + Bombillón Premium Curvo + Yerba Canarias 1 kg · Color negro',
       ),
     ).toBeVisible()
     // Suma de las tres piezas: $78.997; 10 % de descuento: $7.900 de ahorro.
@@ -225,7 +225,7 @@ describe('CartDrawer', () => {
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByText('Dúo Imperial')).toBeVisible()
     expect(
-      within(dialog).getByText('Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón'),
+      within(dialog).getByText('Mate Imperial Premium + Bombillón Premium Curvo · Color marrón'),
     ).toBeVisible()
     // Las piezas suman $68.998 y el combo cuesta $61.999.
     expect(within(dialog).getByText('Ahorrás $6.999')).toBeVisible()

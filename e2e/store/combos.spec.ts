@@ -78,7 +78,7 @@ test.describe('tienda: combos (Ruling IC-12)', () => {
     // No abre el carrito: solo el aviso y el vuelo.
     await expect(page.getByRole('dialog', { name: /^Carrito/ })).toBeHidden()
 
-    const pieces = 'Mate Imperial Premium + Bombillón Premium Curvo · Cuero marrón'
+    const pieces = 'Mate Imperial Premium + Bombillón Premium Curvo · Color marrón'
     let drawer = await openCart(page)
     await expect(drawer.getByText('Dúo Imperial')).toBeVisible()
     await expect(drawer.getByText(pieces)).toBeVisible()

@@ -148,7 +148,7 @@ describe('KitBuilder: pasos y opciones', () => {
     // Sin las tres piezas no hay descuento del kit (Ruling AI-6).
     expect(within(panel).queryByText(/Descuento kit/)).toBeNull()
     expect(within(panel).getByText('Te falta elegir el mate, la bombilla, la yerba.')).toBeVisible()
-    expect(within(panel).queryByRole('group', { name: 'Cuero' })).toBeNull()
+    expect(within(panel).queryByRole('group', { name: 'Color' })).toBeNull()
     expect(addButton()).toBeDisabled()
   })
 
@@ -230,7 +230,7 @@ describe('KitBuilder: pasos y opciones', () => {
     renderKit()
     choose('Mate Imperial Premium')
 
-    const colors = screen.getByRole('group', { name: 'Cuero' })
+    const colors = screen.getByRole('group', { name: 'Color' })
     expect(within(colors).getAllByRole('button')).toHaveLength(4)
     expect(within(colors).getByRole('button', { name: 'Negro' })).toHaveAttribute(
       'aria-pressed',
@@ -243,7 +243,7 @@ describe('KitBuilder: pasos y opciones', () => {
       'aria-pressed',
       'true',
     )
-    expect(screen.getByText('Cuero · Borravino')).toBeVisible()
+    expect(screen.getByText('Color · Borravino')).toBeVisible()
   })
 
   it('muestra solo los cueros del mate elegido y, si no ofrece el preferido, usa el primero (Ruling AT-5)', () => {
@@ -253,7 +253,7 @@ describe('KitBuilder: pasos y opciones', () => {
     renderKit(catalog)
     choose('Mate Torpedo')
 
-    const colors = screen.getByRole('group', { name: 'Cuero' })
+    const colors = screen.getByRole('group', { name: 'Color' })
     expect(
       within(colors)
         .getAllByRole('button')
@@ -263,7 +263,7 @@ describe('KitBuilder: pasos y opciones', () => {
       'aria-pressed',
       'true',
     )
-    expect(screen.getByText('Cuero · Crudo')).toBeVisible()
+    expect(screen.getByText('Color · Crudo')).toBeVisible()
     choose('Bombillón Curvo')
     choose('Yerba Canarias')
 
@@ -284,8 +284,8 @@ describe('KitBuilder: pasos y opciones', () => {
     buildFullKit()
 
     const panel = screen.getByRole('complementary', { name: 'Resumen del kit' })
-    expect(within(panel).queryByRole('group', { name: 'Cuero' })).toBeNull()
-    expect(within(panel).queryByText(/^Cuero/)).toBeNull()
+    expect(within(panel).queryByRole('group', { name: 'Color' })).toBeNull()
+    expect(within(panel).queryByText(/^Color/)).toBeNull()
 
     fireEvent.click(addButton())
 
@@ -300,7 +300,7 @@ describe('KitBuilder: agregar al carrito', () => {
     renderKit()
     choose('Mate Imperial Premium')
     fireEvent.click(
-      within(screen.getByRole('group', { name: 'Cuero' })).getByRole('button', {
+      within(screen.getByRole('group', { name: 'Color' })).getByRole('button', {
         name: 'Borravino',
       }),
     )
@@ -337,7 +337,7 @@ describe('KitBuilder: agregar al carrito', () => {
     expect(addButton()).toBeDisabled()
     choose('Mate Torpedo')
     expect(
-      within(screen.getByRole('group', { name: 'Cuero' })).getByRole('button', {
+      within(screen.getByRole('group', { name: 'Color' })).getByRole('button', {
         name: 'Borravino',
       }),
     ).toHaveAttribute('aria-pressed', 'true')
@@ -400,7 +400,7 @@ describe('KitBuilder: agregar al carrito', () => {
     renderKit()
     choose('Mate Imperial Premium')
     fireEvent.click(
-      within(screen.getByRole('group', { name: 'Cuero' })).getByRole('button', { name: 'Crudo' }),
+      within(screen.getByRole('group', { name: 'Color' })).getByRole('button', { name: 'Crudo' }),
     )
     choose('Bombillón Curvo')
 
@@ -536,7 +536,7 @@ describe('KitBuilder: una o dos piezas (Ruling AI-6)', () => {
     renderKit()
     choose('Mate Imperial Premium')
     fireEvent.click(
-      within(screen.getByRole('group', { name: 'Cuero' })).getByRole('button', {
+      within(screen.getByRole('group', { name: 'Color' })).getByRole('button', {
         name: 'Borravino',
       }),
     )

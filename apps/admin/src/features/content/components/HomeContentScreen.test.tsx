@@ -63,7 +63,7 @@ describe('HomeContentScreen', () => {
       within(story)
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent),
-    ).toEqual(['Las piezas', 'La calabaza', 'La bombilla', 'La yerba', 'El ritual', 'El cuero'])
+    ).toEqual(['Las piezas', 'La calabaza', 'La bombilla', 'La yerba', 'El ritual', 'El color'])
     const gourd = within(story).getByRole('group', { name: 'La calabaza' })
     expect(within(gourd).getByLabelText('Botón (opcional)')).toHaveValue('Ver mates')
     const pieces = within(story).getByRole('group', { name: 'Las piezas' })

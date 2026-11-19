@@ -112,8 +112,8 @@ test.describe('dashboard: productos', () => {
       path: '/productos/prd-imperial-premium',
       heading: 'Mate Imperial Premium',
     })
-    const section = page.getByRole('region', { name: 'Cueros' })
-    const leathers = section.getByRole('group', { name: 'Cueros que ofrece este mate' })
+    const section = page.getByRole('region', { name: 'Colores' })
+    const leathers = section.getByRole('group', { name: 'Colores que ofrece este mate' })
     await expect(leathers.getByRole('checkbox')).toHaveCount(4)
     for (const name of ['Negro', 'Marrón', 'Crudo', 'Borravino']) {
       await expect(leathers.getByRole('checkbox', { name })).toBeChecked()
@@ -132,14 +132,14 @@ test.describe('dashboard: productos', () => {
     await expect(leathers.getByRole('checkbox', { name: 'Borravino' })).not.toBeChecked()
   })
 
-  test('una yerba no muestra "Cueros"', async ({ page }) => {
+  test('una yerba no muestra "Colores"', async ({ page }) => {
     await gotoAdmin(page, {
       path: '/productos/prd-yerba-canarias',
       heading: 'Yerba Canarias 1 kg',
     })
     await expect(page.getByRole('combobox', { name: 'Línea' })).toHaveValue('cat-yerbas')
     await expect(page.getByRole('region', { name: 'Precio y stock' })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Cueros' })).toHaveCount(0)
+    await expect(page.getByRole('region', { name: 'Colores' })).toHaveCount(0)
   })
 
   test('archiva con confirmación, lo muestra en "Archivados" y lo vuelve a publicar', async ({

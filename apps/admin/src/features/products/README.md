@@ -36,14 +36,14 @@ solo reemplaza a la tabla si nunca cargó.
   `toProductFormValues` y `toAdminProductInput(values, group)` pasan de la API al formulario y de
   vuelta (fotos sin `url`, precio `null` "a consultar", `tabsOverride` vacío → `null`, cueros
   vacíos si el grupo no es `mate`).
-- **Cueros** (`ProductLeathersFields`, Ruling AT-5): sección "Cueros" entre "Precio y stock" y
+- **Cueros** (`ProductLeathersFields`, Ruling AT-5): sección "Colores" entre "Precio y stock" y
   "Estado", solo si la línea elegida es de mates (como las pestañas, sigue al grupo de la línea;
   mientras cargan las líneas usa el grupo guardado del producto). Un `fieldset` (legend oculta
-  "Cueros que ofrece este mate") con cuatro casillas en el orden de `LEATHERS`, cada una con su
+  "Colores que ofrece este mate") con cuatro casillas en el orden de `LEATHERS`, cada una con su
   muestra de `tokens.leathersUi`; lo marcado se guarda en ese orden. Un producto nuevo arranca sin
   ninguno; sin ninguno, la tienda no muestra el selector. Al pasar a una línea que no es de mates
   la sección se va y se manda `leathers: []` (el back responde `422` `leathers_not_allowed`
-  "Solo los mates llevan cuero" si llegan cueros fuera de los mates). Un `422` en `leathers` o
+  "Solo los mates llevan colores" si llegan cueros fuera de los mates). Un `422` en `leathers` o
   `leathers.N` se ve debajo de las casillas. En modo de prueba lo guardado no llega a la tienda
   (ADR 0003); para probar la tienda, `POST /api/v1/__mock/products/{id}` con `leathers`.
 - **Destacado**: la ayuda dice "Aparece en «Los más vendidos» del inicio." (Ruling AT-4: los

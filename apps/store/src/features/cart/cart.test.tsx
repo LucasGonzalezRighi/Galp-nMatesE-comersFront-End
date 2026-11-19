@@ -823,7 +823,7 @@ describe('syncCart con datos viejos en localStorage (Review Focus 1)', () => {
       },
     ])
     expect(announced()).toHaveTextContent(
-      'Actualizamos tu carrito. Cambiamos el cuero de Mate Imperial Premium a marrón',
+      'Actualizamos tu carrito. Cambiamos el color de Mate Imperial Premium a marrón',
     )
   })
 

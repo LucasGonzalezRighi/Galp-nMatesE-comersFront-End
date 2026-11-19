@@ -96,18 +96,18 @@ describe('NewProductScreen', () => {
     })
   })
 
-  it('"Cueros" aparece solo con una línea de mates, sin ninguno marcado, y guarda los elegidos', async () => {
+  it('"Colores" aparece solo con una línea de mates, sin ninguno marcado, y guarda los elegidos', async () => {
     const { app, user } = await setup()
 
-    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Colores' })).not.toBeInTheDocument()
     await screen.findByRole('option', { name: 'Torpedos' })
     await user.selectOptions(screen.getByLabelText(/^Línea/), 'Torpedos')
-    const leathers = screen.getByRole('group', { name: 'Cueros que ofrece este mate' })
+    const leathers = screen.getByRole('group', { name: 'Colores que ofrece este mate' })
     expect(within(leathers).getAllByRole('checkbox')).toHaveLength(4)
     for (const box of within(leathers).getAllByRole('checkbox')) expect(box).not.toBeChecked()
 
     await user.selectOptions(screen.getByLabelText(/^Línea/), 'Bombillones')
-    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Colores' })).not.toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText(/^Línea/), 'Imperiales')
     await user.click(screen.getByRole('checkbox', { name: 'Crudo' }))
     await user.click(screen.getByRole('checkbox', { name: 'Negro' }))

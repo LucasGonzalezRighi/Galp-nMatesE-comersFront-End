@@ -24,7 +24,7 @@ export const KIT_COPY = {
   /** Título del panel del costado. */
   panelTitle: 'Resumen del kit',
   /** Nombre accesible de las muestras de cuero. */
-  leatherLabel: 'Cuero',
+  leatherLabel: 'Color',
   /** Renglón del subtotal. */
   subtotal: 'Subtotal',
   /** Renglón del total. */

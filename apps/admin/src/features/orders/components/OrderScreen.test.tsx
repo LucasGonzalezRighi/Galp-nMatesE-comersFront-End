@@ -96,7 +96,7 @@ describe('OrderScreen', () => {
     // La línea suelta muestra su `detail` congelado: es un pedido anterior a los cueros por
     // producto, así que conserva la virola.
     expect(within(lines).getByText('Cuero negro · Alpaca cincelada')).toBeInTheDocument()
-    expect(within(lines).queryByText('Cuero Negro')).not.toBeInTheDocument()
+    expect(within(lines).queryByText('Color Negro')).not.toBeInTheDocument()
     expect(within(lines).getByText(/^2 × \$/)).toBeInTheDocument()
 
     const totals = screen.getByRole('region', { name: 'Totales' })
@@ -120,7 +120,7 @@ describe('OrderScreen', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent),
     ).toEqual(['Mate Torpedo Premium', 'Bombillón Premium Curvo', 'Yerba Canarias Serena 1 kg'])
-    expect(within(lines).getByText('Cuero Marrón')).toBeInTheDocument()
+    expect(within(lines).getByText('Color Marrón')).toBeInTheDocument()
     const [kit] = order.lines
     expect(kit?.detail).not.toBe('')
     expect(within(lines).queryByText(kit?.detail ?? '')).not.toBeInTheDocument()

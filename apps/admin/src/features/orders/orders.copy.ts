@@ -308,12 +308,12 @@ export function trackingText(carrier: string, trackingNumber: string): string {
  * Cuero del mate de un kit o de un combo (una línea suelta muestra su detalle congelado).
  *
  * @param leather - Cuero, por ejemplo "Negro".
- * @returns "Cuero {x}", por ejemplo "Cuero Negro".
+ * @returns "Color {x}", por ejemplo "Color Negro".
  * @throws {RangeError} Si está vacío.
  */
 export function lineOptionsText(leather: string): string {
   assertText(leather, 'El cuero')
-  return `Cuero ${leather}`
+  return `Color ${leather}`
 }
 
 /**

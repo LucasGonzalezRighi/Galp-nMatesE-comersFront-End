@@ -95,9 +95,9 @@ function altTexts(): string[] {
 /** Los cuatro cueros, en el orden de `LEATHERS`. */
 const LEATHER_NAMES = ['Negro', 'Marrón', 'Crudo', 'Borravino']
 
-/** El grupo de casillas de la sección "Cueros". */
+/** El grupo de casillas de la sección "Colores". */
 function leathersGroup(): HTMLElement {
-  return screen.getByRole('group', { name: 'Cueros que ofrece este mate' })
+  return screen.getByRole('group', { name: 'Colores que ofrece este mate' })
 }
 
 /** La casilla de un cuero. */
@@ -268,7 +268,7 @@ describe('ProductScreen', () => {
   it('un mate muestra los 4 cueros marcados y al desmarcar Crudo y Borravino guarda Negro y Marrón', async () => {
     const { app, user, patches } = await setup()
 
-    const section = screen.getByRole('region', { name: 'Cueros' })
+    const section = screen.getByRole('region', { name: 'Colores' })
     expect(
       within(section).getByText(
         'Los que el cliente puede elegir en la ficha, el kit y los combos. Si no marcás ninguno, no se muestra el selector.',
@@ -314,12 +314,12 @@ describe('ProductScreen', () => {
     expect(stored(app).leathers).toEqual([])
   })
 
-  it('al pasar el mate a una línea de yerbas, "Cueros" se va y se guarda sin cueros', async () => {
+  it('al pasar el mate a una línea de yerbas, "Colores" se va y se guarda sin cueros', async () => {
     const { app, user, patches } = await setup()
 
     await screen.findByRole('option', { name: 'Yerbas' })
     await user.selectOptions(screen.getByLabelText(/^Línea/), 'Yerbas')
-    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Colores' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
@@ -327,17 +327,17 @@ describe('ProductScreen', () => {
     expect(stored(app)).toMatchObject({ categoryId: 'cat-yerbas', leathers: [] })
   })
 
-  it('una yerba no muestra "Cueros"', async () => {
+  it('una yerba no muestra "Colores"', async () => {
     await setup({ id: 'prd-yerba-canarias' })
 
     await screen.findByRole('option', { name: 'Yerbas' })
-    expect(screen.queryByRole('region', { name: 'Cueros' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Colores' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'Negro' })).not.toBeInTheDocument()
   })
 
   it.each([
-    ['leathers', 'Solo los mates llevan cuero'],
-    ['leathers.1', 'Elegí un cuero de la lista'],
+    ['leathers', 'Solo los mates llevan colores'],
+    ['leathers.1', 'Elegí un color de la lista'],
   ])('un 422 en %s se ve debajo de las casillas de los cueros', async (field, message) => {
     const { app, user } = await setup()
     app.api.use({
@@ -348,7 +348,7 @@ describe('ProductScreen', () => {
     await user.click(leatherBox('Crudo'))
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
-    const error = await within(screen.getByRole('region', { name: 'Cueros' })).findByText(message)
+    const error = await within(screen.getByRole('region', { name: 'Colores' })).findByText(message)
     const group = leathersGroup()
     expect(group.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(group).toHaveAccessibleDescription(message)

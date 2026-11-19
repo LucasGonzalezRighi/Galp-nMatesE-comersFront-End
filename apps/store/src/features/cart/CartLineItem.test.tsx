@@ -28,7 +28,7 @@ const kitLine: CartLine = {
 const mateQuote = quoteLine({
   key: 'product:m1:Negro',
   name: 'Mate Imperial Premium',
-  detail: 'Cuero negro',
+  detail: 'Color negro',
   unitPriceArs: 39999,
   totalArs: 39999,
   netUnitPriceArs: 33057,
@@ -37,7 +37,7 @@ const kitQuote = quoteLine({
   key: 'kit:m1:b1:y1:Negro',
   type: 'kit',
   name: 'Kit',
-  detail: 'Mate + Bombillón + Yerba · Cuero negro',
+  detail: 'Mate + Bombillón + Yerba · Color negro',
   unitPriceArs: 75997,
   kitSavingsArs: 7600,
   totalArs: 68397,

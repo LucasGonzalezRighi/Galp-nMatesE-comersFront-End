@@ -112,7 +112,8 @@ describe('ComboCard', () => {
     renderCards([await fixtureCombo('Dúo Imperial'), await fixtureCombo('Bombilla y yerba')])
 
     const duo = card('Dúo Imperial')
-    const leathers = within(duo).getByRole('group', { name: 'Cuero del Mate Imperial Premium' })
+    const leathers = within(duo).getByRole('group', { name: 'Color del Mate Imperial Premium' })
+    expect(within(duo).getByText('Color', { exact: true })).toBeInTheDocument()
     expect(within(leathers).getAllByRole('button')).toHaveLength(4)
     expect(within(leathers).getByRole('button', { name: 'Negro' })).toHaveAttribute(
       'aria-pressed',
@@ -122,7 +123,7 @@ describe('ComboCard', () => {
     expect(duo).not.toHaveTextContent('Virola')
 
     const withoutMate = card('Bombilla y yerba')
-    expect(within(withoutMate).queryByRole('group', { name: /^Cuero/ })).toBeNull()
+    expect(within(withoutMate).queryByRole('group', { name: /^Color/ })).toBeNull()
     expect(within(withoutMate).queryByRole('radiogroup')).toBeNull()
   })
 
@@ -133,7 +134,7 @@ describe('ComboCard', () => {
     renderCards([{ ...duo, items: [{ ...mate, leathers: ['Marrón', 'Crudo'] }, bombilla] }])
 
     const article = card('Dúo Imperial')
-    const leathers = within(article).getByRole('group', { name: 'Cuero del Mate Imperial Premium' })
+    const leathers = within(article).getByRole('group', { name: 'Color del Mate Imperial Premium' })
     expect(
       within(leathers)
         .getAllByRole('button')
@@ -166,7 +167,7 @@ describe('ComboCard', () => {
     ])
 
     const single = within(card('Dúo Imperial')).getByRole('group', {
-      name: 'Cuero del Mate Imperial Premium',
+      name: 'Color del Mate Imperial Premium',
     })
     expect(within(single).getAllByRole('button')).toHaveLength(1)
     expect(within(single).getByRole('button', { name: 'Borravino' })).toHaveAttribute(
@@ -175,8 +176,8 @@ describe('ComboCard', () => {
     )
 
     const plain = card('Dúo liso')
-    expect(within(plain).queryByRole('group', { name: /^Cuero/ })).toBeNull()
-    expect(plain).not.toHaveTextContent('Cuero')
+    expect(within(plain).queryByRole('group', { name: /^Color/ })).toBeNull()
+    expect(plain).not.toHaveTextContent('Color')
     await userEvent.click(
       within(plain).getByRole('button', { name: 'Agregar combo Dúo liso al carrito' }),
     )
@@ -266,7 +267,7 @@ describe('ComboCard', () => {
     const names = (elements: HTMLElement[]): string[] =>
       elements.map((element) => element.getAttribute('aria-label') ?? '')
     const buttons = names(screen.getAllByRole('button', { name: /^Agregar combo/ }))
-    const groups = names(screen.getAllByRole('group', { name: /^Cuero del/ }))
+    const groups = names(screen.getAllByRole('group', { name: /^Color del/ }))
     expect(buttons).toHaveLength(combos.length)
     expect(new Set(buttons).size).toBe(buttons.length)
     expect(new Set(groups).size).toBe(groups.length)

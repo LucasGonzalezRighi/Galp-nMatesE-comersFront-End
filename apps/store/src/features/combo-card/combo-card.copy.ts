@@ -11,7 +11,7 @@ export const COMBO_CARD_COPY = {
   /** Solo para lectores de pantalla, antes del precio de lista tachado. */
   listPrice: 'Precio de lista:',
   /** Título de la elección del cuero del mate. */
-  leather: 'Cuero',
+  leather: 'Color',
   /** Botón de agregar. */
   add: 'Agregar combo',
   /** Etiqueta y botón de un combo sin stock, y precio de una pieza sin stock. */
@@ -46,10 +46,10 @@ export function piecesLabel(count: number): string {
  * Nombre accesible del grupo de cueros, único en la página.
  *
  * @param mateName - Nombre del mate del combo.
- * @returns "Cuero del Mate Imperial Premium".
+ * @returns "Color del Mate Imperial Premium".
  */
 export function leatherGroupLabel(mateName: string): string {
-  return `Cuero del ${mateName}`
+  return `Color del ${mateName}`
 }
 
 /**

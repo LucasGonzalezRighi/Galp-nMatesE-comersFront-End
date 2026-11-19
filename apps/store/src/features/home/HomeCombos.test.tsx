@@ -67,7 +67,7 @@ describe('HomeCombos', () => {
       'Combos listos para cebar',
     )
     expect(section).toHaveTextContent(
-      'Mate y bombilla, o mate y yerba, elegidos para ir juntos y a precio cerrado.',
+      'Mate y bombilla, o mate y yerba, elegidos para ir juntos y a precio cerrado. Si el combo trae mate, el color lo elegís vos.',
     )
     expect(within(section).getAllByRole('article')).toHaveLength(3)
     expect(within(section).queryByRole('button', { name: 'Combo siguiente' })).toBeNull()

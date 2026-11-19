@@ -24,7 +24,7 @@ const LINES: OrderLine[] = [
   {
     type: 'kit',
     name: 'Kit',
-    detail: 'Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Cuero negro',
+    detail: 'Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Color negro',
     productSlug: null,
     options: { leather: 'Negro' },
     kitItems: [
@@ -52,7 +52,7 @@ describe('OrderLines', () => {
     expect(within(mate).getByText('$79.998')).toBeInTheDocument()
     // El kit muestra el detalle del pedido: sus piezas y el cuero del mate.
     expect(
-      within(kit).getByText('Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Cuero negro'),
+      within(kit).getByText('Mate Galleta + Bombilla Pico de Loro + Yerba Suave · Color negro'),
     ).toBeInTheDocument()
     expect(within(kit).getByText('Ahorrás $4.000')).toBeInTheDocument()
     expect(within(kit).getByText('$36.000')).toBeInTheDocument()

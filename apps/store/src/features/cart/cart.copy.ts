@@ -150,7 +150,7 @@ export function kitDiscountChangedNotice(percent: number): string {
  *
  * @param name - Nombre del producto, del mate del kit o del combo.
  * @param leather - Cuero nuevo, por ejemplo "Marrón"; se escribe en minúscula.
- * @returns "Cambiamos el cuero de Mate Imperial Criollo a marrón".
+ * @returns "Cambiamos el color de Mate Imperial Criollo a marrón".
  * @throws {RangeError} Si el nombre está vacío o el cuero no existe.
  */
 export function leatherChangedNotice(name: string, leather: Leather): string {
@@ -158,7 +158,7 @@ export function leatherChangedNotice(name: string, leather: Leather): string {
     throw new RangeError('El aviso del cuero necesita el nombre del producto.')
   }
   if (!isLeather(leather)) throw new RangeError(`El cuero "${String(leather)}" no existe.`)
-  return `Cambiamos el cuero de ${name} a ${leather.toLowerCase()}`
+  return `Cambiamos el color de ${name} a ${leather.toLowerCase()}`
 }
 
 /**
@@ -172,11 +172,11 @@ export function moreChangesSuffix(count: number): string {
 }
 
 /**
- * Detalle del cuero de un mate: se escribe en minúscula tras la palabra "Cuero".
+ * Detalle del cuero de un mate: se escribe en minúscula tras la palabra "Color".
  *
  * @param leather - Cuero elegido, por ejemplo "Negro".
- * @returns "Cuero negro".
+ * @returns "Color negro".
  */
 export function leatherLabel(leather: string): string {
-  return `Cuero ${leather.toLowerCase()}`
+  return `Color ${leather.toLowerCase()}`
 }

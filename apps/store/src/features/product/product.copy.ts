@@ -13,7 +13,7 @@ export const PRODUCT_COPY = {
   /** Sin stock. */
   outOfStock: 'Sin stock por ahora',
   /** Título de la elección del cuero. */
-  leather: 'Cuero',
+  leather: 'Color',
   /** Botón de agregar al carrito. */
   addToCart: 'Agregar al carrito',
   /** Botón de comprar ya. */
