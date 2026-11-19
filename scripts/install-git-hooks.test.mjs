@@ -7,6 +7,10 @@ describe('install-git-hooks: cuándo se instalan los hooks de git', () => {
     expect(skipReason({ VERCEL: '1' }, true)).toBe('compilación de Vercel')
   })
 
+  it('en la compilación de Render no se instalan', () => {
+    expect(skipReason({ RENDER: 'true' }, true)).toBe('compilación de Render')
+  })
+
   it('en un CI no se instalan', () => {
     expect(skipReason({ CI: 'true' }, true)).toBe('integración continua')
   })

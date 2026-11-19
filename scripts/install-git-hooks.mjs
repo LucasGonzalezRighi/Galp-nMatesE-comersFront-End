@@ -1,11 +1,11 @@
 // @ts-check
 /**
  * `prepare` del workspace: instala los hooks de git de lefthook en las compus de desarrollo y no
- * hace nada en las compilaciones de Vercel o de un CI, donde no hay hooks que instalar (y donde el
+ * hace nada en las compilaciones de Vercel, de Render o de un CI, donde no hay hooks que instalar (y donde el
  * binario de lefthook puede no estar: la compilación de la tienda en Vercel cortaba con
  * "lefthook: command not found").
  *
- * Se saltea si hay `CI` o `VERCEL` en el entorno, o si la carpeta no es un repositorio de git.
+ * Se saltea si hay `CI`, `VERCEL` o `RENDER` en el entorno, o si la carpeta no es un repositorio de git.
  * Si no, corre el `lefthook` instalado en `node_modules` (nunca lo baja del registro) y, si falla,
  * sale con su mismo código.
  *
@@ -28,6 +28,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
  */
 export function skipReason(env, hasGit) {
   if (env.VERCEL) return 'compilación de Vercel'
+  if (env.RENDER) return 'compilación de Render'
   if (env.CI) return 'integración continua'
   if (!hasGit) return 'la carpeta no es un repositorio de git'
   return null
