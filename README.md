@@ -123,16 +123,27 @@ Cada app y cada paquete tiene su propio `README.md` con lo que hace y cómo se u
 
 Se hace cambiando variables de entorno y volviendo a compilar, sin tocar código: `API_MODE` y `NEXT_PUBLIC_API_MODE` (tienda) y `VITE_API_MODE` (dashboard) pasan a `live`, y se completan `API_BASE_URL`, `VITE_API_BASE_URL`, `NEXT_PUBLIC_MP_PUBLIC_KEY` y `REVALIDATE_SECRET`. Una configuración incoherente hace fallar el build de la tienda con un mensaje en español; el dashboard no falla al compilar: muestra el motivo en pantalla al abrirse. La lista completa de variables y el procedimiento están en la [sección 13.4 del diseño](docs/superpowers/specs/2026-10-19-galpon-frontend-design.md#134-pasar-a-vivo) y en los README de la [tienda](apps/store/README.md) y del [dashboard](apps/admin/README.md).
 
-## Producción (Vercel)
+## Producción (Render, con el dominio propio)
 
-La tienda y el dashboard se publican en **Vercel**, como dos proyectos de este mismo repo, y el back en Render. La guía paso a paso, pantalla por pantalla y variable por variable, está en el repo del back: `backend/docs/DESPLIEGUE.md`.
+La tienda y el dashboard se mudan de Vercel a **Render**, junto al back, con el dominio propio: la tienda en `https://galponmates.com.ar` (`www` redirige a la raíz), el dashboard en `https://admin.galponmates.com.ar` y el back en `https://api.galponmates.com.ar`. Los define [`render.yaml`](render.yaml), un Blueprint de Render aparte del del back:
+
+| Servicio de Render    | Tipo                 | Qué es                                                                                                                                                                                                     |
+| --------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `galpon-mates-tienda` | Web service (Node)   | La tienda (Next.js): `npm ci && npm run build -w @galpon/store` y `next start` en el `$PORT` de Render. Toma del back `REVALIDATE_SECRET` y `API_PROXY_SECRET`, y la IP del visitante de `True-Client-IP`. |
+| `galpon-mates-admin`  | Static site (gratis) | El dashboard (Vite) compilado en `apps/admin/dist`, con las cabeceras de seguridad (CSP con el back en `api.galponmates.com.ar`, HSTS) y el _rewrite_ de la SPA. Le habla directo al back.                 |
+
+Como los tres comparten el dominio, la cookie de sesión del back viaja del dashboard al back sin reenvíos. `scripts/render-config.test.mjs` falla si las cabeceras del dashboard dejan de coincidir con `apps/admin/src/lib/csp.ts`. La guía paso a paso (Render, Cloudflare, Brevo y cuándo apagar Vercel) está en el repo del back: `backend/docs/DESPLIEGUE.md`, "Todo en Render con el dominio propio".
+
+### Mientras dure la mudanza: Vercel
+
+Hasta apagarlos, la tienda y el dashboard siguen también en **Vercel**, como dos proyectos de este mismo repo:
 
 | Proyecto de Vercel   | Root Directory | Qué es                                                                                                                                                                                                   |
 | -------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `galpon-mates`       | `apps/store`   | La tienda (Next.js). Ver "Producción en Vercel" en el [README de la tienda](apps/store/README.md).                                                                                                       |
 | `galpon-mates-admin` | `apps/admin`   | El dashboard (Vite), con [`apps/admin/vercel.json`](apps/admin/vercel.json): cabeceras de seguridad, SPA y el reenvío de `/api/v1/admin/*` al back. Ver el [README del dashboard](apps/admin/README.md). |
 
-El navegador nunca habla directo con el back: la tienda y el dashboard le reenvían los pedidos desde Vercel. Por eso anda con las direcciones gratis (`vercel.app` y `onrender.com`), sin dominio propio.
+En Vercel el navegador nunca habla directo con el back: la tienda y el dashboard le reenvían los pedidos. Por eso anda con las direcciones gratis (`vercel.app` y `onrender.com`), sin dominio propio. Cuando se apaguen, `apps/admin/vercel.json` se puede borrar.
 
 ### Camino alternativo: Docker en un servidor propio
 

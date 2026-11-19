@@ -10,7 +10,7 @@ Se corren desde `frontend/` con `-w @galpon/store` (o desde esta carpeta, sin `-
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
 | `npm run dev -w @galpon/store`       | Servidor de desarrollo en <http://localhost:3000>. `npm run dev` en la raíz levanta también el dashboard |
 | `npm run build -w @galpon/store`     | Compila para producción (valida el entorno y genera las páginas estáticas)                               |
-| `npm run start -w @galpon/store`     | Sirve lo compilado en <http://localhost:3000>                                                            |
+| `npm run start -w @galpon/store`     | Sirve lo compilado en <http://localhost:3000> (o en `$PORT`, si está definida)                           |
 | `npm run typecheck -w @galpon/store` | Genera los tipos de rutas (`next typegen`) y corre `tsc --noEmit`                                        |
 
 ## Modo de prueba
@@ -109,7 +109,7 @@ Los E2E de compra (`e2e/store/checkout*.spec.ts` y `account.spec.ts`) recorren t
 | `MOCK_ADMIN_PASSWORD`               | opcional                | se ignora                        |
 | `MOCK_CONTROL_SECRET`               | los E2E                 | se ignora                        |
 | `TRUSTED_CLIENT_IP_HEADER`          | opcional                | la cabecera con la IP real       |
-| `API_PROXY_SECRET`                  | se ignora               | en Vercel, el secreto del back   |
+| `API_PROXY_SECRET`                  | se ignora               | en Render y Vercel, el del back  |
 | `ROUTE_CACHE_MAX_MB`                | opcional (256)          | opcional (256)                   |
 
 ## Pasar a vivo
@@ -131,9 +131,17 @@ El backend limita por IP el login, el registro, los pedidos, los formularios y l
 - En el backend, `TRUST_PROXY` tiene que listar la IP (o la red) del servidor de la tienda y la de cualquier proxy entre los dos: así Express toma la IP del cliente de `X-Forwarded-For` y los límites cuentan por cliente (ver "Proxies de confianza" en el README del back). Sin `TRUSTED_CLIENT_IP_HEADER` en la tienda, los pedidos llegan sin IP del cliente y el back los cuenta como de la tienda.
 - Las lecturas de la cuenta que hace el servidor de la tienda por cada visitante (`getServerApiForRequest` de `lib/api.server.ts`: `/cuenta`, sus pedidos y sus direcciones) también mandan `X-Forwarded-For` con la IP de `TRUSTED_CLIENT_IP_HEADER` (`lib/client-ip.ts`, el mismo criterio que el proxy) y nunca las cabeceras de reenvío del navegador: si no, el back las contaría todas como de la tienda y alguien con una cookie de sesión inventada agotaría el límite de las páginas de cuenta de todos. Las lecturas públicas con caché (`getServerApi`) no la llevan: son de toda la tienda y el back no las limita cuando no conoce la IP del cliente.
 
-## Producción en Vercel
+## Producción en Render
 
-Es el camino elegido (el paso a paso, pantalla por pantalla, está en `backend/docs/DESPLIEGUE.md`): un proyecto de Vercel con **Root Directory** `apps/store`, que detecta Next.js solo. El back va en Render.
+Es el camino elegido, con el dominio propio (el paso a paso está en `backend/docs/DESPLIEGUE.md`, "Todo en Render con el dominio propio"): el servicio `galpon-mates-tienda` de [`render.yaml`](../../render.yaml), en la raíz del repo, sin carpeta raíz (el monorepo de npm necesita el `package-lock.json` de la raíz) y con la versión de Node de `.nvmrc`.
+
+- Compila con `npm ci && npm run build -w @galpon/store` y arranca con `npm run start -w @galpon/store`: `next start` sin `--port` escucha en `$PORT` (Render da el 10000) y, sin esa variable, en el 3000 de siempre.
+- Variables: las de "Producción en Vercel", salvo `TRUSTED_CLIENT_IP_HEADER=true-client-ip` (Cloudflare, que está delante de todos los servicios de Render, escribe ahí la IP del visitante pisando la del navegador; Render a `X-Forwarded-For` le agrega al final lo que manda el cliente, así que esa no sirve) y `NEXT_PUBLIC_SITE_URL=https://galponmates.com.ar`. `REVALIDATE_SECRET` y `API_PROXY_SECRET` las copia Render del servicio del back (`fromService`). `API_BASE_URL` es la dirección `onrender.com` del back: la tienda le habla desde su servidor y así no depende del DNS.
+- Lo de la IP real y el secreto funciona igual que en Vercel (abajo).
+
+## Producción en Vercel (mientras dure la mudanza)
+
+Fue el camino elegido hasta la mudanza a Render (el paso a paso, pantalla por pantalla, está en `backend/docs/DESPLIEGUE.md`): un proyecto de Vercel con **Root Directory** `apps/store`, que detecta Next.js solo. El back va en Render.
 
 - Variables: `API_MODE=live`, `NEXT_PUBLIC_API_MODE=live`, `API_BASE_URL` (la dirección del back en Render), `NEXT_PUBLIC_SITE_URL`, `REVALIDATE_SECRET`, `NEXT_PUBLIC_MP_PUBLIC_KEY`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `TRUSTED_CLIENT_IP_HEADER=x-real-ip` y `API_PROXY_SECRET`.
 - `next build` lee el catálogo del back: el back tiene que estar levantado al desplegar.
